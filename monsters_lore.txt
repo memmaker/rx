@@ -1,0 +1,72 @@
+Aquator
+ - Creates puddles of acid
+ - Rusts armor on attack
+Bat
+ - Chance to drain HP on attack
+ - Random movement
+Centaur
+ - Ranged attack
+ - Hooves attack with knockback
+Dragon
+ - Breathes fire
+ - Summon pools of lava
+ - Knockback with tail attack
+Emu
+ - Aimed Attacks
+ - Fast
+Venus Flytrap
+ - Can hold you in place
+ - Spits with bones
+Griffin
+ - Can fly
+ - Lightning attack
+Hobgoblin
+ - Can call on allies
+ - Can aggravate monsters
+Ice Monster
+ - Can freeze you
+Jabberwock
+ - Undefined mystery attack
+ - Random spell
+Kestral
+ - Can fly
+
+Leprechaun
+
+= History
+
+= Origin
+
+
+Medusa
+ - Afraid of darkness
+Nymph
+Orc
+ - Can charge attack
+Phantom
+ - Afraid of light
+ - Invisible
+ - Can pass through walls(?)
+Quagga
+ - Evolved a tongue sticky enough to grab people
+Rattlesnake
+ - Poisonous
+ - Drain Fatigue
+Slime
+ - Can split
+ - Can corrode armor
+Troll
+ - Can knock you back
+ - Can attack at range 2
+Ur-vile
+ - Lurk in the darkness
+ - In groups
+Vampire
+ - Drain life to heal self
+Wraith
+Xeroc
+ - Can imitate items, other monster, objects, environment
+Yeti
+ - Will run away and return with more yetis
+Zombie
+ - Will infect bodies and make them rise as zombies

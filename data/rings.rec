@@ -1,0 +1,66 @@
+
+
+# Missing
+# - Sustain Strength
+# - Searching
+# - Adornment
+# - Aggravate Monster
+# - Damage
+# - Slow Digestion
+# - Teleportation
+# - Stealth
+# - Maintain Armor
+
+name: ring of protection
+internal_name: ring_protection
+category: rings
+slot: ring
+stat: damage_resistance
+stat_bonus: 4
+chance: 20
+
+name: ring of strength
+internal_name: ring_strength
+category: rings
+slot: ring
+stat: strength
+stat_bonus: 2
+chance: 20
+
+name: ring of dexterity
+internal_name: ring_dexterity
+category: rings
+slot: ring
+stat: dexterity
+stat_bonus: 2
+chance: 20
+
+name: ring of intelligence
+internal_name: ring_intelligence
+category: rings
+slot: ring
+stat: intelligence
+stat_bonus: 2
+chance: 20
+
+name: ring of health
+internal_name: ring_health
+category: rings
+slot: ring
+stat: health
+stat_bonus: 2
+chance: 20
+
+name: ring of regeneration
+internal_name: ring_regeneration
+category: rings
+slot: ring
+equip_flag: regenerating
+chance: 20
+
+name: ring of see invisible
+internal_name: ring_see_invisible
+category: rings
+slot: ring
+equip_flag: can_see_invisible
+chance: 20

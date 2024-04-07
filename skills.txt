@@ -1,0 +1,28 @@
+Controlling Attributes
+
+Strength
+Dexterity
+Intelligence
+Health
+Perception
+Will
+
+How to apply GURPS?
+
+We will use the combat mechanics & maneuvers.
+-> Acquire maneuvers one by one,
+and add them to a contextual (?) quickbar.
+Weapon, Armor & Monster Stats
+
+No real encumbrance rules.
+Instead, we will apply maluses to dodge and basic speed,
+depending on armor worn.
+-> Effect: Heavy armor less dodge and running speed.
+
+We use it for all skill rolls.
+
+For ranged weapons, we'll use the accuracy rules.
+Crossbows will have fixed damage and STR requirements.
+Bows will have damage depend on STR directly.
+
+We'll use save rolls for magic.

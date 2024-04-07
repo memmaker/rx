@@ -1,0 +1,13 @@
+Welcome to Rogue
+
+This file will explain all the Keybindings and commands you can use in Rogue.
+
+Keybindings
+===========
+
+Movement
+
+h - Move left
+j - Move down
+k - Move up
+l - Move right

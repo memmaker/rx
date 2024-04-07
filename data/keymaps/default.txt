@@ -1,0 +1,45 @@
+w -> north
+s -> south
+a -> west
+d -> east
+W -> run_north
+S -> run_south
+A -> run_west
+D -> run_east
+8 -> north
+2 -> south
+4 -> west
+6 -> east
+7 -> northwest
+9 -> northeast
+1 -> southwest
+3 -> southeast
+5 -> run_direction
+v -> throw
+e -> use
+f -> launch
+g -> aim
+h -> quick_shot
+, -> pickup
+Enter -> map_interaction
+
+
+Q -> quit
+i -> inventory
+c -> character
+l -> log
+m -> monsters
+I -> items
+? -> help
+
+U -> overlay_monsters
+O -> overlay_items
+
+F2 -> gamma_down
+F3 -> gamma_up
+
+F4 -> wiz_ascend
+F5 -> wiz_descend
+
+Ctrl+T -> themes
+F10 -> wizard

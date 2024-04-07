@@ -1,0 +1,70 @@
+
+
+Rogue logic
+
+Traps
+A level contains traps if rnd(10) < dungeon_level
+The number of traps is rnd(level / 4) + 1
+But never more than 10 per level
+
+The game tries to place up to 9 items on a new dungeon level
+Every try has 35% chance of success and will place an item in a random room at a random location
+
+Item decision
+If the no_food counter is > 3, food is placed
+Otherwise, use the "pick_one()" call on THINGS
+
+Potions and scrolls also use the "pick_one()" call on SCROLLS and POTIONS
+
+Weapon types have an equal chance of being placed.
+A weapon has a 10% chance of being cursed, resulting in a -1 to -3 to-hit enchantment.
+It also has a 5% chance of being enchanted, resulting in a +1 to +3 to-hit enchantment.
+
+Armor types also use the "pick_one()" call on ARMORS
+An armor has a 20% chance of being cursed, resulting in a +1 to +3 armor class enchantment.
+It also has a 8% chance of being enchanted, resulting in a -1 to -3 armor class enchantment.
+
+Ring type is chosen by the "pick_one()" call on RINGS
+
+pick_one():
+iterate the templates and roll a D100
+If the roll is less than the probability -> break and return
+
+# A room has a 50% chance of having gold
+# If the room has gold, there is a 80% chance of a monster
+# If the room does not have gold, there is a 25% chance of a monster
+
+# A room has a 1 in 20 chance of being a treasure room
+# A treasure room has between 2 and 10 treasures and monster from a level deeper than the current level
+# A treasure contains a minimum of 4 monsters but could also fill the whole room
+
+
+CHOOSING A MONSTER
+
+static char *vorp_mons = "KEBHISORZLCAQNYTWFPUGMXVJD";
+static char *lvl_mons =  "K BHISOR LCA NYTWFP GMXVJD";
+static char *wand_mons = "KEBHISORZ CAQ YTW PUGM VJ ";
+
+/*
+ * randmonster:
+ *	Pick a monster to show up.  The lower the level,
+ *	the meaner the monster.
+ */
+char
+randmonster(bool wander)
+{
+	register int d;
+	register char *mons;
+
+	mons = wander ? wand_mons : lvl_mons;
+	do {
+		int r10 = rnd(5) + rnd(6);
+
+		d = level + (r10 - 5);
+		if (d < 1)
+			d = rnd(5) + 1;
+		if (d > 26)
+			d = rnd(5) + 22;
+	} while (mons[--d] == ' ');
+	return mons[d];
+}

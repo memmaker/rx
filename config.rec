@@ -1,0 +1,16 @@
+%rec: default
+
+AnimationDelay: 75
+AnimationsEnabled: true
+AnimateMovement: true
+AnimateProjectiles: true
+AnimateDamage: true
+AnimateEffects: true
+MapWidth: 80
+MapHeight: 23
+DiagonalMovementEnabled: true
+AutoPickup: true
+WallSlide: true
+PlayerName: Rogue
+KeyMapFile: data/keymaps/default.txt
+Theme: data/themes/fancy.rec

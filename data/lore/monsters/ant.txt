@@ -1,0 +1,27 @@
+[#FFFFFF]This giant variety of the ordinary ant will fight just as
+fiercely as its small, distant cousin. Various varieties
+exist, and they are known and feared for their relentless
+persecution of their victims.[-]
+
+[#f5e342]Origin[-]
+
+Giant ants - specifically, ants or ant-like creatures that are human-sized or larger - are a popular form of insectoid in science-fiction media, codified by works such as the 1905 H. G. Wells short story Empire of the Ants and the 1954 film Them!. Other notable examples include the Bugs of Starship Troopers, the Formics of Ender's Game, and the ants that accompany Marvel Comics super hero Ant-Man. Like other ants in various forms of fiction, they are commonly portrayed as a hive species, which is a common misconception regarding ant colonies.
+
+The giant ant of NetHack is derived from Dungeons & Dragons, where 9⁄10 of ants encountered will be workers. They can appear in groups of up to 100: twice as many can appear in giant ant nests, including 1 "warrior" per 5 workers; these nests contain a single queen whose chamber holds the nest's treasures, and the egg chamber is guarded by 5 warriors and 5-50 workers. If the queen is killed, the other ants will become confused for six melee rounds before fleeing the nest.
+
+While the giant ant does not seem to be based on any particular species, one of the largest known ant species is Dinoponera, a South American genus of ant in the subfamily Ponerinae - they are commonly called tocandiras or giant Amazonian ants. While less known overall than the bullet ant, females of the genus can reach a total body length of 3–4 cm (1.2–1.6 in) or more.
+
+[#f5e342]Rogue Trivia[-]
+
+This monster appears in Rogue 3.6 and 5.2 where the roaster did still include
+creatures taken verbatim from Dungeons & Dragons.
+
+For Rogue 5.6 and the DOS Version this monster has been exchanged for the "rattlesnake".
+
+The giant ant has a poison attack that will reduce the player's strength.
+
+"Ants have poisonous bites", says the code.
+
+[#f5e342]NetHack History[-]
+
+The giant ant first appears in Hack 1.21 and Hack for PDP-11, which are based on Jay Fenlason's Hack, and is included in the initial bestiary for Hack 1.0. From these early versions to NetHack 2.3e, the giant ant uses the A glyph and is more similar in ability to the modern soldier ant. NetHack 3.0.0 introduces the ant or other insect monster class, moving the giant ant to a and introducing the soldier ant alongside it.

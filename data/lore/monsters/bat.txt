@@ -1,0 +1,30 @@
+[#FFFFFF]Fidgety, annoying creatures that seem to be lurking around every corner in the Dungeons of Doom.[-]
+
+[#f5e342]Origin[-]
+
+Bats are mammals of the order Chiroptera (/kˈaɪrəptɛrə/) that have forelimbs adapted into wings, with very long spread-out digits covered with a thin membrane or patagium - they are the only mammals capable of true and sustained flight, and are more agile in flight than most birds. Bats make up the second largest order of mammals after rodents, comprising about 20% of all classified mammal species worldwide, with over 1,400 species - until as late as 2013, these were traditionally divided into two suborders: the largely fruit-eating "megabats", and the echolocating "microbats".
+
+Most bats are nocturnal, and many roost in caves or other refuges; their habitats are spread throughout the world, with the exception of extremely cold regions. Many bats are insectivores, and most of the rest primarily consume fruit or nectar; a few species feed on animals other than insects, such as the blood-drinking vampire bats. While not blind, many 'microbats' have small and poorly developed eyes in contrast to 'megabats' possessing vision comparable to that of humans, if not better) - these 'microbats' (and a few 'megabats') are known to use echolocation to navigate and forage, often in total darkness. Using echolocation, these bats can determine how far away an object is, as well as its size, shape and density, and whatever direction it is moving in if any; microbats may resort to standard vision for orientation and while traveling between their roosting grounds and feeding grounds, as echolocation is effective only over short distances.
+
+As flying mammals, bats are considered liminal beings in various traditions, and are associated with a range of traits such as death, darkness, and witchcraft (which occurs in Aztec and Indigenous American folklores), as well as good fortune, happiness and fertility (such as in China). In Western cultures, the bat is often a symbol of the night and its foreboding nature, and is often associated with fictional characters of the night, ranging from villainous vampires such as Count Dracula to heroes such as the DC Comics character Batman.
+
+[#f5e342]Rogue Trivia[-]
+
+In the Rogue 3.6 Source, the confused flag is simply called ISHUH.
+Bats are handled in the same if statement as the application of this flag.
+Thus the check for a random move reads like this.
+
+/*
+ * If the thing is confused, let it move randomly. Invisible
+ * Stalkers are slightly confused all of the time, and bats are
+ * quite confused all the time
+ */
+if (
+     (on(*tp, ISHUH) && rnd(10) < 8)      ||
+     (tp->t_type == 'I' && rnd(100) < 20) ||
+     (tp->t_type == 'B' && rnd(100) < 50)
+   ) {/* DO RANDOM MOVE */}
+
+[#f5e342]NetHack History[-]
+
+The bat first appears in Hack 1.21 and Hack for PDP-11, which are based on Jay Fenlason's Hack, and is included in the initial bestiary for Hack 1.0. In these early versions, eating a bat corpse causes confusion, as the stun property is not yet implemented.

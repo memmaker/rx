@@ -1,0 +1,99 @@
+Styles:
+
+Monochrome / Color
+Runes: Hack-Style / Moria-Style / DOS-Style
+Dynahack Style: https://www.youtube.com/watch?v=RpTBhym02cA
+
+Rogue Variant I (RVI)
+If rogue had dropped yesterday and I would be making a variant.
+
+RVI In-Scope
+ - Gone Rooms
+ - Mazes
+ - Zoos
+ - Weakened Status
+ - Curses
+ - Food System (Restore Fatigue)
+ - Items & Monsters
+
+RVI Out-of-Scope
+ - Searching / Secret Doors
+
+# Offene Fragen
+# - Secret doors/corridors?
+  -> Will be replaced with Brogue style treasure rooms
+  -> Nethack Style Zoos
+  -> and Angband Style vaults
+  -> DnD Style Encounters
+# - What does +1 search do?
+# -> FindSecrets is a flag on the actor: If true -> Tell the player that this floor has something hidden
+# - Damage to stats?
+# -> Temporary status effect "Weakened"
+# -> Will be prolonged by repeated "weakening"
+# -> Stats start regenerating after "Weakened" status effect is gone
+# - Sustain Strength/Armor?
+# - Curses?
+# -> Reliable source of "remove curse"
+# -> Less severe curses
+# - Food/Slow Digestion?
+# -> Dying from starvation should be a rare event
+# -> Hungry/Famished/Starving/Fainting/Weakened
+# -> Provide interesting effects that don't outright kill the player
+# - Sleep self?
+# -> High chance to wake up when hit
+# -> Anti-Items
+# -> mechanics based on GURPS!
+
+
+
+QoL Rogue:
+Find Features that activate:
+ - A Color Palette
+ - A Life Bar
+ - Smart Targeting
+ - Mouse Control
+ - Codepage 437
+ - A hack
+ -
+ - Animations
+ - Running
+
+History Tourist Rogue - Meta Rogue
+Play through historical variants of rogue, uncover lore.
+
+Epic/Heroic Rogue
+Play as characters from popular culture through the original levels.
+(Legolas, The Punisher, etc.)
+Use overpowered abilities to overcome the challenges.
+
+Parent Rogue
+Play as a parent, trying to find the favourite toy of your child in a procedurally generated house.
+
+OGAFM Rogue
+Fight as a celt to save ireland from the fomor.
+
+One Hit Rogue
+You die in one hit, but so do the enemies.
+Armor becomes a chance to survive a hit.
+Shield/Reflection items would be essential.
+For Damage, only the area of effect matters.
+Ranged weapons are essential.
+
+Rune Word mechanic
+Engrave items with words that will be hashed for special effects.
+Letters for words must be collected by killing corresponding enemies.
+
+Band of Rogues
+Add a town level to rogue, basically making it a *band-like.
+Try merging the concepts of moria/angband with the simplicity of rogue.
+Rogue doesn't have this anti-item design that nethack and angband suffer from.
+But it is too RNG dependent and too harsh.
+A town level with the ability to purchase items required items would make it more accessible.
+
+Lord of Rogue - A separate game which loads your character from another game
+Continue the game after amassing wealth from the dungeon.
+Build a castle, build an army, and fend off attacks from other players.
+
+Paying the Rent
+You just try to stay in town for some days.
+You have no money for the inn, the only source of income is the dungeon.

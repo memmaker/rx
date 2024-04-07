@@ -1,0 +1,205 @@
+
+func (u *UI) setAmberStyle() {
+	amberTerminal := tcell.StyleDefault.
+		Foreground(tcell.NewRGBColor(255, 162, 1)).
+		Background(tcell.NewRGBColor(13, 8, 1))
+	u.defaultStyle = amberTerminal
+	u.textColor = color.RGBA{255, 162, 1, 255}
+	u.hiLiteColor = color.RGBA{255, 180, 51, 255}
+}
+
+func (g *GameState) setDOSCP437Style() {
+	g.textIcons = []foundation.TextIcon{
+		// Player: Always hardcoded to index 0
+		{Rune: '☻', Fg: foundation.Yellow, Bg: foundation.Black},
+
+		// walkable tiles: 1-4
+		{Rune: '∙', Fg: foundation.Green, Bg: foundation.Black},
+		{Rune: '▒', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '≡', Fg: foundation.Black, Bg: foundation.Green},
+		{Rune: '╬', Fg: foundation.Brown, Bg: foundation.Black},
+
+		// wall tiles: 5-11
+		{Rune: ' ', Fg: foundation.Brown, Bg: foundation.Black},
+		{Rune: '═', Fg: foundation.Brown, Bg: foundation.Black},
+		{Rune: '║', Fg: foundation.Brown, Bg: foundation.Black},
+		// tl, tr, br, bl
+		{Rune: '╔', Fg: foundation.Brown, Bg: foundation.Black},
+		{Rune: '╗', Fg: foundation.Brown, Bg: foundation.Black},
+		{Rune: '╝', Fg: foundation.Brown, Bg: foundation.Black},
+		{Rune: '╚', Fg: foundation.Brown, Bg: foundation.Black},
+
+		// environment
+		// a trap: 12
+		{Rune: '♦', Fg: foundation.Magenta, Bg: foundation.Black},
+
+		// items: 13-21
+		// gold
+		{Rune: '☼', Fg: foundation.Yellow, Bg: foundation.Black},
+		// food
+		{Rune: '♣', Fg: foundation.Red, Bg: foundation.Black},
+		// weapon
+		{Rune: '↑', Fg: foundation.LightBlue, Bg: foundation.Black},
+		// armor
+		{Rune: '◘', Fg: foundation.LightBlue, Bg: foundation.Black},
+		// scrolls
+		{Rune: '♪', Fg: foundation.LightBlue, Bg: foundation.Black},
+		// potion
+		{Rune: '¡', Fg: foundation.LightBlue, Bg: foundation.Black},
+		// staff
+		{Rune: 'τ', Fg: foundation.LightBlue, Bg: foundation.Black},
+		// ring
+		{Rune: '○', Fg: foundation.LightBlue, Bg: foundation.Black},
+
+		// amulet of yendor
+		{Rune: '♀', Fg: foundation.LightBlue, Bg: foundation.Black},
+	}
+
+	g.textIcons = append(g.textIcons, foundation.TextIcon{Rune: '█', Fg: foundation.Brown, Bg: foundation.Black})
+}
+
+func (g *GameState) setUnixASCIIStyle() {
+	g.defaultBackground = foundation.Black
+	g.defaultForeground = foundation.LightGray
+	g.textIcons = []foundation.TextIcon{
+		// Player: 0
+		{Rune: '@', Fg: foundation.LightGray, Bg: foundation.Black},
+
+		// Dungeon Floors: 1-4
+		{Rune: '.', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '#', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '%', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '+', Fg: foundation.LightGray, Bg: foundation.Black},
+
+		// Dungeon Walls: 5-7
+		{Rune: ' ', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '-', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '|', Fg: foundation.LightGray, Bg: foundation.Black},
+
+		// trap: 8
+		{Rune: '^', Fg: foundation.LightGray, Bg: foundation.Black},
+
+		// items: 9-17
+		// gold
+		{Rune: '*', Fg: foundation.LightGray, Bg: foundation.Black},
+		// food
+		{Rune: ':', Fg: foundation.LightGray, Bg: foundation.Black},
+		// weapon
+		{Rune: ')', Fg: foundation.LightGray, Bg: foundation.Black},
+		// armor
+		{Rune: ']', Fg: foundation.LightGray, Bg: foundation.Black},
+		// scroll
+		{Rune: '?', Fg: foundation.LightGray, Bg: foundation.Black},
+		// potion
+		{Rune: '!', Fg: foundation.LightGray, Bg: foundation.Black},
+		// staff
+		{Rune: '/', Fg: foundation.LightGray, Bg: foundation.Black},
+		// ring
+		{Rune: '=', Fg: foundation.LightGray, Bg: foundation.Black},
+		// amulet(?)
+		{Rune: '&', Fg: foundation.LightGray, Bg: foundation.Black},
+	}
+	g.textIcons = append(g.textIcons, foundation.TextIcon{Rune: '#', Fg: foundation.LightGray, Bg: foundation.Black})
+
+}
+
+func (g *GameState) setHackStyle() {
+	g.textIcons = []foundation.TextIcon{
+		// Player: Always hardcoded to index 0
+		{Rune: '@', Fg: foundation.White, Bg: foundation.Black},
+
+		// walkable tiles: 1-5
+		{Rune: '∙', Fg: foundation.DarkGray, Bg: foundation.Black},
+		{Rune: '▒', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '>', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '<', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '■', Fg: foundation.LightRed, Bg: foundation.Black},
+
+		// wall tiles: 6-12
+		{Rune: ' ', Fg: foundation.Black, Bg: foundation.Black},
+		{Rune: '─', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '│', Fg: foundation.White, Bg: foundation.Black},
+		// tl, tr, br, bl
+		{Rune: '┌', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '┐', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '┘', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '└', Fg: foundation.White, Bg: foundation.Black},
+
+		// trap: 13
+		{Rune: '^', Fg: foundation.LightMagenta, Bg: foundation.Black},
+
+		// items: 14-22
+		// gold
+		{Rune: '*', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// food
+		{Rune: ':', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// weapon
+		{Rune: ')', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// armor
+		{Rune: ']', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// scroll
+		{Rune: '?', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// potion
+		{Rune: '!', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// staff
+		{Rune: '/', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// ring
+		{Rune: '=', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// amulet(?)
+		{Rune: '&', Fg: foundation.LightMagenta, Bg: foundation.Black},
+	}
+
+	g.textIcons = append(g.textIcons, foundation.TextIcon{Rune: '#', Fg: foundation.White, Bg: foundation.Black})
+
+}
+
+//█▄▌▐▀
+
+func (g *GameState) setShadedStyle() {
+	g.textIcons = []foundation.TextIcon{
+		// Player: Always hardcoded to index 0
+		{Rune: '@', Fg: foundation.White, Bg: foundation.Black},
+
+		// walkable tiles: 1-5
+		{Rune: '∙', Fg: foundation.DarkGray, Bg: foundation.Black},
+		{Rune: '░', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '>', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '<', Fg: foundation.White, Bg: foundation.Black},
+		{Rune: '≡', Fg: foundation.Brown, Bg: foundation.Black},
+
+		// wall tiles: 6-12
+		{Rune: ' ', Fg: foundation.Black, Bg: foundation.Black},
+		{Rune: '▀', Fg: foundation.LightGray, Bg: foundation.DarkGray},
+		{Rune: '█', Fg: foundation.LightGray, Bg: foundation.Black},
+		// tl, tr, br, bl
+		{Rune: '█', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '█', Fg: foundation.LightGray, Bg: foundation.Black},
+		{Rune: '▀', Fg: foundation.LightGray, Bg: foundation.DarkGray},
+		{Rune: '▀', Fg: foundation.LightGray, Bg: foundation.DarkGray},
+
+		// trap: 13
+		{Rune: '^', Fg: foundation.LightMagenta, Bg: foundation.Black},
+
+		// items: 14-22
+		// gold
+		{Rune: '*', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// food
+		{Rune: ':', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// weapon
+		{Rune: ')', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// armor
+		{Rune: ']', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// scroll
+		{Rune: '?', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// potion
+		{Rune: '!', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// staff
+		{Rune: '/', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// ring
+		{Rune: '=', Fg: foundation.LightMagenta, Bg: foundation.Black},
+		// amulet(?)
+		{Rune: '&', Fg: foundation.LightMagenta, Bg: foundation.Black},
+
+		// enemies: 23...
+	}
+}

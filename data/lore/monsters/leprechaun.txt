@@ -1,0 +1,32 @@
+[#FFFFFF]
+These small, quick and intensely greedy creatures can not be tricked out of their gold. They can be beaten out of their gold, but they are more likely to walk away with some of your treasure.
+[-]
+
+[#8080a0]Description[-]
+
+The leprechaun (Irish leipreachán or luchorpán) is a diminutive
+supernatural being in Irish folklore, and is often classified as
+a type of solitary fairy; leprechaun-like creatures only became
+prominent in later folklore. They are usually depicted as little
+coat-and-hat-clad bearded folk with a tendency towards mischief,
+and later leprechauns are portrayed as shoe-makers who have a hidden
+pot of gold at the end of a rainbow.
+
+*TODO ADD ROGUE CONTEXT*
+
+The association with gold is often carried over to portrayals in
+media such as NetHack, where they always generate with gold.
+
+
+*TODO ADD ROGUE HISTORY*
+
+The leprechaun is among the many monsters present in the
+very first version of Hack by Andries Brouwer,
+along with "Hack for PDP-11" (which was based on an early draft).
+
+In early versions such as this and NetHack 1.3d, leprechauns used the
+"L" glyph and had slightly different behavior: they would still attempt
+to attack players that closed in as they attempted to keep their distance.
+
+The message clarifying a leprechaun's ability to make player characters
+miss and stumble was added in NetHack 3.6.2.

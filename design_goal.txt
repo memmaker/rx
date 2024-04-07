@@ -1,0 +1,119 @@
+TODO FOR RX1
+
+ - Saving / Loading & Level Persistence
+ - Fix the state and animation order problem - GOOD ENOUGH NOW ?!
+ - Complete Rogue feature set
+   - Level Ups
+   - Complete ID Game
+   - Complete Food Clock
+   - Item Effects
+   - Monster Abilities
+   - Win Condition
+ - Balance
+   - Spawning
+   - Monsters & Combat
+   - Player Progression
+ - Warrior Mode - 4 CP
+ - Adventurer Mode - 40-60 CP
+ - Give a meaning to the fatigue points: add tactics menu
+ - Traps
+ - Lore? Monster descriptions?
+   -> https://nethackwiki.com/wiki/Floating_eye
+ - Nice combat messages, depending on margin of success, also crit tables..
+
+Create a minimal UI Layer for roguelikes
+
+We focus on these constraints:
+ - Terminal Size: 80x25
+ - Map Size: 80x23
+ - 2 Bit Monochrome (no, light, medium, full)
+ - max. 26 Items in inventory/dungeon levels & monsters
+
+
+We want a balanced, modern version of rogue
+Main Issues
+
+- Too much RNG
+  - Monster types / HP
+  - Item types
+- Dungeon can be unsolvable
+  - Not enough food / weapons / spells
+- Starving is too harsh
+- No way to avoid encounters, especially early on
+- Dark rooms are way too annoying
+- Getting stats permanently reduced is too harsh, needs counterplay
+- Gold is useless
+  - Throw gold to distract monsters
+  - Buy items from shops
+  - Ammo for slings
+
+// Magic Logic
+Rings provide exactly one Stat Bonus (and usually are the only source of stat bonuses)
+Potions provides untargeted effects on actors (quaff=self, throw=monsters)
+Scrolls provide global untargeted effects on the environment
+Wands provide targeted effects
+
+
+// Interactions of Grog
+// - Walk - DONE
+// - Bump to attack - DONE
+// - Rest
+// - Run - GOOD ENOUGH
+
+
+// INVENTORY (Manage items)
+// - Open Inventory - DONE
+// - Pick up & Drop item - DONE
+// - Use item - DONE
+// - Zap wand / staff - DONE
+// - Throw item - DONE
+
+// OTHER
+// - Pray
+
+// Interactions of Moria
+
+// BASIC (9 Numpad Keys)
+// - Walk
+// - Bump to attack
+// - Rest
+// - Run
+
+// INTERACT WITH MAP
+// - Go up/down stairs
+
+// INVENTORY (Manage items)
+// - Wear / wield / take off / remove (2 keys)
+// - Pick up & Drop item (2 keys)
+// - Throw item (1 key)
+
+// ENVIRONMENT (Interact with the map)
+// - Look / Identify (Sticky Targeting) (1 key)
+// - Search for traps or doors (Automatically)
+// - Disarm trap/chest (Bump)
+// - Go up/down stairs (Bump)
+// - Open Door / Close Door (Bump & Context Action) (1 key)
+// - Spike a door (Item + Direction)
+// - Open Chest (Bump)
+// - Bash Item/Door/Monster (Action + Direction) (1 key)
+
+// USE ITEM (Trigger effects)
+// ALL OF THESE SHOULD JUST BE: "USE ITEM" (1 key)
+// - Quaff potion
+// - Read scroll
+// - Eat food
+// - Zap wand / staff
+// - Fill lamp with Oil
+// - Cast magic spell/prayer from book
+
+// MODALS (Show info / Make choices) (4 keys)
+// - Buy & Sell
+// - Show inventory
+// - Show equipment
+// - Show Character Information
+// - Show learn spell from Book menu
+// - Show Map
+// - Browse a spell book
+
+
+

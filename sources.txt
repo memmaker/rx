@@ -1,0 +1,51 @@
+https://github.com/MestreLion/roguepc/blob/main/src/
+
+
+We need different types of modifications to stats:
+
+Flat Modifier, Capped or Min Value, for one roll
+Flat / Percentage, while a condition holds
+
+Apply the margin of one roll to the next roll of a certain type,
+in the next (n) turn(s) only
+
+Ways to modify a stat:
+ - func EVA(in) -> out
+   - Percentage modifier
+   - Flat modifier
+   - Clamp to min/max value
+
+Timeframes for modifications:
+ - While a condition is met
+   - Hasn't been applied for N turns/rolls
+   - Status effect is active
+   - Stat is above/below a certain value
+   - When next to a wall
+ - Two modes
+   - Apply once and remove automatically
+   - Apply as long as possible, until manually removed
+
+modifier = {
+  type: 'flat',
+  value: 5,
+  apply: 'once',
+}
+
+Char.AddMod(modifier, shouldApply)
+ - all stat modifiers are applied directly to the stat itself
+ - no modification outside of the char
+
+Rules.RollRangedAttack(shooter, target, weapon)
+ - all modifiers are applied in by the method in the rules.
+ - no rolls outside the rules
+
+ONLY two Places in the code that need to apply modifiers:
+ - To stats directly
+   - When doing a success roll bases on a stat the roll modifiers need to be applied
+   - When looking up a stat during a roll or for the char sheet, the modifiers need to be applied
+ - According to the circumstances of a specific roll
+   - Modifiers based on the size or distance to a target are of a different nature, they are not modifying a specific stat but a task
+
+SO NO Modifiers except
+ - Stat mods explicitly added to a char
+ - Modifiers that are encapsulated in a rules roll method

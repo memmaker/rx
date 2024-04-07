@@ -1,0 +1,7 @@
+.idea/
+RogueUI
+builds/
+.DS_Store
+*.cast
+*.gif
+scores.bin

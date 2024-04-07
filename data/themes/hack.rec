@@ -1,0 +1,202 @@
+%rec: player
+
+# Special
+Player: @
+Player_Color: White
+
+%rec: colors
+
+Black: 0 | 0 | 0
+DarkGray: 85 | 85 | 85
+VeryDarkGray: 40 | 40 | 40
+Blue: 0 | 64 | 255
+LightBlue: 85 | 85 | 255
+VeryLightBlue: 149 | 178 | 222
+Green: 0 | 170 | 0
+LightGreen: 85 | 255 | 85
+Cyan: 0 | 170 | 170
+LightCyan: 85 | 255 | 255
+Red: 192 | 0 | 0
+LightRed: 255 | 85 | 85
+Magenta: 170 | 0 | 170
+LightMagenta: 255 | 85 | 255
+Brown: 170 | 85 | 0
+LightBrown: 192 | 128 | 64
+Yellow: 255 | 255 | 85
+DarkYellow: 191 | 188 | 2
+LightGray: 170 | 170 | 170
+White: 255 | 255 | 255
+
+%rec: ui
+
+BorderBackground: Black
+BorderForeground: LightGray
+#
+MapDefaultForeground: LightGray
+MapDefaultBackground: Black
+#
+MapDefaultForegroundLight: White
+MapDefaultForegroundDark: DarkGray
+#
+UIForeground: LightGray
+UIBackground: Black
+#
+UIForegroundHighlighted: White
+
+%rec: inventory
+#
+# Inventory Item colors
+ItemGold: Yellow
+ItemFood: LightGreen
+ItemWeapons: LightGray
+ItemArmor: LightBrown
+ItemScrolls: LightGray
+ItemPotions: Blue
+ItemWands: Green
+ItemRings: Red
+ItemAmulets: LightMagenta
+
+%rec: map
+
+# World Map
+TileEmpty: $
+TileEmpty_Colors: Black | Black
+TileFloor: .
+TileFloor_Colors: LightGray | Black
+TileWall: #
+TileWall_Colors: LightGray | Black
+TileRoomFloor: .
+TileRoomFloor_Colors: LightGray | Black
+TileRoomWallHorizontal: ─
+TileRoomWallHorizontal_Colors: LightGray | Black
+TileRoomWallVertical: │
+TileRoomWallVertical_Colors: LightGray | Black
+TileRoomWallCornerTopLeft: ┌
+TileRoomWallCornerTopLeft_Colors: LightGray | Black
+TileRoomWallCornerTopRight: ┐
+TileRoomWallCornerTopRight_Colors: LightGray | Black
+TileRoomWallCornerBottomRight: ┘
+TileRoomWallCornerBottomRight_Colors: LightGray | Black
+TileRoomWallCornerBottomLeft: └
+TileRoomWallCornerBottomLeft_Colors: LightGray | Black
+TileCorridorFloor: ▒
+TileCorridorFloor_Colors: LightGray | Black
+TileCorridorWall: #
+TileCorridorWall_Colors: Black | Black
+TileCorridorWallHorizontal: #
+TileCorridorWallHorizontal_Colors: Black | Black
+TileCorridorWallVertical: #
+TileCorridorWallVertical_Colors: Black | Black
+TileCorridorWallCornerTopLeft: #
+TileCorridorWallCornerTopLeft_Colors: Black | Black
+TileCorridorWallCornerTopRight: #
+TileCorridorWallCornerTopRight_Colors: Black | Black
+TileCorridorWallCornerBottomRight: #
+TileCorridorWallCornerBottomRight_Colors: Black | Black
+TileCorridorWallCornerBottomLeft: #
+TileCorridorWallCornerBottomLeft_Colors: Black | Black
+TileWallTJunctionTop: |
+TileWallTJunctionTop_Colors: LightGray | Black
+TileWallTJunctionRight: -
+TileWallTJunctionRight_Colors: LightGray | Black
+TileWallTJunctionBottom: |
+TileWallTJunctionBottom_Colors: LightGray | Black
+TileWallTJunctionLeft: -
+TileWallTJunctionLeft_Colors: LightGray | Black
+TileDoorOpen: ■
+TileDoorOpen_Colors: LightRed | Black
+TileDoorClosed: ■
+TileDoorClosed_Colors: LightRed | Black
+TileDoorBroken: ■
+TileDoorBroken_Colors: LightRed | Black
+TileDoorLocked: ■
+TileDoorLocked_Colors: LightRed | Black
+TileStairsUp: <
+TileStairsUp_Colors: White | Black
+TileStairsDown: >
+TileStairsDown_Colors: White | Black
+TileMountain: ^
+TileMountain_Colors: LightGray | Black
+TileGrass: ,
+TileGrass_Colors: LightGray | Black
+TileTree: §
+TileTree_Colors: LightGray | Black
+TileWater: ~
+TileWater_Colors: Blue | Black
+TileLava: ~
+TileLava_Colors: Red | Black
+TileChasm: .
+TileChasm_Colors: DarkGray | Black
+TileVendorGeneral: 1
+TileVendorGeneral_Colors: Yellow | Black
+TileVendorWeapons: 2
+TileVendorWeapons_Colors: LightGray | Black
+TileVendorArmor: 3
+TileVendorArmor_Colors: LightBrown | Black
+TileVendorAlchemist: 4
+TileVendorAlchemist_Colors: Blue | Black
+
+%rec: items
+
+# Items
+ItemGold: *
+ItemGold_Colors: Yellow | Black
+#
+ItemFood: :
+ItemFood_Colors: LightGreen | Black
+#
+ItemWeapons: (
+ItemWeapons_Colors: LightBrown | Black
+#
+ItemArmor: [
+ItemArmor_Colors: Brown | Black
+#
+ItemScrolls: ?
+ItemScrolls_Colors: LightGray | Black
+#
+ItemPotions: !
+ItemPotions_Colors: Blue | Black
+#
+ItemWands: /
+ItemWands_Colors: Green | Black
+#
+ItemRings: =
+ItemRings_Colors: Red | Black
+#
+ItemAmulets: &
+ItemAmulets_Colors: LightMagenta | Black
+
+%rec: objects
+
+# Objects
+ObjectClosedDoor: ■
+ObjectClosedDoor_Colors: LightGray | Black
+#
+ObjectOpenDoor: ■
+ObjectOpenDoor_Colors: LightGray | Black
+#
+ObjectTrap: ^
+ObjectTrap_Colors: LightGray | Black
+#
+ObjectExplodingBarrel: ^
+ObjectExplodingBarrel_Colors: LightRed | Black
+
+%rec: borders
+
+UIBorder_Horizontal: ─
+UIBorder_Vertical: │
+UIBorder_TopLeft: ┌
+UIBorder_TopRight: ┐
+UIBorder_BottomLeft: └
+UIBorder_BottomRight: ┘
+UIBorder_LeftT: -
+UIBorder_RightT: -
+UIBorder_TopT: |
+UIBorder_BottomT: |
+UIBorder_Cross: +
+UIBorder_HorizontalFocus: ─
+UIBorder_VerticalFocus: │
+UIBorder_TopLeftFocus: ┌
+UIBorder_TopRightFocus: ┐
+UIBorder_BottomLeftFocus: └
+UIBorder_BottomRightFocus: ┘
