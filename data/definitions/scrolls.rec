@@ -44,6 +44,7 @@ charges: 1
 probability: 27
 worth: 100
 always_id_on_use: true
+use_effect: identify_item
 
 name: scare monster
 internal_name: scare_monster
@@ -77,6 +78,7 @@ category: scrolls
 charges: 1
 probability: 10
 worth: 150
+always_id_on_use: true
 
 name: enchant armor
 internal_name: enchant_armor
@@ -85,6 +87,7 @@ charges: 1
 probability: 8
 worth: 160
 use_effect: enchant_armor
+always_id_on_use: true
 
 name: create monster
 internal_name: create_monster
@@ -101,6 +104,7 @@ category: scrolls
 charges: 1
 probability: 8
 worth: 105
+
 
 name: aggravate monsters
 internal_name: aggravate_monsters
@@ -125,3 +129,4 @@ charges: 1
 probability: 1
 worth: 300
 use_effect: vorpalize
+always_id_on_use: true

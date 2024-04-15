@@ -29,7 +29,7 @@ type Actor struct {
 	inventory *Inventory
 	equipment *Equipment
 
-	statusFlags *foundation.Flags
+	statusFlags *foundation.MapFlags
 
 	intrinsicAttacks    []IntrinsicAttack
 	intrinsicZapEffects []string
@@ -38,8 +38,8 @@ type Actor struct {
 	icon                   rune
 	color                  string
 	currentIntrinsicAttack int
-	flagCounters           map[uint32]int
 	sizeModifier           int
+	timeEnergy             int
 }
 
 func (a *Actor) Color() string {
@@ -48,7 +48,7 @@ func (a *Actor) Color() string {
 
 func NewPlayer(name string, playerIcon rune, playerColor string) *Actor {
 	player := NewActor(name, playerIcon, playerColor)
-	player.charSheet.SetCharacterPointsReceived(4)
+	player.charSheet.SetCharacterPointsReceived(7)
 	player.charSheet.SetAdjustment(rpg.Strength, 0)
 	player.charSheet.SetAdjustment(rpg.Dexterity, 0)
 	player.charSheet.SetAdjustment(rpg.Intelligence, 0)
@@ -57,9 +57,10 @@ func NewPlayer(name string, playerIcon rune, playerColor string) *Actor {
 	player.charSheet.SetAdjustment(rpg.Perception, 0)
 	player.charSheet.SetSkillLevel(rpg.SkillNameMeleeWeapons, 2)
 	player.charSheet.SetSkillLevel(rpg.SkillNameBrawling, 1)
-	player.charSheet.SetSkillLevel(rpg.SkillNameShield, 0)
-	player.charSheet.SetSkillLevel(rpg.SkillNameMissileWeapons, 0)
+	player.charSheet.SetSkillLevel(rpg.SkillNameShield, 1)
+	player.charSheet.SetSkillLevel(rpg.SkillNameMissileWeapons, 1)
 	player.charSheet.SetSkillLevel(rpg.SkillNameThrowing, 1)
+	player.charSheet.SetSkillLevel(rpg.SkillNameStealth, 1)
 	return player
 }
 
@@ -67,16 +68,14 @@ func NewActor(name string, icon rune, color string) *Actor {
 	characterSheet := rpg.NewCharacterSheet()
 
 	a := &Actor{
-		name:         name,
-		icon:         icon,
-		color:        color,
-		inventory:    NewInventory(23),
-		equipment:    NewEquipment(),
-		charSheet:    characterSheet,
-		statusFlags:  foundation.NewFlags(),
-		flagCounters: make(map[uint32]int),
+		name:        name,
+		icon:        icon,
+		color:       color,
+		inventory:   NewInventory(23),
+		equipment:   NewEquipment(),
+		charSheet:   characterSheet,
+		statusFlags: foundation.NewMapFlags(),
 	}
-	a.statusFlags.SetOnChangeHandler(a.OnStatusFlagChange)
 
 	// add persistent modifiers, that always apply when a condition is met here
 
@@ -90,6 +89,10 @@ func NewActor(name string, icon rune, color string) *Actor {
 	characterSheet.AddStatModifier(rpg.Dodge, ModFlatWhen(-4, "stunned", a.IsStunned))
 	characterSheet.AddStatModifier(rpg.Dodge, ModFlatWhen(-4, "stunned", a.IsStunned))
 	characterSheet.AddStatModifier(rpg.Dodge, ModFlatWhen(-4, "stunned", a.IsStunned))
+
+	characterSheet.AddStatModifier(rpg.Strength, ModFlatWhen(-1, "hungry", a.IsHungry))
+	characterSheet.AddStatModifier(rpg.Strength, ModFlatWhen(-3, "starving", a.IsStarving))
+
 	return a
 }
 
@@ -230,7 +233,7 @@ func (a *Actor) GetListInfo() string {
 }
 
 func (a *Actor) IsStunned() bool {
-	return a.HasFlag(foundation.IsStunned)
+	return a.HasFlag(foundation.FlagStun)
 }
 
 func (a *Actor) Position() geometry.Point {
@@ -241,14 +244,14 @@ func (a *Actor) SetPosition(pos geometry.Point) {
 }
 
 func (a *Actor) Name() string {
-	if a.HasFlag(foundation.IsInvisible) {
+	if a.HasFlag(foundation.FlagInvisible) {
 		return "something"
 	}
 	return a.name
 }
 
 func (a *Actor) IsDrawn(playerCanSeeInvisible bool) bool {
-	return !a.HasFlag(foundation.IsInvisible) || playerCanSeeInvisible
+	return !a.HasFlag(foundation.FlagInvisible) || playerCanSeeInvisible
 }
 
 func (a *Actor) GetInventory() *Inventory {
@@ -272,7 +275,7 @@ func (a *Actor) GetDamageResistance() int {
 	return totalDRFromArmor + totalDRFromEquipment
 }
 
-func (a *Actor) GetFlags() *foundation.Flags {
+func (a *Actor) GetFlags() *foundation.MapFlags {
 	return a.statusFlags
 }
 
@@ -280,7 +283,7 @@ func (a *Actor) IsAlive() bool {
 	return a.charSheet.GetResource(rpg.HitPoints) > 0
 }
 
-func (a *Actor) HasFlag(flag uint32) bool {
+func (a *Actor) HasFlag(flag foundation.ActorFlag) bool {
 	return a.statusFlags.IsSet(flag) || a.GetEquipment().ContainsFlag(flag)
 }
 
@@ -289,11 +292,11 @@ func (a *Actor) TakeDamage(amount int) {
 }
 
 func (a *Actor) IsSleeping() bool {
-	return a.HasFlag(foundation.IsSleeping)
+	return a.HasFlag(foundation.FlagSleep)
 }
 
 func (a *Actor) WakeUp() {
-	a.statusFlags.Unset(foundation.IsSleeping)
+	a.statusFlags.Unset(foundation.FlagSleep)
 }
 
 func (a *Actor) SetIntrinsicZapEffects(effects []string) {
@@ -312,7 +315,7 @@ func (a *Actor) GetIntrinsicUseEffects() []string {
 	return a.intrinsicUseEffects
 }
 func (a *Actor) AddGold(i int) {
-	a.charSheet.AddToCounter(rpg.CounterGold, i)
+	a.statusFlags.Increase(foundation.FlagGold, i)
 }
 
 func (a *Actor) GetIntrinsicDamageAsString() string {
@@ -324,15 +327,8 @@ func (a *Actor) GetIntrinsicDamageAsString() string {
 }
 
 func (a *Actor) RemoveLevelStatusEffects() {
-	a.statusFlags.Unset(foundation.SeeFood)
-	a.statusFlags.Unset(foundation.SeeMagic)
-}
-
-func (a *Actor) GetFlagsCombined() uint32 {
-	base := a.statusFlags.Underlying()
-	equip := a.GetEquipment().GetFlagsCombined()
-
-	return base | equip
+	a.statusFlags.Unset(foundation.FlagSeeFood)
+	a.statusFlags.Unset(foundation.FlagSeeMagic)
 }
 
 func (a *Actor) Heal(amount int) {
@@ -351,6 +347,8 @@ func (a *Actor) GetMelee(enemyInternalName string) (effectiveSkill int, damageDi
 	if equipment.HasMeleeWeaponEquipped() {
 		weapon := equipment.GetMainWeapon(MeleeAttack).GetWeapon()
 		toHit, toDamage := weapon.GetVorpalBonus(enemyInternalName)
+		strBonus := min(10, a.GetStrength()-10)
+		toDamage += strBonus
 		return a.GetSkill(weapon.GetSkillUsed()) + toHit, weapon.GetDamageDice().WithBonus(toDamage)
 	}
 	if len(a.intrinsicAttacks) > 0 {
@@ -377,7 +375,7 @@ func (a *Actor) ChooseIntrinsicAttack() (int, rpg.Dice) {
 	}
 	randomIndexOfIntrinsicDamage := rand.Intn(len(a.intrinsicAttacks))
 	a.currentIntrinsicAttack = randomIndexOfIntrinsicDamage
-	return a.intrinsicAttacks[randomIndexOfIntrinsicDamage].EffectiveSkill, a.intrinsicAttacks[randomIndexOfIntrinsicDamage].DamageDice
+	return a.intrinsicAttacks[randomIndexOfIntrinsicDamage].BaseSkill, a.intrinsicAttacks[randomIndexOfIntrinsicDamage].DamageDice
 }
 func (a *Actor) GetHitPoints() int {
 	return a.charSheet.GetResource(rpg.HitPoints)
@@ -405,7 +403,13 @@ func (a *Actor) IsFatigued() bool {
 }
 
 func (a *Actor) GetBasicSpeed() int {
-	return a.charSheet.GetStat(rpg.BasicSpeed)
+	factor := 1.0
+	if a.HasFlag(foundation.FlagSlow) {
+		factor = 0.5
+	} else if a.HasFlag(foundation.FlagHaste) {
+		factor = 2.0
+	}
+	return int(float64(a.charSheet.GetStat(rpg.BasicSpeed)) * factor)
 }
 
 func (a *Actor) GetBlockDefenseScore() int {
@@ -425,7 +429,7 @@ func (a *Actor) getMeleeSkillInUse() int {
 		return a.GetSkill(weapon.GetSkillUsed())
 	}
 	if len(a.intrinsicAttacks) > 0 {
-		return a.intrinsicAttacks[a.currentIntrinsicAttack].EffectiveSkill
+		return a.intrinsicAttacks[a.currentIntrinsicAttack].BaseSkill
 	}
 	return a.GetSkill(rpg.SkillNameBrawling)
 }
@@ -511,8 +515,59 @@ func (a *Actor) GetDetailInfo() []string {
 	result = append(result, fmt.Sprintf("Name: %s [%d/%d]", a.Name(), a.charSheet.GetCharacterPointsBalance(), a.charSheet.GetCharacterPointsReceived()), "")
 
 	result = append(result, rows...)
+	result = append(result, "", "> Attacks:")
 
-	result = append(result, "", "> Active Defenses:")
+	if len(a.intrinsicAttacks) > 0 {
+		var attackRows []util.TableRow
+		for _, intrinsicAttack := range a.intrinsicAttacks {
+			asFloatPercent := rpg.ChanceOfSuccess(intrinsicAttack.BaseSkill)
+			attackRows = append(attackRows, util.TableRow{
+				Columns: []string{
+					fmt.Sprintf("%s:", intrinsicAttack.AttackName),
+					fmt.Sprintf("%d", intrinsicAttack.BaseSkill),
+					fmt.Sprintf("(%d%%)", int(asFloatPercent*100)),
+					fmt.Sprintf("Dmg: %s", intrinsicAttack.DamageDice.ShortString()),
+				},
+			})
+		}
+		attackLines := util.TableLayout(attackRows, []util.TextAlignment{util.AlignLeft, util.AlignLeft, util.AlignLeft, util.AlignLeft})
+		result = append(result, attackLines...)
+	} else {
+		var attackRows []util.TableRow
+		// melee attack
+		meleeSkill, meleeDamage := a.GetMelee("")
+		asFloatPercent := rpg.ChanceOfSuccess(meleeSkill)
+		attackRows = append(attackRows, util.TableRow{
+			Columns: []string{
+				"melee:",
+				fmt.Sprintf("%d", meleeSkill),
+				fmt.Sprintf("(%d%%)", int(asFloatPercent*100)),
+				fmt.Sprintf("Dmg: %s", meleeDamage.ShortString()),
+			},
+		})
+
+		// ranged
+		if a.GetEquipment().HasMissileLauncherEquipped() {
+			launcher := a.GetEquipment().GetMissileLauncher()
+			missile := a.GetEquipment().GetNextQuiveredMissile()
+			if missile != nil {
+				rangedSkill, rangedDamage := a.GetRanged("", launcher, missile)
+				asFloatPercent = rpg.ChanceOfSuccess(rangedSkill)
+				attackRows = append(attackRows, util.TableRow{
+					Columns: []string{
+						"ranged:",
+						fmt.Sprintf("%d", rangedSkill),
+						fmt.Sprintf("(%d%%)", int(asFloatPercent*100)),
+						fmt.Sprintf("Dmg: %s", rangedDamage.ShortString()),
+					},
+				})
+			}
+		}
+		attackLines := util.TableLayout(attackRows, []util.TextAlignment{util.AlignLeft, util.AlignLeft, util.AlignLeft, util.AlignLeft})
+		result = append(result, attackLines...)
+	}
+
+	result = append(result, "", "> Defenses:")
 
 	defenseRows := util.TableLayout([]util.TableRow{
 		{Columns: statLineWithSuccess(rpg.Dodge, a.GetDodgeDefenseScore())},
@@ -529,9 +584,20 @@ func (a *Actor) GetDetailInfo() []string {
 		{Columns: skillLineWithSuccess(rpg.SkillNameShield, a.GetSkill(rpg.SkillNameShield))},
 		{Columns: skillLineWithSuccess(rpg.SkillNameThrowing, a.GetSkill(rpg.SkillNameThrowing))},
 		{Columns: skillLineWithSuccess(rpg.SkillNameMissileWeapons, a.GetSkill(rpg.SkillNameMissileWeapons))},
+		{Columns: skillLineWithSuccess(rpg.SkillNameStealth, a.GetSkill(rpg.SkillNameStealth))},
 	}, []util.TextAlignment{util.AlignLeft, util.AlignLeft, util.AlignLeft, util.AlignLeft})
 
 	result = append(result, skillRows...)
+
+	if len(a.intrinsicUseEffects) > 0 || len(a.intrinsicZapEffects) > 0 {
+		result = append(result, "", "> Abilities:")
+		for _, abilityName := range a.intrinsicUseEffects {
+			result = append(result, abilityName)
+		}
+		for _, abilityName := range a.intrinsicZapEffects {
+			result = append(result, abilityName)
+		}
+	}
 
 	return result
 }
@@ -585,32 +651,6 @@ func (a *Actor) GetHealth() int {
 
 }
 
-func (a *Actor) GetFlagCounter(flagName uint32) int {
-	return a.flagCounters[flagName]
-}
-
-func (a *Actor) DecrementFlagCounter(flagName uint32) {
-	a.flagCounters[flagName]--
-}
-
-func (a *Actor) SetFlagCounter(flagName uint32, value int) {
-	a.flagCounters[flagName] = value
-}
-
-func (a *Actor) IncrementFlagCounter(flagName uint32) {
-	a.flagCounters[flagName]++
-}
-
-func (a *Actor) OnStatusFlagChange(flag uint32, value bool) {
-	if flag == foundation.IsStunned {
-		if value {
-			a.SetFlagCounter(flag, 1)
-		} else {
-			delete(a.flagCounters, flag)
-		}
-	}
-}
-
 func (a *Actor) IsLaunching(missile *Item) bool {
 	return missile.IsMissile() && a.GetEquipment().HasMissileLauncherEquippedForMissile(missile.GetWeapon())
 }
@@ -628,17 +668,92 @@ func (a *Actor) AddCharacterPoints(amount int) {
 }
 
 func (a *Actor) HasGold(price int) bool {
-	return a.charSheet.GetCounter(rpg.CounterGold) >= price
+	return a.statusFlags.Get(foundation.FlagGold) >= price
 }
 
 func (a *Actor) RemoveGold(price int) {
-	a.charSheet.AddToCounter(rpg.CounterGold, -price)
+	a.statusFlags.Decrease(foundation.FlagGold, price)
 }
 
 func (a *Actor) GetGold() int {
-	return a.charSheet.GetCounter(rpg.CounterGold)
+	return a.statusFlags.Get(foundation.FlagGold)
 }
 
 func (a *Actor) NeedsHealing() bool {
 	return a.GetHitPoints() < a.GetHitPointsMax()
+}
+
+func (a *Actor) IsHungry() bool {
+	return a.statusFlags.Get(foundation.FlagHunger) > 0
+}
+
+func (a *Actor) IsStarving() bool {
+	return a.statusFlags.Get(foundation.FlagHunger) > 1
+}
+
+func (a *Actor) Satiate() {
+	a.statusFlags.Unset(foundation.FlagHunger)
+	a.statusFlags.Unset(foundation.FlagTurnsSinceEating)
+}
+
+func (a *Actor) LooseFatigue(amount int) {
+	a.charSheet.DecreaseResourceBy(rpg.FatiguePoints, amount)
+}
+
+func (a *Actor) AddFatiguePoints(amount int) {
+	a.charSheet.IncreaseResourceBy(rpg.FatiguePoints, amount)
+}
+
+func (a *Actor) GetPerception() int {
+	return a.charSheet.GetStat(rpg.Perception)
+}
+
+func (a *Actor) CanPerceivePlayer(stealthSkillOfPlayer int, distance int) bool {
+	winner := rpg.SkillContest(stealthSkillOfPlayer, a.GetPerception()-distance)
+	return winner == 2
+}
+
+func (a *Actor) SetSleeping() {
+	flags := a.GetFlags()
+	flags.Set(foundation.FlagSleep)
+	flags.Unset(foundation.FlagAwareOfPlayer)
+	flags.Unset(foundation.FlagScared)
+}
+
+func (a *Actor) SetUnwary() {
+	flags := a.GetFlags()
+	flags.Unset(foundation.FlagSleep)
+	flags.Unset(foundation.FlagAwareOfPlayer)
+}
+
+func (a *Actor) SetAware() {
+	flags := a.GetFlags()
+	flags.Unset(foundation.FlagSleep)
+	flags.Set(foundation.FlagAwareOfPlayer)
+}
+
+func (a *Actor) IsBlind() bool {
+	return a.HasFlag(foundation.FlagBlind)
+}
+
+func (a *Actor) AddTimeEnergy(timeSpent int) {
+	a.timeEnergy += timeSpent
+}
+
+func (a *Actor) HasEnergyForActions() bool {
+	return a.timeEnergy >= a.timeNeededForActions()
+}
+
+func (a *Actor) timeNeededForActions() int {
+	speed := a.GetBasicSpeed()
+	timeNeeded := 100 / speed
+	return timeNeeded
+}
+
+func (a *Actor) SpendTimeEnergy() {
+	a.timeEnergy -= a.timeNeededForActions()
+}
+
+func (a *Actor) AfterTurn() {
+	a.GetEquipment().AfterTurn()
 }

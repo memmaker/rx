@@ -54,16 +54,16 @@ func (s Stat) GetDerivedValueFromLevelAdjustments(levels int, getCharStat func(s
 		perception := getCharStat(Intelligence) + adjustment
 		return perception
 	case BasicSpeed:
-		speed := ((getCharStat(Dexterity) + getCharStat(Health)) / 4) + adjustment
+		speed := ((getCharStat(Dexterity) + getCharStat(Health)) / 2) + adjustment
 		return speed
 	case FatiguePoints:
-		fatigue := getCharStat(Health) + adjustment
+		fatigue := 1 + (getCharStat(Health) / 5) + adjustment
 		return fatigue
 	case HitPoints:
 		hp := getCharStat(Health) + adjustment
 		return hp
 	case Dodge:
-		dodge := 3 + getCharStat(BasicSpeed)
+		dodge := 3 + (getCharStat(BasicSpeed) / 2)
 		return dodge
 	case Block:
 		block := 3 + (getSkill(SkillNameShield) / 2)

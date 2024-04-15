@@ -21,6 +21,7 @@ a -> launch
 s -> aim
 d -> quick_shot
 , -> pickup
+. -> wait
 > -> map_interaction
 
 

@@ -24,6 +24,7 @@ type Configuration struct {
 	Theme                   string
 	WallSlide               bool
 }
+
 func NewConfigurationFromFile(file string) *Configuration {
 	configuration := NewDefaultConfiguration()
 	if !util.FileExists(file) {
@@ -77,11 +78,11 @@ func NewDefaultConfiguration() *Configuration {
 		AnimateDamage:      true,
 		AnimateEffects:     true,
 		AnimateProjectiles: true,
-		AutoPickup: 		true,
+		AutoPickup:         true,
 		WallSlide:          true,
 		PlayerName:         "Rogue",
-		KeyMapFile: 		path.Join("data", "keymaps", "default.txt"),
-		Theme: 				path.Join("data", "themes", "ascii.rec"),
+		KeyMapFile:         path.Join("data", "keymaps", "default.txt"),
+		Theme:              path.Join("data", "themes", "ascii.rec"),
 	}
 }
 

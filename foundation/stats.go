@@ -15,7 +15,6 @@ const (
 	HudStrength         HudValue = "Strength"
 	HudDexterity        HudValue = "Dexterity"
 	HudIntelligence     HudValue = "Intelligence"
-	HudActiveDefense    HudValue = "AD"
 	HudDamageResistance HudValue = "DR"
 	HudDungeonLevel     HudValue = "Dungeon Level"
 	HudTurnsTaken       HudValue = "Turns Taken"

@@ -23,7 +23,6 @@ type Character struct {
 
 	// Current state
 	resources map[Stat]int
-	counters  map[Counter]int
 
 	// Lookups
 	statModifiers  map[Stat][]Modifier
@@ -31,6 +30,7 @@ type Character struct {
 
 	characterPointsReceived int
 	statChangedHandler      func()
+	resourceChangedHandler  func()
 }
 
 func NewCharacterSheet() *Character {
@@ -51,10 +51,9 @@ func NewCharacterSheet() *Character {
 			SkillNameMeleeWeapons: 0,
 			SkillNameShield:       0,
 		},
-		counters: make(map[Counter]int),
 		resources: map[Stat]int{
 			HitPoints:     10,
-			FatiguePoints: 10,
+			FatiguePoints: 3,
 		},
 		statModifiers:  make(map[Stat][]Modifier),
 		skillModifiers: make(map[SkillName][]Modifier),
@@ -62,6 +61,10 @@ func NewCharacterSheet() *Character {
 }
 func (c *Character) SetStatChangedHandler(f func()) {
 	c.statChangedHandler = f
+}
+func (c *Character) SetResourceChangedHandler(f func()) {
+	c.resourceChangedHandler = f
+
 }
 func (c *Character) AddStatModifier(stat Stat, modifier Modifier) {
 	c.statModifiers[stat] = append(c.statModifiers[stat], modifier)
@@ -232,6 +235,12 @@ func (c *Character) onResourceChanged(stat Stat) {
 	if c.resources[stat] > c.GetStat(stat) {
 		c.resources[stat] = c.GetStat(stat)
 	}
+	if c.resources[stat] < 0 {
+		c.resources[stat] = 0
+	}
+	if c.resourceChangedHandler != nil {
+		c.resourceChangedHandler()
+	}
 }
 
 func (c *Character) onStatChanged(stat Stat) {
@@ -253,14 +262,6 @@ func (c *Character) onStatChanged(stat Stat) {
 		}
 		return
 	}
-}
-
-func (c *Character) AddToCounter(counter Counter, amount int) {
-	c.counters[counter] += amount
-}
-
-func (c *Character) GetCounter(name Counter) int {
-	return c.counters[name]
 }
 
 func (c *Character) pointsSpent(state Stat) int {
@@ -369,6 +370,10 @@ func (c *Character) GetActiveDefenseScore(defense ActiveDefenseType, parryDefens
 
 func (c *Character) HasCharPointsLeft() bool {
 	return c.GetCharacterPointsBalance() > 0
+}
+
+func (c *Character) GetLevelAdjustments(stat Stat) int {
+	return c.levelAdjustments[stat]
 }
 
 type ActiveDefenseType int

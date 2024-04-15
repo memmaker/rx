@@ -1,32 +1,48 @@
-[#FFFFFF]
-These small, quick and intensely greedy creatures can not be tricked out of their gold. They can be beaten out of their gold, but they are more likely to walk away with some of your treasure.
-[-]
+[#FFFFFF]These small, quick and intensely greedy creatures can not be tricked out of their gold. They can be beaten out of their gold, but they are more likely to walk away with some of your treasure.[-]
 
-[#8080a0]Description[-]
+[#f5e342]Description[-]
 
-The leprechaun (Irish leipreachán or luchorpán) is a diminutive
-supernatural being in Irish folklore, and is often classified as
-a type of solitary fairy; leprechaun-like creatures only became
-prominent in later folklore. They are usually depicted as little
-coat-and-hat-clad bearded folk with a tendency towards mischief,
-and later leprechauns are portrayed as shoe-makers who have a hidden
-pot of gold at the end of a rainbow.
+The leprechaun (Irish leipreachán or luchorpán) is a diminutive supernatural being in Irish folklore, and is often classified as a type of solitary fairy; leprechaun-like creatures only became prominent in later folklore. They are usually depicted as little coat-and-hat-clad bearded folk with a tendency towards mischief, and later leprechauns are portrayed as shoe-makers who have a hidden pot of gold at the end of a rainbow.
 
-*TODO ADD ROGUE CONTEXT*
-
-The association with gold is often carried over to portrayals in
-media such as NetHack, where they always generate with gold.
+The association with gold is often carried over to portrayals in media such as Rogue, where they steal gold or NetHack, where they always generate with gold.
 
 
-*TODO ADD ROGUE HISTORY*
+[#f5e342]Rogue Trivia[-]
 
-The leprechaun is among the many monsters present in the
-very first version of Hack by Andries Brouwer,
-along with "Hack for PDP-11" (which was based on an early draft).
+Present from the very start (Rogue 3.6) and in every version since, the Leprechaun didn't change by much. It will steal your gold and then gets removed from the level entirely, essentially removing your stash of gold from the game.
 
-In early versions such as this and NetHack 1.3d, leprechauns used the
-"L" glyph and had slightly different behavior: they would still attempt
-to attack players that closed in as they attempted to keep their distance.
+Note that this monster doesn't ever attack normally, it will go right for your gold.
 
-The message clarifying a leprechaun's ability to make player characters
-miss and stumble was added in NetHack 3.6.2.
+We can infer from the code, that the Leprechaun is not a trivial cutpurse, but uses magic to rob the player of gold. The player is allowed a save vs. magic to resist the effect.
+
+You will see the message "Your purse feels lighter" when the Leprechaun successfully steals gold from you. In the versions following 3.6, the message is not capitalized.
+
+
+when 'L':
+{
+	/*
+	 * Leperachaun steals some gold
+	 */
+	register long lastpurse;
+
+	lastpurse = purse;
+	purse -= GOLDCALC;
+	if (!save(VS_MAGIC))
+		purse -= GOLDCALC + GOLDCALC + GOLDCALC + GOLDCALC;
+	if (purse < 0)
+		purse = 0;
+	if (purse != lastpurse)
+		msg("Your purse feels lighter");
+	remove_monster(&mp->t_pos, find_mons(mp->t_pos.y, mp->t_pos.x));
+	mp = NULL;
+}
+
+The spelling mistake in the comment ("Leperachaun") was first fixed in the EPYX DOS release of Rogue v1.48.
+
+[#f5e342]NetHack History[-]
+
+The leprechaun is among the many monsters present in the very first version of Hack by Andries Brouwer, along with "Hack for PDP-11" (which was based on an early draft).
+
+In early versions such as this and NetHack 1.3d, leprechauns used the "L" glyph and had slightly different behavior: they would still attempt to attack players that closed in as they attempted to keep their distance.
+
+The message clarifying a leprechaun's ability to make player characters miss and stumble was added in NetHack 3.6.2.

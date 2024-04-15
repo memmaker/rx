@@ -226,11 +226,14 @@ ObjectClosedDoor_Colors: LightGray | Black
 ObjectOpenDoor: ╬
 ObjectOpenDoor_Colors: LightGray | Black
 #
-ObjectTrap: ♦
-ObjectTrap_Colors: LightGray | Black
+ObjectExplodingTrap: ♦
+ObjectExplodingTrap_Colors: LightGray | Cyan
 #
-ObjectExplodingBarrel: ♦
-ObjectExplodingBarrel_Colors: LightRed | Black
+ObjectSlowTrap: Θ
+ObjectSlowTrap_Colors: LightRed | Cyan
+#
+ObjectTeleportTrap: ^
+ObjectTeleportTrap_Colors: LightRed | Cyan
 
 %rec: borders
 

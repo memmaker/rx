@@ -1,3 +1,12 @@
+name: main gauche
+internal_name: main_gauche
+category: weapons
+slot: one_handed_weapon
+weapon_type: sword
+weapon_damage: 1d4
+thrown_damage: 1d3
+weapon_skill_used: melee
+
 name: mace
 internal_name: mace
 category: weapons
@@ -35,13 +44,13 @@ weapon_damage: 2d3
 thrown_damage: 1d1
 weapon_skill_used: missile
 
-name: dagger
+name: battle axe
 internal_name: dagger
 slot: one_handed_weapon
 category: weapons
 weapon_type: dagger
-weapon_damage: 1d6
-thrown_damage: 1d4
+weapon_damage: 1d6+2
+thrown_damage: 1d4+2
 weapon_skill_used: melee
 
 name: two handed sword
@@ -87,6 +96,15 @@ internal_name: spear
 slot: one_handed_weapon
 category: weapons
 weapon_type: spear
-weapon_damage: 2d3
+weapon_damage: 2d3 + 1
+thrown_damage: 1d6
+weapon_skill_used: melee
+
+name: overkill
+internal_name: overkill
+slot: one_handed_weapon
+category: weapons
+weapon_type: spear
+weapon_damage: 5d8 + 1
 thrown_damage: 1d6
 weapon_skill_used: melee

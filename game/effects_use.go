@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/daemons"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
 	"RogueUI/rpg"
@@ -34,30 +33,40 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"raise_level":                    endTurn(true, noAnim(raiseLevel)),
 		"uncloak":                        endTurn(true, uncloak),
 		"vorpalize":                      endTurn(false, playerVorpalizeWeapon),
+		"satiate_fully":                  endTurn(true, satiateFully),
+		"identify_item":                  endTurn(false, playerIdentifyItem),
 	}
 }
 
 func uncloak(g *GameState, user *Actor) []foundation.Animation {
-	user.GetFlags().Unset(foundation.IsInvisible)
-	user.GetFlags().Unset(foundation.IsSleeping)
+	user.GetFlags().Unset(foundation.FlagInvisible)
+	user.GetFlags().Unset(foundation.FlagSleep)
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(user, user.Position())
 	return []foundation.Animation{uncloakAnim}
 }
 
 func raiseLevel(g *GameState, user *Actor) {
 	g.msg(foundation.Msg("you suddenly feel much more skillful"))
-	g.Player.AddCharacterPoints(rpg.NewDice(1, 6, 0).Roll())
+	g.Player.AddCharacterPoints(rpg.NewDice(1, 10, 0).Roll())
 }
 
 func heal(g *GameState, actor *Actor) []foundation.Animation {
-	//TODO
+	amount := actor.GetHitPointsMax() / 2
+	actor.Heal(amount)
 	g.msg(foundation.Msg("you begin to feel better"))
 	return nil
 }
 
 func extraHeal(g *GameState, actor *Actor) []foundation.Animation {
-	//TODO
+	amount := actor.GetHitPointsMax()
+	actor.Heal(amount)
 	g.msg(foundation.Msg("you begin to feel much better"))
+	return nil
+}
+
+func satiateFully(g *GameState, actor *Actor) []foundation.Animation {
+	actor.Satiate()
+	g.msg(foundation.Msg("you don't feel hungry anymore"))
 	return nil
 }
 
@@ -80,6 +89,10 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 	if len(affectedActors) == 0 {
 		g.msg(foundation.Msg("Nothing happens."))
 		return nil
+	} else {
+		if user == g.Player && !g.Player.IsBlind() {
+			g.identification.EffectWitnessed()
+		}
 	}
 
 	ballPos := user.Position()
@@ -92,7 +105,7 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 	userDamageAnim := g.damageActorWithFollowUp("drain life", user, damageDone, nil, []foundation.Animation{flyFromUserAnim})
 
 	var enemyAnims []foundation.Animation
-	damagePerEnemy := max(1, damageDone / len(affectedActors))
+	damagePerEnemy := max(1, damageDone/len(affectedActors))
 	for _, actor := range affectedActors {
 		flyToEnemyAnim, _ := g.ui.GetAnimProjectile('☼', "LightRed", ballPos, actor.Position(), nil)
 		damageAnims := g.damageActor(user.Name(), actor, damagePerEnemy)
@@ -143,147 +156,110 @@ func createMonster(g *GameState, user *Actor) {
 	monster := g.NewEnemyFromDef(g.dataDefinitions.RandomMonsterDef())
 	g.msg(foundation.Msg("A monster appears!"))
 
-
 	randomPos := freePositions[rand.Intn(len(freePositions))]
 
 	g.gridMap.AddActor(monster, randomPos)
 
-	appearAnim := g.ui.GetAnimAppearance(monster,randomPos, nil)
+	appearAnim := g.ui.GetAnimAppearance(monster, randomPos, nil)
 
 	g.ui.AddAnimations([]foundation.Animation{appearAnim})
 }
 
 func playerDetectFood(g *GameState, user *Actor) {
-	g.Player.GetFlags().Set(foundation.SeeFood)
+	g.Player.GetFlags().Set(foundation.FlagSeeFood)
 }
 
 func playerDetectMagic(g *GameState, user *Actor) {
-	g.Player.GetFlags().Set(foundation.SeeMagic)
+	g.Player.GetFlags().Set(foundation.FlagSeeMagic)
 }
 
 func playerDetectMonsters(g *GameState, user *Actor) {
-	canAlreadyDetect := g.Player.GetFlags().IsSet(foundation.SeeMonsters)
-	g.Player.GetFlags().Set(foundation.SeeMonsters)
-
 	tunsUntilUnsee := rand.Intn(8) + 8
-	if canAlreadyDetect {
-		daemons.Lengthen(g.unseeMonstersPlayer, tunsUntilUnsee)
-	} else {
-		daemons.Fuse(g.unseeMonstersPlayer, tunsUntilUnsee)
-	}
+	g.Player.GetFlags().Increase(foundation.FlagSeeMonsters, tunsUntilUnsee)
 }
 
 func seeInvisible(g *GameState, user *Actor) {
-	canAlreadySee := user.GetFlags().IsSet(foundation.CanSeeInvisible)
-	user.GetFlags().Set(foundation.CanSeeInvisible)
+	user.GetFlags().Set(foundation.FlagSeeInvisible)
 
 	if g.Player != user {
 		return
 	}
+
 	tunsUntilUnsee := rand.Intn(8) + 8
-	if canAlreadySee {
-		daemons.Lengthen(g.unseeInvisiblePlayer, tunsUntilUnsee)
-	} else {
-		daemons.Fuse(g.unseeInvisiblePlayer, tunsUntilUnsee)
-	}
+	g.Player.GetFlags().Increase(foundation.FlagSeeInvisible, tunsUntilUnsee)
 }
 func makeInvisible(g *GameState, user *Actor) {
-	alreadyInvisible := user.GetFlags().IsSet(foundation.IsInvisible)
-	user.GetFlags().Set(foundation.IsInvisible)
+	user.GetFlags().Set(foundation.FlagInvisible)
 
 	if g.Player != user {
 		return
 	}
 	turnsUntilVisible := rand.Intn(8) + 8
-	if alreadyInvisible {
-		daemons.Lengthen(g.makeVisiblePlayer, turnsUntilVisible)
-	} else {
-		daemons.Fuse(g.makeVisiblePlayer, turnsUntilVisible)
-	}
+	g.Player.GetFlags().Increase(foundation.FlagInvisible, turnsUntilVisible)
 }
 func haste(g *GameState, user *Actor) {
-	if user.GetFlags().IsSet(foundation.IsSlow) {
-		user.GetFlags().Unset(foundation.IsSlow)
+	if user.GetFlags().IsSet(foundation.FlagSlow) {
+		user.GetFlags().Unset(foundation.FlagHaste)
 		return
 	}
-
-	alreadyHasted := user.GetFlags().IsSet(foundation.IsHasted)
-	user.GetFlags().Set(foundation.IsHasted)
+	user.GetFlags().Set(foundation.FlagHaste)
 
 	if g.Player != user {
+		g.msg(foundation.HiLite("%s speeds up", user.Name()))
 		return
 	}
-	tunsUntilUnhasted := rand.Intn(8) + 8
-	if alreadyHasted {
-		daemons.Lengthen(g.unhastePlayer, tunsUntilUnhasted)
-	} else {
-		daemons.Fuse(g.unhastePlayer, tunsUntilUnhasted)
-	}
+
+	g.msg(foundation.Msg("The world around you slows down"))
+
+	tunsUntilUnhasted := rand.Intn(user.GetBasicSpeed()/2) + user.GetBasicSpeed()/2
+	g.Player.GetFlags().Increase(foundation.FlagHaste, tunsUntilUnhasted)
 }
 
 func slow(g *GameState, user *Actor) {
-	if user.GetFlags().IsSet(foundation.IsHasted) {
-		user.GetFlags().Unset(foundation.IsHasted)
+	if user.GetFlags().IsSet(foundation.FlagHaste) {
+		user.GetFlags().Unset(foundation.FlagHaste)
 		return
 	}
 
-	alreadySlowed := user.GetFlags().IsSet(foundation.IsSlow)
-	user.GetFlags().Set(foundation.IsSlow)
+	user.GetFlags().Set(foundation.FlagSlow)
 
 	if g.Player != user {
+		g.msg(foundation.HiLite("%s slows down", user.Name()))
 		return
 	}
+	g.msg(foundation.Msg("The world around you speeds up"))
 	tunsUntilUnslowed := rand.Intn(8) + 8
-	if alreadySlowed {
-		daemons.Lengthen(g.unslowPlayer, tunsUntilUnslowed)
-	} else {
-		daemons.Fuse(g.unslowPlayer, tunsUntilUnslowed)
-	}
+	g.Player.GetFlags().Increase(foundation.FlagSlow, tunsUntilUnslowed)
 }
 
 func cancel(g *GameState, user *Actor) {
-	alreadyCancelled := user.GetFlags().IsSet(foundation.IsCancelled)
-	user.GetFlags().Set(foundation.IsCancelled)
+	user.GetFlags().Set(foundation.FlagCancel)
 
 	if g.Player != user {
 		return
 	}
 	tunsUntilUncancelled := rand.Intn(8) + 8
-	if alreadyCancelled {
-		daemons.Lengthen(g.uncancelPlayer, tunsUntilUncancelled)
-	} else {
-		daemons.Fuse(g.uncancelPlayer, tunsUntilUncancelled)
-	}
+	g.Player.GetFlags().Increase(foundation.FlagCancel, tunsUntilUncancelled)
 }
 
 func blindness(g *GameState, user *Actor) {
-	alreadyBlind := user.GetFlags().IsSet(foundation.IsBlind)
-	user.GetFlags().Set(foundation.IsBlind)
+	user.GetFlags().Set(foundation.FlagBlind)
 
 	if g.Player != user {
 		return
 	}
 	tunsUntilUnhasted := rand.Intn(8) + 8
-	if alreadyBlind {
-		daemons.Lengthen(g.unblindPlayer, tunsUntilUnhasted)
-	} else {
-		daemons.Fuse(g.unblindPlayer, tunsUntilUnhasted)
-	}
+	g.Player.GetFlags().Increase(foundation.FlagBlind, tunsUntilUnhasted)
 }
 
 func levitation(g *GameState, user *Actor) {
-	alreadyFlying := user.GetFlags().IsSet(foundation.IsFlying)
-	user.GetFlags().Set(foundation.IsFlying)
+	user.GetFlags().Set(foundation.FlagFly)
 
 	if g.Player != user {
 		return
 	}
-	tunsUntilUnhasted := rand.Intn(8) + 8
-	if alreadyFlying {
-		daemons.Lengthen(g.unflyPlayer, tunsUntilUnhasted)
-	} else {
-		daemons.Fuse(g.unflyPlayer, tunsUntilUnhasted)
-	}
+	turnsUntilEarthbound := rand.Intn(8) + 8
+	g.Player.GetFlags().Increase(foundation.FlagFly, turnsUntilEarthbound)
 }
 
 func aggroMonsters(g *GameState, actor *Actor) []foundation.Animation {
@@ -296,9 +272,36 @@ func aggroMonsters(g *GameState, actor *Actor) []foundation.Animation {
 		if monster == g.Player {
 			continue
 		}
-		monster.GetFlags().Unset(foundation.IsSleeping)
+		monster.GetFlags().Unset(foundation.FlagSleep)
 	}
 	return []foundation.Animation{waveEffect}
+}
+
+func playerIdentifyItem(g *GameState, actor *Actor) []foundation.Animation {
+	inventory := g.GetFilteredInventory(func(item *Item) bool {
+		return item.IsMagic() && !g.identification.IsItemIdentified(item.GetInternalName())
+	})
+	if len(inventory) == 0 {
+		g.msg(foundation.Msg("You are not carrying any unidentified items."))
+		return nil
+	}
+
+	onSelected := func(item foundation.ItemForUI) {
+		unknownItem := item.(*InventoryStack).First()
+
+		g.identification.IdentifyItem(unknownItem.GetInternalName())
+		g.msg(foundation.HiLite("identified as %s.", unknownItem.Name()))
+
+		g.ui.UpdateInventory()
+
+		//g.ui.AddAnimations([]foundation.Animation{animation})
+
+		g.endPlayerTurn()
+	}
+
+	g.ui.OpenInventoryForSelection(inventory, "Identify which item?", onSelected)
+
+	return nil
 }
 
 func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
@@ -417,6 +420,7 @@ func phaseDoor(g *GameState, user *Actor) []foundation.Animation {
 	targetPos := g.gridMap.RandomSpawnPosition()
 
 	teleportAnimation := teleportWithAnimation(g, user, targetPos)
+	teleportAnimation.RequestMapUpdateOnFinish()
 
 	if user != g.Player || rand.Intn(5) == 0 {
 		animateConfuse := confuse(g, user)
@@ -444,11 +448,7 @@ func teleportWithAnimation(g *GameState, actor *Actor, targetPos geometry.Point)
 }
 
 func confuse(g *GameState, target *Actor) []foundation.Animation {
-	flags := target.GetFlags()
 
-	wasAlreadyConfused := flags.IsSet(foundation.IsConfused)
-
-	flags.Set(foundation.IsConfused)
 	if target == g.Player {
 		g.msg(foundation.Msg("wait, what's going on? Huh? What? Who?"))
 	} else {
@@ -458,11 +458,10 @@ func confuse(g *GameState, target *Actor) []foundation.Animation {
 		// Monsters have a chance to get unconfused when they take their turn
 		// So this fuse is only used for tracking the time the player is confused.
 		turnsUntilUnconfuse := rand.Intn(8) + confuseDuration()
-		if wasAlreadyConfused {
-			daemons.Lengthen(g.unconfusePlayer, turnsUntilUnconfuse)
-		} else {
-			daemons.Fuse(g.unconfusePlayer, turnsUntilUnconfuse)
-		}
+		g.Player.GetFlags().Increase(foundation.FlagConfused, turnsUntilUnconfuse)
+	} else {
+		flags := target.GetFlags()
+		flags.Set(foundation.FlagConfused)
 	}
 
 	confuseAnim := g.ui.GetAnimConfuse(target.Position(), nil)
@@ -470,18 +469,13 @@ func confuse(g *GameState, target *Actor) []foundation.Animation {
 }
 
 func confuseEnemyOnNextAttack(g *GameState, user *Actor) {
-	canAlreadyConfuse := user.GetFlags().IsSet(foundation.CanConfuse)
-	user.GetFlags().Set(foundation.CanConfuse)
+	user.GetFlags().Set(foundation.FlagCanConfuse)
 
 	if user != g.Player {
 		g.msg(foundation.HiLite("%s starts glowing red", user.Name()))
 		return
 	}
-	if canAlreadyConfuse {
-		daemons.Lengthen(g.removePlayerCanConfuse, 10)
-	} else {
-		daemons.Fuse(g.removePlayerCanConfuse, 10)
-	}
+	g.Player.GetFlags().Set(foundation.FlagCanConfuse)
 }
 func revealMap(g *GameState, user *Actor) []foundation.Animation {
 	dMap := g.gridMap.GetDijkstraMap(user.Position(), 1000, func(point geometry.Point) bool {
@@ -506,9 +500,11 @@ func holdAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 		if actor == g.Player {
 			continue
 		}
-		actor.GetFlags().Set(foundation.IsHeld)
+		actor.GetFlags().Set(foundation.FlagHeld)
 	}
-
+	if len(affectedMonsters) > 0 && user == g.Player && !g.Player.IsBlind() {
+		g.identification.EffectWitnessed()
+	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
 		//originalActorIcon := actor.Icon()
@@ -530,9 +526,11 @@ func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 		if actor == g.Player {
 			continue
 		}
-		actor.GetFlags().Set(foundation.IsScared)
+		actor.GetFlags().Set(foundation.FlagScared)
 	}
-
+	if len(affectedMonsters) > 0 && user == g.Player && !g.Player.IsBlind() {
+		g.identification.EffectWitnessed()
+	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
 		//originalActorIcon := actor.Icon()
@@ -548,7 +546,7 @@ func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 }
 
 func (g *GameState) removePlayerCanConfuse() {
-	g.Player.GetFlags().Unset(foundation.CanConfuse)
+	g.Player.GetFlags().Unset(foundation.FlagCanConfuse)
 }
 
 // Adapted from: https://github.com/memmaker/rogue-pc-modern-C/blob/582340fcaef32dd91595721efb2d5db41ff3cb05/src/potions.c#L47
@@ -559,61 +557,61 @@ func (g *GameState) removePlayerCanConfuse() {
 func (g *GameState) unconfusePlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.IsConfused)
+	flags.Unset(foundation.FlagConfused)
 	g.msg(foundation.Msg("you feel less confused now"))
 }
 
 func (g *GameState) unseeMonstersPlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.SeeMonsters)
+	flags.Unset(foundation.FlagSeeMonsters)
 	g.msg(foundation.Msg("your senses return to normal"))
 }
 
 func (g *GameState) unhastePlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.IsHasted)
+	flags.Unset(foundation.FlagHaste)
 	g.msg(foundation.Msg("The world around you speeds up"))
 }
 
 func (g *GameState) makeVisiblePlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.IsInvisible)
+	flags.Unset(foundation.FlagInvisible)
 	g.msg(foundation.Msg("You can see your hands again"))
 }
 func (g *GameState) unslowPlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.IsSlow)
+	flags.Unset(foundation.FlagSlow)
 	g.msg(foundation.Msg("The world around you slows down"))
 }
 
 func (g *GameState) unseeInvisiblePlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.CanSeeInvisible)
+	flags.Unset(foundation.FlagSeeInvisible)
 	g.msg(foundation.Msg("Your sight returns to normal"))
 }
 
 func (g *GameState) unflyPlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.IsFlying)
+	flags.Unset(foundation.FlagFly)
 	g.msg(foundation.Msg("You feel gravity's pull"))
 }
 
 func (g *GameState) unblindPlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.IsBlind)
+	flags.Unset(foundation.FlagBlind)
 	g.msg(foundation.Msg("You can see again"))
 }
 
 func (g *GameState) uncancelPlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.IsCancelled)
+	flags.Unset(foundation.FlagCancel)
 	g.msg(foundation.Msg("You feel your powers return"))
 }

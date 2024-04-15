@@ -238,6 +238,19 @@ func RandomDirection() CompassDirection {
 	}
 	return East
 }
+func RandomCardinalDirection() CompassDirection {
+	switch rand.Intn(4) {
+	case 0:
+		return East
+	case 1:
+		return South
+	case 2:
+		return West
+	case 3:
+		return North
+	}
+	return East
+}
 
 type CompassDirection float64
 

@@ -100,36 +100,85 @@ func (u *UI) ShowGameOver(scoreInfo foundation.ScoreInfo, highScores []foundatio
 
 	u.FadeToBlack()
 
-	playerName := scoreInfo.PlayerName
-	maxDungeonLevel := scoreInfo.MaxLevel
-	causeOfDeath := scoreInfo.CauseOfDeath
-	score := scoreInfo.Score
+	if scoreInfo.Escaped {
+		u.showWinScreen(scoreInfo, highScores)
+	} else {
+		u.showDeathScreen(scoreInfo, highScores)
+	}
+}
+func (u *UI) showWinScreen(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
+	textView := cview.NewTextView()
+	textView.SetBorder(true)
+	textView.SetScrollable(false)
+	textView.SetScrollBarVisibility(cview.ScrollBarNever)
+	textView.SetTextAlign(cview.AlignCenter)
+	textView.SetTitleAlign(cview.AlignCenter)
 
+	winMessage := util.ReadFileAsLines(path.Join("data", "win.txt"))
+
+	gameOverMessage := []string{
+		"",
+		"",
+		"",
+		fmt.Sprintf("%s", scoreInfo.PlayerName),
+		fmt.Sprintf("Gold: %d", scoreInfo.Gold),
+		fmt.Sprintf("%s", scoreInfo.DescriptiveMessage),
+		"",
+		"",
+		"",
+	}
+	gameOverMessage = append(gameOverMessage, winMessage...)
+
+	pressSpace := []string{
+		"",
+		"",
+		"",
+		"",
+		fmt.Sprintf("Press [#FFFFFF::b]SPACE[-:-:-] to continue"),
+	}
+	gameOverMessage = append(gameOverMessage, pressSpace...)
+	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
+
+	panelName := "main"
+	if u.pages.HasPanel("main") {
+		panelName = "fullscreen"
+	}
+
+	textView.SetInputCapture(u.popOnSpaceWithNotification(panelName, func() {
+		u.showHighscoresAndRestart(highScores)
+	}))
+	u.pages.AddPanel(panelName, textView, true, true)
+	u.pages.ShowPanel(panelName)
+	u.application.SetFocus(textView)
+}
+func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
 	textView := cview.NewTextView()
 	textView.SetBorder(false)
 	textView.SetTextAlign(cview.AlignCenter)
 	textView.SetTitleAlign(cview.AlignCenter)
-	textView.SetTitle("Game Over")
+	textView.SetBorder(true)
+	textView.SetScrollable(false)
+	textView.SetScrollBarVisibility(cview.ScrollBarNever)
+	textView.SetTitle("You died")
 
 	gameOverMessage := []string{
 		"",
-		fmt.Sprintf("%s died on level %d", playerName, maxDungeonLevel),
-		fmt.Sprintf("Cause of death: %s", causeOfDeath),
-		fmt.Sprintf("Score: %d", score),
+		fmt.Sprintf("%s", scoreInfo.PlayerName),
+		fmt.Sprintf("Gold: %d", scoreInfo.Gold),
+		fmt.Sprintf("Deepest Level: %d", scoreInfo.MaxLevel),
+		fmt.Sprintf("Cause of Death: %s", scoreInfo.DescriptiveMessage),
+	}
+	restartText := []string{
 		"",
 		"",
 		"[#fccc2b::bl]Do you want to play again? (y/n)[-:-:-]",
 		"",
 		"",
-		"= Top 10 Dungeon Crawlers =",
-		"",
 	}
-	for i, highScore := range highScores {
-		if i == 10 {
-			break
-		}
-		gameOverMessage = append(gameOverMessage, fmt.Sprintf("%d. %s: %d (Lvl: %d, CoD: %s)", i+1, highScore.PlayerName, highScore.Score, highScore.MaxLevel, highScore.CauseOfDeath))
-	}
+	scoreTable := toLinesOfText(highScores)
+
+	gameOverMessage = append(gameOverMessage, restartText...)
+	gameOverMessage = append(gameOverMessage, scoreTable...)
 
 	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
 
@@ -143,6 +192,79 @@ func (u *UI) ShowGameOver(scoreInfo foundation.ScoreInfo, highScores []foundatio
 		u.game.Reset()
 	}
 	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
+	u.pages.AddPanel(panelName, textView, true, true)
+	u.pages.ShowPanel(panelName)
+	u.application.SetFocus(textView)
+}
+
+func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
+	textView := cview.NewTextView()
+	textView.SetBorder(false)
+	textView.SetTextAlign(cview.AlignCenter)
+	textView.SetTitleAlign(cview.AlignCenter)
+	textView.SetTitle("Game Over")
+
+	restartText := []string{
+		"",
+		"[#fccc2b::bl]Do you want to play again? (y/n)[-:-:-]",
+		"",
+	}
+	scoreTable := toLinesOfText(highScores)
+	gameOverMessage := append(restartText, scoreTable...)
+
+	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
+
+	panelName := "main"
+	if u.pages.HasPanel("main") {
+		panelName = "fullscreen"
+	}
+
+	reset := func() {
+		u.pages.HidePanel(panelName)
+		u.game.Reset()
+	}
+	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
+	u.pages.AddPanel(panelName, textView, true, true)
+	u.pages.ShowPanel(panelName)
+	u.application.SetFocus(textView)
+}
+
+func toLinesOfText(highScores []foundation.ScoreInfo) []string {
+	scoreTable := []string{
+		"= Top 10 Dungeon Crawlers =",
+		"",
+	}
+	for i, highScore := range highScores {
+		if i == 10 {
+			break
+		}
+		scoreLine := ""
+		if highScore.Escaped {
+			scoreLine = fmt.Sprintf("[#c9c54d::bl]%d. %s: %d Gold, Lvl: %d, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.MaxLevel, highScore.DescriptiveMessage)
+		} else {
+			scoreLine = fmt.Sprintf("%d. %s: %d Gold, Lvl: %d, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.MaxLevel, highScore.DescriptiveMessage)
+		}
+		scoreTable = append(scoreTable, scoreLine)
+	}
+	return scoreTable
+}
+
+func (u *UI) ShowHighScoresOnly(highScores []foundation.ScoreInfo) {
+	textView := cview.NewTextView()
+	textView.SetBorder(false)
+	textView.SetTextAlign(cview.AlignCenter)
+	textView.SetTitleAlign(cview.AlignCenter)
+	textView.SetTitle("High Scores")
+
+	scoreTable := toLinesOfText(highScores)
+	u.setColoredText(textView, strings.Join(scoreTable, "\n"))
+
+	panelName := "main"
+	if u.pages.HasPanel("main") {
+		panelName = "fullscreen"
+	}
+
+	textView.SetInputCapture(u.popOnAnyKeyWithNotification(panelName, u.application.Stop))
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
 	u.application.SetFocus(textView)
@@ -197,7 +319,7 @@ func (u *UI) GetAnimMove(actor foundation.ActorForUI, old geometry.Point, new ge
 func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
 	var backGroundColor color.RGBA
 
-	if actor.HasFlag(foundation.IsHeld) {
+	if actor.HasFlag(foundation.FlagHeld) {
 		return foundation.TextIcon{
 			Rune: actor.Icon(),
 			Fg:   u.currentTheme.GetColorByName("Blue"),
@@ -233,7 +355,7 @@ func (u *UI) GetAnimDamage(defenderPos geometry.Point, damage int, done func()) 
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateDamage {
 		return nil
 	}
-	animation := NewDamageAnimation(defenderPos, damage)
+	animation := NewDamageAnimation(defenderPos, u.game.GetPlayerPosition(), damage)
 	animation.SetDoneCallback(done)
 	return animation
 }
@@ -554,8 +676,8 @@ func (u *UI) GetAnimProjectileWithTrail(leadIcon rune, colorNames []string, path
 }
 
 func (u *UI) updateUntilDone() bool {
-	u.isAnimationFrame = true
 	screen := u.application.GetScreen()
+	u.isAnimationFrame = true
 	var breakingKey *tcell.EventKey
 outerLoop:
 	for len(u.animator.runningAnimations) > 0 {
@@ -720,13 +842,13 @@ func (u *UI) setColoredText(view *cview.TextView, text string) {
 func (u *UI) UpdateLogWindow() {
 	logMessages := u.game.GetLog()
 	/*
-	_, _, _, windowHeight := u.messageLabel.GetInnerRect()
+		_, _, _, windowHeight := u.messageLabel.GetInnerRect()
 
-	if len(logMessages) > windowHeight { // get just the last lines
-		logMessages = logMessages[len(logMessages)-windowHeight:]
-	}
+		if len(logMessages) > windowHeight { // get just the last lines
+			logMessages = logMessages[len(logMessages)-windowHeight:]
+		}
 
-	 */
+	*/
 	var asColoredStrings []string
 	for i, message := range logMessages {
 		fadePercent := util.Clamp(0.2, 1.0, float64(i+1)/float64(len(logMessages)))
@@ -946,6 +1068,10 @@ func (u *UI) setTheme(fileName string) {
 	u.currentTheme = NewThemeFromFile(fileName)
 	u.currentTheme.SetBorders(&cview.Borders)
 	u.applyStylingToUI()
+	u.UpdateInventory()
+	u.UpdateVisibleEnemies()
+	u.UpdateStats()
+	u.UpdateLogWindow()
 }
 
 func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (int, int, int, int) {
@@ -1098,8 +1224,6 @@ func IconAsString(icon foundation.TextIcon) string {
 	return fmt.Sprintf("%s%s[-:-]", code, string(icon.Rune))
 }
 
-
-
 func (u *UI) UpdateVisibleEnemies() {
 	visibleEnemies := u.game.GetVisibleEnemies()
 	//longest := longestInventoryLineWithoutColorCodes(visibleEnemies)
@@ -1110,30 +1234,48 @@ func (u *UI) UpdateVisibleEnemies() {
 		iconString := fmt.Sprintf("%s%s[-]", iconColor, string(icon.Rune))
 		hp, hpMax := enemy.GetHitPoints(), enemy.GetHitPointsMax()
 		asPercent := float64(hp) / float64(hpMax)
-		hpBarString := fmt.Sprintf("[%s]", u.RuneBarFromPercent('*', asPercent, 5))
+		barIcon := '*'
+		if enemy.HasFlag(foundation.FlagSleep) {
+			barIcon = 'z'
+			if enemy.HasFlag(foundation.FlagMean) {
+				barIcon = 'Z'
+			}
+		} else if !enemy.HasFlag(foundation.FlagAwareOfPlayer) {
+			barIcon = '?'
+		}
+		hpBarString := fmt.Sprintf("[%s]", u.RuneBarFromPercent(barIcon, asPercent, 5))
 		enemyLine := fmt.Sprintf(" %s %s %s", iconString, hpBarString, enemy.Name())
 		asString = append(asString, enemyLine)
 	}
 	u.lowerRightPanel.SetText(strings.Join(asString, "\n"))
 }
 
-func (u *UI) FullColorBarFromPercent(percent float64, width int) string {
-	repeats := int(math.Round(percent * float64(width)))
-	colorCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("Green"))
+func (u *UI) FullColorBarFromPercent(currentVal, maxVal, width int) string {
+	percent := float64(currentVal) / float64(maxVal)
+	colorChangeIndex := int(math.Round(percent * float64(width)))
+	white := u.currentTheme.GetColorByName("White")
+	colorCode := RGBAToColorCodes(u.currentTheme.GetColorByName("Green"), white)
 	if percent < 0.50 {
-		colorCode = RGBAToFgColorCode(u.currentTheme.GetColorByName("Red"))
+		colorCode = RGBAToColorCodes(u.currentTheme.GetColorByName("Red"), white)
 	} else if percent < 0.75 {
-		colorCode = RGBAToFgColorCode(u.currentTheme.GetColorByName("Yellow"))
+		colorCode = RGBAToColorCodes(u.currentTheme.GetColorByName("Yellow"), u.currentTheme.GetColorByName("Black"))
 	}
-	darkGrayCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("DarkGray"))
-	return colorCode + strings.Repeat(" ", repeats)  + "[-]" + darkGrayCode + strings.Repeat(" ", width-repeats) + "[-]"
+	darkGrayCode := RGBAToColorCodes(u.currentTheme.GetColorByName("DarkGray"), white)
+
+	valString := fmt.Sprintf("%d/%d", currentVal, maxVal)
+	xForCenter := (width - len(valString)) / 2
+	prefix := strings.Repeat(" ", xForCenter)
+	suffix := strings.Repeat(" ", width-len(valString)-xForCenter)
+	barString := fmt.Sprintf("%s%s%s", prefix, valString, suffix)
+
+	barString = colorCode + barString[:colorChangeIndex] + darkGrayCode + barString[colorChangeIndex:] + "[-:-]"
+	return barString
 }
 
-func (u *UI) RuneBarWithColorFromPercent(icon rune, fgColorName, bgColorName string, percent float64, width int) string {
-	repeats := int(math.Round(percent * float64(width)))
+func (u *UI) RuneBarWithColor(icon rune, fgColorName, bgColorName string, current, max int) string {
 	colorCode := RGBAToColorCodes(u.currentTheme.GetColorByName(fgColorName), u.currentTheme.GetColorByName(bgColorName))
 	darkGrayCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("DarkGray"))
-	return colorCode + strings.Repeat(string(icon), repeats)  + "[-:-]" + darkGrayCode + strings.Repeat(" ", width-repeats) + "[-]"
+	return colorCode + strings.Repeat(string(icon), current) + "[-:-]" + darkGrayCode + strings.Repeat(" ", max-current) + "[-]"
 }
 
 func (u *UI) RuneBarFromPercent(icon rune, percent float64, width int) string {
@@ -1144,15 +1286,16 @@ func (u *UI) RuneBarFromPercent(icon rune, percent float64, width int) string {
 	} else if percent < 0.75 {
 		colorCode = RGBAToFgColorCode(u.currentTheme.GetColorByName("Yellow"))
 	}
-	return colorCode + strings.Repeat(string(icon), repeats)  + "[-]"+ strings.Repeat(" ", width-repeats)
+	return colorCode + strings.Repeat(string(icon), repeats) + "[-]" + strings.Repeat(" ", width-repeats)
 }
 func (u *UI) isStatusBarMultiLine() bool {
 	_, h := u.application.GetScreenSize()
 	_, hNeeded := u.settings.GetMinTerminalSize()
-	return  h >= hNeeded+1
+	return h >= hNeeded+1
 }
 func (u *UI) UpdateStats() {
-	statusValues, flags := u.game.GetHudStats()
+	statusValues := u.game.GetHudStats()
+	flags := u.game.GetHudFlags()
 	if len(statusValues) == 0 {
 		return
 	}
@@ -1164,27 +1307,25 @@ func (u *UI) UpdateStats() {
 	if multiLine {
 		hp := statusValues[foundation.HudHitPoints]
 		hpMax := statusValues[foundation.HudHitPointsMax]
-		hpAsPercent := float64(max(0, hp)) / float64(hpMax)
 
-		playerBar := u.FullColorBarFromPercent(hpAsPercent, 10)
+		playerBar := u.FullColorBarFromPercent(hp, hpMax, 11)
 		hpBarStr := fmt.Sprintf("HP [%s]", playerBar)
 
 		fatigueCurrent := statusValues[foundation.HudFatiguePoints]
 		fatigueMax := statusValues[foundation.HudFatiguePointsMax]
 
 		// display as bar
-		fpAsPercent := float64(fatigueCurrent) / float64(fatigueMax)
-		fatigueBarContent := u.RuneBarWithColorFromPercent('!', "LightBlue", "Blue", fpAsPercent, 10)
+		fatigueBarContent := u.RuneBarWithColor('!', "VeryLightBlue", "Blue", fatigueCurrent, fatigueMax)
 		fpBarStr := fmt.Sprintf("FP [%s]", fatigueBarContent)
 
-		longFlags := strings.Join(mapStrings(flags, foundation.ActorStatusToAbbreviationToLongString), " | ")
+		longFlags := FlagStringLong(flags)
 
 		width, _ := u.application.GetScreenSize()
 
 		lineTwo := fmt.Sprintf("%s %s %s", hpBarStr, fpBarStr, longFlags)
 
 		if cview.TaggedStringWidth(lineTwo) > width {
-			shortFlags := strings.Join(flags, " ")
+			shortFlags := FlagStringShort(flags)
 			lineTwo = fmt.Sprintf("%s %s %s", hpBarStr, fpBarStr, shortFlags)
 		}
 
@@ -1193,12 +1334,47 @@ func (u *UI) UpdateStats() {
 		statusStr = fmt.Sprintf("%s\n%s", lineTwo, statusStr)
 	}
 
-
 	u.statusBar.SetText(fmt.Sprintf("[::r]%s[-:-:-]", statusStr))
 
 	if !u.isAnimationFrame {
 		u.lastHudStats = statusValues
 	}
+}
+
+func FlagStringLong(flags map[foundation.ActorFlag]int) string {
+	flagOrder := foundation.AllFlagsExceptGoldOrdered()
+	var flagStrings []string
+	for _, flag := range flagOrder {
+		if count, ok := flags[flag]; ok {
+			var flagLine string
+			if count > 1 {
+				flagLine = fmt.Sprintf("%s(%d)", flag.String(), count)
+			} else {
+				flagLine = fmt.Sprintf("%s", flag.String())
+			}
+
+			flagStrings = append(flagStrings, flagLine)
+		}
+	}
+	return strings.Join(flagStrings, " | ")
+}
+
+func FlagStringShort(flags map[foundation.ActorFlag]int) string {
+	flagOrder := foundation.AllFlagsExceptGoldOrdered()
+	var flagStrings []string
+	for _, flag := range flagOrder {
+		if count, ok := flags[flag]; ok {
+			var flagLine string
+			if count > 1 {
+				flagLine = fmt.Sprintf("%s(%d)", flag.StringShort(), count)
+			} else {
+				flagLine = fmt.Sprintf("%s", flag.StringShort())
+			}
+
+			flagStrings = append(flagStrings, flagLine)
+		}
+	}
+	return strings.Join(flagStrings, " ")
 }
 
 func mapStrings(listOfStrings []string, mapper func(arg string) string) []string {
@@ -1219,7 +1395,7 @@ func (u *UI) colorIfDiff(statStr string, stat foundation.HudValue, currentValue 
 	hiCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("Yellow"))
 	return fmt.Sprintf("%s%s[-]", hiCode, statStr)
 }
-func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags []string, multiLine bool) string {
+func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags map[foundation.ActorFlag]int, multiLine bool) string {
 
 	gold := statusValues[foundation.HudGold]
 	goldStr := fmt.Sprintf("Gold: %-5d", gold)
@@ -1260,7 +1436,7 @@ func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags
 		fpStr := fmt.Sprintf("FP: %-7s", fpValString)
 		fpStr = u.colorIfDiff(fpStr, foundation.HudFatiguePoints, fatigueCurrent)
 
-		flagString := strings.Join(flags, " ")
+		flagString := FlagStringShort(flags)
 
 		statusStr = fmt.Sprintf("%s %s %s %s %s %s %s %s %s", goldStr, hpStr, fpStr, meleeStr, rangedStr, armorStr, dLevelStr, turnsStr, flagString)
 	} else {
@@ -1392,7 +1568,7 @@ func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 }
 func (u *UI) ShowMonsterInfo(monster foundation.ActorForUI) {
 	monsterNameInternalName := monster.GetInternalName()
-	lorePath := path.Join("data","lore","monsters", monsterNameInternalName + ".txt")
+	lorePath := path.Join("data", "lore", "monsters", monsterNameInternalName+".txt")
 	panels := cview.NewTabbedPanels()
 	panels.SetFullScreen(true)
 	panels.SetTabSwitcherDivider("|", "|", "|")
@@ -1406,7 +1582,6 @@ func (u *UI) ShowMonsterInfo(monster foundation.ActorForUI) {
 	monsterLoreText := u.newTextModal(monsterLore)
 	monsterLoreText.SetWrap(true)
 	monsterLoreText.SetWordWrap(true)
-
 
 	panels.AddTab("stats", "Stats", monsterStats)
 	panels.AddTab("lore", "Lore", monsterLoreText)
@@ -1458,6 +1633,17 @@ func (u *UI) popOnAnyKeyWithNotification(currentPage string, onClose func()) fun
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		u.pages.HidePanel(currentPage)
 		onClose()
+		return nil
+	}
+}
+
+func (u *UI) popOnSpaceWithNotification(currentPage string, onClose func()) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == ' ' {
+			u.pages.HidePanel(currentPage)
+			onClose()
+			return nil
+		}
 		return event
 	}
 }
@@ -1728,11 +1914,11 @@ func (u *UI) onTerminalResized(width int, height int) {
 			u.mainGrid.SetRows(1, 0, 1)
 			u.messageLabel.SetScrollable(false)
 			u.messageLabel.SetScrollBarVisibility(cview.ScrollBarNever)
-		} else if height == tSizeY + 1 {
+		} else if height == tSizeY+1 {
 			u.mainGrid.SetRows(1, 0, 2)
 			u.messageLabel.SetScrollable(false)
 			u.messageLabel.SetScrollBarVisibility(cview.ScrollBarNever)
-		} else if height > tSizeY + 1 {
+		} else if height > tSizeY+1 {
 			additionalHeight := height - tSizeY - 1
 			u.mainGrid.SetRows(0, 1+additionalHeight, 2)
 			u.messageLabel.SetScrollable(true)
@@ -1772,10 +1958,9 @@ func NewTextUI(settings *foundation.Configuration) *UI {
 		cursorStyle:    tcell.CursorStyleSteadyBlock,
 		gamma:          1.0,
 		settings:       settings,
-		keyTable: 	 make(map[UIKey]string),
+		keyTable:       make(map[UIKey]string),
 		lastFrameIcons: make(map[geometry.Point]rune),
 		lastFrameStyle: make(map[geometry.Point]tcell.Style),
-
 	}
 
 	u.initCoreUI()
@@ -1848,7 +2033,6 @@ func directionToRune(dir geometry.CompassDirection) rune {
 	return 'w'
 }
 
-
 func (u *UI) mapLookup(loc geometry.Point) (foundation.TextIcon, bool) {
 	if u.game.IsVisibleToPlayer(loc) {
 		return u.visibleLookup(loc)
@@ -1860,7 +2044,7 @@ func (u *UI) mapLookup(loc geometry.Point) (foundation.TextIcon, bool) {
 }
 
 func (u *UI) visibleLookup(loc geometry.Point) (foundation.TextIcon, bool) {
-	entityType := u.game.EntityAt(loc)
+	entityType := u.game.TopEntityAt(loc)
 	switch entityType {
 	case foundation.EntityTypeActor:
 		actor := u.game.ActorAt(loc)
@@ -1893,8 +2077,8 @@ func (u *UI) ShowCharacterSheet() {
 	for _, s := range statList {
 		statInList := s
 		attributeActions = append(attributeActions, foundation.MenuItem{
-			Name:       fmt.Sprintf("+ %s", s.ToString()),
-			Action:     func() {
+			Name: fmt.Sprintf("+ %s", s.ToString()),
+			Action: func() {
 				u.game.IncreaseAttributeLevel(statInList)
 				u.showCharacterActions(attributeActions)
 			},
@@ -1914,8 +2098,8 @@ func (u *UI) ShowCharacterSheet() {
 	for _, s := range skillList {
 		skillInList := s
 		skillActions = append(skillActions, foundation.MenuItem{
-			Name:       fmt.Sprintf("+ %s", skillInList),
-			Action:     func() {
+			Name: fmt.Sprintf("+ %s", skillInList),
+			Action: func() {
 				u.game.IncreaseSkillLevel(skillInList)
 				u.showCharacterActions(skillActions)
 			},
@@ -1930,16 +2114,16 @@ func (u *UI) ShowCharacterSheet() {
 			CloseMenus: true,
 		},
 		{
-			Name:       "Change base Attributes",
-			Action:     func() {
+			Name: "Change base Attributes",
+			Action: func() {
 				u.showCharacterActions(attributeActions)
 			},
 			CloseMenus: true,
 		},
 
 		{
-			Name:       "Change Skills",
-			Action:     func() {
+			Name: "Change Skills",
+			Action: func() {
 				u.showCharacterActions(skillActions)
 			},
 			CloseMenus: true,
@@ -2136,4 +2320,8 @@ func (u *UI) updateLastFrame() {
 			u.renderMapPosition(pos, false)
 		}
 	}
+}
+
+func (u *UI) Queue(f func()) {
+	u.application.QueueUpdate(f)
 }

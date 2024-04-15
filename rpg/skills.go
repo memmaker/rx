@@ -11,6 +11,7 @@ const (
 	SkillNameBrawling       SkillName = "Brawling"
 	SkillNameThrowing       SkillName = "Throwing"
 	SkillNameMissileWeapons SkillName = "Missile Weapons"
+	SkillNameStealth        SkillName = "Stealth"
 )
 
 func SkillNameFromString(s string) SkillName {
@@ -26,6 +27,8 @@ func SkillNameFromString(s string) SkillName {
 		return SkillNameThrowing
 	case "missile":
 		return SkillNameMissileWeapons
+	case "stealth":
+		return SkillNameStealth
 	}
 	panic(fmt.Sprintf("Unknown skill name: %s", s))
 	return ""
@@ -42,7 +45,8 @@ func (n SkillName) GetDefaultValue(getCharStat func(stat Stat) int) int {
 		return getCharStat(n.ControllingAttribute()) - 6
 	case SkillNameMissileWeapons:
 		return getCharStat(n.ControllingAttribute()) - 6
-
+	case SkillNameStealth:
+		return getCharStat(n.ControllingAttribute()) - 6
 	}
 	return 0
 }
@@ -59,6 +63,8 @@ func (n SkillName) Difficulty() SkillDifficulty {
 		return DiffAverage
 	case SkillNameMissileWeapons:
 		return DiffAverage
+	case SkillNameStealth:
+		return DiffAverage
 	}
 	return DiffAverage
 }
@@ -74,6 +80,8 @@ func (n SkillName) ControllingAttribute() Stat {
 	case SkillNameThrowing:
 		return Strength
 	case SkillNameMissileWeapons:
+		return Dexterity
+	case SkillNameStealth:
 		return Dexterity
 	}
 	return Strength

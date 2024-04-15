@@ -27,15 +27,18 @@ type GameForUI interface {
 	PlayerUseOrZapItem(item ItemForUI)
 	AimedShot()
 	QuickShot()
+	Wait()
 
 	PlayerInteractWithMap() // up/down stairs..
 
-	// State Queries
+	OpenTacticsMenu()
 
+	// State Queries
 	GetPlayerPosition() geometry.Point
 	GetCharacterSheet() []string
 
-	GetHudStats() (map[HudValue]int, []string)
+	GetHudStats() map[HudValue]int
+	GetHudFlags() map[ActorFlag]int
 	GetMapInfo(pos geometry.Point) HiLiteString
 
 	GetInventory() []ItemForUI
@@ -47,7 +50,6 @@ type GameForUI interface {
 	IsSomethingInterestingAtLoc(position geometry.Point) bool
 	IsSomethingBlockingTargetingAtLoc(point geometry.Point) bool
 
-
 	// Inventory Management
 	OpenInventory()
 	ChooseItemForThrow()
@@ -55,9 +57,6 @@ type GameForUI interface {
 	ChooseItemForMissileLaunch()
 
 	IsEquipped(item ItemForUI) bool
-
-	// Special
-	OpenWizardMenu()
 
 	// Game State
 	Reset()
@@ -67,23 +66,21 @@ type GameForUI interface {
 	IsLit(pos geometry.Point) bool
 	IsVisibleToPlayer(loc geometry.Point) bool
 
-	EntityAt(loc geometry.Point) EntityType
+	TopEntityAt(loc geometry.Point) EntityType
 
 	MapAt(loc geometry.Point) TileType
 	ItemAt(loc geometry.Point) ItemForUI
 	ObjectAt(loc geometry.Point) ObjectCategory
 	ActorAt(loc geometry.Point) ActorForUI
 
-
 	// Level up choices
 	IncreaseAttributeLevel(stat rpg.Stat)
 	IncreaseSkillLevel(skill rpg.SkillName)
 
-
 	// Wizard
 	Descend()
 	Ascend()
-
+	OpenWizardMenu()
 }
 
 type PlayerMoveMode int
@@ -156,8 +153,7 @@ type GameUI interface {
 	GetAnimConfuse(position geometry.Point, done func()) Animation
 	GetAnimBreath(flight []geometry.Point, done func()) Animation
 	GetAnimBackgroundColor(position geometry.Point, colorName string, frameCount int, done func()) Animation
-	GetAnimAppearance(actor ActorForUI,position geometry.Point, done func()) Animation
-
+	GetAnimAppearance(actor ActorForUI, position geometry.Point, done func()) Animation
 }
 
 type Animation interface {
@@ -180,10 +176,11 @@ type UIStat struct {
 }
 
 type ScoreInfo struct {
-	PlayerName   string
-	Score        int
-	MaxLevel     int
-	CauseOfDeath string
+	PlayerName         string
+	MaxLevel           int
+	DescriptiveMessage string
+	Escaped            bool
+	Gold               int
 }
 
 type EntityType int

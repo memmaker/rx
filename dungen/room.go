@@ -29,6 +29,7 @@ type DungeonRoom struct {
 	canBeLit                bool
 	bounds                  geometry.Rect
 	doors                   map[geometry.Point]bool
+	LastSeenTurn            int
 }
 
 func (r *DungeonRoom) GetFreeConnectionsWithRotatedDirection() map[geometry.Point]RoomConnection {
@@ -666,6 +667,11 @@ func (r *DungeonRoom) IsBottomRightWallCorner(pos geometry.Point) bool {
 
 func (r *DungeonRoom) GetCenter() geometry.Point {
 	return r.bounds.Center()
+}
+
+func (r *DungeonRoom) GetRandomAbsoluteWallPosition() geometry.Point {
+	walls := r.GetWalls()
+	return walls[rand.Intn(len(walls))]
 }
 func NewDungeonRoomFromTemplate(templateName string) *DungeonRoom {
 	rectRoom := &DungeonRoom{

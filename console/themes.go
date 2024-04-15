@@ -151,10 +151,10 @@ func loadIconsForObjects(record recfile.Record, colors ColorTheme) map[foundatio
 	for _, field := range record {
 		if strings.ContainsRune(field.Name, '_') {
 			objectName, fgColor, bgColor := readColorField(field, colors)
-			objectType := foundation.ObjectCategory(objectName)
+			objectType := foundation.ObjectCategoryFromString(objectName)
 			icons[objectType] = icons[objectType].WithColors(fgColor, bgColor)
 		} else {
-			objectType := foundation.ObjectCategory(field.Name)
+			objectType := foundation.ObjectCategoryFromString(field.Name)
 			icons[objectType] = icons[objectType].WithRune([]rune(field.Value)[0])
 		}
 	}

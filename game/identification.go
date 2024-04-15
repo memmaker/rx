@@ -10,12 +10,25 @@ type IdentificationKnowledge struct {
 	scrollMap map[string]string // potion color -> real name
 	wandMap   map[string]string // potion color -> real name
 
-	alwaysIDOnUse map[string]bool
+	alwaysIDOnUse    map[string]bool
+	currentItemInUse string
+
+	onIdChanged func()
 }
 
 func NewIdentificationKnowledge() *IdentificationKnowledge {
 	return &IdentificationKnowledge{
 		identifiedItemTypes: make(map[string]bool),
+	}
+}
+
+func (i *IdentificationKnowledge) SetOnIdChanged(onIdChanged func()) {
+	i.onIdChanged = onIdChanged
+}
+
+func (i *IdentificationKnowledge) onChanged() {
+	if i.onIdChanged != nil {
+		i.onIdChanged()
 	}
 }
 
@@ -32,6 +45,7 @@ func (i *IdentificationKnowledge) IsItemIdentified(name string) bool {
 
 func (i *IdentificationKnowledge) IdentifyItem(name string) {
 	i.identifiedItemTypes[name] = true
+	i.onChanged()
 }
 func (i *IdentificationKnowledge) MixPotions(potionNames []string) {
 
@@ -279,4 +293,15 @@ func (i *IdentificationKnowledge) CanBeIdentifiedByUsing(name string) bool {
 	}
 
 	return false
+}
+
+func (i *IdentificationKnowledge) EffectWitnessed() {
+	if i.currentItemInUse == "" {
+		return
+	}
+	i.IdentifyItem(i.currentItemInUse)
+}
+
+func (i *IdentificationKnowledge) SetCurrentItemInUse(name string) {
+	i.currentItemInUse = name
 }

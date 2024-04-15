@@ -2,50 +2,73 @@ package rpg
 
 import "fmt"
 
-func SuccessRoll(effectiveSkill int) (rollResult int, isSuccess bool, marginOfSuccess int) {
+func SuccessRoll(effectiveSkill int) (rollResult int, result ResultType, marginOfSuccess int) {
 	roll := NewDice(3, 6, 0).Roll()
+
+	isSuccess := roll <= effectiveSkill
 	marginOfSuccess = effectiveSkill - roll
-	if roll == 3 || roll == 4 {
-		return roll, true, marginOfSuccess
+
+	var resultType ResultType
+	if isSuccess {
+		resultType = TypeSuccess
+		if isCriticalSuccess(roll, effectiveSkill) {
+			resultType = TypeCriticalSuccess
+		}
+	} else {
+		resultType = TypeFail
+		if isCriticalFailure(roll, effectiveSkill) {
+			resultType = TypeCriticalFail
+		}
 	}
-	if roll == 17 || roll == 18 {
-		return roll, false, marginOfSuccess
-	}
-	isSuccess = roll <= effectiveSkill
-	return roll, isSuccess, marginOfSuccess
+
+	return roll, resultType, marginOfSuccess
 }
 
 // SkillContest returns the winner of a skill contest between two contenders.
 // Will return 0 on draw (shouldn't happen (often)), 1 if contenderOne wins, and 2 if contenderTwo wins.
 func SkillContest(contenderOneEffectiveSkill, contenderTwoEffectiveSkill int) (winner int) {
-	_, successOne, _ := SuccessRoll(contenderOneEffectiveSkill)
-	_, successTwo, _ := SuccessRoll(contenderTwoEffectiveSkill)
+	_, rOne, _ := SuccessRoll(contenderOneEffectiveSkill)
+	_, rTwo, _ := SuccessRoll(contenderTwoEffectiveSkill)
 	maxTries := 100
 	for i := 0; i < maxTries; i++ {
-		if successOne == successTwo {
+		if rOne == rTwo {
 			continue
 		}
-		if successOne && !successTwo {
+		if rOne.IsSuccess() && rTwo.IsFailure() {
 			return 1
 		}
-		if !successOne && successTwo {
+		if rOne.IsFailure() && rTwo.IsSuccess() {
 			return 2
 		}
+		_, rOne, _ = SuccessRoll(contenderOneEffectiveSkill)
+		_, rTwo, _ = SuccessRoll(contenderTwoEffectiveSkill)
 	}
 	return 0
 }
 
-type HitType int
+type ResultType int
+
+func (t ResultType) IsFailure() bool {
+	return t == TypeFail || t == TypeCriticalFail
+}
+
+func (t ResultType) IsCriticalSucces() bool {
+	return t == TypeCriticalSuccess
+}
+
+func (t ResultType) IsSuccess() bool {
+	return t == TypeSuccess || t == TypeCriticalSuccess
+}
 
 const (
-	HitTypeMiss HitType = iota
-	HitTypeHit
-	HitTypeCriticalHit
-	HitTypeCriticalMiss
+	TypeFail ResultType = iota
+	TypeSuccess
+	TypeCriticalSuccess
+	TypeCriticalFail
 )
 
 type AttackOutcome struct {
-	TypeOfHit  HitType
+	TypeOfHit  ResultType
 	DamageDone int
 
 	WasActiveDefenseRolled bool
@@ -65,18 +88,18 @@ type AttackOutcome struct {
 }
 
 func (a AttackOutcome) IsHit() bool {
-	return a.TypeOfHit == HitTypeHit || a.TypeOfHit == HitTypeCriticalHit
+	return a.TypeOfHit == TypeSuccess || a.TypeOfHit == TypeCriticalSuccess
 }
 
 func (a AttackOutcome) IsCriticalHit() bool {
-	return a.TypeOfHit == HitTypeCriticalHit
+	return a.TypeOfHit == TypeCriticalSuccess
 }
 
 func (a AttackOutcome) IsMiss() bool {
-	return a.TypeOfHit == HitTypeMiss || a.TypeOfHit == HitTypeCriticalMiss
+	return a.TypeOfHit == TypeFail || a.TypeOfHit == TypeCriticalFail
 }
 func (a AttackOutcome) IsCriticalMiss() bool {
-	return a.TypeOfHit == HitTypeCriticalMiss
+	return a.TypeOfHit == TypeCriticalFail
 }
 
 func (a AttackOutcome) HitTypeMessage() string {
@@ -118,11 +141,10 @@ func (a AttackOutcome) String(attackerName, defenderName string) []string {
 	}
 }
 func Attack(attackerEffectiveSkill int, attackerDamageDice Dice, activeDefenseScore int, damageResistance int) AttackOutcome {
-	attackRoll, attackSucceeds, attMarginOfSucc := SuccessRoll(attackerEffectiveSkill)
-	if !attackSucceeds {
-		hitType := checkHitCritFail(attackerEffectiveSkill, attackRoll)
+	attackRoll, attackResult, attMarginOfSucc := SuccessRoll(attackerEffectiveSkill)
+	if attackResult.IsFailure() {
 		return AttackOutcome{
-			TypeOfHit:              hitType,
+			TypeOfHit:              attackResult,
 			WasActiveDefenseRolled: false,
 			AttackSuccessful:       false,
 			AttackRoll:             attackRoll,
@@ -131,23 +153,26 @@ func Attack(attackerEffectiveSkill int, attackerDamageDice Dice, activeDefenseSc
 		}
 	}
 
-	isCrit := isCriticalSuccess(attackerEffectiveSkill, attackRoll)
 	rolledDefense := false
 	var defenseRoll int
 	var defenseSucceeds bool
 	var defMarginOfSucc int
 
-	if !isCrit {
+	if !attackResult.IsCriticalSucces() && activeDefenseScore >= 0 {
 		rolledDefense = true
-		if defenseRoll, defenseSucceeds, defMarginOfSucc = SuccessRoll(activeDefenseScore); defenseSucceeds {
-			hitType := checkDefenseCritSuccess(activeDefenseScore, attackRoll)
+		var defenseResult ResultType
+		if defenseRoll, defenseResult, defMarginOfSucc = SuccessRoll(activeDefenseScore); defenseSucceeds {
+			hitType := TypeFail
+			if defenseResult.IsCriticalSucces() {
+				hitType = TypeCriticalFail
+			}
 			return AttackOutcome{
 				TypeOfHit:              hitType,
 				WasActiveDefenseRolled: rolledDefense,
 				AttackRoll:             attackRoll,
 				AttackEffectiveSkill:   attackerEffectiveSkill,
 				AttackMarginOfSuccess:  attMarginOfSucc,
-				AttackSuccessful:       attackSucceeds,
+				AttackSuccessful:       attackResult.IsSuccess(),
 				DefenseRoll:            defenseRoll,
 				DefenseEffectiveSkill:  activeDefenseScore,
 				DefenseMarginOfSuccess: defMarginOfSucc,
@@ -160,9 +185,9 @@ func Attack(attackerEffectiveSkill int, attackerDamageDice Dice, activeDefenseSc
 	var critTableRoll int
 	var critMessage string
 	maxDamage := attackRoll == 3
-	hitType := HitTypeHit
-	if isCrit {
-		hitType = HitTypeCriticalHit
+	hitType := TypeSuccess
+	if attackResult.IsCriticalSucces() {
+		hitType = TypeCriticalSuccess
 		threeD6 := NewDice(3, 6, 0)
 		critTableRoll = threeD6.Roll()
 
@@ -204,7 +229,7 @@ func Attack(attackerEffectiveSkill int, attackerDamageDice Dice, activeDefenseSc
 		AttackRoll:             attackRoll,
 		AttackEffectiveSkill:   attackerEffectiveSkill,
 		AttackMarginOfSuccess:  attMarginOfSucc,
-		AttackSuccessful:       attackSucceeds,
+		AttackSuccessful:       attackResult.IsSuccess(),
 		DamageDice:             attackerDamageDice,
 		DefenseRoll:            defenseRoll,
 		DefenseEffectiveSkill:  activeDefenseScore,
@@ -218,47 +243,40 @@ func Attack(attackerEffectiveSkill int, attackerDamageDice Dice, activeDefenseSc
 	}
 }
 
-func AttackAgainstDoubleActiveDefense(attackerEffectiveSkill int, attackerDamageDice Dice, activeDefenseScores [2]int, damageResistance int) (HitType, int) {
-	attackRoll, attackSucceeds, _ := SuccessRoll(attackerEffectiveSkill)
-	if !attackSucceeds {
-		hitType := checkHitCritFail(attackerEffectiveSkill, attackRoll)
-		return hitType, 0
+func AttackAgainstDoubleActiveDefense(attackerEffectiveSkill int, attackerDamageDice Dice, activeDefenseScores [2]int, damageResistance int) (ResultType, int) {
+	attackRoll, attack, _ := SuccessRoll(attackerEffectiveSkill)
+	if attack.IsFailure() {
+		return attack, 0
 	}
 
-	isCrit := isCriticalSuccess(attackerEffectiveSkill, attackRoll)
+	isCrit := attack.IsCriticalSucces()
 
 	if !isCrit {
-		if defRoll, defenseSucceeds, _ := SuccessRoll(activeDefenseScores[0]); defenseSucceeds {
-			hitType := checkDefenseCritSuccess(activeDefenseScores[0], defRoll)
-			return hitType, 0
+		if _, defense, _ := SuccessRoll(activeDefenseScores[0]); defense.IsSuccess() {
+			return defense, 0
 		}
-		if defRoll, defenseSucceeds, _ := SuccessRoll(activeDefenseScores[1]); defenseSucceeds {
-			hitType := checkDefenseCritSuccess(activeDefenseScores[1], defRoll)
-			return hitType, 0
+		if _, defense, _ := SuccessRoll(activeDefenseScores[1]); defense.IsSuccess() {
+			return defense, 0
 		}
 	}
 
 	_, damage := rollDamage(attackRoll, attackerDamageDice, damageResistance)
 
-	hitType := HitTypeHit
-	if isCrit {
-		hitType = HitTypeCriticalHit
-	}
-	return hitType, damage
+	return attack, damage
 }
 
-func checkDefenseCritSuccess(activeDefenseScore int, defRoll int) HitType {
-	hitType := HitTypeMiss
+func checkDefenseCritSuccess(activeDefenseScore int, defRoll int) ResultType {
+	hitType := TypeFail
 	if isCriticalSuccess(activeDefenseScore, defRoll) {
-		hitType = HitTypeCriticalMiss
+		hitType = TypeCriticalFail
 	}
 	return hitType
 }
 
-func checkHitCritFail(attackerEffectiveSkill int, attackRoll int) HitType {
-	hitType := HitTypeMiss
+func checkHitCritFail(attackerEffectiveSkill int, attackRoll int) ResultType {
+	hitType := TypeFail
 	if isCriticalFailure(attackerEffectiveSkill, attackRoll) {
-		hitType = HitTypeCriticalMiss
+		hitType = TypeCriticalFail
 	}
 	return hitType
 }

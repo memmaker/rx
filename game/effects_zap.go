@@ -8,25 +8,55 @@ import (
 	"math/rand"
 )
 
-var zapEffects = map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation{
-	"magic_missile":        magicMissile,
-	"fire_breath":          fireBreath,
-	"polymorph":            polymorph,
-	"haste_target":         hasteTarget,
-	"slow_target":          slowTarget,
-	"teleport_target_away": teleportTargetAway,
-	"teleport_target_to":   teleportTargetTo,
-	"cancel_target":        cancelTarget,
-	"invisibility_target":  invisibilityTarget,
-	"cold_ray":             coldRay,
-	"lightning_ray":        lightningRay,
-	"fire_ray":             fireRay,
-	"charge_attack":        chargeAttack,
+func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
+	var zapEffects = map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation{
+		"magic_missile":        magicMissile,
+		"fire_breath":          fireBreath,
+		"polymorph":            polymorph,
+		"haste_target":         hasteTarget,
+		"slow_target":          slowTarget,
+		"teleport_target_away": teleportTargetAway,
+		"teleport_target_to":   teleportTargetTo,
+		"cancel_target":        cancelTarget,
+		"invisibility_target":  invisibilityTarget,
+		"cold_ray":             coldRay,
+		"lightning_ray":        lightningRay,
+		"fire_ray":             fireRay,
+		"charge_attack":        chargeAttack,
+		"explode":              explosion,
+		"magic_dart":           magicDart,
+		"magic_arrow":          magicArrow,
+		"force_descend_target": forceDescendTarget,
+		"hold_target":          holdTarget,
+	}
+	return zapEffects
+}
+
+func forceDescendTarget(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
+	if !g.gridMap.IsActorAt(pos) {
+		return nil
+	}
+
+	descendingActor := g.gridMap.ActorAt(pos)
+	if descendingActor == g.Player {
+		g.QueueActionAfterAnimation(g.descendToRandomLocation)
+	} else {
+		g.gridMap.RemoveActor(descendingActor)
+	}
+	return nil
+}
+
+func magicDart(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
+	return magicItemProjectile(g, zapper, pos, "dart", "a dart")
+}
+
+func magicArrow(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
+	return magicItemProjectile(g, zapper, pos, "arrow", "an arrow")
 }
 
 func uncloakAndCharge(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
-	zapper.GetFlags().Unset(foundation.IsInvisible)
-	zapper.GetFlags().Unset(foundation.IsSleeping)
+	zapper.GetFlags().Unset(foundation.FlagInvisible)
+	zapper.SetAware()
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(zapper, zapper.Position())
 	chargeAnim, _ := charge(g, zapper, pos, g.getLine)
 	//tileIcon := g.gridMap.GetTileIconAt(targetPos)
@@ -69,7 +99,7 @@ func ModFlatAndCap(flatMod int, cap int, reason string) []rpg.Modifier {
 }
 
 func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
-	damage := max(1, rpg.Spread(max(1, zapper.GetIntelligence())-8, 0.35))
+	damage := max(1, rpg.Spread(8, 0.35))
 	trailLead := '☼'
 	trailColors := []string{"White", "White", "LightCyan", "LightBlue", "Blue"}
 	hitEntityHandler := func(hitPos geometry.Point) []foundation.Animation {
@@ -77,7 +107,7 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 			actor := g.gridMap.ActorAt(hitPos)
 			if actor.IsAlive() {
 				freeze := func() {
-					actor.GetFlags().Set(foundation.IsHeld)
+					actor.GetFlags().Set(foundation.FlagHeld)
 				}
 				damageAnim := g.damageActorWithFollowUp(zapper.Name(), actor, damage, freeze, nil)
 				return damageAnim
@@ -85,9 +115,9 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 		}
 		return nil
 	}
-	_, isClever, _ := rpg.SuccessRoll(zapper.GetIntelligence() - 4)
+	_, result, _ := rpg.SuccessRoll(zapper.GetIntelligence() - 4)
 
-	if rand.Intn(20) == 0 || isClever { // 1 in 20 chance to just bounce off
+	if rand.Intn(20) == 0 || result.IsSuccess() { // 1 in 20 chance to just bounce off
 		bounceCount := rand.Intn(30) + 3
 		return g.bouncingRay(zapper, aimPos, bounceCount, trailLead, trailColors, hitEntityHandler)
 	}
@@ -95,7 +125,32 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 	return g.singleRay(zapper.Position(), aimPos, trailLead, trailColors, hitEntityHandler)
 
 }
+func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Animation {
+	damage := 5
+	radius := 3
+	affected := g.gridMap.GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
+		return g.gridMap.IsTileWalkable(p)
+	})
 
+	var animationsForThisFrame []foundation.Animation
+	var deferredAnimations []foundation.Animation
+	var affectedPoints []geometry.Point
+	for point, _ := range affected {
+		damageAnims := g.damageLocation("explosion", point, damage)
+		deferredAnimations = append(deferredAnimations, damageAnims...)
+		affectedPoints = append(affectedPoints, point)
+	}
+
+	projectileAnim := g.ui.GetAnimExplosion(affectedPoints, nil)
+
+	if len(deferredAnimations) > 0 && projectileAnim != nil {
+		projectileAnim.SetFollowUp(deferredAnimations)
+	}
+
+	animationsForThisFrame = append(animationsForThisFrame, projectileAnim)
+
+	return animationsForThisFrame
+}
 func (g *GameState) singleRay(origin, target geometry.Point, leadIcon rune, trailColors []string, hitEntityHandler func(hitPos geometry.Point) []foundation.Animation) []foundation.Animation {
 	direction := target.ToCenteredPointF().Sub(origin.ToCenteredPointF())
 	rayHitInfo := g.gridMap.RayCast(origin.ToCenteredPointF(), direction, g.IsBlockingRay)
@@ -124,7 +179,7 @@ func (g *GameState) singleRay(origin, target geometry.Point, leadIcon rune, trai
 
 func fireRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
 
-	damage := max(1, rpg.Spread(max(1, zapper.GetIntelligence())-6, 0.8))
+	damage := max(1, rpg.Spread(10, 0.8))
 
 	trailColors := []string{"White", "Yellow", "LightRed", "Red"}
 
@@ -139,7 +194,7 @@ func fireRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 }
 
 func lightningRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
-	damage := max(1, rpg.Spread(max(1, zapper.GetIntelligence())-8, 0.5))
+	damage := max(1, rpg.Spread(7, 0.5))
 
 	trailColors := []string{
 		"White",
@@ -209,6 +264,9 @@ func invisibilityTarget(g *GameState, zapper *Actor, targetPos geometry.Point) [
 		//coverAnim := g.ui.GetAnimCover(targetPos, actorIcon, dist, nil)
 		//animations = append(animations, coverAnim)
 		makeInvisible(g, targetActor)
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
 	}
 
 	return animations
@@ -241,6 +299,9 @@ func teleportTargetTo(g *GameState, zapper *Actor, targetPos geometry.Point) []f
 
 		teleportAnim := teleportWithAnimation(g, targetActor, teleportTargetPos)
 		projAnim.SetFollowUp([]foundation.Animation{teleportAnim})
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
 	}
 
 	return animations
@@ -248,14 +309,17 @@ func teleportTargetTo(g *GameState, zapper *Actor, targetPos geometry.Point) []f
 
 func teleportTargetAway(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
 	var animations []foundation.Animation
+	origin := originFromZapperOrWall(g, zapper, targetPos)
 
-	origin := zapper.Position()
-	pathOfFlight := g.getLineOfSight(origin, targetPos)
+	var projAnim foundation.Animation
+	if origin != targetPos {
+		pathOfFlight := g.getLineOfSight(origin, targetPos)
 
-	targetPos = pathOfFlight[len(pathOfFlight)-1]
+		targetPos = pathOfFlight[len(pathOfFlight)-1]
 
-	projAnim, _ := g.ui.GetAnimProjectile('°', "LightCyan", zapper.Position(), targetPos, nil)
-	animations = append(animations, projAnim)
+		projAnim, _ = g.ui.GetAnimProjectile('°', "LightCyan", origin, targetPos, nil)
+		animations = append(animations, projAnim)
+	}
 
 	if g.gridMap.IsActorAt(targetPos) {
 		targetActor := g.gridMap.ActorAt(targetPos)
@@ -264,10 +328,32 @@ func teleportTargetAway(g *GameState, zapper *Actor, targetPos geometry.Point) [
 		//animations = append(animations, coverAnim)
 
 		teleportAnim := phaseDoor(g, targetActor)
-		projAnim.SetFollowUp(teleportAnim)
+		if projAnim != nil {
+			projAnim.SetFollowUp(teleportAnim)
+		} else {
+			animations = teleportAnim
+		}
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
 	}
 
 	return animations
+}
+
+func originFromZapperOrWall(g *GameState, zapper *Actor, targetPos geometry.Point) geometry.Point {
+	var origin geometry.Point
+	if zapper != nil {
+		origin = zapper.Position()
+	} else {
+		origin = targetPos
+		roomHere := g.dungeonLayout.GetRoomAt(targetPos)
+		if roomHere != nil {
+			randomDir := geometry.RandomCardinalDirection()
+			origin = g.gridMap.GetFirstWallCardinalInDirection(targetPos, randomDir)
+		}
+	}
+	return origin
 }
 
 func cancelTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
@@ -284,15 +370,40 @@ func cancelTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []found
 	if g.gridMap.IsActorAt(targetPos) {
 		targetActor := g.gridMap.ActorAt(targetPos)
 		cancel(g, targetActor)
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
 	}
 
 	return animations
 }
+func holdTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
+	var animations []foundation.Animation
 
+	origin := originFromZapperOrWall(g, zapper, targetPos)
+
+	pathOfFlight := g.getLineOfSight(origin, targetPos)
+
+	targetPos = pathOfFlight[len(pathOfFlight)-1]
+
+	projAnim, _ := g.ui.GetAnimProjectile('*', "White", origin, targetPos, nil)
+	animations = append(animations, projAnim)
+
+	if g.gridMap.IsActorAt(targetPos) {
+		targetActor := g.gridMap.ActorAt(targetPos)
+		targetActor.GetFlags().Increase(foundation.FlagHeld, rand.Intn(10) + 5)
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
+	}
+
+	return animations
+}
 func slowTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
 	var animations []foundation.Animation
 
-	origin := zapper.Position()
+	origin := originFromZapperOrWall(g, zapper, targetPos)
+
 	pathOfFlight := g.getLineOfSight(origin, targetPos)
 
 	targetPos = pathOfFlight[len(pathOfFlight)-1]
@@ -303,6 +414,9 @@ func slowTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundat
 	if g.gridMap.IsActorAt(targetPos) {
 		targetActor := g.gridMap.ActorAt(targetPos)
 		slow(g, targetActor)
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
 	}
 
 	return animations
@@ -322,6 +436,9 @@ func hasteTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []founda
 	if g.gridMap.IsActorAt(targetPos) {
 		targetActor := g.gridMap.ActorAt(targetPos)
 		haste(g, targetActor)
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
 	}
 
 	return animations
@@ -354,7 +471,9 @@ func polymorph(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.
 		g.gridMap.AddActor(newMonster, targetPos)
 		newName := newMonster.Name()
 		g.msg(foundation.HiLite("%s turns into %s", oldName, newName))
-
+		if zapper == g.Player && !g.Player.IsBlind() && (g.isInPlayerRoom(targetPos) || g.canPlayerSee(targetPos)) {
+			g.identification.EffectWitnessed()
+		}
 	}
 	return animations
 }
@@ -382,6 +501,42 @@ func magicMissile(g *GameState, zapper *Actor, targetPos geometry.Point) []found
 	return OneAnimation(projAnim)
 }
 
+func magicItemProjectile(g *GameState, zapper *Actor, targetPos geometry.Point, itemName, friendlyName string) []foundation.Animation {
+	origin := originFromZapperOrWall(g, zapper, targetPos)
+	sourceName := nameOfDamageSource(zapper, friendlyName)
+	pathOfFlight := g.getLineOfSight(origin, targetPos)
+
+	targetPos = pathOfFlight[len(pathOfFlight)-1]
+	if !g.gridMap.IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
+		targetPos = pathOfFlight[len(pathOfFlight)-2]
+	}
+
+	var onHitAnimations []foundation.Animation
+
+	dart := g.NewItemFromName(itemName)
+
+	g.addItemToMap(dart, targetPos)
+
+	projAnim, _ := g.ui.GetAnimThrow(dart, origin, targetPos)
+
+	damageConsequences := g.damageLocation(sourceName, targetPos, dart.GetThrowDamageDice().Roll())
+
+	onHitAnimations = append(onHitAnimations, damageConsequences...)
+
+	if projAnim != nil {
+		projAnim.SetFollowUp(onHitAnimations)
+	}
+
+	return OneAnimation(projAnim)
+}
+
+func nameOfDamageSource(zapper *Actor, otherName string) string {
+	if zapper == nil {
+		return otherName
+	}
+	return zapper.Name()
+}
+
 func (g *GameState) damageLocation(damageSource string, targetPos geometry.Point, damage int) []foundation.Animation {
 	if g.gridMap.IsActorAt(targetPos) {
 		defender := g.gridMap.ActorAt(targetPos)
@@ -398,8 +553,8 @@ func (g *GameState) damageActorWithFollowUp(damageSource string, victim *Actor, 
 	victim.TakeDamage(damage)
 	damageAnim := g.ui.GetAnimDamage(victim.Position(), damage, done)
 
-	if victim.HasFlag(foundation.IsSleeping) && rand.Intn(10) != 0 {
-		victim.GetFlags().Unset(foundation.IsSleeping)
+	if victim.HasFlag(foundation.FlagSleep) && rand.Intn(10) != 0 {
+		victim.GetFlags().Unset(foundation.FlagSleep)
 	}
 
 	if victim.GetHitPoints() <= 0 {
@@ -483,6 +638,7 @@ func fireBreath(g *GameState, zapper *Actor, pos geometry.Point) []foundation.An
 	return []foundation.Animation{breathAnim}
 }
 func zapEffectExists(zapEffectName string) bool {
+	zapEffects := GetAllZapEffects()
 	_, ok := zapEffects[zapEffectName]
 	return ok
 }
@@ -515,16 +671,23 @@ func (g *GameState) playerZapItemAndEndTurn(item *Item, targetPos geometry.Point
 	g.endPlayerTurn()
 }
 func (g *GameState) actorInvokeZapEffect(zapper *Actor, zapEffectName string, targetPos geometry.Point) []foundation.Animation {
+	zapFunc := ZapEffectFromName(zapEffectName)
+	if zapFunc == nil {
+		return nil
+	}
+	return zapFunc(g, zapper, targetPos)
+}
+
+func ZapEffectFromName(zapEffectName string) func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
 	if zapEffectName == "" {
 		return nil
 	}
-
+	zapEffects := GetAllZapEffects()
 	zapFunc, ok := zapEffects[zapEffectName]
 	if !ok {
 		return nil
 	}
-
-	return zapFunc(g, zapper, targetPos)
+	return zapFunc
 }
 
 func (g *GameState) playerInvokeZapEffectAndEndTurn(zapEffectName string, targetPos geometry.Point) {

@@ -15,30 +15,50 @@ type DamageAnimation struct {
 	ticksLeft int
 }
 
-func NewDamageAnimation(defenderPos geometry.Point, damage int) *DamageAnimation {
-	damageRune := '!'
+func NewDamageAnimation(defenderPos geometry.Point, playerPos geometry.Point, damage int) *DamageAnimation {
+	primary := '!'
 	fgColor := color.RGBA{R: 240, G: 20, B: 20, A: 255}
 	bgColor := color.RGBA{R: 40, A: 255}
+	drawables := make(map[geometry.Point]foundation.TextIcon)
 	if damage == 0 {
-		damageRune = '-'
+		primary = '-'
 		fgColor = color.RGBA{R: 200, G: 200, B: 200, A: 255}
 		bgColor = color.RGBA{R: 40, G: 40, B: 40, A: 255}
 	} else if damage < 10 {
 		asRunes := []rune(strconv.Itoa(damage))
-		damageRune = asRunes[0]
+		primary = asRunes[0]
+	} else if damage >= 10 {
+		asRunes := []rune(strconv.Itoa(damage))
+		primary = asRunes[0]
+		secondary := asRunes[1]
+		secondaryPos := defenderPos.Add(geometry.Point{X: 1, Y: 0})
+		if secondaryPos == playerPos {
+			secondaryPos = defenderPos.Add(geometry.Point{X: -1, Y: 0})
+			primary = asRunes[1]
+			secondary = asRunes[0]
+		}
+		if damage >= 100 {
+			primary = '!'
+			secondary = '!'
+		}
+		drawables[secondaryPos] = foundation.TextIcon{
+			Rune: secondary,
+			Fg:   fgColor,
+			Bg:   bgColor,
+		}
 	}
+	drawables[defenderPos] = foundation.TextIcon{
+		Rune: primary,
+		Fg:   fgColor,
+		Bg:   bgColor,
+	}
+
 	return &DamageAnimation{
 		BaseAnimation: &BaseAnimation{},
 		pos:           defenderPos,
 		damage:        damage,
-		ticksLeft:     4,
-		drawables: map[geometry.Point]foundation.TextIcon{
-			defenderPos: {
-				Rune: damageRune,
-				Fg:   fgColor,
-				Bg:   bgColor,
-			},
-		},
+		ticksLeft:     3,
+		drawables:     drawables,
 	}
 }
 
@@ -61,9 +81,6 @@ func (d *DamageAnimation) NextFrame() {
 	}
 	if d.ticksLeft == 0 {
 		d.onFinishedOrCancelled()
-	}
-	if d.ticksLeft == 2 {
-		d.drawables[d.pos] = d.drawables[d.pos].Reversed()
 	}
 }
 

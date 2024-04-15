@@ -21,7 +21,7 @@ func (d DataDefinitions) HasItems(category foundation.ItemCategory) bool {
 }
 
 func GetDataDefinitions() DataDefinitions {
-	dataDir := "data"
+	dataDir := path.Join("data", "definitions")
 
 	readCloser := util.MustOpen(path.Join(dataDir, "armor.rec"))
 	armorRecords := recfile.Read(readCloser)
@@ -47,8 +47,12 @@ func GetDataDefinitions() DataDefinitions {
 	ringRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
-	readCloser = util.MustOpen(path.Join(dataDir, "other.rec"))
-	otherRecords := recfile.Read(readCloser)
+	readCloser = util.MustOpen(path.Join(dataDir, "amulets.rec"))
+	amuletRecords := recfile.Read(readCloser)
+	readCloser.Close()
+
+	readCloser = util.MustOpen(path.Join(dataDir, "food.rec"))
+	foodRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
 	items := make(map[foundation.ItemCategory][]ItemDef)
@@ -71,8 +75,11 @@ func GetDataDefinitions() DataDefinitions {
 	if len(ringRecords) > 0 {
 		items[foundation.ItemCategoryRings] = ItemDefsFromRecords(ringRecords)
 	}
-	if len(otherRecords) > 0 {
-		items[foundation.ItemCategoryOther] = ItemDefsFromRecords(otherRecords)
+	if len(amuletRecords) > 0 {
+		items[foundation.ItemCategoryAmulets] = ItemDefsFromRecords(amuletRecords)
+	}
+	if len(foodRecords) > 0 {
+		items[foundation.ItemCategoryFood] = ItemDefsFromRecords(foodRecords)
 	}
 
 	readCloser = util.MustOpen(path.Join(dataDir, "monsters.rec"))
@@ -111,14 +118,6 @@ func (d DataDefinitions) PickItemForLevel(random *rand.Rand, level int) ItemDef 
 			InternalName: "gold",
 			Category:     foundation.ItemCategoryGold,
 			Charges:      rpg.NewDice(min(10, level+1), 10, 0),
-		}
-	}
-	if randomCategory == foundation.ItemCategoryFood {
-		return ItemDef{
-			Name:         "food",
-			InternalName: "food",
-			Category:     foundation.ItemCategoryFood,
-			Charges:      rpg.NewDice(0,0,10),
 		}
 	}
 	items := d.Items[randomCategory]

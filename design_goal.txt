@@ -5,19 +5,30 @@ TODO FOR RX1
  - Complete Rogue feature set
    - Level Ups
    - Complete ID Game
-   - Complete Food Clock
+   - Complete Food Clock Rules
+     - You get hungry every 300 turns after eating food
+     - While hungry Str. is reduced
+     - While hungry, no hp regenerates and you loose fp constantly
+   - Give a meaning to the fatigue points: add tactics menu
+   - Traps
    - Item Effects
    - Monster Abilities
-   - Win Condition
- - Balance
+   - Win Condition - GOOD ENOUGH
+     - Place amulet on level 26
+     - Allow ascension
+ - Balance - Fuck balance - Do what feels right for the dungeon
    - Spawning
    - Monsters & Combat
    - Player Progression
+ - Level Challenges from the Gods! With optional rewards!
+   - Don't use scrolls
+   - Don't kill anyone
+   - Kill all monsters
+
  - Warrior Mode - 4 CP
  - Adventurer Mode - 40-60 CP
- - Give a meaning to the fatigue points: add tactics menu
- - Traps
  - Lore? Monster descriptions?
+ - Lore list for completionists?
    -> https://nethackwiki.com/wiki/Floating_eye
  - Nice combat messages, depending on margin of success, also crit tables..
 

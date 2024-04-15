@@ -6,33 +6,40 @@ import (
 )
 
 type Object struct {
-	position geometry.Point
-	icon     foundation.ObjectCategory
-	name     string
-	onDamage func() []foundation.Animation
-	isAlive  bool
-	isDrawn  bool
+	position        geometry.Point
+	category        foundation.ObjectCategory
+	onDamage        func() []foundation.Animation
+	onWalkOver      func() []foundation.Animation
+	isAlive         bool
+	isDrawn         bool
+	isWalkable      bool
+	isHidden        bool
+	triggerOnDamage bool
 }
 
-func NewBarrel(icon foundation.ObjectCategory, createExplosion func(atLoc geometry.Point) []foundation.Animation) *Object {
-	barrel := NewObject("barrel", icon)
-	damage := func() []foundation.Animation {
-		if barrel.isAlive {
-			barrel.isAlive = false
-			consequences := createExplosion(barrel.Position())
+func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *Object {
+	trap := NewObject(trapType)
+	triggerEffect := func() []foundation.Animation {
+		if trap.isAlive {
+			trap.isAlive = false
+			zapEffect := ZapEffectFromName(trapType.ZapEffect())
+			consequences := zapEffect(g, nil, trap.Position())
 			return consequences
 		}
 		return nil
 	}
-	barrel.SetOnDamage(damage)
-	return barrel
+
+	trap.SetHidden(true)
+	trap.SetOnDamage(triggerEffect)
+	trap.SetOnWalkOver(triggerEffect)
+	trap.SetWalkable(true)
+	return trap
 }
-func NewObject(name string, icon foundation.ObjectCategory) *Object {
+func NewObject(icon foundation.ObjectCategory) *Object {
 	return &Object{
-		icon:    icon,
-		name:    name,
-		isAlive: true,
-		isDrawn: true,
+		category: icon,
+		isAlive:  true,
+		isDrawn:  true,
 	}
 }
 
@@ -44,20 +51,26 @@ func (b *Object) Position() geometry.Point {
 }
 
 func (b *Object) ObjectIcon() foundation.ObjectCategory {
-	return b.icon
+	return b.category
 }
 
 func (b *Object) SetPosition(pos geometry.Point) {
 	b.position = pos
 }
 func (b *Object) OnDamage() []foundation.Animation {
-	if b.onDamage != nil {
+	if b.onDamage != nil && b.triggerOnDamage {
 		return b.onDamage()
 	}
 	return nil
 }
+func (b *Object) OnWalkOver() []foundation.Animation {
+	if b.onWalkOver != nil {
+		return b.onWalkOver()
+	}
+	return nil
+}
 func (b *Object) IsWalkable(actor *Actor) bool {
-	return false
+	return b.isWalkable
 }
 
 func (b *Object) IsTransparent() bool {
@@ -76,5 +89,25 @@ func (b *Object) SetDrawOnMap(drawOnMap bool) {
 }
 
 func (b *Object) IsDrawn() bool {
-	return b.isDrawn
+	return b.isDrawn && !b.isHidden
+}
+
+func (b *Object) SetOnWalkOver(handler func() []foundation.Animation) {
+	b.onWalkOver = handler
+}
+
+func (b *Object) SetWalkable(isWalkable bool) {
+	b.isWalkable = isWalkable
+}
+
+func (b *Object) IsHidden() bool {
+	return b.isHidden
+}
+
+func (b *Object) SetHidden(isHidden bool) {
+	b.isHidden = isHidden
+}
+
+func (b *Object) Name() string {
+	return b.category.String()
 }

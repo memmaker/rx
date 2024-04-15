@@ -23,9 +23,9 @@ dr: 0
 attack: 12 | 1d2 | bite | claw
 */
 type IntrinsicAttack struct {
-	EffectiveSkill int
-	DamageDice     rpg.Dice
-	AttackName     string
+	BaseSkill  int
+	DamageDice rpg.Dice
+	AttackName string
 }
 type MonsterDef struct {
 	Name          string
@@ -49,7 +49,10 @@ type MonsterDef struct {
 	ZapEffects       []string
 	UseEffects       []string
 	DungeonLevel     int
-	Flags            foundation.Flags
+	Flags            *foundation.MapFlags
+
+	CarryChance int
+	Gold        rpg.Dice
 }
 
 func MonsterDefsFromRecords(records []recfile.Record) []MonsterDef {
@@ -62,16 +65,18 @@ func MonsterDefsFromRecords(records []recfile.Record) []MonsterDef {
 }
 
 func NewMonsterDefFromRecord(record recfile.Record) MonsterDef {
-	monsterDef := MonsterDef{}
+	monsterDef := MonsterDef{
+		Flags: foundation.NewMapFlags(),
+	}
 	// an attack key looks like this "attack_1", "attack_2", etc..
 	attackRegex, _ := regexp.Compile("attack_([0-9]+)")
 	for _, field := range record {
 		if attackRegex.MatchString(field.Name) {
 			fields := field.AsList("|")
 			monsterDef.Attacks = append(monsterDef.Attacks, IntrinsicAttack{
-				EffectiveSkill: fields[0].AsInt(),
-				DamageDice:     rpg.ParseDice(fields[1].Value),
-				AttackName:     fields[2].Value,
+				BaseSkill:  fields[0].AsInt(),
+				DamageDice: rpg.ParseDice(fields[1].Value),
+				AttackName: fields[2].Value,
 			})
 			continue
 		}
@@ -90,9 +95,9 @@ func NewMonsterDefFromRecord(record recfile.Record) MonsterDef {
 		case "attack":
 			fields := field.AsList("|")
 			monsterDef.Attacks = append(monsterDef.Attacks, IntrinsicAttack{
-				EffectiveSkill: fields[0].AsInt(),
-				DamageDice:     rpg.ParseDice(fields[1].Value),
-				AttackName:     fields[2].Value,
+				BaseSkill:  fields[0].AsInt(),
+				DamageDice: rpg.ParseDice(fields[1].Value),
+				AttackName: fields[2].Value,
 			})
 		case "dr":
 			monsterDef.DamageResistance = field.AsInt()
@@ -122,12 +127,14 @@ func NewMonsterDefFromRecord(record recfile.Record) MonsterDef {
 			monsterDef.Dodge = field.AsInt()
 		case "dlvl":
 			monsterDef.DungeonLevel = field.AsInt()
+		case "gold":
+			monsterDef.Gold = rpg.ParseDice(field.Value)
+		case "carry_chance":
+			monsterDef.CarryChance = field.AsInt()
 		case "flags":
-			var flagValue uint32
-			for _, flag := range field.AsList("|") {
-				flagValue |= foundation.ActorFlagFromString(flag.Value)
+			for _, mFlag := range field.AsList("|") {
+				monsterDef.Flags.Set(foundation.ActorFlagFromString(mFlag.Value))
 			}
-			monsterDef.Flags = foundation.NewFlagsFromValue(flagValue)
 		default:
 			println("WARNING: Unknown field: " + field.Name)
 		}

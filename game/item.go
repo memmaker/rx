@@ -110,7 +110,7 @@ type Item struct {
 	zapEffectName string
 	charges       int
 	slot          foundation.EquipSlot
-	flags         *foundation.Flags
+	flags         *foundation.BitFlags
 
 	id         *IdentificationKnowledge
 	stat       rpg.Stat
@@ -118,7 +118,7 @@ type Item struct {
 	skill      rpg.SkillName
 	skillBonus int
 
-	equipFlag    uint32
+	equipFlag    foundation.ActorFlag
 	thrownDamage rpg.Dice
 }
 
@@ -145,6 +145,9 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 	}
 	if i.IsArmor() {
 		line = fmt.Sprintf("%s [%d]", i.Name(), i.armor.GetDamageResistanceWithPlus())
+	}
+	if i.IsRing() && i.charges > 0 && i.id.IsItemIdentified(i.internalName) {
+		line = fmt.Sprintf("%s [%d]", i.Name(), i.charges)
 	}
 	return colorCode + line + "[-]"
 }
@@ -301,7 +304,9 @@ func (i *Item) IsMagic() bool { // potions, scrolls, wands & weapons/armor with 
 
 	isEnchantedArmor := i.IsArmor() && i.armor.IsEnchanted()
 
-	return isConsumableMagic || isEnchantedWeapon || isEnchantedArmor
+	isMagicRing := i.IsRing()
+
+	return isConsumableMagic || isEnchantedWeapon || isEnchantedArmor || isMagicRing
 }
 
 func (i *Item) IsWand() bool {
@@ -321,6 +326,7 @@ func (i *Item) GetInternalName() string {
 }
 
 func (i *Item) GetStatBonus(stat rpg.Stat) int {
+
 	if i.stat == stat {
 		return i.statBonus
 	}
@@ -332,7 +338,10 @@ func (i *Item) GetSkillBonus(skill rpg.SkillName) int {
 	}
 	return 0
 }
-func (i *Item) GetEquipFlag() uint32 {
+func (i *Item) GetEquipFlag() foundation.ActorFlag {
+	if i.IsRing() && i.charges == 0 {
+		return foundation.FlagNone
+	}
 	return i.equipFlag
 }
 
@@ -346,4 +355,14 @@ func (i *Item) GetThrowDamageDice() rpg.Dice {
 
 func (i *Item) ConsumeCharge() {
 	i.charges--
+}
+
+func (i *Item) SetCharges(amount int) {
+	i.charges = amount
+}
+
+func (i *Item) AfterEquippedTurn() {
+	if i.IsRing() && i.charges > 0 {
+		i.charges--
+	}
 }

@@ -1,0 +1,51 @@
+
+
+[#f5e342]Rogue Trivia[-]
+
+Before Rogue 5.4 this monster was known as xorn.
+
+/* Rogue 3.6 - 1981 */
+{ "xorn",	       0,	ISMEAN,	{ _x, 120, 7, -2, ___, "1d3/1d3/1d3/4d6" } },
+
+/* Rogue 5.2.1 - 1982 */
+{ "xorn",	       0,	ISMEAN,	{ XX, 190, 7, -2, ___, "1d3/1d3/1d3/4d6" } },
+
+The only original version of rogue that features this monster is the 5.4 release.
+
+/* Rogue 5.4 - 1983 */
+{ "black unicorn", 0,	ISMEAN,	{ XX, 190, 7, -2, ___, "1x9/1x9/2x9" } },
+
+/* EPYX DOS Version 1.48 - 1985 */
+{ "ur-vile",       0,   ISMEAN, { XX, 190, 7, -2, ___, "1d3/1d3/1d3/4d6" } },
+
+The Ur-vile in the EPYX DOS Version 1.48 has most of the same stats.
+
+Advanced Rogue 5.8s also has an entry for a black unicorn in its monster list,
+here it gets a regeneration ability.
+
+/* Advanced Rogue 5.8s */
+{"black unicorn",
+		35,	TRUE,	TRUE,	'u',	"4-6",
+		{ISMEAN, ISREGEN},
+		0, 0,
+		5,
+		{22,	900,	6,	1,	HPT("8d8"),
+		"3d8"}},
+
+Ultra Rogue 1.0.8 features a unicorn that has the blink ability.
+
+/* Ultra Rogue 1.0.8 */
+{"unicorn",
+        10, TRUE,   TRUE,   'u',    "8-12",
+        {ISFAST, CANSURPRISE, CANBLINK, ISLARGE, MEDFRIENDLY},
+        0, 0,
+        5,
+        {12,    400,    6,  2,  HPT("4d8+4"), "1d6/1d6/1d12"}
+
+
+Mike's Adventure Game als has an unicorn, this one gets a flavour string for its attack.
+When you get hit, you are officially "hoofed".
+
+/* Mike's Adventure Game */
+"unicorn",	'u',	3, 45,	2, 6, "1d8",		9, "hoofed",
+	(NOGRAB | BLUE),

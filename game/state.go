@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/daemons"
 	"RogueUI/dungen"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
@@ -16,6 +15,7 @@ import (
 	"math/rand"
 	"os"
 	"slices"
+	"time"
 )
 
 // state changes / animations
@@ -53,12 +53,13 @@ type GameState struct {
 	identification        *IdentificationKnowledge
 	afterAnimationActions []func()
 
-	playerFoV            *geometry.FOV
-	visionRange          int
-	genericWallIconIndex foundation.TextIcon
-	playerIcon           rune
-	playerColor          string
-	config               *foundation.Configuration
+	playerFoV               *geometry.FOV
+	visionRange             int
+	genericWallIconIndex    foundation.TextIcon
+	playerIcon              rune
+	playerColor             string
+	config                  *foundation.Configuration
+	ascensionsWithoutAmulet int
 }
 
 func (g *GameState) IncreaseSkillLevel(skill rpg.SkillName) {
@@ -72,13 +73,16 @@ func (g *GameState) IncreaseSkillLevel(skill rpg.SkillName) {
 }
 
 func (g *GameState) IncreaseAttributeLevel(stat rpg.Stat) {
+	if stat == rpg.FatiguePoints && g.Player.charSheet.GetLevelAdjustments(rpg.FatiguePoints) >= 7 {
+		g.msg(foundation.Msg("You cannot increase your fatigue points any further"))
+		return
+	}
 	if g.Player.charSheet.HasCharPointsLeft() {
 		g.Player.charSheet.Increment(stat)
+		g.updateUIStatus()
 	} else {
 		g.msg(foundation.Msg("You have no more character points to spend"))
 	}
-
-	g.updateUIStatus()
 }
 
 func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {
@@ -94,7 +98,7 @@ func (g *GameState) ObjectAt(loc geometry.Point) foundation.ObjectCategory {
 		objectAt := g.gridMap.ObjectAt(loc)
 		return objectAt.ObjectIcon()
 	}
-	return foundation.ObjectTrap
+	return -1
 }
 
 func (g *GameState) ActorAt(loc geometry.Point) foundation.ActorForUI {
@@ -163,8 +167,10 @@ func (g *GameState) OpenTacticsMenu() {
 		CloseMenus: true,
 	})
 	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Start Sprinting",
-		Action:     nil,
+		Name: "Start Sprinting",
+		Action: func() {
+			g.startSprint(g.Player)
+		},
 		CloseMenus: true,
 	})
 	menuItems = append(menuItems, foundation.MenuItem{
@@ -254,17 +260,17 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 	}
 
 	// special abilities
-	canSeeFood := g.Player.HasFlag(foundation.SeeFood)
+	canSeeFood := g.Player.HasFlag(foundation.FlagSeeFood)
 	if g.IsFoodAt(loc) && canSeeFood {
 		return true
 	}
 
-	canSeeMonsters := g.Player.HasFlag(foundation.SeeMonsters)
+	canSeeMonsters := g.Player.HasFlag(foundation.FlagSeeMonsters)
 	if g.gridMap.IsActorAt(loc) && canSeeMonsters {
 		return true
 	}
 
-	canSeeMagic := g.Player.HasFlag(foundation.SeeMagic)
+	canSeeMagic := g.Player.HasFlag(foundation.FlagSeeMagic)
 	if g.gridMap.IsItemAt(loc) && canSeeMagic && g.gridMap.ItemAt(loc).IsMagic() {
 		return true
 	}
@@ -321,7 +327,7 @@ func (g *GameState) OpenWizardMenu() {
 			CloseMenus: true,
 		},
 		{
-			Name:   "250 Char Points",
+			Name: "250 Char Points",
 			Action: func() {
 				g.Player.AddCharacterPoints(250)
 			},
@@ -333,6 +339,10 @@ func (g *GameState) OpenWizardMenu() {
 		{
 			Name:   "Create Monster",
 			Action: g.openWizardCreateMonsterMenu,
+		},
+		{
+			Name:   "Create Trap",
+			Action: g.openWizardCreateTrapMenu,
 		},
 	})
 }
@@ -362,24 +372,29 @@ func (g *GameState) giveAndEquipItem(actor *Actor, item *Item) {
 func (g *GameState) init() {
 	g.Player = NewPlayer(g.playerName, g.playerIcon, g.playerColor)
 
-	g.giveAndEquipItem(g.Player, g.NewItemFromName("mace"))
+	g.giveAndEquipItem(g.Player, g.NewItemFromName("main_gauche"))
 	g.giveAndEquipItem(g.Player, g.NewItemFromName("leather_armor"))
+	for i := 0; i < 20; i++ {
+		g.giveAndEquipItem(g.Player, g.NewItemFromName("arrow"))
+	}
 	g.giveAndEquipItem(g.Player, g.NewItemFromName("short_bow"))
-	g.giveAndEquipItem(g.Player, g.NewItemFromName("arrow"))
 
 	equipment := g.Player.GetEquipment()
-
+	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
+		g.ui.UpdateStats()
+	})
 	g.Player.charSheet.SetStatChangedHandler(g.ui.UpdateStats)
+	g.Player.charSheet.SetResourceChangedHandler(g.ui.UpdateStats)
+
 	g.Player.GetInventory().SetOnChangeHandler(g.ui.UpdateInventory)
 
 	g.Player.GetInventory().SetOnBeforeRemove(equipment.UnEquip)
 
-	equipment.SetOnChangeHandler(func() {
-		g.updateUIStatus()
-		g.ui.UpdateInventory()
-	})
+	equipment.SetOnChangeHandler(g.updateUIStatus)
 
 	g.identification = NewIdentificationKnowledge()
+	g.identification.SetOnIdChanged(g.ui.UpdateInventory)
+
 	g.identification.MixScrolls(g.dataDefinitions.GetScrollInternalNames())
 	g.identification.MixPotions(g.dataDefinitions.GetPotionInternalNames())
 	g.identification.MixWands(g.dataDefinitions.GetWandInternalNames())
@@ -398,8 +413,18 @@ func (g *GameState) NewItemFromName(name string) *Item {
 	def := g.dataDefinitions.GetItemDefByName(name)
 	return NewItem(def, g.identification)
 }
+func (g *GameState) NewGold(amount int) *Item {
+	def := ItemDef{
+		Name:         "gold",
+		InternalName: "gold",
+		Category:     foundation.ItemCategoryGold,
+		Charges:      rpg.NewDice(1, 1, 1),
+	}
+	item := NewItem(def, g.identification)
+	item.SetCharges(amount)
+	return item
+}
 func (g *GameState) Reset() {
-	daemons.ClearAll()
 	g.init()
 	g.moveIntoDungeon()
 	g.ui.UpdateInventory()
@@ -443,16 +468,20 @@ func (g *GameState) UIReady() {
 
 func (g *GameState) moveIntoDungeon() {
 	g.ui.InitDungeonUI()
-	g.GotoDungeonLevel(1)
+	g.GotoDungeonLevel(1, StairsBoth, true)
 }
 
 func (g *GameState) updateUIStatus() {
 	g.ui.UpdateVisibleEnemies()
 	g.ui.UpdateStats()
 	g.ui.UpdateLogWindow()
+	g.ui.UpdateInventory()
+}
+func (g *GameState) GetHudFlags() map[foundation.ActorFlag]int {
+	return g.Player.GetFlags().UnderlyingCopy()
 }
 
-func (g *GameState) GetHudStats() (map[foundation.HudValue]int, []string) {
+func (g *GameState) GetHudStats() map[foundation.HudValue]int {
 	uiStats := make(map[foundation.HudValue]int)
 	//g.Player.stats
 
@@ -473,10 +502,7 @@ func (g *GameState) GetHudStats() (map[foundation.HudValue]int, []string) {
 	uiStats[foundation.HudRangedSkill] = g.Player.GetSkill(rpg.SkillNameMissileWeapons)
 	uiStats[foundation.HudDamageResistance] = g.Player.GetDamageResistance()
 
-	playerFlags := g.Player.GetFlags()
-	flagsAsStrings := playerFlags.AsStrings(foundation.ActorStatusToAbbreviation)
-
-	return uiStats, flagsAsStrings
+	return uiStats
 }
 
 func (g *GameState) GetLog() []foundation.HiLiteString {
@@ -502,7 +528,7 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	}
 	if g.gridMap.IsObjectAt(pos) {
 		object := g.gridMap.ObjectAt(pos)
-		return foundation.HiLite("You see %s here", object.name)
+		return foundation.HiLite("You see %s here", object.Name())
 	}
 
 	cell := g.gridMap.GetCell(pos)
@@ -550,13 +576,15 @@ func (g *GameState) appendLogMessage(message foundation.HiLiteString) {
 func (g *GameState) endPlayerTurn() {
 	// player has changed the game state..
 
-	g.TurnsTaken++
+	g.identification.SetCurrentItemInUse("") // reset item in use
 
-	daemons.UpdateFuses()
+	g.TurnsTaken++
 
 	didCancel := g.ui.AnimatePending() // animate player actions..
 
-	g.enemyMovement()
+	playerTimeTakeForTurn := 100 / (g.Player.GetBasicSpeed())
+
+	g.enemyMovement(playerTimeTakeForTurn)
 
 	if didCancel {
 		g.ui.SkipAnimations()
@@ -639,7 +667,7 @@ func (g *GameState) MapAt(mapPos geometry.Point) foundation.TileType {
 	mapCell := g.gridMap.GetCell(mapPos)
 	return mapCell.TileType.Icon()
 }
-func (g *GameState) EntityAt(mapPos geometry.Point) foundation.EntityType {
+func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 	if !g.gridMap.Contains(mapPos) {
 		return foundation.EntityTypeOther
 	}
@@ -648,7 +676,7 @@ func (g *GameState) EntityAt(mapPos geometry.Point) foundation.EntityType {
 
 	if mapCell.Actor != nil {
 		actor := *mapCell.Actor
-		if actor.IsDrawn(g.Player.HasFlag(foundation.CanSeeInvisible)) {
+		if actor.IsDrawn(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
 			return foundation.EntityTypeActor
 		}
 	}
@@ -684,8 +712,11 @@ func (g *GameState) removeItemFromInventory(holder *Actor, item *Item) {
 }
 
 func (g *GameState) playerVisibleEnemiesByDistance() []*Actor {
-	playerPos := g.Player.Position()
 	var enemies []*Actor
+	if g.Player == nil || g.gridMap == nil {
+		return enemies
+	}
+	playerPos := g.Player.Position()
 	for _, actor := range g.gridMap.Actors() {
 		if actor == g.Player {
 			continue
@@ -802,7 +833,7 @@ func (g *GameState) defaultStyleIcon(icon rune) foundation.TextIcon {
 
 func (g *GameState) NewEnemyFromDef(def MonsterDef) *Actor {
 	actor := NewActor(def.Name, def.Icon, def.Color)
-	actor.GetFlags().Init(def.Flags.Underlying())
+	actor.GetFlags().Init(def.Flags.UnderlyingCopy())
 	actor.SetIntrinsicZapEffects(def.ZapEffects)
 	actor.SetIntrinsicUseEffects(def.UseEffects)
 	actor.SetInternalName(def.InternalName)
@@ -820,6 +851,17 @@ func (g *GameState) NewEnemyFromDef(def MonsterDef) *Actor {
 	actor.charSheet.SetStat(rpg.BasicSpeed, def.BasicSpeed)
 	actor.charSheet.ResetResources()
 
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	if random.Intn(100) < def.CarryChance {
+		if random.Intn(100) < def.CarryChance {
+			itemDef := g.dataDefinitions.PickItemForLevel(random, def.DungeonLevel)
+			item := NewItem(itemDef, g.identification)
+			actor.GetInventory().Add(item)
+		} else {
+			actor.AddGold(def.Gold.Roll())
+		}
+	}
+
 	actor.SetIntrinsicAttacks(def.Attacks)
 	return actor
 }
@@ -832,38 +874,13 @@ func (g *GameState) actorKilled(causeOfDeath string, victim *Actor) {
 		return
 	}
 	g.msg(foundation.HiLite("%s killed %s", causeOfDeath, victim.Name()))
+
+	g.dropInventory(victim)
 }
 
 func (g *GameState) revealAll() {
 	g.gridMap.SetAllExplored()
 	g.showEverything = true
-}
-
-func (g *GameState) createExplosion(loc geometry.Point) []foundation.Animation {
-	damage := 5
-	radius := 3
-	affected := g.gridMap.GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
-		return g.gridMap.IsTileWalkable(p)
-	})
-
-	var animationsForThisFrame []foundation.Animation
-	var deferredAnimations []foundation.Animation
-	var affectedPoints []geometry.Point
-	for point, _ := range affected {
-		damageAnims := g.damageLocation("explosion", point, damage)
-		deferredAnimations = append(deferredAnimations, damageAnims...)
-		affectedPoints = append(affectedPoints, point)
-	}
-
-	projectileAnim := g.ui.GetAnimExplosion(affectedPoints, nil)
-
-	if len(deferredAnimations) > 0 && projectileAnim != nil {
-		projectileAnim.SetFollowUp(deferredAnimations)
-	}
-
-	animationsForThisFrame = append(animationsForThisFrame, projectileAnim)
-
-	return animationsForThisFrame
 }
 
 func (g *GameState) isInPlayerRoom(position geometry.Point) bool {
@@ -874,16 +891,11 @@ func (g *GameState) isInPlayerRoom(position geometry.Point) bool {
 	return playerRoom.ContainsIncludingWalls(position)
 }
 
-func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.GridMap[*Actor, *Item, *Object], dungeon *dungen.DungeonMap, stairsUp geometry.Point, stairsDown geometry.Point, isDown bool) {
+func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.GridMap[*Actor, *Item, *Object], dungeon *dungen.DungeonMap) {
 
-	//var otherEndPos geometry.Point
-	if isDown {
-		newMap.AddActor(g.Player, stairsUp)
-		//otherEndPos = stairsDown
-	} else {
-		newMap.AddActor(g.Player, stairsDown)
-		//otherEndPos = stairsUp
-	}
+	playerRoom := dungeon.GetRoomAt(g.Player.Position())
+
+	mustSpawnAmuletOfYendor := level == 26 && !g.Player.GetInventory().HasItemWithName("amulet_of_yendor")
 
 	spawnItemsInRoom := func(room *dungen.DungeonRoom, itemCount int) {
 		for i := 0; i < itemCount; i++ {
@@ -906,9 +918,9 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 			monsterDef := g.dataDefinitions.PickMonsterForLevel(random, level)
 			monster := g.NewEnemyFromDef(monsterDef)
 			if random.Intn(26) >= level {
-				monster.GetFlags().Set(foundation.IsSleeping)
+				monster.GetFlags().Set(foundation.FlagSleep)
 			}
-			if monster.HasFlag(foundation.IsWallCrawler) {
+			if monster.HasFlag(foundation.FlagWallCrawl) {
 				walls := room.GetWalls()
 				spawnPos = walls[random.Intn(len(walls))]
 			}
@@ -922,13 +934,17 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 			if !exists {
 				break
 			}
-			object := NewBarrel(foundation.ObjectExplodingBarrel, g.createExplosion)
+			trapEffects := foundation.GetAllTrapCategories()
+			randomEffect := trapEffects[random.Intn(len(trapEffects))]
+			object := g.NewTrap(randomEffect)
 			newMap.AddObject(object, spawnPos)
 		}
-
 	}
 
-	for _, room := range dungeon.AllRooms() {
+	allRooms := dungeon.AllRooms()
+	randomRoomOrder := random.Perm(len(allRooms))
+	for _, roomIndex := range randomRoomOrder {
+		room := allRooms[roomIndex]
 
 		itemCount := random.Intn(3)
 		spawnItemsInRoom(room, itemCount)
@@ -938,9 +954,19 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 			spawnMonstersInRoom(room, monsterCount)
 		}
 
-		if random.Intn(4) == 0 {
+		if level > 1 && room != playerRoom && random.Intn(4) == 0 {
 			objectCount := random.Intn(3) + 1
 			spawnObjectsInRoom(room, objectCount)
+		}
+
+		if mustSpawnAmuletOfYendor {
+			spawnPos, exists := room.GetRandomAbsoluteFloorPositionWithFilter(random, newMap.IsEmptyNonSpecialFloor)
+			if !exists {
+				break
+			}
+			amulet := g.NewItemFromName("amulet_of_yendor")
+			newMap.AddItem(amulet, spawnPos)
+			mustSpawnAmuletOfYendor = false
 		}
 	}
 }
@@ -1000,12 +1026,32 @@ func (g *GameState) openWizardCreateMonsterMenu() {
 		menuActions = append(menuActions, foundation.MenuItem{
 			Name: monsterDef.Name,
 			Action: func() {
-				if monsterDef.Flags.IsSet(foundation.IsWallCrawler) {
+				if monsterDef.Flags.IsSet(foundation.FlagWallCrawl) {
 					g.spawnCrawlerInWall(monsterDef)
 				} else {
 					newActor := g.NewEnemyFromDef(monsterDef)
 					g.gridMap.AddActorWithDisplacement(newActor, g.Player.Position())
 				}
+			},
+			CloseMenus: true,
+		})
+	}
+	g.ui.OpenMenu(menuActions)
+}
+
+func (g *GameState) openWizardCreateTrapMenu() {
+	trapTypes := foundation.GetAllTrapCategories()
+	var menuActions []foundation.MenuItem
+	for _, def := range trapTypes {
+		trapType := def
+		menuActions = append(menuActions, foundation.MenuItem{
+			Name: trapType.String(),
+			Action: func() {
+				random := rand.New(rand.NewSource(time.Now().UnixNano()))
+				trapPos := g.gridMap.GetRandomFreeAndSafeNeighbor(random, g.Player.Position())
+				newTrap := g.NewTrap(trapType)
+				newTrap.SetHidden(false)
+				g.gridMap.AddObject(newTrap, trapPos)
 			},
 			CloseMenus: true,
 		})
@@ -1023,12 +1069,28 @@ func (g *GameState) spawnCrawlerInWall(monsterDef MonsterDef) {
 	newActor := g.NewEnemyFromDef(monsterDef)
 	g.gridMap.ForceSpawnActorInWall(newActor, spawnPos)
 }
+func (g *GameState) calculateTotalNetWorth() int {
+	return g.Player.GetGold()
+}
+func (g *GameState) gameWon() {
+	scoreInfo := foundation.ScoreInfo{
+		PlayerName:         g.Player.Name(),
+		Gold:               g.calculateTotalNetWorth(),
+		MaxLevel:           g.deepestDungeonLevelPlayerReached,
+		DescriptiveMessage: "ESCAPED the dungeon",
+		Escaped:            true,
+	}
+	highScores := g.writePlayerScore(scoreInfo)
+	g.ui.ShowGameOver(scoreInfo, highScores)
+}
+
 func (g *GameState) gameOver(death string) {
 	scoreInfo := foundation.ScoreInfo{
-		PlayerName:   g.Player.Name(),
-		Score:        1000 + g.deepestDungeonLevelPlayerReached,
-		MaxLevel:     g.deepestDungeonLevelPlayerReached,
-		CauseOfDeath: death,
+		PlayerName:         g.Player.Name(),
+		Gold:               g.calculateTotalNetWorth(),
+		MaxLevel:           g.deepestDungeonLevelPlayerReached,
+		DescriptiveMessage: death,
+		Escaped:            false,
 	}
 	highScores := g.writePlayerScore(scoreInfo)
 	g.ui.ShowGameOver(scoreInfo, highScores)
@@ -1056,34 +1118,35 @@ func (g *GameState) checkPlayerCanAct() {
 	// then check the end condition for this status effect
 	// if it's not reached, we want the UI to show a message about the situation
 	// the player has to confirm it and then we can end the turn
-	if !g.Player.HasFlag(foundation.IsStunned) && !g.Player.HasFlag(foundation.IsHeld) {
+	if !g.Player.HasFlag(foundation.FlagStun) && !g.Player.HasFlag(foundation.FlagHeld) {
 		return
 	}
 
-	if g.Player.HasFlag(foundation.IsStunned) {
-		_, success, _ := rpg.SuccessRoll(g.Player.GetIntelligence() + g.Player.GetFlagCounter(foundation.IsStunned) - 1)
+	if g.Player.HasFlag(foundation.FlagStun) {
+		_, result, _ := rpg.SuccessRoll(g.Player.GetIntelligence() + g.Player.GetFlags().Get(foundation.FlagStun) - 1)
 
-		if success {
+		if result.IsSuccess() {
 			g.msg(foundation.Msg("You shake off the stun"))
-			g.Player.GetFlags().Unset(foundation.IsStunned)
+			g.Player.GetFlags().Unset(foundation.FlagStun)
 			return
 		}
-		g.Player.IncrementFlagCounter(foundation.IsStunned)
+		g.Player.GetFlags().Increment(foundation.FlagStun)
 
 		g.msg(foundation.Msg("You are stunned and cannot act"))
 
 		// TODO: animate a small delay here?
 		g.endPlayerTurn()
 	}
-	if g.Player.HasFlag(foundation.IsHeld) {
-		_, success, _ := rpg.SuccessRoll(g.Player.GetStrength() + g.Player.GetFlagCounter(foundation.IsHeld) - 1)
+	if g.Player.HasFlag(foundation.FlagHeld) {
+		_, result, marginOfSuccess := rpg.SuccessRoll(g.Player.GetStrength())
 
-		if success {
+		if result.IsCriticalSucces() {
 			g.msg(foundation.Msg("You break free from the hold"))
-			g.Player.GetFlags().Unset(foundation.IsHeld)
+			g.Player.GetFlags().Unset(foundation.FlagHeld)
 			return
+		} else if result.IsSuccess() {
+			g.Player.GetFlags().Decrease(foundation.FlagHeld, marginOfSuccess)
 		}
-		g.Player.IncrementFlagCounter(foundation.IsHeld)
 
 		g.msg(foundation.Msg("You are held and cannot act"))
 
@@ -1102,7 +1165,7 @@ func (g *GameState) customBehaviours(internalName string) (func(actor *Actor), b
 }
 
 func (g *GameState) aiWallMimic(actor *Actor) {
-	stillCloaked := actor.HasFlag(foundation.IsInvisible)
+	stillCloaked := actor.HasFlag(foundation.FlagInvisible)
 
 	if !stillCloaked {
 		g.defaultBehaviour(actor)
@@ -1125,28 +1188,57 @@ func (g *GameState) aiWallMimic(actor *Actor) {
 func (g *GameState) writePlayerScore(info foundation.ScoreInfo) []foundation.ScoreInfo {
 	scoresFile := "scores.bin"
 
-	scoreTable := loadHighScoreTable(scoresFile)
+	scoreTable := LoadHighScoreTable(scoresFile)
 
 	scoreTable = append(scoreTable, info) // add score
 
 	slices.SortStableFunc(scoreTable, func(i, j foundation.ScoreInfo) int {
-		return cmp.Compare(j.Score, i.Score)
+		if i.Escaped && !j.Escaped {
+			return -1
+		}
+		if !i.Escaped && j.Escaped {
+			return 1
+		}
+		if i.Escaped && j.Escaped {
+			return cmp.Compare(j.Gold, i.Gold)
+		}
+		if i.MaxLevel == j.MaxLevel {
+			return cmp.Compare(j.Gold, i.Gold)
+		}
+		return cmp.Compare(j.MaxLevel, i.MaxLevel)
 	})
+
+	if len(scoreTable) > 15 {
+		scoreTable = scoreTable[:15]
+	}
 
 	saveHighScoreTable(scoresFile, scoreTable)
 
 	return scoreTable
 }
 
-func (g *GameState) triggerTileEffectsAfterMovement(actor *Actor, position geometry.Point) {
+func (g *GameState) triggerTileEffectsAfterMovement(actor *Actor, oldPos, newPos geometry.Point) []foundation.Animation {
 	isPlayer := actor == g.Player
-	cell := g.gridMap.GetCell(position)
+	cell := g.gridMap.GetCell(newPos)
 	if cell.TileType.IsVendor() && isPlayer {
 		itemsForVendor := []util.Tuple[foundation.ItemForUI, int]{
 			{g.NewItemFromName("mace"), 100},
 		}
 		g.ui.OpenVendorMenu(itemsForVendor, g.buyItemFromVendor)
 	}
+	if g.gridMap.IsObjectAt(newPos) {
+		objectAt := g.gridMap.ObjectAt(newPos)
+		var animations []foundation.Animation
+		if isPlayer {
+			playerMoveAnim := g.ui.GetAnimMove(g.Player, oldPos, newPos)
+			playerMoveAnim.RequestMapUpdateOnFinish()
+			animations = append(animations, playerMoveAnim)
+		}
+		triggeredEffectAnimations := objectAt.OnWalkOver()
+		animations = append(animations, triggeredEffectAnimations...)
+		return animations
+	}
+	return nil
 }
 
 func (g *GameState) buyItemFromVendor(item foundation.ItemForUI, price int) {
@@ -1169,6 +1261,58 @@ func (g *GameState) newLevelReached(level int) {
 	g.msg(foundation.HiLite("You've been awarded 10 character points for reaching level %s", fmt.Sprint(level)))
 }
 
+func (g *GameState) checkTilesForHiddenObjects(tiles []geometry.Point) {
+	var noticedSomething bool
+	for _, tile := range tiles {
+		if g.gridMap.IsObjectAt(tile) {
+			object := g.gridMap.ObjectAt(tile)
+			if object.IsHidden() {
+				perception := g.Player.GetPerception()
+				_, result, _ := rpg.SuccessRoll(perception)
+				if result.IsSuccess() {
+					noticedSomething = true
+				}
+				if result.IsCriticalSucces() {
+					object.SetHidden(false)
+				}
+			}
+		}
+	}
+
+	if noticedSomething {
+		g.msg(foundation.Msg("you feel like something is wrong with this room"))
+	}
+}
+
+func (g *GameState) dropInventory(victim *Actor) {
+	goldAmount := victim.GetGold()
+	if goldAmount > 0 {
+		g.addItemToMap(g.NewGold(goldAmount), victim.Position())
+	}
+	for _, item := range victim.GetInventory().Items() {
+		g.addItemToMap(item, victim.Position())
+	}
+}
+
+func (g *GameState) startSprint(actor *Actor) {
+	if actor.GetFatiguePoints() < 1 {
+		return
+	}
+	actor.LooseFatigue(1)
+	haste(g, actor)
+}
+
+func (g *GameState) unstableStairs() bool {
+	if g.currentDungeonLevel >= 26 {
+		return false
+	}
+	if g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
+		return false
+	}
+	chance := util.Clamp(0, 0.9, float64(min(10, g.ascensionsWithoutAmulet))/10.0)
+	return rand.Float64() < chance
+}
+
 func saveHighScoreTable(scoresFile string, scoreTable []foundation.ScoreInfo) {
 	file := util.CreateFile(scoresFile)
 	defer file.Close()
@@ -1179,7 +1323,7 @@ func saveHighScoreTable(scoresFile string, scoreTable []foundation.ScoreInfo) {
 	}
 }
 
-func loadHighScoreTable(scoresFile string) []foundation.ScoreInfo {
+func LoadHighScoreTable(scoresFile string) []foundation.ScoreInfo {
 	var scoreTable []foundation.ScoreInfo
 	if util.FileExists(scoresFile) { // read from file
 		file, err := os.Open(scoresFile)
@@ -1198,13 +1342,17 @@ func loadHighScoreTable(scoresFile string) []foundation.ScoreInfo {
 }
 
 func NewItem(def ItemDef, id *IdentificationKnowledge) *Item {
+	charges := 1
+	if def.Charges.NotZero() {
+		charges = def.Charges.Roll()
+	}
 	item := &Item{
 		name:         def.Name,
 		internalName: def.InternalName,
 		category:     def.Category,
-		charges:      max(1, def.Charges.Roll()),
+		charges:      charges,
 		slot:         def.Slot,
-		flags:        foundation.NewFlags(),
+		flags:        foundation.NewBitFlags(),
 		id:           id,
 		stat:         def.Stat,
 		statBonus:    def.StatBonus,

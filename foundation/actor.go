@@ -14,7 +14,7 @@ type ActorForUI interface {
 	GetListInfo() string
 	GetHitPoints() int
 	GetHitPointsMax() int
-	HasFlag(held uint32) bool
-    GetDetailInfo() []string
+	HasFlag(held ActorFlag) bool
+	GetDetailInfo() []string
 	GetInternalName() string
 }

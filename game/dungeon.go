@@ -104,9 +104,9 @@ func (g *GameState) GotoNamedLevel(levelName string) {
 	g.afterPlayerMoved()
 
 	g.updateUIStatus()
-
 }
-func (g *GameState) GotoDungeonLevel(level int) {
+
+func (g *GameState) GotoDungeonLevel(level int, stairs StairsInLevel, placePlayerOnStairs bool) {
 	if g.gridMap != nil {
 		g.gridMap.RemoveActor(g.Player)
 		g.Player.RemoveLevelStatusEffects()
@@ -134,9 +134,22 @@ func (g *GameState) GotoDungeonLevel(level int) {
 	newMap := gridmap.NewEmptyMap[*Actor, *Item, *Object](mapWidth, mapHeight)
 	newMap.SetCardinalMovementOnly(!g.config.DiagonalMovementEnabled)
 
-	stairsUp, stairsDown := g.decorateMapWithTiles(newMap, dungeon)
+	stairsUp, stairsDown := g.decorateMapWithTiles(newMap, dungeon, stairs)
 
-	g.spawnEntities(random, level, newMap, dungeon, stairsUp, stairsDown, isDown)
+	// place player
+	//var otherEndPos geometry.Point
+	if placePlayerOnStairs && isDown && stairs.AllowsUp() {
+		newMap.AddActor(g.Player, stairsUp)
+		//otherEndPos = stairsDown
+	} else if placePlayerOnStairs && !isDown && stairs.AllowsDown() {
+		newMap.AddActor(g.Player, stairsDown)
+		//otherEndPos = stairsUp
+	} else {
+		randomPos := newMap.RandomSpawnPosition()
+		newMap.AddActor(g.Player, randomPos)
+	}
+
+	g.spawnEntities(random, level, newMap, dungeon)
 
 	spawnPos := g.Player.Position()
 
@@ -153,7 +166,7 @@ func (g *GameState) GotoDungeonLevel(level int) {
 	g.updateUIStatus()
 }
 
-func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, *Object], dungeon *dungen.DungeonMap) (geometry.Point, geometry.Point) {
+func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, *Object], dungeon *dungen.DungeonMap, stairs StairsInLevel) (geometry.Point, geometry.Point) {
 	mapWidth, mapHeight := dungeon.GetSize()
 
 	floorTile := gridmap.Tile{
@@ -250,10 +263,10 @@ func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, 
 				newMap.SetTile(pos, corridorTile)
 			} else if tile == dungen.Door {
 				newMap.SetTile(pos, fakeDoorTile)
-			} else if tile == dungen.StairsUp {
+			} else if tile == dungen.StairsUp && stairs.AllowsUp() {
 				newMap.SetTile(pos, stairsUp)
 				stairsUpLoc = pos
-			} else if tile == dungen.StairsDown {
+			} else if tile == dungen.StairsDown && stairs.AllowsDown() {
 				newMap.SetTile(pos, stairsDown)
 				stairsDownLoc = pos
 			}

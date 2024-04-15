@@ -5,13 +5,21 @@ import (
 	"RogueUI/geometry"
 	"RogueUI/rpg"
 	"fmt"
+	"math/rand"
 	"strings"
 )
 
 var NoModifiers []rpg.Modifier
 
+func (g *GameState) Wait() {
+	g.endPlayerTurn()
+}
+
 func (g *GameState) playerAttack(defender *Actor) {
 	consequences := g.actorMeleeAttack(g.Player, NoModifiers, defender, NoModifiers)
+	if !g.Player.HasFlag(foundation.FlagInvisible) {
+		defender.GetFlags().Set(foundation.FlagAwareOfPlayer)
+	}
 	g.ui.AddAnimations(consequences)
 	g.endPlayerTurn()
 }
@@ -34,6 +42,7 @@ func (g *GameState) startRangedAttackWithMissile(item *Item) {
 
 func (g *GameState) startAimItem(item *Item) {
 	g.ui.SelectTarget(g.Player.Position(), func(targetPos geometry.Point) {
+		g.identification.SetCurrentItemInUse(item.GetInternalName())
 		g.playerZapItemAndEndTurn(item, targetPos)
 	})
 }
@@ -52,6 +61,7 @@ func (g *GameState) PlayerUseOrZapItem(uiItem foundation.ItemForUI) {
 }
 func (g *GameState) playerUseOrZapItem(item *Item) {
 	if item.IsUsable() {
+		g.identification.SetCurrentItemInUse(item.GetInternalName())
 		g.actorUseItem(g.Player, item)
 	} else if item.IsZappable() {
 		g.startAimItem(item)
@@ -96,40 +106,105 @@ func (g *GameState) actorInvokeUseEffect(user *Actor, useEffectName string) (end
 }
 func (g *GameState) actorMoveAnimated(actor *Actor, newPos geometry.Point) []foundation.Animation {
 	oldPos := actor.Position()
-	var moveAnim foundation.Animation
+	var moveAnims []foundation.Animation
 	if g.couldPlayerSeeActor(actor) && (g.canPlayerSee(newPos) || g.canPlayerSee(oldPos)) && actor != g.Player {
-		moveAnim = g.ui.GetAnimMove(actor, oldPos, newPos)
+		move := g.ui.GetAnimMove(actor, oldPos, newPos)
+		move.RequestMapUpdateOnFinish()
+		moveAnims = append(moveAnims, move)
 	}
-	g.actorMove(actor, newPos)
-	return OneAnimation(moveAnim)
+	moveAnims = append(moveAnims, g.actorMove(actor, newPos)...)
+	return moveAnims
 }
 func (g *GameState) couldPlayerSeeActor(actor *Actor) bool {
-	if actor.HasFlag(foundation.IsInvisible) && !g.Player.HasFlag(foundation.CanSeeInvisible) {
+	if actor.HasFlag(foundation.FlagInvisible) && !g.Player.HasFlag(foundation.FlagSeeInvisible) {
 		return false
 	}
 
 	return true
 }
-func (g *GameState) actorMove(actor *Actor, newPos geometry.Point) {
+func (g *GameState) actorMove(actor *Actor, newPos geometry.Point) []foundation.Animation {
+	oldPos := actor.Position()
+	if oldPos == newPos {
+		return nil
+	}
 	g.gridMap.MoveActor(actor, newPos)
+	if actor.Position() == newPos {
+		return g.triggerTileEffectsAfterMovement(actor, oldPos, newPos)
+	}
+	return nil
 }
+
+type StairsInLevel int
+
+func (l StairsInLevel) AllowsUp() bool {
+	return l == StairsUpOnly || l == StairsBoth
+}
+func (l StairsInLevel) AllowsDown() bool {
+	return l == StairsDownOnly || l == StairsBoth
+}
+
+const (
+	StairsNone StairsInLevel = iota
+	StairsUpOnly
+	StairsDownOnly
+	StairsBoth
+)
 
 func (g *GameState) PlayerInteractWithMap() {
 	pos := g.Player.Position()
 	cell := g.gridMap.GetCell(pos)
+	stairs := StairsBoth
 
 	if cell.TileType.IsStairsDown() {
-		g.Descend()
+		g.descendWithStairs(stairs)
 	} else if cell.TileType.IsStairsUp() {
-		g.Ascend()
+		if g.currentDungeonLevel == 1 {
+			if g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
+				g.gameWon()
+			} else {
+				g.msg(foundation.Msg("you are not leaving this place without that amulet."))
+			}
+		} else {
+			g.ascendWithStairs(stairs)
+			if !g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
+				if g.unstableStairs() {
+					if g.currentDungeonLevel < 26 {
+						stairs = StairsDownOnly
+					}
+					if rand.Intn(10) == 0 {
+						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall deep down."))
+						g.GotoDungeonLevel(g.currentDungeonLevel+2, stairs, true)
+					} else {
+						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall down."))
+						g.descendWithStairs(stairs)
+					}
+
+					return
+				}
+				g.ascensionsWithoutAmulet++
+				g.msg(foundation.Msg("you feel that the dungeon becomes unstable."))
+			}
+		}
 	}
 }
 
 func (g *GameState) Descend() {
-	g.GotoDungeonLevel(g.currentDungeonLevel + 1)
+	g.descendWithStairs(StairsBoth)
+}
+
+func (g *GameState) descendWithStairs(stairs StairsInLevel) {
+	g.GotoDungeonLevel(g.currentDungeonLevel+1, stairs, true)
+}
+
+func (g *GameState) descendToRandomLocation() {
+	g.GotoDungeonLevel(g.currentDungeonLevel+1, StairsBoth, false)
 }
 
 func (g *GameState) Ascend() {
+	g.ascendWithStairs(StairsBoth)
+}
+
+func (g *GameState) ascendWithStairs(stairs StairsInLevel) {
 	if g.currentDungeonLevel == 0 {
 		return
 	}
@@ -139,7 +214,7 @@ func (g *GameState) Ascend() {
 		g.gridMap.SetAllExplored()
 		g.gridMap.SetAllLit()
 	} else {
-		g.GotoDungeonLevel(g.currentDungeonLevel - 1)
+		g.GotoDungeonLevel(g.currentDungeonLevel-1, stairs, true)
 	}
 }
 
@@ -149,8 +224,8 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, attackMod []rpg.Modifier, 
 	}
 	var afterAttackAnimations []foundation.Animation
 
-	if attacker.HasFlag(foundation.CanConfuse) {
-		attacker.GetFlags().Unset(foundation.CanConfuse)
+	if attacker.HasFlag(foundation.FlagCanConfuse) {
+		attacker.GetFlags().Unset(foundation.FlagCanConfuse)
 		confuseAnim := confuse(g, defender)
 		afterAttackAnimations = append(afterAttackAnimations, confuseAnim...)
 		g.msg(foundation.HiLite("%s stops glowing red", attacker.Name()))
@@ -162,7 +237,12 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, attackMod []rpg.Modifier, 
 
 	attackerMeleeSkill, defenseScore = g.applyAttackAndDefenseMods(attackerMeleeSkill, attackMod, defenseScore, defenseMod)
 
+	if defender.HasFlag(foundation.FlagSleep) {
+		defenseScore = -1
+	}
+
 	outcome := rpg.Attack(attackerMeleeSkill, attackerMeleeDamageDice, defenseScore, defender.GetDamageResistance())
+
 	_, damageDone := outcome.TypeOfHit, outcome.DamageDone
 
 	for _, message := range outcome.String(attacker.Name(), defender.Name()) {
@@ -377,12 +457,17 @@ func (g *GameState) EquipToggle(uiItem foundation.ItemForUI) {
 	}
 	if g.Player.GetEquipment().IsEquipped(item) {
 		g.actorUnequipItem(g.Player, item)
+		g.msg(foundation.HiLite("You unequipped %s", item.Name()))
 	} else {
 		g.actorEquipItem(g.Player, item)
+		g.msg(foundation.HiLite("You equipped %s", item.Name()))
 	}
 }
 
 func (g *GameState) actorEquipItem(wearer *Actor, item *Item) {
+	if item.IsRing() && !g.identification.IsItemIdentified(item.GetInternalName()) && g.identification.CanBeIdentifiedByUsing(item.GetInternalName()) {
+		g.identification.IdentifyItem(item.GetInternalName())
+	}
 	equipment := wearer.GetEquipment()
 	equipment.Equip(item)
 }

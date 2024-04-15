@@ -49,3 +49,8 @@ ONLY two Places in the code that need to apply modifiers:
 SO NO Modifiers except
  - Stat mods explicitly added to a char
  - Modifiers that are encapsulated in a rules roll method
+
+
+Dungeon Designs:
+https://crawl.develz.org/wiki/doku.php?id=dcss:brainstorm:dungeon:layout_types
+https://www.zorbus.net/bts/vaults.png

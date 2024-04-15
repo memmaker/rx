@@ -7,7 +7,7 @@ import (
 
 func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bool) bool {
 	player := g.Player
-	if player.HasFlag(foundation.IsConfused) {
+	if player.HasFlag(foundation.FlagConfused) {
 		g.msg(foundation.Msg("You cannot run while confused"))
 		return false
 	}
@@ -20,8 +20,6 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 	currentPos := player.Position()
 	targetPos := currentPos.Add(direction.ToPoint())
 	currentMap := g.gridMap
-
-
 
 	if !isStarting {
 		if !currentMap.IsTileWalkable(targetPos) && !direction.IsDiagonal() {

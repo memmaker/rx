@@ -191,6 +191,15 @@ func (i *Inventory) RemoveAndGetNextInStack(item *Item) *Item {
 	return nil
 }
 
+func (i *Inventory) HasItemWithName(internalName string) bool {
+	for _, invItem := range i.items {
+		if invItem.GetInternalName() == internalName {
+			return true
+		}
+	}
+	return false
+}
+
 func SortInventory(stacks []*InventoryStack) {
 	slices.SortStableFunc(stacks, func(i, j *InventoryStack) int {
 		itemI := i.items[0]

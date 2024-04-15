@@ -68,7 +68,7 @@ type ItemDef struct {
 	Category foundation.ItemCategory
 
 	AlwaysIDOnUse bool
-	EquipFlag     uint32
+	EquipFlag     foundation.ActorFlag
 
 	Skill      rpg.SkillName
 	SkillBonus int

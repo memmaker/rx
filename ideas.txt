@@ -4,7 +4,7 @@ Monochrome / Color
 Runes: Hack-Style / Moria-Style / DOS-Style
 Dynahack Style: https://www.youtube.com/watch?v=RpTBhym02cA
 
-Rogue Variant I (RVI)
+Rogue Variant I (rx1)
 If rogue had dropped yesterday and I would be making a variant.
 
 RVI In-Scope
@@ -97,3 +97,24 @@ Build a castle, build an army, and fend off attacks from other players.
 Paying the Rent
 You just try to stay in town for some days.
 You have no money for the inn, the only source of income is the dungeon.
+
+Sword & Shield
+Focus on the real world use cases of weapons, armor and especially shields.
+Enemies will have shields too.
+You can kick their shield, try to break their guard, etc.
+
+Vault Raiders
+Raid stuff from post-apocalyptic vaults.
+
+On The Run
+Just try to traverse the combat zone of night-city alive
+
+My House.WAD RL
+ - Break all the rules
+
+
+Missing Roguelikes
+ - Cyberpunk
+ - Fallout
+ - Super Heroes
+ - Pirates

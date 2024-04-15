@@ -28,4 +28,3 @@ func (i TextIcon) WithColors(fgColor color.RGBA, bgColor color.RGBA) TextIcon {
 func (i TextIcon) WithRune(r rune) TextIcon {
 	return TextIcon{r, i.Fg, i.Bg}
 }
-

@@ -20,6 +20,7 @@ category: wands
 charges: 3d10
 probability: 8
 worth: 100
+always_id_on_use: true
 
 name: wand of polymorph
 internal_name: wand_polymorph

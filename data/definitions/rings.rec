@@ -1,5 +1,3 @@
-
-
 # Missing
 # - Sustain Strength
 # - Searching
@@ -18,6 +16,7 @@ slot: ring
 stat: damage_resistance
 stat_bonus: 4
 chance: 20
+always_id_on_use: true
 
 name: ring of strength
 internal_name: ring_strength
@@ -26,6 +25,7 @@ slot: ring
 stat: strength
 stat_bonus: 2
 chance: 20
+always_id_on_use: true
 
 name: ring of dexterity
 internal_name: ring_dexterity
@@ -34,6 +34,7 @@ slot: ring
 stat: dexterity
 stat_bonus: 2
 chance: 20
+always_id_on_use: true
 
 name: ring of intelligence
 internal_name: ring_intelligence
@@ -42,6 +43,7 @@ slot: ring
 stat: intelligence
 stat_bonus: 2
 chance: 20
+always_id_on_use: true
 
 name: ring of health
 internal_name: ring_health
@@ -50,6 +52,7 @@ slot: ring
 stat: health
 stat_bonus: 2
 chance: 20
+always_id_on_use: true
 
 name: ring of regeneration
 internal_name: ring_regeneration
@@ -57,10 +60,14 @@ category: rings
 slot: ring
 equip_flag: regenerating
 chance: 20
+always_id_on_use: true
+charges: 10d3
 
 name: ring of see invisible
 internal_name: ring_see_invisible
 category: rings
 slot: ring
-equip_flag: can_see_invisible
+equip_flag: see_invisible
 chance: 20
+always_id_on_use: true
+charges: -1

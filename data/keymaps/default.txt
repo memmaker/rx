@@ -21,6 +21,7 @@ f -> launch
 g -> aim
 h -> quick_shot
 , -> pickup
+. -> wait
 Enter -> map_interaction
 
 
@@ -31,6 +32,7 @@ l -> log
 m -> monsters
 I -> items
 ? -> help
+t -> tactics
 
 U -> overlay_monsters
 O -> overlay_items

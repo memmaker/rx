@@ -39,7 +39,11 @@ func (u *UI) handleDirectionalTargetingInput(origin geometry.Point, allowAdvance
 		if ev.Key() == tcell.KeyCtrlC {
 			return ev
 		}
-
+		if ev.Key() == tcell.KeyEscape {
+			u.cancelTargeting()
+			u.UpdateLogWindow()
+			return nil
+		}
 		handled := false
 		if strings.ContainsRune("wasd12346789", ch) {
 			onSelected(origin.Add(runeToDirection(ch).ToPoint().Mul(10)))
@@ -78,6 +82,8 @@ func (u *UI) handleAdvancedTargetingInput(listOfVisibleEnemies []foundation.Acto
 		}
 		if key == tcell.KeyEscape {
 			u.cancelTargeting()
+			u.UpdateLogWindow()
+			return nil
 		} else if key == tcell.KeyTab {
 			if mod == tcell.ModShift {
 				choosePreviousEnemy()

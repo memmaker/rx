@@ -2,36 +2,70 @@ package game
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/rpg"
 )
 
-func (g *GameState) enemyMovement() {
+func (g *GameState) enemyMovement(playerTimeSpent int) {
+	if g.currentDungeonLevel <= 2 {
+		playerTimeSpent /= 2
+	}
 	gridMap := g.gridMap
 	allEnemies := gridMap.Actors()
 	for _, enemy := range allEnemies {
 		if enemy == g.Player {
 			continue
 		}
+		if !enemy.IsAlive() {
+			continue
+		}
+
 		// IMPORTANT:
-		// Actions of enemies may never remove actors from the game directly
-		g.executeAI(enemy)
+		// Actions of enemies should never remove actors from the game directly
+		enemy.AddTimeEnergy(playerTimeSpent)
+		for enemy.HasEnergyForActions() {
+			enemy.SpendTimeEnergy()
+			g.aiAct(enemy)
+		}
 	}
 }
 func (g *GameState) removeDeadAndApplyRegeneration() {
-	healEvery := 10
-	if g.TurnsTaken%healEvery == 0 {
-		if g.Player.NeedsHealing() && len(g.playerVisibleEnemiesByDistance()) == 0 {
-			g.Player.Heal(1)
+	healInterval := 2 + (100 / g.Player.GetHealth())
+	hungerInterval := 300
+
+	g.Player.GetFlags().Increment(foundation.FlagTurnsSinceEating)
+
+	turnsSinceEating := g.Player.GetFlags().Get(foundation.FlagTurnsSinceEating)
+
+	if turnsSinceEating%hungerInterval == 0 {
+		wasHungry := g.Player.IsHungry()
+		g.Player.GetFlags().Increment(foundation.FlagHunger)
+		if g.Player.IsHungry() {
+			if !wasHungry {
+				g.msg(foundation.Msg("You are hungry."))
+			}
 		}
-		g.Player.charSheet.AddToCounter(rpg.CounterHunger, 1)
+	}
+
+	if g.Player.IsHungry() && turnsSinceEating%(healInterval*3) == 0 {
+		g.Player.LooseFatigue(1)
+	}
+
+	if !g.Player.IsHungry() && g.TurnsTaken%healInterval == 0 && len(g.playerVisibleEnemiesByDistance()) == 0 {
+		if g.Player.NeedsHealing() {
+			g.Player.Heal(1)
+		} else {
+			g.Player.AddFatiguePoints(1)
+		}
 	}
 
 	for i := len(g.gridMap.Actors()) - 1; i >= 0; i-- {
 		actor := g.gridMap.Actors()[i]
 		if !actor.IsAlive() {
 			g.gridMap.RemoveActor(actor)
-		} else if actor.HasFlag(foundation.IsRegenerating) && actor.NeedsHealing() {
-			actor.Heal(1)
+		} else {
+			actor.AfterTurn()
+			if actor.HasFlag(foundation.FlagRegenerating) && actor.NeedsHealing() {
+				actor.Heal(1)
+			}
 		}
 	}
 	for i := len(g.gridMap.Objects()) - 1; i >= 0; i-- {

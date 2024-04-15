@@ -1960,6 +1960,19 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetAllLit() {
 	}
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetFirstWallCardinalInDirection(origin geometry.Point, dir geometry.CompassDirection) geometry.Point {
+	for i := 1; i < max(m.mapWidth, m.mapHeight); i++ {
+		pos := origin.Add(dir.ToPoint().Mul(i))
+		if !m.Contains(pos) {
+			return pos
+		}
+		if !m.IsTileWalkable(pos) {
+			return pos
+		}
+	}
+	return origin
+}
+
 type JumpOverInfo struct {
 	Sprint     []geometry.Point
 	Jump       []geometry.Point

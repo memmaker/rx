@@ -1,7 +1,4 @@
-[#FFFFFF]This giant variety of the ordinary ant will fight just as
-fiercely as its small, distant cousin. Various varieties
-exist, and they are known and feared for their relentless
-persecution of their victims.[-]
+[#FFFFFF]This giant variety of the ordinary ant will fight just as fiercely as its small, distant cousin. Various varieties exist, and they are known and feared for their relentless persecution of their victims.[-]
 
 [#f5e342]Origin[-]
 

@@ -33,6 +33,41 @@ func main() {
 	}
 
 	util.SetKeypadToNumericMode()
+
+	var playerName string
+	var showScoresOnly bool
+	if len(os.Args) > 1 {
+		argName := os.Args[1]
+		if argName == "-s" {
+			showScoresOnly = true
+		} else if len(os.Args) > 2 && argName == "-n" {
+			playerName = os.Args[2]
+		}
+	} else {
+		showBanner(width)
+	}
+
+	if playerName == "" && !showScoresOnly {
+		playerName = askForName()
+	}
+
+	config := foundation.NewConfigurationFromFile("config.rec")
+	config.PlayerName = playerName
+	gameUI := console.NewTextUI(config)
+	game.NewGameState(gameUI, config)
+
+	if showScoresOnly {
+		scoresFile := "scores.bin"
+		scoreTable := game.LoadHighScoreTable(scoresFile)
+		gameUI.Queue(func() {
+			gameUI.ShowHighScoresOnly(scoreTable)
+		})
+	}
+
+	gameUI.StartGameLoop()
+}
+
+func showBanner(width int) {
 	bannerLines := util.ReadFileAsLines(path.Join("data", "banner.txt"))
 	for _, line := range bannerLines {
 		length := len(line)
@@ -43,21 +78,6 @@ func main() {
 		linePadded := util.LeftPadCount(line, startX)
 		fmt.Println(linePadded)
 	}
-
-	var playerName string
-	if len(os.Args) > 2 {
-		if os.Args[1] == "-n" {
-			playerName = os.Args[2]
-		}
-	} else {
-		playerName = askForName()
-	}
-	config := foundation.NewConfigurationFromFile("config.rec")
-	config.PlayerName = playerName
-	gameUI := console.NewTextUI(config)
-	game.NewGameState(gameUI, config)
-	gameUI.StartGameLoop()
-
 }
 
 func testKeyCodes() {

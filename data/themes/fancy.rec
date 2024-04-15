@@ -7,21 +7,23 @@ Player_Color: White
 %rec: colors
 
 Black: 0 | 0 | 0
-DarkGray: 85 | 85 | 85
+DarkGray: 60 | 60 | 60
+Gray: 128 | 128 | 128
 VeryDarkGray: 40 | 40 | 40
-Blue: 0 | 64 | 164
-LightBlue: 85 | 85 | 255
-VeryLightBlue: 149 | 178 | 222
+Blue: 60 | 183 | 250
+LightBlue: 85 | 183 | 255
+VeryLightBlue: 149 | 183 | 255
 Green: 0 | 170 | 0
 LightGreen: 85 | 255 | 85
 Cyan: 56 | 90 | 90
 LightCyan: 85 | 255 | 255
-Red: 192 | 0 | 0
+Red: 255 | 20 | 20
 LightRed: 255 | 85 | 85
-Magenta: 170 | 0 | 170
+Magenta: 209 | 31 | 209
 LightMagenta: 255 | 85 | 255
-Brown: 170 | 85 | 0
-LightBrown: 192 | 128 | 64
+Orange: 227 | 114 | 0
+Brown: 150 | 89 | 0
+LightBrown: 255 | 188 | 105
 Yellow: 255 | 255 | 85
 DarkYellow: 191 | 188 | 2
 DirtyBlue: 90 | 126 | 166
@@ -51,7 +53,7 @@ UIForegroundHighlighted: White
 ItemGold: Yellow
 ItemFood: LightGreen
 ItemWeapons: LightGray
-ItemArmor: LightBrown
+ItemArmor: Brown
 ItemScrolls: LightGray
 ItemPotions: Blue
 ItemWands: Green
@@ -151,19 +153,19 @@ ItemWeapons: ↑
 ItemWeapons_Colors: LightBrown | Cyan
 #
 ItemArmor: ❖
-ItemArmor_Colors: Brown | Cyan
-#
-ItemScrolls: ☥
-ItemScrolls_Colors: LightGray | Cyan
+ItemArmor_Colors: Orange | Cyan
+# ☥
+ItemScrolls: ≡
+ItemScrolls_Colors: Black | LightBrown
 #
 ItemPotions: ⚱
 ItemPotions_Colors: Blue | Cyan
 #
-ItemWands: ⚚
+ItemWands: τ
 ItemWands_Colors: Green | Cyan
 #
-ItemRings: ♁
-ItemRings_Colors: Red | Cyan
+ItemRings: ○
+ItemRings_Colors: LightRed | Cyan
 #
 ItemAmulets: &
 ItemAmulets_Colors: LightMagenta | Cyan
@@ -171,17 +173,29 @@ ItemAmulets_Colors: LightMagenta | Cyan
 %rec: objects
 
 # Objects
-ObjectClosedDoor: ■
-ObjectClosedDoor_Colors: LightGray | Black
+ClosedDoor: ■
+ClosedDoor_Colors: LightGray | Black
 #
-ObjectOpenDoor: ■
-ObjectOpenDoor_Colors: LightGray | Black
+OpenDoor: ■
+OpenDoor_Colors: LightGray | Black
 #
-ObjectTrap: ♦
-ObjectTrap_Colors: LightGray | Cyan
+ExplodingTrap: ♦
+ExplodingTrap_Colors: LightGray | Cyan
 #
-ObjectExplodingBarrel: Θ
-ObjectExplodingBarrel_Colors: LightRed | Cyan
+SlowTrap: Θ
+SlowTrap_Colors: LightRed | Cyan
+#
+TeleportTrap: ^
+TeleportTrap_Colors: LightRed | Cyan
+#
+DartTrap: ^
+DartTrap_Colors: LightRed | Cyan
+#
+ArrowTrap: ^
+ArrowTrap_Colors: LightRed | Cyan
+#
+DescendTrap: ^
+DescendTrap_Colors: LightRed | Cyan
 
 %rec: borders
 

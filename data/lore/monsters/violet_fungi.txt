@@ -1,0 +1,29 @@
+[#FFFFFF]This human-sized violet plant shaped as a teardrop has four tendril like tentacles which flail about at living creatures and a mass of small, rootlike feelers at its base that enable it to move slowly.[-]
+
+[#f5e342]Origin[-]
+
+
+
+[#f5e342]Rogue Trivia[-]
+
+Another monster taken directly from the DnD Monster Manuel 1st Edition.
+
+It was already present in the very first public release of rogue we can find, version 3.6.
+
+For the 5.4 and the DOS Version, this monster was renamed to Venus Flytrap.
+
+While Rogue 5.4 has replaced the name in both the monster list and the comments in the fight.c file,
+the DOS version still calls the attacking monster a violet fungi in one of the comments:
+
+/* extern.c of Rogue-1.48 EPYX */
+{ "venus flytrap", 0, ISMEAN, { XX,   80,  8,  3, ___, "%%%d0"} },
+
+/* fight.c of Rogue-1.48 EPYX */
+case 'F': //Violet fungi stops the poor guy from moving
+  player.t_flags |= ISHELD;
+  sprintf(mp->t_stats.s_dmg, "%dd1", ++fung_hit);
+break;
+
+This might be an indicator, that the DOS version was based on an earlier version of Rogue, which still used the original name.
+
+[#f5e342]NetHack History[-]

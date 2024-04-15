@@ -56,6 +56,9 @@ func (r Dice) Roll() int {
 		flatValue := r.Min()
 		return flatValue
 	}
+	if r.sides == 0 {
+		return r.bonus
+	}
 	result := r.bonus
 	for i := 0; i < r.dice; i++ {
 		result += 1 + rand.Intn(r.sides)
@@ -84,7 +87,7 @@ func (r Dice) WithBonus(plus int) Dice {
 }
 
 func (r Dice) NotZero() bool {
-	return r.dice > 0 || r.sides > 0 || r.bonus > 0
+	return r.dice != 0 || r.sides != 0 || r.bonus != 0
 }
 
 func (r Dice) ExpectedValue() int {
@@ -116,7 +119,7 @@ func ParseDice(dice string) Dice {
 
 	intervalPattern := regexp.MustCompile(`^(\d+)-(\d+)$`)
 
-	flatNumberPattern := regexp.MustCompile(`^(\d+)$`)
+	flatNumberPattern := regexp.MustCompile(`^(-?\d+)$`)
 
 	hasDiceNotation := strings.ContainsAny(dice, "d")
 

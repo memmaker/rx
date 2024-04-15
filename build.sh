@@ -11,4 +11,9 @@ GOOS=windows GOARCH=amd64 go build -trimpath -ldflags '-s -w' -o ./builds/win/rx
 
 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags '-s -w' -o ./builds/linux/rx .
 
+upx ./builds/mac/rx
+upx ./builds/win/rx.exe
+upx ./builds/linux/rx
+
+
 #GOOS=js GOARCH=wasm go build -tags wasm -trimpath -ldflags '-s -w' -o ./builds/wasi/rx.wasm .

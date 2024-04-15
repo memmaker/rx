@@ -1,1 +1,95 @@
 [#FFFFFF]This normally aquatic creature has adapted to the environment of the Dungeons of Doom by continuously spraying it's surroundings with a liquid it secretes from the top of it's head. Seems relatively harmless.[-]
+
+[#f5e342]Rogue Trivia[-]
+
+The original name of this monster is rust monster.
+
+It was then changed to dodge copyright issues.
+
+The original code for rusting armor was pretty simple:
+
+/* Rogue 3.6 - 1981 */
+
+/*
+ * If a rust monster hits, you lose armor
+ */
+if (cur_armor != NULL && cur_armor->o_ac < 9)
+{
+	if (!terse)
+		msg("Your armor appears to be weaker now. Oh my!");
+	else
+		msg("Your armor weakens");
+	cur_armor->o_ac++;
+}
+
+Of course leather armor should have been immune to rusting, but it wasn't.
+
+That was soon fixed in the later versions:
+
+/* Rogue 5.2.1 - 1982 */
+/*
+ * If a rust monster hits, you lose armor, unless
+ * that armor is leather or there is a magic ring
+ */
+if (cur_armor != NULL && cur_armor->o_ac < 9 && cur_armor->o_which != LEATHER)
+{
+	if (ISWEARING(R_SUSTARM))
+		msg("The rust vanishes instantly");
+	else
+	{
+		cur_armor->o_ac++;
+		if (!terse)
+			msg("your armor appears to be weaker now. Oh my!");
+		else
+			msg("your armor weakens");
+	}
+}
+
+This version also gave the player a chance to save their armor by wearing a ring of sustain armor.
+
+For the 5.4 release, the code for rusting the armor was extracted into it's own function:
+
+/*
+ * rust_armor:
+ *	Rust the given armor, if it is a legal kind to rust, and we
+ *	aren't wearing a magic ring.
+ */
+
+void
+rust_armor(THING *arm)
+{
+    if (arm == NULL || arm->o_type != ARMOR || arm->o_which == LEATHER || arm->o_arm >= 9)
+	    return;
+
+    if ((arm->o_flags & ISPROT) || ISWEARING(R_SUSTARM))
+    {
+		if (!to_death)
+	    	msg("the rust vanishes instantly");
+    }
+    else
+    {
+	arm->o_arm++;
+	if (!terse)
+	    msg("your armor appears to be weaker now. Oh my!");
+	else
+	    msg("your armor weakens");
+    }
+}
+
+Especially interesting is the fact, that an armor can now be flagged as protected from rust.
+To this end rogue 5.4 provides a scroll of protection, which can be read to protect the armor from rusting.
+
+The DOS Release 1.48 the simplified things back to where they were in 5.2.1:
+
+case 'A': //If a rust monster hits, you lose armor, unless that armor is leather or there is a magic ring
+	if (cur_armor != NULL && cur_armor->o_ac < 9 && cur_armor->o_which != LEATHER)
+	{
+		if (ISWEARING(R_SUSTARM))
+			msg("the rust vanishes instantly");
+		else
+		{
+			msg("your armor weakens, oh my!");
+			cur_armor->o_ac++;
+		}
+	}
+	break;

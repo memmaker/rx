@@ -260,18 +260,11 @@ func (e *Equipment) GetShield() *Item {
 func (e *Equipment) CanUnequip(item *Item) bool {
 	return true
 }
-func (e *Equipment) GetFlagsCombined() uint32 {
-	var flags uint32
-	for _, item := range e.slots {
-		flags |= item.GetEquipFlag()
-	}
-	return flags
-}
 
-func (e *Equipment) ContainsFlag(flag uint32) bool {
+func (e *Equipment) ContainsFlag(flag foundation.ActorFlag) bool {
 	for _, item := range e.slots {
 		itemFlags := item.GetEquipFlag()
-		if itemFlags&flag != 0 {
+		if itemFlags == flag {
 			return true
 		}
 	}
@@ -330,4 +323,10 @@ func (e *Equipment) HasMissileQuivered() bool {
 func (e *Equipment) IsQuiveredItem(item *Item) bool {
 	slot := e.GetBySlot(foundation.SlotNameQuiver)
 	return slot == item
+}
+
+func (e *Equipment) AfterTurn() {
+	for _, item := range e.slots {
+		item.AfterEquippedTurn()
+	}
 }
