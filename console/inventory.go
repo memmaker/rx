@@ -52,7 +52,10 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 		item := invItem
 		shortcut := invItem.Shortcut()
 		line := invItem.InventoryNameWithColorsAndShortcut(RGBAToFgColorCode(i.lineColor(invItem.GetCategory())))
-		line = RightPadColored(line, i.listWidth)
+		taggedStringWidth := cview.TaggedStringWidth(line)
+		if taggedStringWidth < i.listWidth {
+			line = RightPadColored(line, i.listWidth)
+		}
 		if i.isEquipped != nil && i.isEquipped(item) {
 			line = line[:2] + "+" + line[3:]
 		}
@@ -99,11 +102,6 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 	}
 
 	for idx, line := range infoLines {
-		lineLength := len(line)
-		if lineLength-1 > i.listWidth { // HACK for edge cases
-			i.listWidth = lineLength - 1
-			return i.drawInside(screen, x, y, width, height)
-		}
 		cview.Print(screen, []byte(cview.Escape(line)), startX, lineAfterList+idx, width, cview.AlignLeft, fg)
 	}
 
@@ -146,6 +144,10 @@ func (i *TextInventory) SetControlSelection(onSelect func(item foundation.ItemFo
 
 func (i *TextInventory) SetItems(invItem []foundation.ItemForUI) {
 	i.items = invItem
+	i.updateListBounds()
+}
+
+func (i *TextInventory) updateListBounds() {
 	width := longestInventoryLineWithoutColorCodes(i.items)
 	height := len(i.items)
 	i.listWidth = max(i.listWidth, width)
@@ -198,7 +200,7 @@ func (i *TextInventory) handleInput(event *tcell.EventKey) *tcell.EventKey {
 				}
 				i.defaultSelection(invItem)
 			}
-
+			i.updateListBounds()
 			return nil
 		}
 	}

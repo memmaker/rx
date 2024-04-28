@@ -87,6 +87,10 @@ func (g *GameState) afterPlayerMoved() {
 	g.msg(g.GetMapInfoForMovement(g.Player.Position()))
 	g.exploreMap()
 	g.updateDijkstraMap()
+
+	if g.Player.HasFlag(foundation.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
+		g.ui.AddAnimations(OneAnimation(teleportWithAnimation(g, g.Player, g.gridMap.RandomSpawnPosition())))
+	}
 }
 
 func (g *GameState) updateDijkstraMap() {

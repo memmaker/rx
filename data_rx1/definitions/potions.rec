@@ -1,6 +1,5 @@
 
 # Missing
-# - Hallucination
 # - Poison (drain strength)
 # - Gain Strength
 # - Restore Strength
@@ -89,3 +88,13 @@ charges: 1
 probability: 8
 worth: 140
 always_id_on_use: true
+
+name: potion of hallucination
+internal_name: potion_hallucination
+use_effect: hallucination
+category: potions
+charges: 1
+probability: 8
+worth: 140
+always_id_on_use: true
+

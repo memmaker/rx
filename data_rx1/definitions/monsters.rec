@@ -1,5 +1,4 @@
 %rec: default
-#FIELDS: name internal_name letter dlvl color gold carry_chance flags strength dexterity health intelligence hp will perception fp speed size_modifier dodge dr attack attack_1 attack_2 zap_effect
 
 name: bat
 internal_name: bat
@@ -15,9 +14,9 @@ health: 12
 intelligence: 10
 hp: 7
 will: 10
-perception: 12
+perception: 8
 fp: 12
-speed: 6
+speed: 11
 size_modifier: -1
 dodge: 9
 dr: 0
@@ -37,13 +36,14 @@ health: 8
 intelligence: 4
 hp: 7
 will: 10
-perception: 12
+perception: 6
 fp: 12
-speed: 6
+speed: 9
 size_modifier: 2
 dodge: 7
 dr: 0
 attack: 11 | 1d6 | kick
+attack_1: 14 | 1d4 | beak
 
 name: hobgoblin
 internal_name: hobgoblin
@@ -59,9 +59,9 @@ health: 12
 intelligence: 9
 hp: 12
 will: 12
-perception: 12
+perception: 7
 fp: 12
-speed: 6
+speed: 8
 size_modifier: 0
 dodge: 8
 dr: 0
@@ -81,9 +81,9 @@ health: 12
 intelligence: 3
 hp: 5
 will: 6
-perception: 12
+perception: 5
 fp: 9
-speed: 7
+speed: 9
 size_modifier: -2
 dodge: 9
 dr: 0
@@ -103,9 +103,9 @@ health: 9
 intelligence: 8
 hp: 10
 will: 6
-perception: 11
+perception: 7
 fp: 8
-speed: 8
+speed: 11
 size_modifier: 0
 dodge: 10
 dr: 0
@@ -124,9 +124,9 @@ health: 10
 intelligence: 10
 hp: 10
 will: 8
-perception: 13
+perception: 5
 fp: 4
-speed: 6
+speed: 9
 size_modifier: -1
 dodge: 9
 dr: 0
@@ -148,7 +148,7 @@ hp: 9
 will: 12
 perception: 12
 fp: 12
-speed: 6
+speed: 8
 size_modifier: 0
 dodge: 9
 dr: 0
@@ -170,7 +170,7 @@ hp: 20
 will: 4
 perception: 6
 fp: 10
-speed: 4
+speed: 6
 size_modifier: 1
 dodge: 6
 dr: 0
@@ -191,7 +191,7 @@ hp: 9
 will: 7
 perception: 8
 fp: 6
-speed: 8
+speed: 9
 size_modifier: -2
 dodge: 10
 dr: 0
@@ -212,7 +212,7 @@ hp: 9
 will: 10
 perception: 10
 fp: 6
-speed: 6
+speed: 12
 size_modifier: 0
 dodge: 7
 dr: 0
@@ -233,7 +233,7 @@ hp: 20
 will: 9
 perception: 10
 fp: 12
-speed: 5
+speed: 10
 size_modifier: 0
 dodge: 7
 dr: 0
@@ -255,7 +255,7 @@ hp: 12
 will: 8
 perception: 9
 fp: 8
-speed: 6
+speed: 8
 size_modifier: -2
 dodge: 9
 dr: 0
@@ -277,7 +277,7 @@ hp: 14
 will: 10
 perception: 12
 fp: 6
-speed: 6
+speed: 11
 size_modifier: 0
 dodge: 11
 dr: 0
@@ -298,7 +298,7 @@ hp: 14
 will: 13
 perception: 12
 fp: 8
-speed: 6
+speed: 8
 size_modifier: 1
 dodge: 7
 dr: 1
@@ -320,7 +320,7 @@ hp: 8
 will: 4
 perception: 8
 fp: 6
-speed: 3
+speed: 6
 size_modifier: 0
 dodge: 5
 dr: 0
@@ -341,7 +341,7 @@ hp: 6
 will: 3
 perception: 11
 fp: 5
-speed: 6
+speed: 11
 size_modifier: 1
 dodge: 7
 dr: 1
@@ -363,7 +363,7 @@ hp: 12
 will: 12
 perception: 10
 fp: 9
-speed: 6
+speed: 13
 size_modifier: 0
 dodge: 8
 dr: 0
@@ -384,7 +384,7 @@ hp: 18
 will: 9
 perception: 10
 fp: 12
-speed: 6
+speed: 12
 size_modifier: 1
 dodge: 8
 dr: 1
@@ -405,7 +405,7 @@ hp: 8
 will: 12
 perception: 9
 fp: 6
-speed: 6
+speed: 11
 size_modifier: 0
 dodge: 10
 dr: 0
@@ -427,7 +427,7 @@ hp: 12
 will: 8
 perception: 12
 fp: 8
-speed: 4
+speed: 8
 size_modifier: 0
 dodge: 9
 dr: 0
@@ -448,7 +448,7 @@ hp: 16
 will: 12
 perception: 12
 fp: 8
-speed: 7
+speed: 12
 size_modifier: 2
 dodge: 8
 dr: 1
@@ -469,7 +469,7 @@ hp: 10
 will: 5
 perception: 8
 fp: 8
-speed: 6
+speed: 10
 size_modifier: 2
 dodge: 8
 dr: 0
@@ -491,7 +491,7 @@ hp: 13
 will: 12
 perception: 11
 fp: 9
-speed: 5
+speed: 10
 size_modifier: 0
 dodge: 8
 dr: 0
@@ -512,7 +512,7 @@ hp: 10
 will: 10
 perception: 11
 fp: 8
-speed: 5
+speed: 10
 size_modifier: 0
 dodge: 10
 dr: 0
@@ -534,7 +534,7 @@ hp: 19
 will: 10
 perception: 12
 fp: 11
-speed: 6
+speed: 12
 size_modifier: 1
 dodge: 7
 dr: 1
@@ -555,7 +555,7 @@ hp: 22
 will: 10
 perception: 10
 fp: 14
-speed: 5
+speed: 10
 size_modifier: 2
 dodge: 7
 dr: 2
@@ -576,7 +576,7 @@ hp: 12
 will: 7
 perception: 6
 fp: 6
-speed: 4
+speed: 6
 size_modifier: 1
 dodge: 5
 dr: 0
@@ -597,7 +597,7 @@ hp: 19
 will: 12
 perception: 11
 fp: 12
-speed: 5
+speed: 10
 size_modifier: 0
 dodge: 9
 dr: 1
@@ -619,7 +619,7 @@ hp: 25
 will: 13
 perception: 10
 fp: 8
-speed: 4
+speed: 6
 size_modifier: 1
 dodge: 8
 dr: 0
@@ -641,7 +641,7 @@ hp: 15
 will: 10
 perception: 11
 fp: 10
-speed: 5
+speed: 10
 size_modifier: 0
 dodge: 11
 dr: 0
@@ -662,7 +662,7 @@ hp: 40
 will: 6
 perception: 9
 fp: 8
-speed: 5
+speed: 8
 size_modifier: 5
 dodge: 8
 dr: 3
@@ -684,7 +684,7 @@ hp: 15
 will: 12
 perception: 9
 fp: 10
-speed: 6
+speed: 10
 size_modifier: 0
 dodge: 8
 dr: 0
@@ -705,7 +705,7 @@ hp: 18
 will: 11
 perception: 8
 fp: 10
-speed: 5
+speed: 9
 size_modifier: 2
 dodge: 6
 dr: 2
@@ -727,13 +727,13 @@ hp: 17
 will: 11
 perception: 12
 fp: 12
-speed: 6
+speed: 12
 size_modifier: 1
 dodge: 10
 dr: 1
 attack_1: 12 | 1d6+3 | kick
-attack_2: 14 | 1d6+2 | peck
 zap_effect: lightning_ray
+attack_2: 14 | 1d6+2 | peck
 
 name: medusa
 internal_name: medusa
@@ -750,7 +750,7 @@ hp: 15
 will: 13
 perception: 11
 fp: 10
-speed: 5
+speed: 7
 size_modifier: 0
 dodge: 10
 dr: 1
@@ -766,12 +766,12 @@ carry_chance: 75
 strength: 5
 dexterity: 13
 health: 11
-intelligence: 90
-hp: 9
+intelligence: 9
+hp: 19
 will: 10
 perception: 9
 fp: 10
-speed: 7
+speed: 8
 size_modifier: 0
 dodge: 10
 dr: 0
@@ -792,7 +792,7 @@ hp: 13
 will: 8
 perception: 12
 fp: 9
-speed: 5
+speed: 10
 size_modifier: -1
 dodge: 8
 dr: 0
@@ -814,7 +814,7 @@ hp: 13
 will: 9
 perception: 13
 fp: 9
-speed: 5
+speed: 10
 size_modifier: -1
 dodge: 9
 dr: 0
@@ -835,7 +835,7 @@ hp: 16
 will: 11
 perception: 10
 fp: 10
-speed: 6
+speed: 7
 size_modifier: 1
 dodge: 7
 dr: 1
@@ -857,7 +857,7 @@ hp: 27
 will: 14
 perception: 12
 fp: 14
-speed: 6
+speed: 8
 size_modifier: 0
 dodge: 9
 dr: 1
@@ -879,7 +879,7 @@ hp: 18
 will: 14
 perception: 12
 fp: 12
-speed: 5
+speed: 9
 size_modifier: 3
 dodge: 11
 dr: 2
@@ -901,11 +901,11 @@ hp: 35
 will: 14
 perception: 16
 fp: 15
-speed: 7
+speed: 10
 size_modifier: 4
 dodge: 10
 dr: 3
 attack_1: 14 | 4d6+3 | kick
-attack_2: 16 | 4d6+2 | slash
 zap_effect: fire_breath
+attack_2: 16 | 4d6+2 | slash
 

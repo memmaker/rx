@@ -62,7 +62,7 @@ type ItemDef struct {
 	ZapEffect string
 
 	Stat      rpg.Stat
-	StatBonus int
+	StatBonus rpg.Dice
 
 	Charges  rpg.Dice
 	Category foundation.ItemCategory
@@ -71,7 +71,7 @@ type ItemDef struct {
 	EquipFlag     foundation.ActorFlag
 
 	Skill      rpg.SkillName
-	SkillBonus int
+	SkillBonus rpg.Dice
 }
 
 func (i ItemDef) IsValidArmor() bool {
@@ -145,11 +145,11 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 		case "stat":
 			itemDef.Stat = rpg.StatFromString(field.Value)
 		case "stat_bonus":
-			itemDef.StatBonus = field.AsInt()
+			itemDef.StatBonus = rpg.ParseDice(field.Value)
 		case "skill":
 			itemDef.Skill = rpg.SkillNameFromString(field.Value)
 		case "skill_bonus":
-			itemDef.SkillBonus = field.AsInt()
+			itemDef.SkillBonus = rpg.ParseDice(field.Value)
 		case "equip_flag":
 			itemDef.EquipFlag = foundation.ActorFlagFromString(field.Value)
 		}

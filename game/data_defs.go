@@ -20,8 +20,8 @@ func (d DataDefinitions) HasItems(category foundation.ItemCategory) bool {
 	return ok && len(defines) > 0
 }
 
-func GetDataDefinitions() DataDefinitions {
-	dataDir := path.Join("data", "definitions")
+func GetDataDefinitions(rootDir string) DataDefinitions {
+	dataDir := path.Join(rootDir, "definitions")
 
 	readCloser := util.MustOpen(path.Join(dataDir, "armor.rec"))
 	armorRecords := recfile.Read(readCloser)

@@ -110,6 +110,29 @@ func (n SkillName) GetValueFromLevel(level int, getCharStat func(stat Stat) int)
 	return relativeSkillLevel + getCharStat(n.ControllingAttribute())
 }
 
+func (n SkillName) ToString() string {
+	return string(n)
+}
+
+func (n SkillName) ToShortString() string {
+	switch n {
+	case SkillNameShield:
+		return "Shld"
+	case SkillNameMeleeWeapons:
+		return "Mlee"
+	case SkillNameBrawling:
+		return "Brwl"
+	case SkillNameThrowing:
+		return "Thrw"
+	case SkillNameMissileWeapons:
+		return "Msle"
+	case SkillNameStealth:
+		return "Stlh"
+	}
+	return ""
+
+}
+
 type SkillDifficulty int
 
 const (

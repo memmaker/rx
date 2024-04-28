@@ -1,5 +1,7 @@
 package foundation
 
+import "math/rand"
+
 type ObjectCategory int
 
 const (
@@ -11,6 +13,10 @@ const (
 	ObjectDescendTrap
 	ObjectBearTrap
 )
+
+func RandomObjectCategory() ObjectCategory {
+	return ObjectCategory(rand.Intn(int(ObjectBearTrap)+1))
+}
 
 func GetAllTrapCategories() []ObjectCategory {
 	return []ObjectCategory{
@@ -86,4 +92,8 @@ func (o ObjectCategory) ZapEffect() string {
 	default:
 		return ""
 	}
+}
+
+func (o ObjectCategory) IsTrap() bool {
+	return true
 }

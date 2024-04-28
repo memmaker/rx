@@ -23,6 +23,7 @@ func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geom
 		"lightning_ray":        lightningRay,
 		"fire_ray":             fireRay,
 		"charge_attack":        chargeAttack,
+		"heroic_charge":        heroicCharge,
 		"explode":              explosion,
 		"magic_dart":           magicDart,
 		"magic_arrow":          magicArrow,
@@ -58,18 +59,21 @@ func uncloakAndCharge(g *GameState, zapper *Actor, pos geometry.Point) []foundat
 	zapper.GetFlags().Unset(foundation.FlagInvisible)
 	zapper.SetAware()
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(zapper, zapper.Position())
-	chargeAnim, _ := charge(g, zapper, pos, g.getLine)
+	chargeAnim, _ := charge(g, zapper, pos, false, g.getLine)
 	//tileIcon := g.gridMap.GetTileIconAt(targetPos)
 	uncloakAnim.SetFollowUp([]foundation.Animation{chargeAnim})
 
 	return []foundation.Animation{uncloakAnim}
 }
 func chargeAttack(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
-	moveAnim, _ := charge(g, zapper, pos, g.getLineOfSight)
+	moveAnim, _ := charge(g, zapper, pos, false, g.getLineOfSight)
 	return []foundation.Animation{moveAnim}
 }
-
-func charge(g *GameState, zapper *Actor, pos geometry.Point, getPath func(src, dst geometry.Point) []geometry.Point) (foundation.Animation, geometry.Point) {
+func heroicCharge(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
+	moveAnim, _ := charge(g, zapper, pos, true, g.getLineOfSight)
+	return []foundation.Animation{moveAnim}
+}
+func charge(g *GameState, zapper *Actor, pos geometry.Point, isHeroic bool, getPath func(src, dst geometry.Point) []geometry.Point) (foundation.Animation, geometry.Point) {
 	origin := zapper.Position()
 	pathOfFlight := getPath(origin, pos)
 
@@ -82,10 +86,15 @@ func charge(g *GameState, zapper *Actor, pos geometry.Point, getPath func(src, d
 		targetPos = pathOfFlight[len(pathOfFlight)-2]
 	}
 	g.actorMove(zapper, targetPos)
+	pathOfFlight = append([]geometry.Point{origin}, pathOfFlight...)
 	moveAnim := g.ui.GetAnimQuickMove(zapper, pathOfFlight)
 
 	if hitActor != nil {
-		attackAnims := g.actorMeleeAttack(zapper, ModFlatAndCap(-4, 9, "charge attack"), hitActor, NoModifiers) // TODO: apply -4 to hit, cap effective skill at 9
+		var attackMods []rpg.Modifier
+		if !isHeroic {
+			attackMods = ModFlatAndCap(-4, 9, "charge attack")
+		}
+		attackAnims := g.actorMeleeAttack(zapper, attackMods, hitActor, NoModifiers) // TODO: apply -4 to hit, cap effective skill at 9
 		moveAnim.SetFollowUp(attackAnims)
 	}
 	return moveAnim, targetPos
@@ -107,6 +116,7 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 			actor := g.gridMap.ActorAt(hitPos)
 			if actor.IsAlive() {
 				freeze := func() {
+					g.msg(foundation.HiLite("%s is frozen", actor.Name()))
 					actor.GetFlags().Set(foundation.FlagHeld)
 				}
 				damageAnim := g.damageActorWithFollowUp(zapper.Name(), actor, damage, freeze, nil)

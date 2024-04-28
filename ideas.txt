@@ -112,6 +112,8 @@ Just try to traverse the combat zone of night-city alive
 My House.WAD RL
  - Break all the rules
 
+Post Apocalyptic Oregon Trail
+
 
 Missing Roguelikes
  - Cyberpunk

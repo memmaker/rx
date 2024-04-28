@@ -5,7 +5,6 @@ import (
 	"RogueUI/geometry"
 	"code.rocketnine.space/tslocum/cview"
 	"github.com/gdamore/tcell/v2"
-	"strings"
 )
 
 func (u *UI) SelectTarget(origin geometry.Point, onSelected func(targetPos geometry.Point)) {
@@ -31,24 +30,31 @@ func (u *UI) LookTargeting() {
 		mapInfo := u.game.GetMapInfo(targetPos)
 		u.Print(mapInfo)
 	}
-	u.beginAdvancedTargeting(func(targetPos geometry.Point) {})
+	u.beginAdvancedTargeting(func(targetPos geometry.Point) {
+		actorAt := u.game.ActorAt(targetPos)
+		if actorAt != nil {
+			u.ShowMonsterInfo(actorAt)
+		}
+	})
 }
 func (u *UI) handleDirectionalTargetingInput(origin geometry.Point, allowAdvancedTargeting bool, onSelected func(targetPos geometry.Point)) func(ev *tcell.EventKey) *tcell.EventKey {
 	return func(ev *tcell.EventKey) *tcell.EventKey {
-		_, _, ch := ev.Modifiers(), ev.Key(), ev.Rune()
+		//_, _, ch := ev.Modifiers(), ev.Key(), ev.Rune()
 		if ev.Key() == tcell.KeyCtrlC {
 			return ev
 		}
-		if ev.Key() == tcell.KeyEscape {
+		command := u.getDirectionalTargetingCommandForKey(toUIKey(ev))
+
+		if command == "target_cancel" {
 			u.cancelTargeting()
 			u.UpdateLogWindow()
 			return nil
 		}
 		handled := false
-		if strings.ContainsRune("wasd12346789", ch) {
-			onSelected(origin.Add(runeToDirection(ch).ToPoint().Mul(10)))
+		if direction, isDirectionalCommand := directionFromCommand(command); isDirectionalCommand {
+			onSelected(origin.Add(direction.ToPoint().Mul(10)))
 			handled = true
-		} else if allowAdvancedTargeting && ch == ' ' {
+		} else if allowAdvancedTargeting && command == "target_switch_to_advanced" {
 			u.beginAdvancedTargeting(onSelected)
 		}
 
@@ -76,27 +82,28 @@ func (u *UI) handleAdvancedTargetingInput(listOfVisibleEnemies []foundation.Acto
 		u.updateTarget(listOfVisibleEnemies[enemyIndex].Position())
 	}
 	return func(ev *tcell.EventKey) *tcell.EventKey {
-		mod, key, ch := ev.Modifiers(), ev.Key(), ev.Rune()
+		//mod, key, ch := ev.Modifiers(), ev.Key(), ev.Rune()
 		if ev.Key() == tcell.KeyCtrlC {
 			return ev
 		}
-		if key == tcell.KeyEscape {
+
+		command := u.getAdvancedTargetingCommandForKey(toUIKey(ev))
+		// Damn, this is a second layer of keymaps..or is it? probably is
+		if command == "target_cancel" {
 			u.cancelTargeting()
 			u.UpdateLogWindow()
 			return nil
-		} else if key == tcell.KeyTab {
-			if mod == tcell.ModShift {
-				choosePreviousEnemy()
-			} else {
-				chooseNextEnemy()
-			}
-		} else if strings.ContainsRune("wasd12346789", ch) {
-			newTarget := u.targetPos.Add(runeToDirection(ch).ToPoint())
+		} else if command == "target_next" {
+			chooseNextEnemy()
+		} else if command == "target_previous" {
+			choosePreviousEnemy()
+		} else if direction, isDirectionalCommand := directionFromCommand(command); isDirectionalCommand {
+			newTarget := u.targetPos.Add(direction.ToPoint())
 			u.updateTarget(newTarget)
-		} else if ch == ' ' {
+		} else if command == "target_switch_to_directional" {
 			u.cancelTargeting()
 			u.SelectTarget(u.game.GetPlayerPosition(), onSelected)
-		} else if ch == 'e' {
+		} else if command == "target_confirm" {
 			u.onTargetSelected(onSelected)
 		}
 
@@ -129,7 +136,6 @@ func (u *UI) beginAdvancedTargeting(onSelected func(targetPos geometry.Point)) {
 		if action == cview.MouseMove {
 			newX, newY := event.Position()
 			if newX != u.currentMouseX || newY != u.currentMouseY {
-
 				u.currentMouseX = newX
 				u.currentMouseY = newY
 				mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})

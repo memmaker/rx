@@ -42,9 +42,11 @@ func (g *GameState) aiAct(enemy *Actor) {
 		if sameRoom {
 			if enemy.HasFlag(foundation.FlagMean) && enemy.CanPerceivePlayer(g.Player.GetSkill(rpg.SkillNameStealth)-4, distanceToPlayer) {
 				enemy.WakeUp()
+				g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
 				g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
 			} else if !enemy.HasFlag(foundation.FlagMean) && enemy.CanPerceivePlayer(g.Player.GetSkill(rpg.SkillNameStealth)+2, distanceToPlayer) && rand.Intn(10) == 0 {
 				enemy.WakeUp()
+				g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
 				g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
 			} else {
 				return

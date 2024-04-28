@@ -48,19 +48,23 @@ func (a *Actor) Color() string {
 
 func NewPlayer(name string, playerIcon rune, playerColor string) *Actor {
 	player := NewActor(name, playerIcon, playerColor)
-	player.charSheet.SetCharacterPointsReceived(7)
+	player.charSheet.SetCharacterPointsReceived(17)
 	player.charSheet.SetAdjustment(rpg.Strength, 0)
 	player.charSheet.SetAdjustment(rpg.Dexterity, 0)
 	player.charSheet.SetAdjustment(rpg.Intelligence, 0)
 	player.charSheet.SetAdjustment(rpg.Health, 0)
 	player.charSheet.SetAdjustment(rpg.Will, 0)
 	player.charSheet.SetAdjustment(rpg.Perception, 0)
+	player.charSheet.SetAdjustment(rpg.HitPoints, 5)
+
 	player.charSheet.SetSkillLevel(rpg.SkillNameMeleeWeapons, 2)
 	player.charSheet.SetSkillLevel(rpg.SkillNameBrawling, 1)
 	player.charSheet.SetSkillLevel(rpg.SkillNameShield, 1)
 	player.charSheet.SetSkillLevel(rpg.SkillNameMissileWeapons, 1)
 	player.charSheet.SetSkillLevel(rpg.SkillNameThrowing, 1)
 	player.charSheet.SetSkillLevel(rpg.SkillNameStealth, 1)
+
+	player.charSheet.ResetResources()
 	return player
 }
 
@@ -329,6 +333,7 @@ func (a *Actor) GetIntrinsicDamageAsString() string {
 func (a *Actor) RemoveLevelStatusEffects() {
 	a.statusFlags.Unset(foundation.FlagSeeFood)
 	a.statusFlags.Unset(foundation.FlagSeeMagic)
+	a.statusFlags.Unset(foundation.FlagSeeTraps)
 }
 
 func (a *Actor) Heal(amount int) {
@@ -756,4 +761,18 @@ func (a *Actor) SpendTimeEnergy() {
 
 func (a *Actor) AfterTurn() {
 	a.GetEquipment().AfterTurn()
+}
+
+func (a *Actor) decrementStatusEffectCounters() {
+	flags := a.GetFlags()
+	flags.Decrement(foundation.FlagHaste)
+	flags.Decrement(foundation.FlagSlow)
+	flags.Decrement(foundation.FlagConfused)
+	flags.Decrement(foundation.FlagFly)
+	flags.Decrement(foundation.FlagSeeInvisible)
+	flags.Decrement(foundation.FlagHallucinating)
+}
+
+func (a *Actor) GetWillpower() int {
+	return a.charSheet.GetStat(rpg.Will)
 }

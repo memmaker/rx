@@ -141,6 +141,16 @@ func (e *Equipment) GetArmor() []*Item {
 
 }
 
+
+func (e *Equipment) CanEquip(item *Item) bool {
+	toBeReplaced := e.GetItemsToReplace(item)
+	for _, itemToRemove := range toBeReplaced {
+		if !e.CanUnequip(itemToRemove) {
+			return false
+		}
+	}
+	return true
+}
 func (e *Equipment) GetItemsToReplace(item *Item) []*Item {
 	var items []*Item
 	if item.SlotName() == foundation.SlotNameOffHand {
@@ -258,6 +268,9 @@ func (e *Equipment) GetShield() *Item {
 }
 
 func (e *Equipment) CanUnequip(item *Item) bool {
+	if item.GetEquipFlag() == foundation.FlagCurseStuck && item.GetCharges() > 0 {
+		return false
+	}
 	return true
 }
 
@@ -329,4 +342,16 @@ func (e *Equipment) AfterTurn() {
 	for _, item := range e.slots {
 		item.AfterEquippedTurn()
 	}
+}
+
+func (e *Equipment) GetAllFlags() map[foundation.ActorFlag]int {
+	flags := make(map[foundation.ActorFlag]int)
+	for _, item := range e.slots {
+		itemFlags := item.GetEquipFlag()
+		if itemFlags == foundation.FlagNone {
+			continue
+		}
+		flags[itemFlags] = 1
+	}
+	return flags
 }

@@ -62,6 +62,10 @@ type GameState struct {
 	ascensionsWithoutAmulet int
 }
 
+func (g *GameState) GetRandomEnemyName() string {
+	return g.dataDefinitions.RandomMonsterDef().Name
+}
+
 func (g *GameState) IncreaseSkillLevel(skill rpg.SkillName) {
 	if g.Player.charSheet.HasCharPointsLeft() {
 		g.Player.charSheet.IncreaseSkillLevel(skill)
@@ -139,6 +143,7 @@ func (g *GameState) QuickShot() {
 
 func (g *GameState) OpenTacticsMenu() {
 	var menuItems []foundation.MenuItem
+	/*
 	menuItems = append(menuItems, foundation.MenuItem{
 		Name:       "Aimed Attack",
 		Action:     nil,
@@ -159,20 +164,7 @@ func (g *GameState) OpenTacticsMenu() {
 		Action:     nil,
 		CloseMenus: true,
 	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name: "Charge Attack",
-		Action: func() {
-			g.startAimZapEffect("charge_attack")
-		},
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name: "Start Sprinting",
-		Action: func() {
-			g.startSprint(g.Player)
-		},
-		CloseMenus: true,
-	})
+
 	menuItems = append(menuItems, foundation.MenuItem{
 		Name:       "Toggle Acrobatic Dodge",
 		Action:     nil,
@@ -188,7 +180,41 @@ func (g *GameState) OpenTacticsMenu() {
 		Action:     nil,
 		CloseMenus: true,
 	})
+	 */
 
+	menuItems = append(menuItems, foundation.MenuItem{
+		Name: "Charge Attack",
+		Action: func() {
+			g.startAimZapEffect("charge_attack", nil)
+		},
+		CloseMenus: true,
+	})
+
+	if g.Player.GetFatiguePoints() > 0 {
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: "Heroic Charge",
+			Action: func() {
+				if g.Player.GetFatiguePoints() > 0 {
+					payFatigue := func() {
+						g.Player.LooseFatigue(1)
+					}
+					g.startAimZapEffect("heroic_charge", payFatigue)
+				} else {
+					g.msg(foundation.Msg("You are too fatigued to perform a heroic charge"))
+				}
+			},
+			CloseMenus: true,
+		})
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: "Start Sprinting",
+			Action: func() {
+				g.startSprint(g.Player)
+			},
+			CloseMenus: true,
+		})
+
+
+	}
 	g.ui.OpenMenu(menuItems)
 }
 
@@ -275,30 +301,20 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 		return true
 	}
 
+	canSeeTraps := g.Player.HasFlag(foundation.FlagSeeTraps)
+	if g.gridMap.IsObjectAt(loc) && canSeeTraps {
+		objectAt := g.gridMap.ObjectAt(loc)
+		if objectAt.IsTrap() {
+			return true
+		}
+	}
+
 	if !g.gridMap.IsExplored(loc) {
 		return false
 	}
 	isVisibleToPlayer := g.canPlayerSee(loc) || g.showEverything
 
 	return isVisibleToPlayer
-}
-
-func (g *GameState) ChooseItemForUseOrZap() {
-	inventory := g.GetFilteredInventory(func(item *Item) bool {
-		return item.IsUsableOrZappable()
-	})
-	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying anything usable."))
-		return
-	}
-	g.ui.OpenInventoryForSelection(inventory, "Use what?", func(itemStack foundation.ItemForUI) {
-		stack, isStack := itemStack.(*InventoryStack)
-		if !isStack {
-			return
-		}
-		item := stack.First()
-		g.playerUseOrZapItem(item)
-	})
 }
 
 func (g *GameState) IsSomethingBlockingTargetingAtLoc(point geometry.Point) bool {
@@ -333,6 +349,17 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
+			Name: "Curse all Equipment",
+			Action: func() {
+				inv := g.Player.GetInventory()
+				for _, i := range inv.Items() {
+					if i.IsEquippable() {
+						g.AddCurseToEquippable(i)
+					}
+				}
+			},
+		},
+		{
 			Name:   "Create Item",
 			Action: g.openWizardCreateItemMenu,
 		},
@@ -356,7 +383,7 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 		maximumDungeonLevel: 26,
 		ui:                  ui,
 		tileStyle:           0,
-		dataDefinitions:     GetDataDefinitions(),
+		dataDefinitions:     GetDataDefinitions(config.DataRootDir),
 		playerFoV:           geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
 		visionRange:         14,
 	}
@@ -365,19 +392,25 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 
 	return g
 }
-func (g *GameState) giveAndEquipItem(actor *Actor, item *Item) {
+func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
 	actor.GetInventory().Add(item)
-	actor.GetEquipment().Equip(item)
+	if item.IsEquippable() {
+		actor.GetEquipment().Equip(item)
+	}
 }
 func (g *GameState) init() {
 	g.Player = NewPlayer(g.playerName, g.playerIcon, g.playerColor)
 
-	g.giveAndEquipItem(g.Player, g.NewItemFromName("main_gauche"))
-	g.giveAndEquipItem(g.Player, g.NewItemFromName("leather_armor"))
+	g.giveAndTryEquipItem(g.Player, g.NewItemFromName("main_gauche"))
+	g.giveAndTryEquipItem(g.Player, g.NewItemFromName("leather_armor"))
 	for i := 0; i < 20; i++ {
-		g.giveAndEquipItem(g.Player, g.NewItemFromName("arrow"))
+		g.giveAndTryEquipItem(g.Player, g.NewItemFromName("arrow"))
 	}
-	g.giveAndEquipItem(g.Player, g.NewItemFromName("short_bow"))
+	for i := 0; i < 2; i++ {
+		g.giveAndTryEquipItem(g.Player, g.NewItemFromName("food_ration"))
+	}
+	//
+	g.giveAndTryEquipItem(g.Player, g.NewItemFromName("short_bow"))
 
 	equipment := g.Player.GetEquipment()
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
@@ -478,7 +511,12 @@ func (g *GameState) updateUIStatus() {
 	g.ui.UpdateInventory()
 }
 func (g *GameState) GetHudFlags() map[foundation.ActorFlag]int {
-	return g.Player.GetFlags().UnderlyingCopy()
+	flagSet := g.Player.GetFlags().UnderlyingCopy()
+	equipFlags := g.Player.GetEquipment().GetAllFlags()
+	for flag, _ := range equipFlags {
+		flagSet[flag] = 1
+	}
+	return flagSet
 }
 
 func (g *GameState) GetHudStats() map[foundation.HudValue]int {
@@ -721,7 +759,7 @@ func (g *GameState) playerVisibleEnemiesByDistance() []*Actor {
 		if actor == g.Player {
 			continue
 		}
-		if g.canPlayerSee(actor.Position()) {
+		if g.canPlayerSee(actor.Position()) && g.couldPlayerSeeActor(actor) {
 			enemies = append(enemies, actor)
 		}
 	}
@@ -905,6 +943,9 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 			}
 			itemDef := g.dataDefinitions.PickItemForLevel(random, level)
 			item := NewItem(itemDef, g.identification)
+			if item.IsEquippable() && random.Intn(5) == 0 {
+				g.AddCurseToEquippable(item)
+			}
 			newMap.AddItem(item, spawnPos)
 		}
 	}
@@ -1123,7 +1164,7 @@ func (g *GameState) checkPlayerCanAct() {
 	}
 
 	if g.Player.HasFlag(foundation.FlagStun) {
-		_, result, _ := rpg.SuccessRoll(g.Player.GetIntelligence() + g.Player.GetFlags().Get(foundation.FlagStun) - 1)
+		_, result, _ := rpg.SuccessRoll(g.Player.GetWillpower() + g.Player.GetFlags().Get(foundation.FlagStun) - 1)
 
 		if result.IsSuccess() {
 			g.msg(foundation.Msg("You shake off the stun"))
@@ -1146,6 +1187,10 @@ func (g *GameState) checkPlayerCanAct() {
 			return
 		} else if result.IsSuccess() {
 			g.Player.GetFlags().Decrease(foundation.FlagHeld, marginOfSuccess)
+			if !g.Player.HasFlag(foundation.FlagHeld) {
+				g.msg(foundation.Msg("You break free from the hold"))
+				return
+			}
 		}
 
 		g.msg(foundation.Msg("You are held and cannot act"))
@@ -1296,6 +1341,7 @@ func (g *GameState) dropInventory(victim *Actor) {
 
 func (g *GameState) startSprint(actor *Actor) {
 	if actor.GetFatiguePoints() < 1 {
+		g.msg(foundation.Msg("You are too tired to sprint"))
 		return
 	}
 	actor.LooseFatigue(1)
@@ -1312,6 +1358,23 @@ func (g *GameState) unstableStairs() bool {
 	chance := util.Clamp(0, 0.9, float64(min(10, g.ascensionsWithoutAmulet))/10.0)
 	return rand.Float64() < chance
 }
+
+func (g *GameState) AddCurseToEquippable(item *Item) {
+	// item doesn't use equip flag? add a negative one
+	// else -> item doesn't use stats? add a negative one
+	if item.IsMissile() { // don't curse missiles
+		return
+	}
+	if item.equipFlag == foundation.FlagNone && (item.charges == 0|| item.charges == 1) {
+		item.equipFlag = foundation.FlagCurseStuck
+		item.charges = rand.Intn(300) + 100
+	}
+	if item.statBonus == 0 {
+		item.stat = rpg.GetRandomStat()
+		item.statBonus = -(rand.Intn(4) + 1)
+	}
+}
+
 
 func saveHighScoreTable(scoresFile string, scoreTable []foundation.ScoreInfo) {
 	file := util.CreateFile(scoresFile)
@@ -1352,12 +1415,11 @@ func NewItem(def ItemDef, id *IdentificationKnowledge) *Item {
 		category:     def.Category,
 		charges:      charges,
 		slot:         def.Slot,
-		flags:        foundation.NewBitFlags(),
 		id:           id,
 		stat:         def.Stat,
-		statBonus:    def.StatBonus,
+		statBonus:    def.StatBonus.Roll(),
 		skill:        def.Skill,
-		skillBonus:   def.SkillBonus,
+		skillBonus:   def.SkillBonus.Roll(),
 		equipFlag:    def.EquipFlag,
 		thrownDamage: def.ThrowDamageDice,
 	}

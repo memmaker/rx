@@ -1,0 +1,79 @@
+k -> north
+j -> south
+h -> west
+l -> east
+y -> northwest
+u -> northeast
+b -> southwest
+n -> southeast
+K -> run_north
+J -> run_south
+H -> run_west
+L -> run_east
+Y -> run_northwest
+U -> run_northeast
+B -> run_southwest
+N -> run_southeast
+g -> run_direction
+
+8 -> north
+2 -> south
+4 -> west
+6 -> east
+7 -> northwest
+9 -> northeast
+1 -> southwest
+3 -> southeast
+5 -> run_direction
+
+t -> throw
+e -> eat
+, -> pickup
+. -> wait
+< -> ascend
+> -> descend
+d -> drop
+w -> wield
+W -> wear
+T -> take_off
+P -> ring_put_on
+R -> ring_remove
+q -> quaff
+r -> read
+z -> zap
+s -> use
+a -> apply
+
+x -> launch
+c -> aim
+v -> quick_shot
+
+Q -> quit
+i -> inventory
+C -> character
+o -> log
+
+f -> tactics
+
+/ -> look
+
+; -> monsters
+: -> items
+
+( -> overlay_monsters
+) -> overlay_items
+
+Ctrl+T -> themes
+
+Enter -> map_interaction
+
+
+? -> help
+= -> show_key_bindings
+F1 -> help
+F2 -> show_key_bindings
+
+F3 -> gamma_down
+F4 -> gamma_up
+F5 -> toggle_cursor
+F10 -> wizard

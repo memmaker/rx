@@ -47,11 +47,20 @@ func (f ActorFlag) String() string { // Nice strings for display
 		return "See Monsters"
 	case FlagSeeMagic:
 		return "See Magic"
+	case FlagSeeTraps:
+		return "See Traps"
 	case FlagSeeInvisible:
 		return "See Invisible"
 	case FlagCanConfuse:
 		return "Can Confuse"
-
+	case FlagCurseStuck:
+		return "Curse of sticking"
+	case FlagCurseTeleportitis:
+		return "Curse of teleportation"
+	case FlagHallucinating:
+		return "Hallucinating"
+	case FlagSlowDigestion:
+		return "Slow Digestion"
 	}
 	return "Unknown"
 }
@@ -96,13 +105,22 @@ func (f ActorFlag) StringShort() string { // short abbreviated strings (2-3 lett
 		return "SFd"
 	case FlagSeeMonsters:
 		return "SMn"
+	case FlagSeeTraps:
+		return "STr"
 	case FlagSeeMagic:
 		return "SMg"
 	case FlagSeeInvisible:
 		return "SIn"
 	case FlagCanConfuse:
 		return "CCf"
-
+	case FlagCurseStuck:
+		return "Stk"
+	case FlagCurseTeleportitis:
+		return "Tpt"
+	case FlagHallucinating:
+		return "Hlc"
+	case FlagSlowDigestion:
+		return "SDg"
 	}
 	return "Unk"
 
@@ -134,9 +152,14 @@ const (
 	FlagInvisible
 	FlagSeeFood
 	FlagSeeMonsters
+	FlagSeeTraps
 	FlagSeeMagic
 	FlagSeeInvisible
 	FlagCanConfuse
+	FlagCurseStuck
+	FlagCurseTeleportitis
+	FlagHallucinating
+	FlagSlowDigestion
 )
 
 func AllFlagsExceptGoldOrdered() []ActorFlag {
@@ -160,8 +183,13 @@ func AllFlagsExceptGoldOrdered() []ActorFlag {
 		FlagSeeFood,
 		FlagSeeMonsters,
 		FlagSeeMagic,
+		FlagSeeTraps,
 		FlagSeeInvisible,
 		FlagCanConfuse,
+		FlagCurseStuck,
+		FlagCurseTeleportitis,
+		FlagHallucinating,
+		FlagSlowDigestion,
 	}
 }
 
@@ -208,11 +236,20 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagSeeMagic
 	case "see_invisible":
 		return FlagSeeInvisible
+	case "see_traps":
+		return FlagSeeTraps
 	case "chase":
 		return FlagChase
 	case "can_confuse":
 		return FlagCanConfuse
-
+	case "curse_stuck":
+		return FlagCurseStuck
+	case "curse_teleportitis":
+		return FlagCurseTeleportitis
+	case "hallucinating":
+		return FlagHallucinating
+	case "slow_digestion":
+		return FlagSlowDigestion
 	}
 	panic("Invalid actor flag: " + flag)
 	return 0
@@ -249,6 +286,9 @@ func (m *MapFlags) Increment(flag ActorFlag) {
 }
 
 func (m *MapFlags) Decrement(flag ActorFlag) {
+	if !m.IsSet(flag) {
+		return
+	}
 	m.values[flag]--
 	if m.values[flag] <= 0 {
 		delete(m.values, flag)

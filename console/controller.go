@@ -5,6 +5,7 @@ import (
 	"RogueUI/geometry"
 	"RogueUI/rpg"
 	"RogueUI/util"
+	"cmp"
 	"code.rocketnine.space/tslocum/cview"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
@@ -12,8 +13,10 @@ import (
 	"math"
 	"math/rand"
 	"path"
+	"slices"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type UIState int
@@ -52,6 +55,7 @@ type UI struct {
 	listTable map[string]*cview.List
 
 	gameIsReady     bool
+	gameIsOver       bool
 	autoRun         bool
 	onTargetUpdated func(targetPos geometry.Point)
 	showCursor      bool
@@ -59,12 +63,13 @@ type UI struct {
 	tooSmall        bool
 	gamma           float64
 	commandTable    map[string]func()
-	keyTable        map[UIKey]string
+	keyTable        map[KeyLayer]map[UIKey]string
 
 	lastFrameIcons   map[geometry.Point]rune
 	lastFrameStyle   map[geometry.Point]tcell.Style
 	isAnimationFrame bool
 	lastHudStats     map[foundation.HudValue]int
+
 }
 
 func (u *UI) OpenVendorMenu(itemsForSale []util.Tuple[foundation.ItemForUI, int], buyItem func(ui foundation.ItemForUI, price int)) {
@@ -97,7 +102,7 @@ func (u *UI) HighlightStatChange(stat rpg.Stat) {
 
 func (u *UI) ShowGameOver(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
 	u.animator.CancelAll()
-
+	u.gameIsOver = true
 	u.FadeToBlack()
 
 	if scoreInfo.Escaped {
@@ -139,10 +144,7 @@ func (u *UI) showWinScreen(scoreInfo foundation.ScoreInfo, highScores []foundati
 	gameOverMessage = append(gameOverMessage, pressSpace...)
 	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
 
-	panelName := "main"
-	if u.pages.HasPanel("main") {
-		panelName = "fullscreen"
-	}
+	panelName := "blocker"
 
 	textView.SetInputCapture(u.popOnSpaceWithNotification(panelName, func() {
 		u.showHighscoresAndRestart(highScores)
@@ -171,7 +173,7 @@ func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []founda
 	restartText := []string{
 		"",
 		"",
-		"[#fccc2b::bl]Do you want to play again? (y/n)[-:-:-]",
+		"[#fccc2b::b]Do you want to play again? (y/n)[-:-:-]",
 		"",
 		"",
 	}
@@ -182,13 +184,11 @@ func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []founda
 
 	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
 
-	panelName := "main"
-	if u.pages.HasPanel("main") {
-		panelName = "fullscreen"
-	}
+	panelName := "blocker"
 
 	reset := func() {
 		u.pages.HidePanel(panelName)
+		u.gameIsOver = false
 		u.game.Reset()
 	}
 	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
@@ -206,7 +206,7 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 
 	restartText := []string{
 		"",
-		"[#fccc2b::bl]Do you want to play again? (y/n)[-:-:-]",
+		"[#fccc2b::b]Do you want to play again? (y/n)[-:-:-]",
 		"",
 	}
 	scoreTable := toLinesOfText(highScores)
@@ -214,13 +214,11 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 
 	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
 
-	panelName := "main"
-	if u.pages.HasPanel("main") {
-		panelName = "fullscreen"
-	}
+	panelName := "blocker"
 
 	reset := func() {
 		u.pages.HidePanel(panelName)
+		u.gameIsOver = false
 		u.game.Reset()
 	}
 	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
@@ -240,7 +238,7 @@ func toLinesOfText(highScores []foundation.ScoreInfo) []string {
 		}
 		scoreLine := ""
 		if highScore.Escaped {
-			scoreLine = fmt.Sprintf("[#c9c54d::bl]%d. %s: %d Gold, Lvl: %d, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.MaxLevel, highScore.DescriptiveMessage)
+			scoreLine = fmt.Sprintf("[#c9c54d::b]%d. %s: %d Gold, Lvl: %d, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.MaxLevel, highScore.DescriptiveMessage)
 		} else {
 			scoreLine = fmt.Sprintf("%d. %s: %d Gold, Lvl: %d, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.MaxLevel, highScore.DescriptiveMessage)
 		}
@@ -317,6 +315,19 @@ func (u *UI) GetAnimMove(actor foundation.ActorForUI, old geometry.Point, new ge
 }
 
 func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
+	isHallucinating := u.isPlayerHallucinating()
+	if isHallucinating {
+		randomLetter := rune('A' + rand.Intn(26))
+		if rand.Intn(2) == 0 {
+			randomLetter = unicode.ToLower(randomLetter)
+		}
+		return foundation.TextIcon{
+			Rune: randomLetter,
+			Fg:   u.currentTheme.GetRandomColor(),
+			Bg:   u.currentTheme.GetIconForMap(foundation.TileFloor).Bg,
+		}
+	}
+
 	var backGroundColor color.RGBA
 
 	if actor.HasFlag(foundation.FlagHeld) {
@@ -330,6 +341,12 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
 	}
 
 	return actor.TextIcon(backGroundColor, u.currentTheme.GetColorByName)
+}
+
+func (u *UI) isPlayerHallucinating() bool {
+	flags := u.game.GetHudFlags()
+	_, isHallucinating := flags[foundation.FlagHallucinating]
+	return isHallucinating
 }
 
 func (u *UI) GetAnimQuickMove(actor foundation.ActorForUI, path []geometry.Point) foundation.Animation {
@@ -447,6 +464,54 @@ func (u *UI) GetAnimAppearance(actor foundation.ActorForUI, targetPos geometry.P
 		{Rune: originalIcon.Rune, Fg: white, Bg: mapBackground},
 	}, done)
 	return appearAnim
+}
+func (u *UI) GetAnimWakeUp(location geometry.Point, done func()) foundation.Animation {
+	keepAllNeighbors := func(point geometry.Point) bool { return true }
+
+	neigh := geometry.Neighbors{}
+	cardinalNeighbors := neigh.Cardinal(location, keepAllNeighbors)
+	diagonalNeighbors := neigh.Diagonal(location, keepAllNeighbors)
+
+	wakeUpRunes := []rune("????")
+	yellow := u.currentTheme.GetColorByName("Yellow")
+	var prevAnim foundation.Animation
+	var rootAnim foundation.Animation
+	runeCount := len(wakeUpRunes)
+	for i := 0; i < runeCount; i++ {
+
+		cycleIcon := foundation.TextIcon{
+			Rune: wakeUpRunes[i],
+			Fg:   u.currentTheme.GetUIColor(UIColorMapDefaultForeground),
+			Bg:   u.currentTheme.GetUIColor(UIColorMapDefaultBackground),
+		}
+
+		frames := []foundation.TextIcon{
+			cycleIcon.WithFg(yellow),
+			cycleIcon.WithFg(yellow),
+		}
+
+		var neighbors []geometry.Point
+		if i%2 == 0 {
+			neighbors = cardinalNeighbors
+		} else {
+			neighbors = diagonalNeighbors
+		}
+		var doneCall func()
+		if i == runeCount-1 {
+			doneCall = done
+		}
+		anim := u.GetAnimTiles(neighbors, frames, doneCall)
+		if rootAnim == nil {
+			rootAnim = anim
+		}
+
+		if prevAnim != nil {
+			prevAnim.SetFollowUp([]foundation.Animation{anim})
+		}
+
+		prevAnim = anim
+	}
+	return rootAnim
 }
 func (u *UI) GetAnimConfuse(location geometry.Point, done func()) foundation.Animation {
 	keepAllNeighbors := func(point geometry.Point) bool { return true }
@@ -933,7 +998,7 @@ func (u *UI) InitDungeonUI() {
 	}
 
 	u.setupCommandTable()
-	u.loadKeyMap(u.settings.KeyMapFile)
+	u.loadKeyMap(u.settings.KeyMapFileFullPath())
 
 	u.application.GetScreen().SetCursorStyle(tcell.CursorStyleSteadyBlock)
 
@@ -993,11 +1058,14 @@ func (u *UI) InitDungeonUI() {
 
 	u.mapOverlay = NewOverlay(u.settings.MapWidth, u.settings.MapHeight)
 
-	u.setTheme(u.settings.Theme)
+	u.setTheme(u.settings.ThemeFullPath())
 }
 func (u *UI) handleMainInput(ev *tcell.EventKey) *tcell.EventKey {
 	mod, _, ch := ev.Modifiers(), ev.Key(), ev.Rune()
 	if ev.Key() == tcell.KeyCtrlC {
+		return ev
+	}
+	if u.gameIsOver {
 		return ev
 	}
 
@@ -1234,6 +1302,11 @@ func (u *UI) UpdateVisibleEnemies() {
 		iconString := fmt.Sprintf("%s%s[-]", iconColor, string(icon.Rune))
 		hp, hpMax := enemy.GetHitPoints(), enemy.GetHitPointsMax()
 		asPercent := float64(hp) / float64(hpMax)
+
+		hallucinating := u.isPlayerHallucinating()
+		if hallucinating {
+			asPercent = rand.Float64()
+		}
 		barIcon := '*'
 		if enemy.HasFlag(foundation.FlagSleep) {
 			barIcon = 'z'
@@ -1244,7 +1317,11 @@ func (u *UI) UpdateVisibleEnemies() {
 			barIcon = '?'
 		}
 		hpBarString := fmt.Sprintf("[%s]", u.RuneBarFromPercent(barIcon, asPercent, 5))
-		enemyLine := fmt.Sprintf(" %s %s %s", iconString, hpBarString, enemy.Name())
+		name := enemy.Name()
+		if hallucinating {
+			name = u.game.GetRandomEnemyName()
+		}
+		enemyLine := fmt.Sprintf(" %s %s %s", iconString, hpBarString, name)
 		asString = append(asString, enemyLine)
 	}
 	u.lowerRightPanel.SetText(strings.Join(asString, "\n"))
@@ -1483,7 +1560,7 @@ func (u *UI) OpenInventoryForManagement(items []foundation.ItemForUI) {
 	inv.SetTitle("Inventory")
 	inv.SetDefaultSelection(u.game.EquipToggle)
 	inv.SetShiftSelection(u.game.DropItem)
-	inv.SetControlSelection(u.game.PlayerUseOrZapItem)
+	inv.SetControlSelection(u.game.PlayerApplyItem)
 
 	inv.SetCloseOnControlSelection(true)
 	inv.SetCloseOnShiftSelection(true)
@@ -1568,7 +1645,7 @@ func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 }
 func (u *UI) ShowMonsterInfo(monster foundation.ActorForUI) {
 	monsterNameInternalName := monster.GetInternalName()
-	lorePath := path.Join("data", "lore", "monsters", monsterNameInternalName+".txt")
+	lorePath := path.Join(u.settings.DataRootDir, "lore", "monsters", monsterNameInternalName+".txt")
 	panels := cview.NewTabbedPanels()
 	panels.SetFullScreen(true)
 	panels.SetTabSwitcherDivider("|", "|", "|")
@@ -1657,7 +1734,7 @@ func (u *UI) ScreenToMap(point geometry.Point) geometry.Point {
 }
 
 func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) (*tcell.EventMouse, cview.MouseAction) {
-	if event == nil {
+	if event == nil || u.gameIsOver {
 		return nil, action
 	}
 	newX, newY := event.Position()
@@ -1668,7 +1745,7 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 
 	if action == cview.MouseLeftDown || action == cview.MouseRightDown {
 		panelName, prim := u.pages.GetFrontPanel()
-		if panelName != "main" {
+		if panelName != "main" && panelName != "blocker" {
 			x, y, w, h := prim.GetRect()
 			if newX < x || newY < y || newX >= x+w || newY >= y+h || action == cview.MouseRightDown {
 				u.pages.SetCurrentPanel("main")
@@ -1958,7 +2035,7 @@ func NewTextUI(settings *foundation.Configuration) *UI {
 		cursorStyle:    tcell.CursorStyleSteadyBlock,
 		gamma:          1.0,
 		settings:       settings,
-		keyTable:       make(map[UIKey]string),
+		keyTable:       make(map[KeyLayer]map[UIKey]string),
 		lastFrameIcons: make(map[geometry.Point]rune),
 		lastFrameStyle: make(map[geometry.Point]tcell.Style),
 	}
@@ -2194,11 +2271,14 @@ func (u *UI) onRightPanelClicked(clickPos geometry.Point) {
 	if item.IsEquippable() {
 		u.game.EquipToggle(item)
 	} else {
-		u.game.PlayerUseOrZapItem(item)
+		u.game.PlayerApplyItem(item)
 	}
 }
 
 func (u *UI) getIconForItem(itemCategory foundation.ItemCategory) foundation.TextIcon {
+	if u.isPlayerHallucinating() {
+		u.currentTheme.GetIconForItem(foundation.RandomItemCategory())
+	}
 	return u.currentTheme.GetIconForItem(itemCategory)
 }
 
@@ -2207,6 +2287,9 @@ func (u *UI) getIconForMap(worldTileType foundation.TileType) foundation.TextIco
 }
 
 func (u *UI) getIconForObject(object foundation.ObjectCategory) foundation.TextIcon {
+	if u.isPlayerHallucinating() {
+		u.currentTheme.GetIconForObject(foundation.RandomObjectCategory())
+	}
 	return u.currentTheme.GetIconForObject(object)
 }
 
@@ -2276,23 +2359,23 @@ func (u *UI) OpenThemesMenu() {
 
 	u.OpenMenu(actions)
 }
-func (u *UI) remapCommand(command string) {
+func (u *UI) remapCommand(layer KeyLayer, command string) {
 	u.Print(foundation.Msg("Press the key you want to bind to this command"))
 	key := u.getPressedKey()
-	u.keyTable[key] = command
+	u.keyTable[layer][key] = command
 	u.Print(foundation.Msg(fmt.Sprintf("Bound %s to %s", key.name, command)))
 }
-func (u *UI) OpenKeyMapper() {
+func (u *UI) OpenKeyMapper(layer KeyLayer) {
 	var commandMenu []foundation.MenuItem
 
-	for key, c := range u.keyTable {
+	for key, c := range u.keyTable[layer] {
 		command := c
 		line := fmt.Sprintf("%s - %s", key.name, command)
 		commandMenu = append(commandMenu, foundation.MenuItem{
 			Name: line,
 			Action: func() {
-				u.remapCommand(command)
-				u.OpenKeyMapper()
+				u.remapCommand(layer, command)
+				u.OpenKeyMapper(layer)
 			},
 		})
 	}
@@ -2305,12 +2388,29 @@ func (u *UI) ShowHelpScreen() {
 }
 
 func (u *UI) getCommandForKey(key UIKey) string {
-	if command, ok := u.keyTable[key]; ok {
+	if command, ok := u.keyTable[KeyLayerMain][key]; ok {
 		return command
 	}
 	//println("No command found for key %s", key.String())
 	return ""
 }
+
+func (u *UI) getDirectionalTargetingCommandForKey(key UIKey) string {
+	if command, ok := u.keyTable[KeyLayerDirectionalTargeting][key]; ok {
+		return command
+	}
+	//println("No command found for key %s", key.String())
+	return ""
+}
+
+func (u *UI) getAdvancedTargetingCommandForKey(key UIKey) string {
+	if command, ok := u.keyTable[KeyLayerAdvancedTargeting][key]; ok {
+		return command
+	}
+	//println("No command found for key %s", key.String())
+	return ""
+}
+
 
 func (u *UI) updateLastFrame() {
 	// iterate the map and force and update of the last frame
@@ -2324,4 +2424,20 @@ func (u *UI) updateLastFrame() {
 
 func (u *UI) Queue(f func()) {
 	u.application.QueueUpdate(f)
+}
+
+func (u *UI) GetKeysForCommandAsString(layer KeyLayer, command string) string {
+	var keys []string
+	for key, c := range u.keyTable[layer] {
+		if c == command && key.name != "" {
+			keys = append(keys, key.name)
+		}
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	slices.SortStableFunc(keys, func(i, j string) int {
+		return cmp.Compare(i, j)
+	})
+	return strings.Join(keys, ", ")
 }

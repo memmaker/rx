@@ -1,5 +1,8 @@
 TODO FOR RX1
 
+BUG: You cannot see the effect of stat bonuses from equipment anywhere
+BUG: Blindness Status doesn't do anything and will stay forever
+
  - Saving / Loading & Level Persistence
  - Fix the state and animation order problem - GOOD ENOUGH NOW ?!
  - Complete Rogue feature set
@@ -12,6 +15,9 @@ TODO FOR RX1
    - Give a meaning to the fatigue points: add tactics menu
    - Traps
    - Item Effects
+     - Scrolls - Complete
+     - Wands - Complete
+
    - Monster Abilities
    - Win Condition - GOOD ENOUGH
      - Place amulet on level 26

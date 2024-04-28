@@ -1,20 +1,15 @@
 # Missing
 # - Sustain Strength
-# - Searching
-# - Adornment
 # - Aggravate Monster
 # - Damage
-# - Slow Digestion
-# - Teleportation
-# - Stealth
 # - Maintain Armor
 
-name: ring of protection
-internal_name: ring_protection
+name: ring of dodging
+internal_name: ring_dodge
 category: rings
 slot: ring
-stat: damage_resistance
-stat_bonus: 4
+stat: dodge
+stat_bonus: 1d6-2
 chance: 20
 always_id_on_use: true
 
@@ -23,7 +18,7 @@ internal_name: ring_strength
 category: rings
 slot: ring
 stat: strength
-stat_bonus: 2
+stat_bonus: 1d5-2
 chance: 20
 always_id_on_use: true
 
@@ -32,7 +27,7 @@ internal_name: ring_dexterity
 category: rings
 slot: ring
 stat: dexterity
-stat_bonus: 2
+stat_bonus: 1d5-2
 chance: 20
 always_id_on_use: true
 
@@ -41,7 +36,7 @@ internal_name: ring_intelligence
 category: rings
 slot: ring
 stat: intelligence
-stat_bonus: 2
+stat_bonus: 1d5-2
 chance: 20
 always_id_on_use: true
 
@@ -50,7 +45,7 @@ internal_name: ring_health
 category: rings
 slot: ring
 stat: health
-stat_bonus: 2
+stat_bonus: 1d5-2
 chance: 20
 always_id_on_use: true
 
@@ -71,3 +66,41 @@ equip_flag: see_invisible
 chance: 20
 always_id_on_use: true
 charges: -1
+
+name: ring of teleportation
+internal_name: ring_teleportation
+category: rings
+slot: ring
+equip_flag: curse_teleportitis
+chance: 20
+always_id_on_use: true
+charges: -1
+
+name: ring of stealth
+internal_name: ring_stealth
+category: rings
+slot: ring
+skill: stealth
+skill_bonus: 1d6-2
+chance: 20
+always_id_on_use: true
+charges: -1
+
+name: ring of slow digestion
+internal_name: ring_slow_digestion
+category: rings
+slot: ring
+equip_flag: slow_digestion
+chance: 20
+always_id_on_use: true
+charges: -1
+
+
+name: ring of perception
+internal_name: ring_perception
+category: rings
+slot: ring
+stat: perception
+stat_bonus: 1d5-2
+chance: 20
+always_id_on_use: true

@@ -1,3 +1,5 @@
+% main
+
 w -> north
 s -> south
 a -> west
@@ -6,6 +8,7 @@ W -> run_north
 S -> run_south
 A -> run_west
 D -> run_east
+
 8 -> north
 2 -> south
 4 -> west
@@ -15,6 +18,9 @@ D -> run_east
 1 -> southwest
 3 -> southeast
 5 -> run_direction
+
+= -> show_key_bindings
+
 v -> throw
 e -> use
 f -> launch
@@ -45,3 +51,45 @@ F5 -> wiz_descend
 
 Ctrl+T -> themes
 F10 -> wizard
+
+% directional_targeting
+
+Esc -> target_cancel
+Escape -> target_cancel
+Space -> target_switch_to_advanced
+
+w -> north
+s -> south
+a -> west
+d -> east
+
+8 -> north
+2 -> south
+4 -> west
+6 -> east
+7 -> northwest
+9 -> northeast
+1 -> southwest
+3 -> southeast
+
+
+% advanced_targeting
+
+Tab -> target_next
+BackTab -> target_previous
+Esc -> target_cancel
+Space -> target_switch_to_directional
+
+w -> north
+s -> south
+a -> west
+d -> east
+
+8 -> north
+2 -> south
+4 -> west
+6 -> east
+7 -> northwest
+9 -> northeast
+1 -> southwest
+3 -> southeast

@@ -31,17 +31,19 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 	healInterval := 2 + (100 / g.Player.GetHealth())
 	hungerInterval := 300
 
-	g.Player.GetFlags().Increment(foundation.FlagTurnsSinceEating)
+	g.Player.decrementStatusEffectCounters()
+
+	if !g.Player.HasFlag(foundation.FlagSlowDigestion) || g.TurnsTaken%2 == 0 {
+		g.Player.GetFlags().Increment(foundation.FlagTurnsSinceEating)
+	}
 
 	turnsSinceEating := g.Player.GetFlags().Get(foundation.FlagTurnsSinceEating)
 
 	if turnsSinceEating%hungerInterval == 0 {
 		wasHungry := g.Player.IsHungry()
 		g.Player.GetFlags().Increment(foundation.FlagHunger)
-		if g.Player.IsHungry() {
-			if !wasHungry {
-				g.msg(foundation.Msg("You are hungry."))
-			}
+		if g.Player.IsHungry() && !wasHungry{
+			g.msg(foundation.Msg("You are hungry."))
 		}
 	}
 

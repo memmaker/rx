@@ -23,6 +23,7 @@ type Configuration struct {
 	KeyMapFile              string
 	Theme                   string
 	WallSlide               bool
+	DataRootDir             string
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -62,6 +63,10 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.KeyMapFile = field.Value
 		case "Theme":
 			configuration.Theme = field.Value
+		case "PlayerName":
+			configuration.PlayerName = field.Value
+		case "DataRootDir":
+			configuration.DataRootDir = field.Value
 		}
 	}
 	return configuration
@@ -81,8 +86,9 @@ func NewDefaultConfiguration() *Configuration {
 		AutoPickup:         true,
 		WallSlide:          true,
 		PlayerName:         "Rogue",
-		KeyMapFile:         path.Join("data", "keymaps", "default.txt"),
-		Theme:              path.Join("data", "themes", "ascii.rec"),
+		DataRootDir:        "data",
+		KeyMapFile:         path.Join("keymaps", "default.txt"),
+		Theme:              path.Join("themes", "ascii.rec"),
 	}
 }
 
@@ -104,9 +110,21 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "DiagonalMovementEnabled", Value: recfile.BoolStr(c.DiagonalMovementEnabled)},
 			recfile.Field{Name: "AutoPickup", Value: recfile.BoolStr(c.AutoPickup)},
 			recfile.Field{Name: "KeyMapFile", Value: c.KeyMapFile},
+			recfile.Field{Name: "Theme", Value: c.Theme},
+			recfile.Field{Name: "WallSlide", Value: recfile.BoolStr(c.WallSlide)},
+			recfile.Field{Name: "PlayerName", Value: c.PlayerName},
+			recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
 		},
 	}
 	file, _ := os.Create(filename)
 	defer file.Close()
 	recfile.Write(file, records)
+}
+
+func (c *Configuration) KeyMapFileFullPath() string {
+	return path.Join(c.DataRootDir, c.KeyMapFile)
+}
+
+func (c *Configuration) ThemeFullPath() string {
+	return path.Join(c.DataRootDir, c.Theme)
 }

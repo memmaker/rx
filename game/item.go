@@ -7,6 +7,7 @@ import (
 	"code.rocketnine.space/tslocum/cview"
 	"fmt"
 	"image/color"
+	"math/rand"
 )
 
 type WeaponInfo struct {
@@ -110,7 +111,6 @@ type Item struct {
 	zapEffectName string
 	charges       int
 	slot          foundation.EquipSlot
-	flags         *foundation.BitFlags
 
 	id         *IdentificationKnowledge
 	stat       rpg.Stat
@@ -120,6 +120,7 @@ type Item struct {
 
 	equipFlag    foundation.ActorFlag
 	thrownDamage rpg.Dice
+	isKnown      bool
 }
 
 func (i *Item) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
@@ -139,15 +140,15 @@ func (i *Item) GetListInfo() string {
 }
 
 func (i *Item) InventoryNameWithColors(colorCode string) string {
-	line := i.Name()
+	line := cview.Escape(i.Name())
 	if i.IsWeapon() {
-		line = fmt.Sprintf("%s (%s)", i.Name(), i.weapon.GetDamageDice().ShortString())
+		line = cview.Escape(fmt.Sprintf("%s (%s)", i.Name(), i.weapon.GetDamageDice().ShortString()))
 	}
 	if i.IsArmor() {
-		line = fmt.Sprintf("%s [%d]", i.Name(), i.armor.GetDamageResistanceWithPlus())
+		line = cview.Escape(fmt.Sprintf("%s [%+d]", i.Name(), i.armor.GetDamageResistanceWithPlus()))
 	}
-	if i.IsRing() && i.charges > 0 && i.id.IsItemIdentified(i.internalName) {
-		line = fmt.Sprintf("%s [%d]", i.Name(), i.charges)
+	if i.IsRing() && i.charges > 1 && i.id.IsItemIdentified(i.internalName) {
+		line = cview.Escape(fmt.Sprintf("%s (%d turns)", i.Name(), i.charges))
 	}
 	return colorCode + line + "[-]"
 }
@@ -161,31 +162,44 @@ func (i *Item) Position() geometry.Point {
 }
 
 func (i *Item) Name() string {
+	name := i.name
 	if i.IsGold() {
-		return fmt.Sprintf("%d gold", i.charges)
+		name = fmt.Sprintf("%d gold", i.charges)
 	}
 
 	if i.IsPotion() && !i.id.IsItemIdentified(i.internalName) {
 		flavor := i.id.GetPotionColor(i.internalName)
-		return fmt.Sprintf("%s potion", flavor)
+		name = fmt.Sprintf("%s potion", flavor)
 	}
 
 	if i.IsScroll() && !i.id.IsItemIdentified(i.internalName) {
 		flavor := i.id.GetScrollName(i.internalName)
-		return fmt.Sprintf("scroll of '%s'", flavor)
+		name = fmt.Sprintf("scroll of '%s'", flavor)
 	}
 
 	if i.IsWand() && !i.id.IsItemIdentified(i.internalName) {
 		flavor := i.id.GetWandMaterial(i.internalName)
-		return fmt.Sprintf("%s wand", flavor)
+		name = fmt.Sprintf("%s wand", flavor)
 	}
 
 	if i.IsRing() && !i.id.IsItemIdentified(i.internalName) {
 		flavor := i.id.GetRingStone(i.internalName)
-		return fmt.Sprintf("%s ring", flavor)
+		name = fmt.Sprintf("%s ring", flavor)
 	}
 
-	return i.name
+	if i.IsStuck() && i.isKnown {
+		name = fmt.Sprintf("*%d* %s", i.GetCharges(), name)
+	}
+
+	if i.statBonus != 0 && (i.isKnown ||i.id.IsItemIdentified(i.internalName)) {
+		name = fmt.Sprintf("%s [%+d %s]", name, i.statBonus, i.stat.ToShortString())
+	}
+
+	if i.skillBonus != 0 && (i.isKnown ||i.id.IsItemIdentified(i.internalName)) {
+		name = fmt.Sprintf("%s [%+d %s]", name, i.skillBonus, i.skill.ToShortString())
+	}
+
+	return name
 }
 
 func (i *Item) IsThrowable() bool {
@@ -362,7 +376,41 @@ func (i *Item) SetCharges(amount int) {
 }
 
 func (i *Item) AfterEquippedTurn() {
-	if i.IsRing() && i.charges > 0 {
+	if (i.IsRing() || i.IsStuck()) && i.charges > 0 {
 		i.charges--
+		i.isKnown = true
+	}
+}
+
+func (i *Item) IsStuck() bool {
+	return i.equipFlag == foundation.FlagCurseStuck && i.charges > 0
+}
+
+func (i *Item) IsCursed() bool {
+	return i.IsStuck() || i.statBonus < 0 || i.skillBonus < 0
+}
+
+func (i *Item) RemoveCurse() {
+	if !i.IsCursed() {
+		return
+	}
+	blessing := rand.Intn(100) < 4
+
+	if i.IsStuck() {
+		i.equipFlag = foundation.FlagNone
+	}
+	if i.statBonus < 0 {
+		if blessing {
+			i.statBonus = rand.Intn(3) + 1
+		} else {
+			i.statBonus = 0
+		}
+	}
+	if i.skillBonus < 0 {
+		if blessing {
+			i.skillBonus = rand.Intn(3) + 1
+		} else {
+			i.skillBonus = 0
+		}
 	}
 }

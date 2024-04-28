@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"golang.org/x/term"
+	"image"
 	"math/rand"
 	"os"
 	"path"
@@ -65,6 +66,17 @@ func main() {
 	}
 
 	gameUI.StartGameLoop()
+}
+
+func mustLoadImage(filename string) image.Image {
+	file, err := os.Open(filename)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	return img
 }
 
 func showBanner(width int) {

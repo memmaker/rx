@@ -13,11 +13,13 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"confuse":                        endTurn(true, confuse),
 		"haste":                          endTurn(true, noAnim(haste)),
 		"blindness":                      endTurn(true, noAnim(blindness)),
+		"hallucination":				  endTurn(true, noAnim(hallucination)),
 		"levitation":                     endTurn(true, noAnim(levitation)),
 		"see_invisible":                  endTurn(true, noAnim(seeInvisible)),
 		"confuse_monster_on_next_attack": endTurn(true, noAnim(confuseEnemyOnNextAttack)),
 		"reveal_map":                     endTurn(true, revealMap),
 		"freeze_monsters_in_room":        endTurn(true, holdAllVisibleMonsters),
+		"sleep_monsters_in_room":        endTurn(true, sleepAllVisibleMonsters),
 		"scare_monsters_in_room":         endTurn(true, scareAllVisibleMonsters),
 		"enchant_armor":                  endTurn(false, playerEnchantArmor),
 		"enchant_weapon":                 endTurn(false, playerEnchantWeapon),
@@ -25,6 +27,7 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"detect_food":                    endTurn(true, noAnim(playerDetectFood)),
 		"detect_magic":                   endTurn(true, noAnim(playerDetectMagic)),
 		"detect_monsters":                endTurn(true, noAnim(playerDetectMonsters)),
+		"detect_traps":                endTurn(true, noAnim(playerDetectTraps)),
 		"create_monster":                 endTurn(true, noAnim(createMonster)),
 		"light":                          endTurn(true, noAnim(light)),
 		"drain_life":                     endTurn(true, drainLife),
@@ -35,6 +38,7 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"vorpalize":                      endTurn(false, playerVorpalizeWeapon),
 		"satiate_fully":                  endTurn(true, satiateFully),
 		"identify_item":                  endTurn(false, playerIdentifyItem),
+		"remove_curse":					  endTurn(false, removeCurse),
 	}
 }
 
@@ -167,15 +171,24 @@ func createMonster(g *GameState, user *Actor) {
 
 func playerDetectFood(g *GameState, user *Actor) {
 	g.Player.GetFlags().Set(foundation.FlagSeeFood)
+	g.msg(foundation.Msg("You feel a sudden awareness of your surroundings"))
 }
 
 func playerDetectMagic(g *GameState, user *Actor) {
 	g.Player.GetFlags().Set(foundation.FlagSeeMagic)
+	g.msg(foundation.Msg("You feel a sudden awareness of your surroundings"))
 }
 
 func playerDetectMonsters(g *GameState, user *Actor) {
 	tunsUntilUnsee := rand.Intn(8) + 8
 	g.Player.GetFlags().Increase(foundation.FlagSeeMonsters, tunsUntilUnsee)
+	g.msg(foundation.Msg("You feel a sudden awareness of your surroundings"))
+}
+
+func playerDetectTraps(g *GameState, user *Actor) {
+	tunsUntilUnsee := rand.Intn(8) + 8
+	g.Player.GetFlags().Increase(foundation.FlagSeeTraps, tunsUntilUnsee)
+	g.msg(foundation.Msg("You feel a sudden awareness of your surroundings"))
 }
 
 func seeInvisible(g *GameState, user *Actor) {
@@ -184,7 +197,7 @@ func seeInvisible(g *GameState, user *Actor) {
 	if g.Player != user {
 		return
 	}
-
+	g.msg(foundation.Msg("You feel your sight sharpen"))
 	tunsUntilUnsee := rand.Intn(8) + 8
 	g.Player.GetFlags().Increase(foundation.FlagSeeInvisible, tunsUntilUnsee)
 }
@@ -192,8 +205,10 @@ func makeInvisible(g *GameState, user *Actor) {
 	user.GetFlags().Set(foundation.FlagInvisible)
 
 	if g.Player != user {
+		g.msg(foundation.HiLite("%s vanishes", user.Name()))
 		return
 	}
+	g.msg(foundation.Msg("You vanish"))
 	turnsUntilVisible := rand.Intn(8) + 8
 	g.Player.GetFlags().Increase(foundation.FlagInvisible, turnsUntilVisible)
 }
@@ -248,8 +263,20 @@ func blindness(g *GameState, user *Actor) {
 	if g.Player != user {
 		return
 	}
+	g.msg(foundation.Msg("You are blinded!"))
 	tunsUntilUnhasted := rand.Intn(8) + 8
 	g.Player.GetFlags().Increase(foundation.FlagBlind, tunsUntilUnhasted)
+}
+
+func hallucination(g *GameState, user *Actor) {
+	user.GetFlags().Set(foundation.FlagHallucinating)
+
+	if g.Player != user {
+		return
+	}
+	g.msg(foundation.Msg("You are hallucinating!"))
+	turns := rand.Intn(8) + 8
+	g.Player.GetFlags().Increase(foundation.FlagHallucinating, turns)
 }
 
 func levitation(g *GameState, user *Actor) {
@@ -258,6 +285,7 @@ func levitation(g *GameState, user *Actor) {
 	if g.Player != user {
 		return
 	}
+	g.msg(foundation.Msg("You feel lighter"))
 	turnsUntilEarthbound := rand.Intn(8) + 8
 	g.Player.GetFlags().Increase(foundation.FlagFly, turnsUntilEarthbound)
 }
@@ -274,6 +302,7 @@ func aggroMonsters(g *GameState, actor *Actor) []foundation.Animation {
 		}
 		monster.GetFlags().Unset(foundation.FlagSleep)
 	}
+	g.msg(foundation.Msg("You hear a loud noise"))
 	return []foundation.Animation{waveEffect}
 }
 
@@ -300,6 +329,33 @@ func playerIdentifyItem(g *GameState, actor *Actor) []foundation.Animation {
 	}
 
 	g.ui.OpenInventoryForSelection(inventory, "Identify which item?", onSelected)
+
+	return nil
+}
+
+func removeCurse(g *GameState, actor *Actor) []foundation.Animation {
+	inventory := g.GetFilteredInventory(func(item *Item) bool {
+		return item.IsCursed()
+	})
+	if len(inventory) == 0 {
+		g.msg(foundation.Msg("You are not carrying any cursed items."))
+		return nil
+	}
+
+	onSelected := func(item foundation.ItemForUI) {
+		unknownItem := item.(*InventoryStack).First()
+
+		unknownItem.RemoveCurse()
+		g.msg(foundation.HiLite("the curse is being lifted from your %s.", unknownItem.Name()))
+
+		g.ui.UpdateInventory()
+
+		//g.ui.AddAnimations([]foundation.Animation{animation})
+
+		g.endPlayerTurn()
+	}
+
+	g.ui.OpenInventoryForSelection(inventory, "Remove curse?", onSelected)
 
 	return nil
 }
@@ -470,12 +526,13 @@ func confuse(g *GameState, target *Actor) []foundation.Animation {
 
 func confuseEnemyOnNextAttack(g *GameState, user *Actor) {
 	user.GetFlags().Set(foundation.FlagCanConfuse)
-
-	if user != g.Player {
-		g.msg(foundation.HiLite("%s starts glowing red", user.Name()))
-		return
+	var msg foundation.HiLiteString
+	if user == g.Player {
+		msg = foundation.HiLite("%s start glowing red", "You")
+	} else {
+		msg = foundation.HiLite("%s starts glowing red", user.Name())
 	}
-	g.Player.GetFlags().Set(foundation.FlagCanConfuse)
+	g.msg(msg)
 }
 func revealMap(g *GameState, user *Actor) []foundation.Animation {
 	dMap := g.gridMap.GetDijkstraMap(user.Position(), 1000, func(point geometry.Point) bool {
@@ -511,6 +568,31 @@ func holdAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 		// cover up anim
 
 		flightAnim, _ := g.ui.GetAnimProjectile('☼', "White", user.Position(), actor.Position(), nil)
+		//coverAnim := g.ui.GetAnimCover(actor.Position(), originalActorIcon, dist, nil)
+		animations = append(animations, flightAnim)
+		//animations = append(animations, coverAnim)
+	}
+
+	return animations
+}
+func sleepAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
+	affectedMonsters := g.playerVisibleEnemiesByDistance()
+
+	for _, actor := range affectedMonsters {
+		if actor == g.Player {
+			continue
+		}
+		actor.SetSleeping()
+	}
+	if len(affectedMonsters) > 0 && user == g.Player && !g.Player.IsBlind() {
+		g.identification.EffectWitnessed()
+	}
+	var animations []foundation.Animation
+	for _, actor := range affectedMonsters {
+		//originalActorIcon := actor.Icon()
+		// cover up anim
+
+		flightAnim, _ := g.ui.GetAnimProjectile('Z', "Yellow", user.Position(), actor.Position(), nil)
 		//coverAnim := g.ui.GetAnimCover(actor.Position(), originalActorIcon, dist, nil)
 		animations = append(animations, flightAnim)
 		//animations = append(animations, coverAnim)

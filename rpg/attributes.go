@@ -1,6 +1,9 @@
 package rpg
 
-import "strings"
+import (
+	"math/rand"
+	"strings"
+)
 
 type Counter int
 
@@ -138,6 +141,38 @@ func (s Stat) ToString() string {
 	return "Unknown"
 }
 
+func (s Stat) ToShortString() string {
+	switch s {
+	case Strength:
+		return "ST"
+	case Dexterity:
+		return "DX"
+	case Intelligence:
+		return "IQ"
+	case Health:
+		return "HT"
+	case Will:
+		return "Will"
+	case Perception:
+		return "Per"
+	case BasicSpeed:
+		return "Spd"
+	case FatiguePoints:
+		return "FP"
+	case HitPoints:
+		return "HP"
+	case Dodge:
+		return "Dodge"
+	case Block:
+		return "Block"
+	case Parry:
+		return "Parry"
+	case MaximumLoad:
+		return "Max Load"
+	}
+	return "Unknown"
+}
+
 // normal range 1-20
 // 10 = average human
 // ST can go much higher
@@ -163,6 +198,10 @@ const (
 	ActiveDefense
 	DamageResistance
 )
+
+func GetRandomStat() Stat {
+	return Stat(rand.Intn(int(MaximumLoad) + 1))
+}
 
 func StatFromString(stat string) Stat {
 	stat = strings.ToLower(stat)

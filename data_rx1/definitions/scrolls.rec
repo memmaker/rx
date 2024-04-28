@@ -1,9 +1,4 @@
-# Missing
-# - sleep
-# - identify
-# - scare monster
-# - remove curse
-# - vorpalize weapon (add (+1,+1), set monster type on weapon, weapon does (+4, +4) against that type AND has active effect with one charge "KILL MONSTER OF THAT TYPE INSTANTLY")
+%rec: default
 
 name: monster confusion
 internal_name: scroll_monster_confusion
@@ -36,6 +31,7 @@ category: scrolls
 charges: 1
 probability: 5
 worth: 5
+use_effect: sleep_monsters_in_room
 
 name: identify
 internal_name: identify
@@ -43,8 +39,8 @@ category: scrolls
 charges: 1
 probability: 27
 worth: 100
-always_id_on_use: true
 use_effect: identify_item
+always_id_on_use: true
 
 name: scare monster
 internal_name: scare_monster
@@ -59,25 +55,33 @@ internal_name: food_detection
 category: scrolls
 charges: 1
 probability: 4
-use_effect: detect_food
 worth: 50
+use_effect: detect_food
+
+name: trap detection
+internal_name: trap_detection
+category: scrolls
+charges: 1
+probability: 4
+worth: 50
+use_effect: detect_traps
 
 name: scroll of teleportation
 internal_name: teleportation
-use_effect: phase_door
 category: scrolls
 charges: 1
 probability: 7
 worth: 165
+use_effect: phase_door
 always_id_on_use: true
 
 name: enchant weapon
 internal_name: enchant_weapon
-use_effect: enchant_weapon
 category: scrolls
 charges: 1
 probability: 10
 worth: 150
+use_effect: enchant_weapon
 always_id_on_use: true
 
 name: enchant armor
@@ -94,8 +98,8 @@ internal_name: create_monster
 category: scrolls
 charges: 1
 probability: 5
-use_effect: create_monster
 worth: 75
+use_effect: create_monster
 always_id_on_use: true
 
 name: remove curse
@@ -103,24 +107,17 @@ internal_name: remove_curse
 category: scrolls
 charges: 1
 probability: 8
+use_effect: remove_curse
 worth: 105
-
 
 name: aggravate monsters
 internal_name: aggravate_monsters
 category: scrolls
 charges: 1
 probability: 4
-use_effect: aggravate_monsters
 worth: 20
+use_effect: aggravate_monsters
 always_id_on_use: true
-
-name: blank paper
-internal_name: blank_paper
-category: scrolls
-charges: 1
-probability: 1
-worth: 5
 
 name: vorpalize weapon
 internal_name: vorpalize_weapon
@@ -130,3 +127,4 @@ probability: 1
 worth: 300
 use_effect: vorpalize
 always_id_on_use: true
+

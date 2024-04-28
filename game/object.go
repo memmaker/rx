@@ -111,3 +111,7 @@ func (b *Object) SetHidden(isHidden bool) {
 func (b *Object) Name() string {
 	return b.category.String()
 }
+
+func (b *Object) IsTrap() bool {
+	return b.category.IsTrap()
+}

@@ -24,12 +24,14 @@ type GameForUI interface {
 	PickupItem()
 	EquipToggle(item ItemForUI)
 	DropItem(item ItemForUI)
-	PlayerUseOrZapItem(item ItemForUI)
+	PlayerApplyItem(item ItemForUI)
 	AimedShot()
 	QuickShot()
 	Wait()
 
 	PlayerInteractWithMap() // up/down stairs..
+	PlayerTryDescend()
+	PlayerTryAscend()
 
 	OpenTacticsMenu()
 
@@ -52,9 +54,22 @@ type GameForUI interface {
 
 	// Inventory Management
 	OpenInventory()
+	ChooseItemForDrop()
 	ChooseItemForThrow()
-	ChooseItemForUseOrZap()
+	ChooseItemForQuaff()
+	ChooseItemForEat()
+	ChooseItemForRead()
+	ChooseItemForZap()
+	ChooseItemForUse()
+	ChooseItemForApply()
 	ChooseItemForMissileLaunch()
+
+	ChooseWeaponForWield()
+	ChooseArmorForWear()
+	ChooseRingToPutOn()
+
+	ChooseArmorToTakeOff()
+	ChooseRingToRemove()
 
 	IsEquipped(item ItemForUI) bool
 
@@ -81,6 +96,7 @@ type GameForUI interface {
 	Descend()
 	Ascend()
 	OpenWizardMenu()
+	GetRandomEnemyName() string
 }
 
 type PlayerMoveMode int
@@ -154,6 +170,7 @@ type GameUI interface {
 	GetAnimBreath(flight []geometry.Point, done func()) Animation
 	GetAnimBackgroundColor(position geometry.Point, colorName string, frameCount int, done func()) Animation
 	GetAnimAppearance(actor ActorForUI, position geometry.Point, done func()) Animation
+	GetAnimWakeUp(position geometry.Point, done func()) Animation
 }
 
 type Animation interface {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"image/color"
+	"math/rand"
 	"strings"
 )
 
@@ -377,4 +378,12 @@ func (t Theme) GetMapDefaultStyle() tcell.Style {
 
 func (t Theme) IsMonochrome() bool {
 	return t.isMonoChrome
+}
+
+func (t Theme) GetRandomColor() color.RGBA {
+	var colors []color.RGBA
+	for _, c := range t.colorDefs {
+		colors = append(colors, c)
+	}
+	return colors[rand.Intn(len(colors))]
 }
