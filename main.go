@@ -35,6 +35,8 @@ func main() {
 
 	util.SetKeypadToNumericMode()
 
+	config := foundation.NewConfigurationFromFile("config.rec")
+
 	var playerName string
 	var showScoresOnly bool
 	if len(os.Args) > 1 {
@@ -45,15 +47,16 @@ func main() {
 			playerName = os.Args[2]
 		}
 	} else {
-		showBanner(width)
+		showBanner(path.Join(config.DataRootDir, "banner.txt"), width)
 	}
 
-	if playerName == "" && !showScoresOnly {
+	if playerName != "" {
+		config.PlayerName = playerName
+	} else if config.PlayerName == "" && !showScoresOnly {
 		playerName = askForName()
+		config.PlayerName = playerName
 	}
 
-	config := foundation.NewConfigurationFromFile("config.rec")
-	config.PlayerName = playerName
 	gameUI := console.NewTextUI(config)
 	game.NewGameState(gameUI, config)
 
@@ -79,8 +82,8 @@ func mustLoadImage(filename string) image.Image {
 	return img
 }
 
-func showBanner(width int) {
-	bannerLines := util.ReadFileAsLines(path.Join("data", "banner.txt"))
+func showBanner(filename string, width int) {
+	bannerLines := util.ReadFileAsLines(filename)
 	for _, line := range bannerLines {
 		length := len(line)
 		startX := (width - length) / 2
@@ -147,12 +150,10 @@ func askForName() string {
 
 func testMapGen() {
 	random := rand.New(rand.NewSource(42))
-	dunGen := dungen.NewRogueGenerator(random, 80, 23)
+	dunGen := dungen.NewVaultGenerator(random, 80, 23)
 	for i := 0; i < 10; i++ {
-
 		dungeon := dunGen.Generate()
 		dungeon.Print()
 		println()
 	}
-
 }

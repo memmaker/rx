@@ -3,7 +3,6 @@ package game
 import (
 	"RogueUI/foundation"
 	"RogueUI/geometry"
-	"RogueUI/rpg"
 	"math/rand"
 )
 
@@ -19,9 +18,9 @@ func (g *GameState) aiAct(enemy *Actor) {
 			enemy.GetFlags().Increment(foundation.FlagStun)
 			return
 		} else {
-			turnMod := stunCounter - 1
-			_, result, _ := rpg.SuccessRoll(enemy.GetIntelligence() + turnMod)
-			if result.IsFailure() {
+			//turnMod := stunCounter - 1
+			//_, result, _ := dice_curve.SuccessRoll(enemy.GetIntelligence() + turnMod)
+			if true { // result.IsFailure() { TODO
 				enemy.GetFlags().Increment(foundation.FlagStun)
 				return
 			}
@@ -40,11 +39,11 @@ func (g *GameState) aiAct(enemy *Actor) {
 
 	if enemy.IsSleeping() {
 		if sameRoom {
-			if enemy.HasFlag(foundation.FlagMean) && enemy.CanPerceivePlayer(g.Player.GetSkill(rpg.SkillNameStealth)-4, distanceToPlayer) {
+			if enemy.HasFlag(foundation.FlagMean) && CanPerceive(enemy, g.Player) {
 				enemy.WakeUp()
 				g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
 				g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
-			} else if !enemy.HasFlag(foundation.FlagMean) && enemy.CanPerceivePlayer(g.Player.GetSkill(rpg.SkillNameStealth)+2, distanceToPlayer) && rand.Intn(10) == 0 {
+			} else if !enemy.HasFlag(foundation.FlagMean) && CanPerceive(enemy, g.Player) && rand.Intn(10) == 0 {
 				enemy.WakeUp()
 				g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
 				g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
@@ -80,7 +79,7 @@ func (g *GameState) aiAct(enemy *Actor) {
 	}
 
 	losToPlayer := g.canPlayerSee(enemy.Position())
-	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && sameRoom && losToPlayer && (enemy.HasFlag(foundation.FlagMean) || enemy.CanPerceivePlayer(g.Player.GetSkill(rpg.SkillNameStealth), distanceToPlayer)) {
+	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && sameRoom && losToPlayer && (enemy.HasFlag(foundation.FlagMean) || CanPerceive(enemy, g.Player)) {
 		enemy.GetFlags().Set(foundation.FlagAwareOfPlayer)
 		g.msg(foundation.HiLite("%s notices you", enemy.Name()))
 	}
@@ -107,7 +106,7 @@ func (g *GameState) defaultBehaviour(enemy *Actor) {
 	sameRoom := g.isInPlayerRoom(enemy.Position()) || distanceToPlayer <= 1
 
 	if distanceToPlayer <= 1 {
-		consequencesOfMonsterAttack := g.actorMeleeAttack(enemy, NoModifiers, g.Player, NoModifiers)
+		consequencesOfMonsterAttack := g.actorMeleeAttack(enemy, g.Player)
 		g.ui.AddAnimations(consequencesOfMonsterAttack)
 		return
 	}
@@ -152,7 +151,7 @@ func (g *GameState) doesActConfused(enemy *Actor) []foundation.Animation {
 			actionDirection := geometry.RandomDirection()
 			targetPos := enemy.Position().Add(actionDirection.ToPoint())
 			if g.gridMap.IsActorAt(targetPos) {
-				return g.actorMeleeAttack(enemy, ModFlatAndCap(-2, 10, "confused"), g.gridMap.ActorAt(targetPos), NoModifiers)
+				return g.actorMeleeAttack(enemy, g.gridMap.ActorAt(targetPos))
 			} else if g.gridMap.IsCurrentlyPassable(targetPos) {
 				return g.actorMoveAnimated(enemy, targetPos)
 			} else {

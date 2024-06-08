@@ -1,0 +1,21 @@
+%rec: default
+
+name: Rat
+internal_name: rat
+color: LightGray
+letter: r
+xp: 25
+body: quadruped
+strength: 1
+perception: 2
+endurance: 3
+charisma: 4
+intelligence: 5
+agility: 6
+luck: 7
+hp: 5
+dodge: 0
+ap: 2
+equipment: ant_chitin_armor
+equipment: ant_mandibles
+

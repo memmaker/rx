@@ -9,21 +9,22 @@ import (
 )
 
 type Configuration struct {
-	AnimationDelay          time.Duration
-	AnimationsEnabled       bool
-	AnimateMovement         bool
-	AnimateProjectiles      bool
-	AnimateDamage           bool
-	AnimateEffects          bool
-	MapWidth                int
-	MapHeight               int
-	DiagonalMovementEnabled bool
-	AutoPickup              bool
-	PlayerName              string
-	KeyMapFile              string
-	Theme                   string
-	WallSlide               bool
-	DataRootDir             string
+	AnimationDelay             time.Duration
+	AnimationsEnabled          bool
+	AnimateMovement            bool
+	AnimateProjectiles         bool
+	AnimateDamage              bool
+	AnimateEffects             bool
+	MapWidth                   int
+	MapHeight                  int
+	DiagonalMovementEnabled    bool
+	AutoPickup                 bool
+	PlayerName                 string
+	KeyMapFile                 string
+	Theme                      string
+	WallSlide                  bool
+	DataRootDir                string
+	DefaultToAdvancedTargeting bool
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -67,6 +68,8 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.PlayerName = field.Value
 		case "DataRootDir":
 			configuration.DataRootDir = field.Value
+		case "DefaultToAdvancedTargeting":
+			configuration.DefaultToAdvancedTargeting = field.AsBool()
 		}
 	}
 	return configuration
@@ -78,17 +81,18 @@ func NewDefaultConfiguration() *Configuration {
 		DiagonalMovementEnabled: true,
 		AnimationDelay:          75 * time.Millisecond,
 
-		AnimationsEnabled:  true,
-		AnimateMovement:    true,
-		AnimateDamage:      true,
-		AnimateEffects:     true,
-		AnimateProjectiles: true,
-		AutoPickup:         true,
-		WallSlide:          true,
-		PlayerName:         "Rogue",
-		DataRootDir:        "data",
-		KeyMapFile:         path.Join("keymaps", "default.txt"),
-		Theme:              path.Join("themes", "ascii.rec"),
+		AnimationsEnabled:          true,
+		AnimateMovement:            true,
+		AnimateDamage:              true,
+		AnimateEffects:             true,
+		AnimateProjectiles:         true,
+		AutoPickup:                 true,
+		WallSlide:                  true,
+		PlayerName:                 "Rogue",
+		DataRootDir:                "data",
+		KeyMapFile:                 path.Join("keymaps", "default.txt"),
+		Theme:                      path.Join("themes", "ascii.rec"),
+		DefaultToAdvancedTargeting: false,
 	}
 }
 

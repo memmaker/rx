@@ -12,6 +12,7 @@ DiagonalMovementEnabled: true
 AutoPickup: true
 WallSlide: true
 PlayerName: Rogue
-DataRootDir: data_rx1
+DataRootDir: data_atom
+#DataRootDir: data_rx1
 KeyMapFile: keymaps/default.txt
 Theme: themes/fancy.rec

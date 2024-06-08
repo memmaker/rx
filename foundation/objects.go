@@ -2,6 +2,9 @@ package foundation
 
 import "math/rand"
 
+type ObjectForUI interface {
+	GetCategory() ObjectCategory
+}
 type ObjectCategory int
 
 const (
@@ -12,10 +15,13 @@ const (
 	ObjectArrowTrap
 	ObjectDescendTrap
 	ObjectBearTrap
+	ObjectUnknownContainer
+	ObjectKnownContainer
+	ObjectKnownEmptyContainer
 )
 
 func RandomObjectCategory() ObjectCategory {
-	return ObjectCategory(rand.Intn(int(ObjectBearTrap)+1))
+	return ObjectCategory(rand.Intn(int(ObjectBearTrap) + 1))
 }
 
 func GetAllTrapCategories() []ObjectCategory {
@@ -46,7 +52,12 @@ func (o ObjectCategory) String() string {
 		return "Descend Trap"
 	case ObjectBearTrap:
 		return "Bear Trap"
-
+	case ObjectKnownContainer:
+		return "Known Container"
+	case ObjectKnownEmptyContainer:
+		return "Known Empty Container"
+	case ObjectUnknownContainer:
+		return "Unknown Container"
 	default:
 		return "Unknown"
 	}
@@ -68,6 +79,12 @@ func ObjectCategoryFromString(s string) ObjectCategory {
 		return ObjectDescendTrap
 	case "BearTrap":
 		return ObjectBearTrap
+	case "KnownContainer":
+		return ObjectKnownContainer
+	case "KnownEmptyContainer":
+		return ObjectKnownEmptyContainer
+	case "UnknownContainer":
+		return ObjectUnknownContainer
 	default:
 		return -1
 	}

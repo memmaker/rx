@@ -3,7 +3,6 @@ package game
 import (
 	"RogueUI/foundation"
 	"RogueUI/geometry"
-	"RogueUI/rpg"
 	"math/rand"
 )
 
@@ -13,13 +12,13 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"confuse":                        endTurn(true, confuse),
 		"haste":                          endTurn(true, noAnim(haste)),
 		"blindness":                      endTurn(true, noAnim(blindness)),
-		"hallucination":				  endTurn(true, noAnim(hallucination)),
+		"hallucination":                  endTurn(true, noAnim(hallucination)),
 		"levitation":                     endTurn(true, noAnim(levitation)),
 		"see_invisible":                  endTurn(true, noAnim(seeInvisible)),
 		"confuse_monster_on_next_attack": endTurn(true, noAnim(confuseEnemyOnNextAttack)),
 		"reveal_map":                     endTurn(true, revealMap),
 		"freeze_monsters_in_room":        endTurn(true, holdAllVisibleMonsters),
-		"sleep_monsters_in_room":        endTurn(true, sleepAllVisibleMonsters),
+		"sleep_monsters_in_room":         endTurn(true, sleepAllVisibleMonsters),
 		"scare_monsters_in_room":         endTurn(true, scareAllVisibleMonsters),
 		"enchant_armor":                  endTurn(false, playerEnchantArmor),
 		"enchant_weapon":                 endTurn(false, playerEnchantWeapon),
@@ -27,7 +26,7 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"detect_food":                    endTurn(true, noAnim(playerDetectFood)),
 		"detect_magic":                   endTurn(true, noAnim(playerDetectMagic)),
 		"detect_monsters":                endTurn(true, noAnim(playerDetectMonsters)),
-		"detect_traps":                endTurn(true, noAnim(playerDetectTraps)),
+		"detect_traps":                   endTurn(true, noAnim(playerDetectTraps)),
 		"create_monster":                 endTurn(true, noAnim(createMonster)),
 		"light":                          endTurn(true, noAnim(light)),
 		"drain_life":                     endTurn(true, drainLife),
@@ -37,8 +36,6 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"uncloak":                        endTurn(true, uncloak),
 		"vorpalize":                      endTurn(false, playerVorpalizeWeapon),
 		"satiate_fully":                  endTurn(true, satiateFully),
-		"identify_item":                  endTurn(false, playerIdentifyItem),
-		"remove_curse":					  endTurn(false, removeCurse),
 	}
 }
 
@@ -51,7 +48,7 @@ func uncloak(g *GameState, user *Actor) []foundation.Animation {
 
 func raiseLevel(g *GameState, user *Actor) {
 	g.msg(foundation.Msg("you suddenly feel much more skillful"))
-	g.Player.AddCharacterPoints(rpg.NewDice(1, 10, 0).Roll())
+	//g.Player.LevelUp()
 }
 
 func heal(g *GameState, actor *Actor) []foundation.Animation {
@@ -93,12 +90,7 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 	if len(affectedActors) == 0 {
 		g.msg(foundation.Msg("Nothing happens."))
 		return nil
-	} else {
-		if user == g.Player && !g.Player.IsBlind() {
-			g.identification.EffectWitnessed()
-		}
 	}
-
 	ballPos := user.Position()
 	if isInRoom {
 		ballPos = userRoom.GetCenter()
@@ -306,63 +298,9 @@ func aggroMonsters(g *GameState, actor *Actor) []foundation.Animation {
 	return []foundation.Animation{waveEffect}
 }
 
-func playerIdentifyItem(g *GameState, actor *Actor) []foundation.Animation {
-	inventory := g.GetFilteredInventory(func(item *Item) bool {
-		return item.IsMagic() && !g.identification.IsItemIdentified(item.GetInternalName())
-	})
-	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying any unidentified items."))
-		return nil
-	}
-
-	onSelected := func(item foundation.ItemForUI) {
-		unknownItem := item.(*InventoryStack).First()
-
-		g.identification.IdentifyItem(unknownItem.GetInternalName())
-		g.msg(foundation.HiLite("identified as %s.", unknownItem.Name()))
-
-		g.ui.UpdateInventory()
-
-		//g.ui.AddAnimations([]foundation.Animation{animation})
-
-		g.endPlayerTurn()
-	}
-
-	g.ui.OpenInventoryForSelection(inventory, "Identify which item?", onSelected)
-
-	return nil
-}
-
-func removeCurse(g *GameState, actor *Actor) []foundation.Animation {
-	inventory := g.GetFilteredInventory(func(item *Item) bool {
-		return item.IsCursed()
-	})
-	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying any cursed items."))
-		return nil
-	}
-
-	onSelected := func(item foundation.ItemForUI) {
-		unknownItem := item.(*InventoryStack).First()
-
-		unknownItem.RemoveCurse()
-		g.msg(foundation.HiLite("the curse is being lifted from your %s.", unknownItem.Name()))
-
-		g.ui.UpdateInventory()
-
-		//g.ui.AddAnimations([]foundation.Animation{animation})
-
-		g.endPlayerTurn()
-	}
-
-	g.ui.OpenInventoryForSelection(inventory, "Remove curse?", onSelected)
-
-	return nil
-}
-
 func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
 	inventory := g.GetFilteredInventory(func(item *Item) bool {
-		return item.IsArmor() && item.GetArmor().IsEnchantable()
+		return item.IsArmor()
 	})
 	if len(inventory) == 0 {
 		g.msg(foundation.Msg("You are not carrying any armor to enchant."))
@@ -377,7 +315,6 @@ func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
 
 		//wasEquipped := playerEquipment.IsEquipped(armorItem)
 		//playerInventory.Remove(armorItem)
-		armorItem.GetArmor().AddEnchantment()
 		//playerInventory.Add(armorItem)
 		//if wasEquipped {playerEquipment.Equip(armorItem)}
 		g.msg(foundation.HiLite("Your %s glows silver for a moment.", armorItem.Name()))
@@ -387,7 +324,7 @@ func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
 
 		g.ui.AddAnimations([]foundation.Animation{animation})
 
-		g.endPlayerTurn()
+		g.endPlayerTurn(g.Player.timeNeededForActions())
 
 	}
 
@@ -426,7 +363,7 @@ func playerVorpalizeWeapon(g *GameState, actor *Actor) []foundation.Animation {
 					animations := g.ui.GetAnimVorpalizeWeapon(origin, nil)
 
 					g.ui.AddAnimations(animations)
-					g.endPlayerTurn()
+					g.endPlayerTurn(g.Player.timeNeededForActions())
 				},
 				CloseMenus: true,
 			})
@@ -441,7 +378,7 @@ func playerVorpalizeWeapon(g *GameState, actor *Actor) []foundation.Animation {
 
 func playerEnchantWeapon(g *GameState, actor *Actor) []foundation.Animation {
 	inventory := g.GetFilteredInventory(func(item *Item) bool {
-		return item.IsWeapon() && item.GetWeapon().IsEnchantable()
+		return item.IsWeapon()
 	})
 	if len(inventory) == 0 {
 		g.msg(foundation.Msg("You are not carrying any weapons to enchant."))
@@ -453,7 +390,7 @@ func playerEnchantWeapon(g *GameState, actor *Actor) []foundation.Animation {
 
 		//wasEquipped := playerEquipment.IsEquipped(armorItem)
 		//playerInventory.Remove(armorItem)
-		weaponItem.GetWeapon().AddEnchantment()
+		//weaponItem.GetWeapon().AddEnchantment()
 		//playerInventory.Add(armorItem)
 		//if wasEquipped {playerEquipment.Equip(armorItem)}
 		g.msg(foundation.HiLite("Your %s glows blue for a moment.", weaponItem.Name()))
@@ -464,7 +401,7 @@ func playerEnchantWeapon(g *GameState, actor *Actor) []foundation.Animation {
 
 		g.ui.AddAnimations([]foundation.Animation{animation})
 
-		g.endPlayerTurn()
+		g.endPlayerTurn(g.Player.timeNeededForActions())
 	}
 
 	g.ui.OpenInventoryForSelection(inventory, "Enchant which weapon?", onSelected)
@@ -559,9 +496,6 @@ func holdAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 		}
 		actor.GetFlags().Set(foundation.FlagHeld)
 	}
-	if len(affectedMonsters) > 0 && user == g.Player && !g.Player.IsBlind() {
-		g.identification.EffectWitnessed()
-	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
 		//originalActorIcon := actor.Icon()
@@ -583,9 +517,6 @@ func sleepAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 			continue
 		}
 		actor.SetSleeping()
-	}
-	if len(affectedMonsters) > 0 && user == g.Player && !g.Player.IsBlind() {
-		g.identification.EffectWitnessed()
 	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
@@ -609,9 +540,6 @@ func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 			continue
 		}
 		actor.GetFlags().Set(foundation.FlagScared)
-	}
-	if len(affectedMonsters) > 0 && user == g.Player && !g.Player.IsBlind() {
-		g.identification.EffectWitnessed()
 	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {

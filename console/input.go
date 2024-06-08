@@ -116,22 +116,32 @@ func (u *UI) setupCommandTable() {
 	}
 
 	u.commandTable["throw"] = u.game.ChooseItemForThrow
-	u.commandTable["quaff"] = u.game.ChooseItemForQuaff
-	u.commandTable["read"] = u.game.ChooseItemForRead
-	u.commandTable["zap"] = u.game.ChooseItemForZap
-	u.commandTable["use"] = u.game.ChooseItemForUse
+
+	//u.commandTable["quaff"] = u.game.ChooseItemForQuaff
+	//u.commandTable["read"] = u.game.ChooseItemForRead
+	//u.commandTable["zap"] = u.game.ChooseItemForZap
+	//u.commandTable["use"] = u.game.ChooseItemForUse
 	u.commandTable["wear"] = u.game.ChooseArmorForWear
 	u.commandTable["take_off"] = u.game.ChooseArmorToTakeOff
 	u.commandTable["wield"] = u.game.ChooseWeaponForWield
-	u.commandTable["ring_put_on"] = u.game.ChooseRingToPutOn
-	u.commandTable["ring_remove"] = u.game.ChooseRingToRemove
+	//u.commandTable["ring_put_on"] = u.game.ChooseRingToPutOn
+	//u.commandTable["ring_remove"] = u.game.ChooseRingToRemove
 	u.commandTable["drop"] = u.game.ChooseItemForDrop
 	u.commandTable["eat"] = u.game.ChooseItemForEat
 
 	u.commandTable["apply"] = u.game.ChooseItemForApply
-	u.commandTable["launch"] = u.game.ChooseItemForMissileLaunch
-	u.commandTable["aim"] = u.game.AimedShot
-	u.commandTable["quick_shot"] = u.game.QuickShot
+	//u.commandTable["launch"] = u.game.ChooseItemForMissileLaunch
+	u.commandTable["attack"] = u.game.PlayerRangedAttack
+	u.commandTable["quick_attack"] = u.game.PlayerQuickRangedAttack
+
+	u.commandTable["switch_weapons"] = u.game.SwitchWeapons
+	u.commandTable["cycle_target_mode"] = u.game.CycleTargetMode
+	u.commandTable["apply_skill"] = u.game.PlayerApplySkill
+	u.commandTable["reload_weapon"] = u.game.ReloadWeapon
+
+	//u.commandTable["targeted_shot"] = u.game.TargetedShot
+
+	u.commandTable["quick_shot"] = u.game.PlayerQuickRangedAttack
 	u.commandTable["pickup"] = u.game.PickupItem
 	u.commandTable["map_interaction"] = u.game.PlayerInteractWithMap
 	u.commandTable["run_direction"] = u.ChooseDirectionForRun
@@ -139,65 +149,66 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["ascend"] = u.game.PlayerTryAscend
 	u.commandTable["wait"] = u.game.Wait
 	u.commandTable["show_key_bindings"] = u.showKeyBindings
+	u.commandTable["open_pip_boy"] = u.openPipBoy
 }
 
 func (u *UI) showKeyBindings() {
 	friendlyNames := map[string]string{
-		"quit": "Quit",
-		"inventory": "Inventory",
-		"tactics": "Tactics Menu",
-		"character": "Character",
-		"wizard": "Wizard",
-		"themes": "Themes",
-		"log": "Log",
-		"monsters": "Monster List",
-		"items": "Item List",
-		"help": "Help",
+		"quit":              "Quit",
+		"inventory":         "Inventory",
+		"tactics":           "Tactics Menu",
+		"character":         "Character",
+		"wizard":            "Wizard",
+		"themes":            "Themes",
+		"log":               "Log",
+		"monsters":          "Monster List",
+		"items":             "Item List",
+		"help":              "Help",
 		"show_key_bindings": "Key Bindings",
-		"north": "North",
-		"south": "South",
-		"west": "West",
-		"east": "East",
-		"northwest": "Northwest",
-		"northeast": "Northeast",
-		"southwest": "Southwest",
-		"southeast": "Southeast",
-		"run_north": "Run North",
-		"run_south": "Run South",
-		"run_west": "Run West",
-		"run_east": "Run East",
-		"run_northwest": "Run Northwest",
-		"run_northeast": "Run Northeast",
-		"run_southwest": "Run Southwest",
-		"run_southeast": "Run Southeast",
-		"look": "Look",
-		"overlay_monsters": "Overlay Monsters",
-		"overlay_items": "Overlay Items",
-		"gamma_up": "Gamma Up",
-		"gamma_down": "Gamma Down",
-		"toggle_cursor": "Toggle Cursor",
-		"throw": "Throw",
-		"quaff": "Quaff",
-		"read": "Read",
-		"zap": "Zap",
-		"use": "Use",
-		"apply": "Apply",
-		"wear": "Wear",
-		"take_off": "Take Off",
-		"wield": "Wield",
-		"ring_put_on": "Put On Ring",
-		"ring_remove": "Remove Ring",
-		"drop": "Drop",
-		"eat": "Eat",
-		"launch": "Launch",
-		"aim": "Aim",
-		"quick_shot": "Quick Shot",
-		"pickup": "Pickup",
-		"map_interaction": "Map Interaction",
-		"run_direction": "Run Direction",
-		"descend": "Descend",
-		"ascend": "Ascend",
-		"wait": "Wait",
+		"north":             "North",
+		"south":             "South",
+		"west":              "West",
+		"east":              "East",
+		"northwest":         "Northwest",
+		"northeast":         "Northeast",
+		"southwest":         "Southwest",
+		"southeast":         "Southeast",
+		"run_north":         "Run North",
+		"run_south":         "Run South",
+		"run_west":          "Run West",
+		"run_east":          "Run East",
+		"run_northwest":     "Run Northwest",
+		"run_northeast":     "Run Northeast",
+		"run_southwest":     "Run Southwest",
+		"run_southeast":     "Run Southeast",
+		"look":              "Look",
+		"overlay_monsters":  "Overlay Monsters",
+		"overlay_items":     "Overlay Items",
+		"gamma_up":          "Gamma Up",
+		"gamma_down":        "Gamma Down",
+		"toggle_cursor":     "Toggle Cursor",
+		"throw":             "Throw",
+		"quaff":             "Quaff",
+		"read":              "Read",
+		"zap":               "Zap",
+		"use":               "Use",
+		"apply":             "Apply",
+		"wear":              "Wear",
+		"take_off":          "Take Off",
+		"wield":             "Wield",
+		"ring_put_on":       "Put On Ring",
+		"ring_remove":       "Remove Ring",
+		"drop":              "Drop",
+		"eat":               "Eat",
+		"launch":            "Launch",
+		"aim":               "Aim",
+		"quick_shot":        "Quick Shot",
+		"pickup":            "Pickup",
+		"map_interaction":   "Map Interaction",
+		"run_direction":     "Run Direction",
+		"descend":           "Descend",
+		"ascend":            "Ascend",
+		"wait":              "Wait",
 	}
 
 	leftColCommands := []string{
@@ -416,22 +427,22 @@ func ParsePrintableKey(s string) (rune, bool) {
 func ParseNonPrintableKey(s string) (tcell.Key, bool) {
 	s = strings.TrimSpace(strings.ToLower(s))
 	nonPrintable := map[string]tcell.Key{
-		"backtab":   tcell.KeyBacktab,
-		"esc":   tcell.KeyESC,
-		"escape":tcell.KeyEscape,
-		"del":   tcell.KeyDEL,
-		"f1":    tcell.KeyF1,
-		"f2":    tcell.KeyF2,
-		"f3":    tcell.KeyF3,
-		"f4":    tcell.KeyF4,
-		"f5":    tcell.KeyF5,
-		"f6":    tcell.KeyF6,
-		"f7":    tcell.KeyF7,
-		"f8":    tcell.KeyF8,
-		"f9":    tcell.KeyF9,
-		"f10":   tcell.KeyF10,
-		"f11":   tcell.KeyF11,
-		"f12":   tcell.KeyF12,
+		"backtab": tcell.KeyBacktab,
+		"esc":     tcell.KeyESC,
+		"escape":  tcell.KeyEscape,
+		"del":     tcell.KeyDEL,
+		"f1":      tcell.KeyF1,
+		"f2":      tcell.KeyF2,
+		"f3":      tcell.KeyF3,
+		"f4":      tcell.KeyF4,
+		"f5":      tcell.KeyF5,
+		"f6":      tcell.KeyF6,
+		"f7":      tcell.KeyF7,
+		"f8":      tcell.KeyF8,
+		"f9":      tcell.KeyF9,
+		"f10":     tcell.KeyF10,
+		"f11":     tcell.KeyF11,
+		"f12":     tcell.KeyF12,
 	}
 	if key, ok := nonPrintable[s]; ok {
 		return key, true

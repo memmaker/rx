@@ -1,104 +1,13 @@
 package game
 
 import (
+	"RogueUI/cview"
+	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
-	"RogueUI/rpg"
-	"code.rocketnine.space/tslocum/cview"
 	"fmt"
 	"image/color"
-	"math/rand"
 )
-
-type WeaponInfo struct {
-	damageDice       rpg.Dice
-	damagePlus       int
-	weaponType       WeaponType
-	launchedWithType WeaponType
-	vorpalEnemy      string
-	skillUsed        rpg.SkillName
-}
-
-func (i *WeaponInfo) GetVorpalEnemy() string {
-	return i.vorpalEnemy
-}
-
-func (i *WeaponInfo) Vorpalize(enemy string) {
-	i.vorpalEnemy = enemy
-}
-func (i *WeaponInfo) GetDamagePlus() int {
-	return i.damagePlus
-}
-
-func (i *WeaponInfo) GetDamageDice() rpg.Dice {
-	return i.damageDice.WithBonus(i.damagePlus)
-}
-func (i *WeaponInfo) GetVorpalBonus(enemyName string) (int, int) {
-	if i.vorpalEnemy != "" {
-		if i.vorpalEnemy == enemyName {
-			return 4, 4
-		}
-		return 1, 1
-	}
-	return 0, 0
-}
-func (i *WeaponInfo) IsEnchantable() bool {
-	return i.damagePlus <= 7
-}
-
-func (i *WeaponInfo) AddEnchantment() {
-	i.damagePlus++
-}
-
-func (i *WeaponInfo) IsEnchanted() bool {
-	return i.damagePlus > 0
-}
-
-func (i *WeaponInfo) IsLaunchedWith(category WeaponType) bool {
-	return i.launchedWithType == category
-}
-
-func (i *WeaponInfo) GetWeaponType() WeaponType {
-	return i.weaponType
-}
-
-func (i *WeaponInfo) GetSkillUsed() rpg.SkillName {
-	return i.skillUsed
-}
-
-func (i *WeaponInfo) IsVorpal() bool {
-	return i.vorpalEnemy != ""
-}
-
-type ArmorInfo struct {
-	damageResistance int
-	plus             int
-	encumbrance      rpg.Encumbrance
-}
-
-func (i *ArmorInfo) GetArmorClass() int {
-	return i.damageResistance
-}
-
-func (i *ArmorInfo) GetDamageResistanceWithPlus() int {
-	return i.damageResistance + i.plus
-}
-
-func (i *ArmorInfo) IsEnchantable() bool {
-	return i.plus <= 7
-}
-
-func (i *ArmorInfo) AddEnchantment() {
-	i.plus++
-}
-
-func (i *ArmorInfo) IsEnchanted() bool {
-	return i.plus > 0
-}
-
-func (i *ArmorInfo) GetEncumbrance() rpg.Encumbrance {
-	return i.encumbrance
-}
 
 type Item struct {
 	name          string
@@ -107,20 +16,81 @@ type Item struct {
 	category      foundation.ItemCategory
 	weapon        *WeaponInfo
 	armor         *ArmorInfo
+	ammo          *AmmoInfo
 	useEffectName string
 	zapEffectName string
 	charges       int
 	slot          foundation.EquipSlot
 
-	id         *IdentificationKnowledge
-	stat       rpg.Stat
+	stat       dice_curve.Stat
 	statBonus  int
-	skill      rpg.SkillName
+	skill      dice_curve.SkillName
 	skillBonus int
 
 	equipFlag    foundation.ActorFlag
-	thrownDamage rpg.Dice
-	isKnown      bool
+	thrownDamage dice_curve.Dice
+}
+
+func (g *GameState) NewItemFromName(name string) *Item {
+	def := g.dataDefinitions.GetItemDefByName(name)
+	return NewItem(def)
+}
+func NewItem(def ItemDef) *Item {
+	charges := 1
+	if def.Charges.NotZero() {
+		charges = def.Charges.Roll()
+	}
+	item := &Item{
+		name:         def.Name,
+		internalName: def.InternalName,
+		category:     def.Category,
+		charges:      charges,
+		slot:         def.Slot,
+		stat:         def.Stat,
+		statBonus:    def.StatBonus.Roll(),
+		skill:        def.Skill,
+		skillBonus:   def.SkillBonus.Roll(),
+		equipFlag:    def.EquipFlag,
+		thrownDamage: def.ThrowDamageDice,
+	}
+
+	if def.IsValidAmmo() {
+		item.ammo = &AmmoInfo{
+			damage: def.AmmoDef.Damage,
+			kind:   def.AmmoDef.Kind,
+		}
+	}
+
+	if def.IsValidWeapon() {
+		item.weapon = &WeaponInfo{
+			damageDice:       def.WeaponDef.Damage,
+			weaponType:       def.WeaponDef.Type,
+			usesAmmo:         def.WeaponDef.UsesAmmo,
+			skillUsed:        def.WeaponDef.SkillUsed,
+			magazineSize:     def.WeaponDef.MagazineSize,
+			burstRounds:      def.WeaponDef.BurstRounds,
+			loadedInMagazine: nil,
+			qualityInPercent: 100,
+			targetingMode:    def.WeaponDef.TargetingMode,
+		}
+		item.weapon.CycleTargetMode()
+		item.slot = foundation.SlotNameMainHand
+	}
+
+	if def.IsValidArmor() {
+		item.armor = &ArmorInfo{
+			protection:         def.ArmorDef.Protection,
+			radiationReduction: def.ArmorDef.RadiationReduction,
+			encumbrance:        def.ArmorDef.Encumbrance,
+			durability:         100,
+		}
+	}
+
+	item.zapEffectName = def.ZapEffect
+	item.useEffectName = def.UseEffect
+
+	return item
+
 }
 
 func (i *Item) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
@@ -139,16 +109,38 @@ func (i *Item) GetListInfo() string {
 	return fmt.Sprintf("%s", i.name)
 }
 
+func (i *Item) LongNameWithColors(colorCode string) string {
+	line := cview.Escape(i.Name())
+	if i.IsWeapon() {
+		weapon := i.weapon
+		targetMode := weapon.GetCurrentTargetingMode().ToString()
+		timeNeeded := weapon.GetTimeNeeded()
+		bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
+		line = cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, weapon.GetDamage().ShortString(), bullets))
+	}
+	if i.IsArmor() {
+		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
+	}
+	if i.IsRing() && i.charges > 1 {
+		line = cview.Escape(fmt.Sprintf("%s (%d turns)", i.Name(), i.charges))
+	}
+	return colorCode + line + "[-]"
+}
+
 func (i *Item) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 	if i.IsWeapon() {
-		line = cview.Escape(fmt.Sprintf("%s (%s)", i.Name(), i.weapon.GetDamageDice().ShortString()))
+		weapon := i.weapon
+		line = cview.Escape(fmt.Sprintf("%s (%s)", i.Name(), weapon.GetDamage().ShortString()))
 	}
 	if i.IsArmor() {
-		line = cview.Escape(fmt.Sprintf("%s [%+d]", i.Name(), i.armor.GetDamageResistanceWithPlus()))
+		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
 	}
-	if i.IsRing() && i.charges > 1 && i.id.IsItemIdentified(i.internalName) {
+	if i.IsRing() && i.charges > 1 {
 		line = cview.Escape(fmt.Sprintf("%s (%d turns)", i.Name(), i.charges))
+	}
+	if i.IsAmmo() {
+		line = cview.Escape(fmt.Sprintf("%s x%d", i.Name(), i.GetCharges()))
 	}
 	return colorCode + line + "[-]"
 }
@@ -167,35 +159,11 @@ func (i *Item) Name() string {
 		name = fmt.Sprintf("%d gold", i.charges)
 	}
 
-	if i.IsPotion() && !i.id.IsItemIdentified(i.internalName) {
-		flavor := i.id.GetPotionColor(i.internalName)
-		name = fmt.Sprintf("%s potion", flavor)
-	}
-
-	if i.IsScroll() && !i.id.IsItemIdentified(i.internalName) {
-		flavor := i.id.GetScrollName(i.internalName)
-		name = fmt.Sprintf("scroll of '%s'", flavor)
-	}
-
-	if i.IsWand() && !i.id.IsItemIdentified(i.internalName) {
-		flavor := i.id.GetWandMaterial(i.internalName)
-		name = fmt.Sprintf("%s wand", flavor)
-	}
-
-	if i.IsRing() && !i.id.IsItemIdentified(i.internalName) {
-		flavor := i.id.GetRingStone(i.internalName)
-		name = fmt.Sprintf("%s ring", flavor)
-	}
-
-	if i.IsStuck() && i.isKnown {
-		name = fmt.Sprintf("*%d* %s", i.GetCharges(), name)
-	}
-
-	if i.statBonus != 0 && (i.isKnown ||i.id.IsItemIdentified(i.internalName)) {
+	if i.statBonus != 0 {
 		name = fmt.Sprintf("%s [%+d %s]", name, i.statBonus, i.stat.ToShortString())
 	}
 
-	if i.skillBonus != 0 && (i.isKnown ||i.id.IsItemIdentified(i.internalName)) {
+	if i.skillBonus != 0 {
 		name = fmt.Sprintf("%s [%+d %s]", name, i.skillBonus, i.skill.ToShortString())
 	}
 
@@ -235,12 +203,19 @@ func (i *Item) CanStackWith(other *Item) bool {
 		return false
 	}
 
+	if i.internalName != other.internalName {
+		return false
+	}
 	if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || i.IsRing() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() || other.IsRing() {
 		return false
 	}
 
 	if i.useEffectName != other.useEffectName || i.zapEffectName != other.zapEffectName {
 		return false
+	}
+
+	if i.IsAmmo() && other.IsAmmo() && i.ammo.damage == other.ammo.damage {
+		return true
 	}
 
 	if i.charges != other.charges {
@@ -259,19 +234,15 @@ func (i *Item) IsEquippable() bool {
 }
 
 func (i *Item) IsMeleeWeapon() bool {
-	return i.IsWeapon() && (i.slot == foundation.SlotNameOneHandedWeapon || i.slot == foundation.SlotNameTwoHandedWeapon)
+	return i.IsWeapon() && i.GetWeapon().IsMelee()
 }
 
 func (i *Item) IsRangedWeapon() bool {
-	return i.IsWeapon() && i.slot == foundation.SlotNameMissileLauncher
+	return i.IsWeapon() && i.GetWeapon().IsRanged()
 }
 
 func (i *Item) IsArmor() bool {
 	return i.armor != nil
-}
-
-func (i *Item) IsTwoHandedWeapon() bool {
-	return i.IsWeapon() && i.slot == foundation.SlotNameTwoHandedWeapon
 }
 
 func (i *Item) IsWeapon() bool {
@@ -314,13 +285,9 @@ func (i *Item) IsMagic() bool { // potions, scrolls, wands & weapons/armor with 
 
 	isConsumableMagic := i.IsPotion() || i.IsWand() || i.IsScroll()
 
-	isEnchantedWeapon := i.IsWeapon() && i.weapon.IsEnchanted()
-
-	isEnchantedArmor := i.IsArmor() && i.armor.IsEnchanted()
-
 	isMagicRing := i.IsRing()
 
-	return isConsumableMagic || isEnchantedWeapon || isEnchantedArmor || isMagicRing
+	return isConsumableMagic || isMagicRing
 }
 
 func (i *Item) IsWand() bool {
@@ -339,14 +306,14 @@ func (i *Item) GetInternalName() string {
 	return i.internalName
 }
 
-func (i *Item) GetStatBonus(stat rpg.Stat) int {
+func (i *Item) GetStatBonus(stat dice_curve.Stat) int {
 
 	if i.stat == stat {
 		return i.statBonus
 	}
 	return 0
 }
-func (i *Item) GetSkillBonus(skill rpg.SkillName) int {
+func (i *Item) GetSkillBonus(skill dice_curve.SkillName) int {
 	if i.skill == skill {
 		return i.skillBonus
 	}
@@ -363,7 +330,7 @@ func (i *Item) IsMissile() bool {
 	return i.IsWeapon() && i.GetWeapon().GetWeaponType().IsMissile()
 }
 
-func (i *Item) GetThrowDamageDice() rpg.Dice {
+func (i *Item) GetThrowDamageDice() dice_curve.Dice {
 	return i.thrownDamage
 }
 
@@ -376,41 +343,40 @@ func (i *Item) SetCharges(amount int) {
 }
 
 func (i *Item) AfterEquippedTurn() {
-	if (i.IsRing() || i.IsStuck()) && i.charges > 0 {
+	if (i.IsRing()) && i.charges > 0 {
 		i.charges--
-		i.isKnown = true
 	}
 }
 
-func (i *Item) IsStuck() bool {
-	return i.equipFlag == foundation.FlagCurseStuck && i.charges > 0
+func (i *Item) IsAmmo() bool {
+	return i.ammo != nil
 }
 
-func (i *Item) IsCursed() bool {
-	return i.IsStuck() || i.statBonus < 0 || i.skillBonus < 0
+func (i *Item) IsAmmoOfCaliber(ammo string) bool {
+	return i.IsAmmo() && i.ammo.kind == ammo
 }
 
-func (i *Item) RemoveCurse() {
-	if !i.IsCursed() {
-		return
+func (i *Item) RemoveCharges(spent int) {
+	i.charges -= spent
+	if i.charges < 0 {
+		i.charges = 0
 	}
-	blessing := rand.Intn(100) < 4
+}
 
-	if i.IsStuck() {
-		i.equipFlag = foundation.FlagNone
+func (i *Item) Split(bullets int) *Item {
+	if bullets >= i.charges {
+		return i
 	}
-	if i.statBonus < 0 {
-		if blessing {
-			i.statBonus = rand.Intn(3) + 1
-		} else {
-			i.statBonus = 0
-		}
-	}
-	if i.skillBonus < 0 {
-		if blessing {
-			i.skillBonus = rand.Intn(3) + 1
-		} else {
-			i.skillBonus = 0
-		}
-	}
+	clone := *i
+	clone.charges = bullets
+	i.charges -= bullets
+	return &clone
+}
+
+func (i *Item) Merge(ammo *Item) {
+	i.charges += ammo.charges
+}
+
+func (i *Item) GetAmmo() *AmmoInfo {
+	return i.ammo
 }

@@ -1,51 +1,11 @@
 package game
 
 import (
+	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/recfile"
-	"RogueUI/rpg"
-	"strings"
+	"RogueUI/special"
 )
-
-type WeaponType int
-
-func (t WeaponType) IsMissile() bool {
-	return t == ItemTypeArrow || t == ItemTypeBolt || t == ItemTypeDart
-}
-
-const (
-	ItemTypeUnknown WeaponType = iota
-	ItemTypeSword
-	ItemTypeClub
-	ItemTypeAxe
-	ItemTypeDagger
-	ItemTypeSpear
-	ItemTypeBow
-	ItemTypeArrow
-	ItemTypeCrossbow
-	ItemTypeBolt
-	ItemTypeDart
-)
-
-type WeaponDef struct {
-	DamageDice          rpg.Dice
-	Type                WeaponType
-	LaunchedWithType    WeaponType
-	SkillUsed           rpg.SkillName
-	ShotMaxRange        int
-	ShotMinRange        int
-	ShotHalfDamageRange int
-	ShotAccuracy        int
-}
-
-func (w WeaponDef) IsValid() bool {
-	return w.Type != ItemTypeUnknown && w.DamageDice.NotZero()
-}
-
-type ArmorDef struct {
-	DamageResistance int
-	Encumbrance      rpg.Encumbrance
-}
 
 type ItemDef struct {
 	Name         string
@@ -55,23 +15,24 @@ type ItemDef struct {
 
 	WeaponDef WeaponDef
 	ArmorDef  ArmorDef
+	AmmoDef   AmmoDef
 
-	ThrowDamageDice rpg.Dice
+	ThrowDamageDice dice_curve.Dice
 
 	UseEffect string
 	ZapEffect string
 
-	Stat      rpg.Stat
-	StatBonus rpg.Dice
+	Stat      dice_curve.Stat
+	StatBonus dice_curve.Dice
 
-	Charges  rpg.Dice
+	Charges  dice_curve.Dice
 	Category foundation.ItemCategory
 
 	AlwaysIDOnUse bool
 	EquipFlag     foundation.ActorFlag
 
-	Skill      rpg.SkillName
-	SkillBonus rpg.Dice
+	Skill      dice_curve.SkillName
+	SkillBonus dice_curve.Dice
 }
 
 func (i ItemDef) IsValidArmor() bool {
@@ -79,7 +40,11 @@ func (i ItemDef) IsValidArmor() bool {
 }
 
 func (i ItemDef) IsValidWeapon() bool {
-	return i.Slot.IsWeaponSlot() && i.WeaponDef.IsValid()
+	return i.WeaponDef.IsValid()
+}
+
+func (i ItemDef) IsValidAmmo() bool {
+	return i.AmmoDef.IsValid()
 }
 
 func ItemDefsFromRecords(otherRecords []recfile.Record) []ItemDef {
@@ -104,18 +69,26 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 			itemDef.Category = foundation.ItemCategoryFromString(field.Value)
 		case "slot":
 			itemDef.Slot = foundation.ItemSlotFromString(field.Value)
+		case "ammo_damage":
+			itemDef.AmmoDef.Damage = special.ParseInterval(field.Value)
+		case "ammo_type":
+			itemDef.AmmoDef.Kind = field.Value
 		case "weapon_type":
 			itemDef.WeaponDef.Type = WeaponTypeFromString(field.Value)
-		case "weapon_launched_with_type":
-			itemDef.WeaponDef.LaunchedWithType = WeaponTypeFromString(field.Value)
+		case "weapon_uses_ammo":
+			itemDef.WeaponDef.UsesAmmo = field.Value
 		case "weapon_skill_used":
-			itemDef.WeaponDef.SkillUsed = rpg.SkillNameFromString(field.Value)
+			itemDef.WeaponDef.SkillUsed = special.SkillFromName(field.Value)
 		case "weapon_damage":
-			itemDef.WeaponDef.DamageDice = rpg.ParseDice(field.Value)
-		case "damage_resistance":
-			itemDef.ArmorDef.DamageResistance = field.AsInt()
+			itemDef.WeaponDef.Damage = special.ParseInterval(field.Value)
+		case "weapon_magazine_size":
+			itemDef.WeaponDef.MagazineSize = field.AsInt()
+		case "weapon_burst_rounds":
+			itemDef.WeaponDef.BurstRounds = field.AsInt()
+		case "weapon_targeting_mode":
+			itemDef.WeaponDef.TargetingMode |= TargetingModeFromString(field.Value)
 		case "thrown_damage":
-			itemDef.ThrowDamageDice = rpg.ParseDice(field.Value)
+			itemDef.ThrowDamageDice = dice_curve.ParseDice(field.Value)
 		case "shot_max_range":
 			itemDef.WeaponDef.ShotMaxRange = field.AsInt()
 		case "shot_min_range":
@@ -137,51 +110,43 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 				panic("Invalid zap effect: " + field.Value)
 			}
 		case "charges":
-			itemDef.Charges = rpg.ParseDice(field.Value)
+			itemDef.Charges = dice_curve.ParseDice(field.Value)
 		case "always_id_on_use":
 			itemDef.AlwaysIDOnUse = field.AsBool()
-		case "encumbrance":
-			itemDef.ArmorDef.Encumbrance = rpg.EncumbranceFromString(field.Value)
+		case "armor_encumbrance":
+			itemDef.ArmorDef.Encumbrance = field.AsInt()
+		case "armor_radiation_reduction":
+			itemDef.ArmorDef.RadiationReduction = field.AsInt()
+		case "armor_physical":
+			if itemDef.ArmorDef.Protection == nil {
+				itemDef.ArmorDef.Protection = make(map[special.DamageType]Protection)
+			}
+			values := field.AsList(",")
+			itemDef.ArmorDef.Protection[special.Physical] = Protection{
+				damageThreshold: values[0].AsInt(),
+				damageReduction: values[1].AsInt(),
+			}
+		case "armor_energy":
+			if itemDef.ArmorDef.Protection == nil {
+				itemDef.ArmorDef.Protection = make(map[special.DamageType]Protection)
+			}
+			values := field.AsList(",")
+			itemDef.ArmorDef.Protection[special.Energy] = Protection{
+				damageThreshold: values[0].AsInt(),
+				damageReduction: values[1].AsInt(),
+			}
 		case "stat":
-			itemDef.Stat = rpg.StatFromString(field.Value)
+			itemDef.Stat = dice_curve.StatFromString(field.Value)
 		case "stat_bonus":
-			itemDef.StatBonus = rpg.ParseDice(field.Value)
+			itemDef.StatBonus = dice_curve.ParseDice(field.Value)
 		case "skill":
-			itemDef.Skill = rpg.SkillNameFromString(field.Value)
+			itemDef.Skill = dice_curve.SkillNameFromString(field.Value)
 		case "skill_bonus":
-			itemDef.SkillBonus = rpg.ParseDice(field.Value)
+			itemDef.SkillBonus = dice_curve.ParseDice(field.Value)
 		case "equip_flag":
 			itemDef.EquipFlag = foundation.ActorFlagFromString(field.Value)
 		}
 	}
 
 	return itemDef
-}
-
-func WeaponTypeFromString(value string) WeaponType {
-	value = strings.ToLower(strings.TrimSpace(value))
-	switch value {
-	case "sword":
-		return ItemTypeSword
-	case "club":
-		return ItemTypeClub
-	case "axe":
-		return ItemTypeAxe
-	case "dagger":
-		return ItemTypeDagger
-	case "spear":
-		return ItemTypeSpear
-	case "bow":
-		return ItemTypeBow
-	case "arrow":
-		return ItemTypeArrow
-	case "crossbow":
-		return ItemTypeCrossbow
-	case "bolt":
-		return ItemTypeBolt
-	case "dart":
-		return ItemTypeDart
-	}
-	panic("Invalid weapon type: " + value)
-	return ItemTypeUnknown
 }

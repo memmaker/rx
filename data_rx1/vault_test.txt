@@ -37,3 +37,11 @@
                                                                                                                                                     
                                                                                                                                                     
                                                                                                                                                     
+Interactables:
+
+ - Containers
+ - Computer Terminals
+ - Sentry Guns
+ - (Defective) Machines
+ - (Locked) Doors
+ - NPCs with dialogue

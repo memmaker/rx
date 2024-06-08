@@ -1,10 +1,10 @@
 package game
 
 import (
+	"RogueUI/cview"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
 	"cmp"
-	"code.rocketnine.space/tslocum/cview"
 	"fmt"
 	"image/color"
 	"slices"
@@ -33,6 +33,10 @@ func (i *Inventory) Items() []*Item {
 type InventoryStack struct {
 	items    []*Item
 	invIndex int
+}
+
+func (i InventoryStack) LongNameWithColors(colorCode string) string {
+	return appendStacks(i.items[0].LongNameWithColors(colorCode), len(i.items))
 }
 
 func (i InventoryStack) Position() geometry.Point {
@@ -154,7 +158,17 @@ func (i *Inventory) Has(item *Item) bool {
 
 func (i *Inventory) Add(item *Item) {
 	defer i.changed()
+	if item.IsAmmo() {
+		for _, invItem := range i.items {
+			if invItem.CanStackWith(item) {
+				invItem.SetCharges(invItem.GetCharges() + item.GetCharges())
+				return
+			}
+		}
+	}
+
 	i.items = append(i.items, item)
+
 }
 
 func (i *Inventory) IsEmpty() bool {
@@ -200,6 +214,52 @@ func (i *Inventory) HasItemWithName(internalName string) bool {
 	return false
 }
 
+func (i *Inventory) RemoveAmmoByCaliber(ammo string, neededBullets int) *Item {
+	for _, invItem := range i.items {
+		if invItem.IsAmmoOfCaliber(ammo) {
+			availableBullets := invItem.GetCharges()
+			if availableBullets > neededBullets {
+				splitBullets := invItem.Split(neededBullets)
+				invItem.SetCharges(availableBullets - neededBullets)
+				return splitBullets
+			} else {
+				i.Remove(invItem)
+				return invItem
+			}
+			break
+		}
+	}
+	return nil
+}
+
+func (i *Inventory) RemoveAmmoByName(name string, amount int) *Item {
+	for _, invItem := range i.items {
+		if invItem.GetInternalName() == name {
+			availableBullets := invItem.GetCharges()
+			if availableBullets > amount {
+				splitBullets := invItem.Split(amount)
+				invItem.SetCharges(availableBullets - amount)
+				return splitBullets
+			} else {
+				i.Remove(invItem)
+				return invItem
+			}
+			break
+		}
+	}
+	return nil
+
+}
+
+func (i *Inventory) HasAmmo(caliber string, name string) bool {
+	for _, invItem := range i.items {
+		if invItem.IsAmmoOfCaliber(caliber) && invItem.GetInternalName() == name {
+			return true
+		}
+	}
+	return false
+}
+
 func SortInventory(stacks []*InventoryStack) {
 	slices.SortStableFunc(stacks, func(i, j *InventoryStack) int {
 		itemI := i.items[0]
@@ -211,12 +271,12 @@ func SortInventory(stacks []*InventoryStack) {
 			if itemI.GetWeapon().GetWeaponType() != itemJ.GetWeapon().GetWeaponType() {
 				return cmp.Compare(itemI.GetWeapon().GetWeaponType(), itemJ.GetWeapon().GetWeaponType())
 			}
-			expectedDamageI := itemI.GetWeapon().GetDamageDice().ExpectedValue()
-			expectedDamageJ := itemJ.GetWeapon().GetDamageDice().ExpectedValue()
+			expectedDamageI := itemI.GetWeapon().GetDamage().ExpectedValue()
+			expectedDamageJ := itemJ.GetWeapon().GetDamage().ExpectedValue()
 			return cmp.Compare(expectedDamageI, expectedDamageJ)
 		}
 		if itemI.IsArmor() && itemJ.IsArmor() {
-			return cmp.Compare(itemI.GetArmor().GetDamageResistanceWithPlus(), itemJ.GetArmor().GetDamageResistanceWithPlus())
+			return cmp.Compare(itemI.GetArmor().GetProtectionRating(), itemJ.GetArmor().GetProtectionRating())
 		}
 		return cmp.Compare(itemI.Name(), itemJ.Name())
 	})

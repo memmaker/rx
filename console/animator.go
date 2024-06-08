@@ -15,11 +15,15 @@ type TextAnimation interface {
 	GetFollowUp() []foundation.Animation
 	Cancel()
 	IsRequestingMapStateUpdate() bool
+	GetAudioCue() string
 }
-
+type AudioCuePlayer interface {
+	PlayCue(cueName string)
+}
 type Animator struct {
 	animationState    map[geometry.Point]foundation.TextIcon
 	runningAnimations []TextAnimation
+	audioCuePlayer    AudioCuePlayer
 }
 
 func NewAnimator() *Animator {
@@ -28,11 +32,22 @@ func NewAnimator() *Animator {
 	}
 }
 
+func (a *Animator) SetAudioCuePlayer(player AudioCuePlayer) {
+	a.audioCuePlayer = player
+}
+
 func (a *Animator) AddAnimation(animation TextAnimation) {
 	a.runningAnimations = append(a.runningAnimations, animation)
+	a.tryPlayAudioFor(animation)
 	slices.SortStableFunc(a.runningAnimations, func(i, j TextAnimation) int {
 		return cmp.Compare(i.GetPriority(), j.GetPriority())
 	})
+}
+
+func (a *Animator) tryPlayAudioFor(animation TextAnimation) {
+	if a.audioCuePlayer != nil && animation.GetAudioCue() != "" {
+		a.audioCuePlayer.PlayCue(animation.GetAudioCue())
+	}
 }
 
 func (a *Animator) Tick() (shouldUpdateMapState bool) {
@@ -48,6 +63,7 @@ func (a *Animator) Tick() (shouldUpdateMapState bool) {
 			for _, followUpAnim := range followUp {
 				if textAnim, isText := followUpAnim.(TextAnimation); isText && textAnim != nil {
 					a.runningAnimations = append(a.runningAnimations, textAnim)
+					a.tryPlayAudioFor(textAnim)
 				}
 			}
 		}

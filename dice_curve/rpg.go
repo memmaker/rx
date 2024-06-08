@@ -1,4 +1,4 @@
-package rpg
+package dice_curve
 
 import "fmt"
 

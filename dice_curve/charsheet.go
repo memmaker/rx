@@ -1,6 +1,7 @@
-package rpg
+package dice_curve
 
 import (
+	"RogueUI/util"
 	"cmp"
 	"fmt"
 	"slices"
@@ -31,6 +32,72 @@ type Character struct {
 	characterPointsReceived int
 	statChangedHandler      func()
 	resourceChangedHandler  func()
+}
+
+func (c *Character) DetailInfo() []string {
+	skillLineWithSuccess := func(skillName SkillName, skillValue int) []string {
+		asFloatPercent := ChanceOfSuccess(skillValue)
+		return []string{
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnSkill(skillName)),
+			fmt.Sprintf("%s:", string(skillName)),
+			fmt.Sprintf("%d", skillValue),
+			fmt.Sprintf("(%d%%)", int(asFloatPercent*100)),
+		}
+	}
+	rows := util.TableLayout([]util.TableRow{
+		{Columns: []string{
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnStat(Strength)),
+			"ST:",
+			fmt.Sprintf("%d", c.GetStat(Strength)),
+
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnStat(HitPoints)),
+			"HP:",
+			fmt.Sprintf("%d/%d", c.GetHitPoints(), c.GetHitPointsMax()),
+		}},
+		{Columns: []string{
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnStat(Dexterity)),
+			"DX:",
+			fmt.Sprintf("%d", c.GetStat(Dexterity)),
+		}},
+		{Columns: []string{
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnStat(Intelligence)),
+			"IN:",
+			fmt.Sprintf("%d", c.GetStat(Intelligence)),
+
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnStat(Perception)),
+			"Per:",
+			fmt.Sprintf("%d", c.GetStat(Perception)),
+		}},
+		{Columns: []string{
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnStat(Health)),
+			"HT:",
+			fmt.Sprintf("%d", c.GetStat(Health)),
+
+			fmt.Sprintf("[%d]", c.GetPointsSpentOnStat(Will)),
+			"Will:",
+			fmt.Sprintf("%d", c.GetStat(Will)),
+		}},
+	}, []util.TextAlignment{util.AlignLeft, util.AlignLeft, util.AlignLeft, util.AlignLeft, util.AlignLeft, util.AlignLeft})
+
+	var result []string
+
+	result = append(result, "", "> Stats:")
+	result = append(result, rows...)
+
+	result = append(result, "", "> Skills:")
+
+	skillRows := util.TableLayout([]util.TableRow{
+		{Columns: skillLineWithSuccess(SkillNameBrawling, c.GetSkill(SkillNameBrawling))},
+		{Columns: skillLineWithSuccess(SkillNameMeleeWeapons, c.GetSkill(SkillNameMeleeWeapons))},
+		{Columns: skillLineWithSuccess(SkillNameShield, c.GetSkill(SkillNameShield))},
+		{Columns: skillLineWithSuccess(SkillNameThrowing, c.GetSkill(SkillNameThrowing))},
+		{Columns: skillLineWithSuccess(SkillNameMissileWeapons, c.GetSkill(SkillNameMissileWeapons))},
+		{Columns: skillLineWithSuccess(SkillNameStealth, c.GetSkill(SkillNameStealth))},
+	}, []util.TextAlignment{util.AlignLeft, util.AlignLeft, util.AlignLeft, util.AlignLeft})
+
+	result = append(result, skillRows...)
+
+	return result
 }
 
 func NewCharacterSheet() *Character {
@@ -383,3 +450,19 @@ const (
 	ActiveDefenseBlock
 	ActiveDefenseParry
 )
+
+func (c *Character) GetHitPointsMax() int {
+	return c.GetStat(HitPoints)
+}
+
+func (c *Character) GetHitPoints() int {
+	return c.GetResource(HitPoints)
+}
+
+func (c *Character) IsAlive() bool {
+	return c.GetHitPoints() > 0
+}
+
+func (c *Character) TakeRawDamage(amount int) {
+	c.DecreaseResourceBy(HitPoints, amount)
+}

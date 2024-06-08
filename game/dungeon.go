@@ -13,7 +13,7 @@ import (
 )
 
 func (g *GameState) GotoNamedLevel(levelName string) {
-	mapData := ReadFileAsOneStringWithoutNewLines(path.Join("data", "prefabs", levelName+".txt"))
+	mapData := ReadFileAsOneStringWithoutNewLines(path.Join(g.config.DataRootDir, "prefabs", levelName+".txt"))
 	if mapData == "" {
 		return
 	}
@@ -164,6 +164,8 @@ func (g *GameState) GotoDungeonLevel(level int, stairs StairsInLevel, placePlaye
 		Mode:      foundation.PlayerMoveModeManual,
 	})
 	g.updateUIStatus()
+
+	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", "08vats.ogg"))
 }
 
 func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, *Object], dungeon *dungen.DungeonMap, stairs StairsInLevel) (geometry.Point, geometry.Point) {

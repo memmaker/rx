@@ -1,8 +1,8 @@
 package console
 
 import (
+	"RogueUI/cview"
 	"RogueUI/foundation"
-	"code.rocketnine.space/tslocum/cview"
 	"github.com/gdamore/tcell/v2"
 )
 

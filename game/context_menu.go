@@ -56,7 +56,7 @@ func (g *GameState) openContextMenuForItem(uiItem foundation.ItemForUI) {
 		zapAction := foundation.MenuItem{
 			Name: "Zap",
 			Action: func() {
-				g.startAimItem(item)
+				g.startZapItem(item)
 			},
 			CloseMenus: true,
 		}
@@ -67,7 +67,7 @@ func (g *GameState) openContextMenuForItem(uiItem foundation.ItemForUI) {
 		throwAction := foundation.MenuItem{
 			Name: "Throw",
 			Action: func() {
-				g.startRangedAttackWithMissile(item)
+				g.startThrowItem(item)
 			},
 			CloseMenus: true,
 		}

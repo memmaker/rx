@@ -1,13 +1,15 @@
 package console
 
 import (
+	"RogueUI/audio"
+	"RogueUI/cview"
+	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
-	"RogueUI/rpg"
 	"RogueUI/util"
 	"cmp"
-	"code.rocketnine.space/tslocum/cview"
 	"fmt"
+	"github.com/0xcafed00d/joystick"
 	"github.com/gdamore/tcell/v2"
 	"image/color"
 	"math"
@@ -21,14 +23,22 @@ import (
 
 type UIState int
 
+func (s UIState) IsTargeting() bool {
+	return s == StateTargeting || s == StateLookTargeting || s == StateTargetingBodyPart
+}
+
 const (
 	StateNormal UIState = iota
+	StateLookTargeting
 	StateTargeting
+	StateTargetingBodyPart
 )
 
 type UI struct {
 	settings *foundation.Configuration
 	game     foundation.GameForUI
+
+	audioPlayer *audio.Player
 
 	currentTheme Theme
 
@@ -55,7 +65,7 @@ type UI struct {
 	listTable map[string]*cview.List
 
 	gameIsReady     bool
-	gameIsOver       bool
+	gameIsOver      bool
 	autoRun         bool
 	onTargetUpdated func(targetPos geometry.Point)
 	showCursor      bool
@@ -69,7 +79,59 @@ type UI struct {
 	lastFrameStyle   map[geometry.Point]tcell.Style
 	isAnimationFrame bool
 	lastHudStats     map[foundation.HudValue]int
+}
 
+func (u *UI) ShowContainer(name string, containedItems *[]foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
+	if len(*containedItems) == 0 {
+		u.openTextModal([]string{"The container is empty."})
+		return
+	}
+	var menuItems []foundation.MenuItem
+	for _, i := range *containedItems {
+		item := i
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: item.InventoryNameWithColors(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(item.GetCategory()))),
+			Action: func() {
+				transfer(item)
+				if len(*containedItems) > 0 {
+					u.ShowContainer(name, containedItems, transfer)
+				} else {
+					u.UpdateLogWindow()
+				}
+			},
+			CloseMenus: true,
+		})
+	}
+	closeContainer := func() {
+		u.pages.HidePanel("contextMenu")
+		u.UpdateLogWindow()
+	}
+	menu := u.openSimpleMenu(menuItems)
+	menu.SetTitle(name)
+	keyForTakeAll := u.GetKeysForCommandAsString(KeyLayerMain, "use")
+	u.Print(foundation.HiLite("Press %s to take all items", keyForTakeAll))
+	menu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEscape {
+			closeContainer()
+			return nil
+		}
+		uiKey := toUIKey(event)
+		command := u.getCommandForKey(uiKey)
+
+		if command == "use" {
+			for _, item := range *containedItems {
+				transfer(item)
+			}
+			closeContainer()
+			return nil
+		}
+		return event
+	})
+}
+
+func (u *UI) PlayMusic(fileName string) {
+	u.audioPlayer.StopAll()
+	u.audioPlayer.Stream(fileName)
 }
 
 func (u *UI) OpenVendorMenu(itemsForSale []util.Tuple[foundation.ItemForUI, int], buyItem func(ui foundation.ItemForUI, price int)) {
@@ -96,7 +158,7 @@ func (u *UI) GetAnimBackgroundColor(position geometry.Point, colorName string, f
 	return NewCoverAnimation(position, iconAtLocation.WithBg(bgColor), frameCount, done)
 }
 
-func (u *UI) HighlightStatChange(stat rpg.Stat) {
+func (u *UI) HighlightStatChange(stat dice_curve.Stat) {
 	//TODO
 }
 
@@ -119,7 +181,7 @@ func (u *UI) showWinScreen(scoreInfo foundation.ScoreInfo, highScores []foundati
 	textView.SetTextAlign(cview.AlignCenter)
 	textView.SetTitleAlign(cview.AlignCenter)
 
-	winMessage := util.ReadFileAsLines(path.Join("data", "win.txt"))
+	winMessage := util.ReadFileAsLines(path.Join(u.settings.DataRootDir, "win.txt"))
 
 	gameOverMessage := []string{
 		"",
@@ -465,6 +527,17 @@ func (u *UI) GetAnimAppearance(actor foundation.ActorForUI, targetPos geometry.P
 	}, done)
 	return appearAnim
 }
+
+func (u *UI) GetAnimEvade(defender foundation.ActorForUI, done func()) foundation.Animation {
+	actorIcon := u.getIconForActor(defender)
+	return u.GetAnimTiles([]geometry.Point{defender.Position()}, []foundation.TextIcon{
+		actorIcon.WithItalic(),
+		actorIcon.WithItalic().WithBold(),
+		actorIcon.WithItalic(),
+	},
+		done)
+}
+
 func (u *UI) GetAnimWakeUp(location geometry.Point, done func()) foundation.Animation {
 	keepAllNeighbors := func(point geometry.Point) bool { return true }
 
@@ -963,6 +1036,7 @@ func (u *UI) Print(message foundation.HiLiteString) {
 }
 func (u *UI) StartGameLoop() {
 	u.application.SetAfterResizeFunc(u.onTerminalResized)
+	//go u.joystickLoop()
 	if err := u.application.Run(); err != nil {
 		panic(err)
 	}
@@ -973,7 +1047,7 @@ func (u *UI) initCoreUI() {
 	cview.ColorUnset = tcell.ColorBlack
 
 	u.application = cview.NewApplication()
-
+	u.application.SetUnknownEventCapture(u.handleUnknownEvent)
 	u.application.SetAfterResizeFunc(u.onTerminalResized)
 	u.application.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if frontName, frontPanel := u.pages.GetFrontPanel(); frontName == "inventory" && event.Key() == tcell.KeyCtrlC {
@@ -1086,7 +1160,7 @@ func (u *UI) handleMainInput(ev *tcell.EventKey) *tcell.EventKey {
 }
 
 func (u *UI) ChooseDirectionForRun() {
-	u.SelectDirection(u.game.GetPlayerPosition(), func(direction geometry.CompassDirection) {
+	u.SelectDirection(func(direction geometry.CompassDirection) {
 		u.startAutoRun(direction)
 	})
 }
@@ -1146,7 +1220,7 @@ func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (
 	if !u.gameIsReady {
 		return x, y, width, height
 	}
-
+	defaultMapStyle := u.currentTheme.GetMapDefaultStyle()
 	for row := y; row < y+height; row++ {
 		for col := x; col < x+width; col++ {
 
@@ -1155,7 +1229,7 @@ func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (
 
 			mapPos := geometry.Point{X: mapPosX, Y: mapPosY}
 
-			ch, style := u.renderMapPosition(mapPos, u.isAnimationFrame)
+			ch, style := u.renderMapPosition(mapPos, u.isAnimationFrame, defaultMapStyle)
 
 			screen.SetContent(col, row, ch, nil, style)
 		}
@@ -1167,7 +1241,7 @@ func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (
 	return x, y, width, height
 }
 
-func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool) (rune, tcell.Style) {
+func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool, style tcell.Style) (rune, tcell.Style) {
 	var ch rune
 	var textIcon foundation.TextIcon
 	var isPositionAnimated bool
@@ -1188,15 +1262,14 @@ func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool) (ru
 
 	if foundIcon {
 		ch, fg, bg = textIcon.Rune, textIcon.Fg, textIcon.Bg
+		style = style.Attributes(textIcon.Attributes)
 	} else {
 		ch = ' '
 		fg = u.currentTheme.GetUIColor(UIColorUIForeground)
 		bg = u.currentTheme.GetUIColor(UIColorUIBackground)
 	}
 
-	style := u.currentTheme.GetMapDefaultStyle()
-
-	if !u.isMonochrome {
+	if !u.isMonochrome { // apply gamma
 		style = style.Foreground(tcell.NewRGBColor(int32(applyGamma(fg.R, u.gamma)), int32(applyGamma(fg.G, u.gamma)), int32(applyGamma(fg.B, u.gamma))))
 		style = style.Background(tcell.NewRGBColor(int32(applyGamma(bg.R, u.gamma)), int32(applyGamma(bg.G, u.gamma)), int32(applyGamma(bg.B, u.gamma))))
 	}
@@ -1211,12 +1284,11 @@ func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool) (ru
 		u.lastFrameIcons[mapPos] = ch
 	}
 
-	if _, ok := u.targetingTiles[mapPos]; u.state == StateTargeting && ok {
-		attr := tcell.AttrReverse
+	if _, ok := u.targetingTiles[mapPos]; (u.state.IsTargeting()) && ok {
 		if mapPos == u.targetPos {
 			ch = 'X'
 		}
-		style = style.Attributes(attr)
+		style = style.Reverse(true)
 	}
 	return ch, style
 }
@@ -1377,9 +1449,16 @@ func (u *UI) UpdateStats() {
 		return
 	}
 
+	equippedItem, isEquipped := u.game.GetItemInMainHand()
+
+	itemName := "| none |"
+	if isEquipped {
+		itemName = "| " + equippedItem.LongNameWithColors(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(equippedItem.GetCategory()))) + " |"
+	}
+
 	multiLine := u.isStatusBarMultiLine()
 
-	statusStr := u.getSingleLineStatus(statusValues, flags, multiLine)
+	statusStr := u.getSingleLineStatus(statusValues, flags, multiLine, itemName)
 
 	if multiLine {
 		hp := statusValues[foundation.HudHitPoints]
@@ -1472,32 +1551,11 @@ func (u *UI) colorIfDiff(statStr string, stat foundation.HudValue, currentValue 
 	hiCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("Yellow"))
 	return fmt.Sprintf("%s%s[-]", hiCode, statStr)
 }
-func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags map[foundation.ActorFlag]int, multiLine bool) string {
-
-	gold := statusValues[foundation.HudGold]
-	goldStr := fmt.Sprintf("Gold: %-5d", gold)
-	goldStr = u.colorIfDiff(goldStr, foundation.HudGold, gold)
-
-	melee := statusValues[foundation.HudMeleeSkill]
-	meleeVal := fmt.Sprintf("%d", melee)
-	meleeStr := fmt.Sprintf("M: %-2s", meleeVal)
-	meleeStr = u.colorIfDiff(meleeStr, foundation.HudMeleeSkill, melee)
-
-	ranged := statusValues[foundation.HudRangedSkill]
-	rangedValStr := fmt.Sprintf("%d", ranged)
-	rangedStr := fmt.Sprintf("R: %-2s", rangedValStr)
-	rangedStr = u.colorIfDiff(rangedStr, foundation.HudRangedSkill, ranged)
+func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags map[foundation.ActorFlag]int, multiLine bool, equippedItem string) string {
 
 	damageResistance := statusValues[foundation.HudDamageResistance]
 	armorStr := fmt.Sprintf("DR: %-3d", damageResistance)
 	armorStr = u.colorIfDiff(armorStr, foundation.HudDamageResistance, damageResistance)
-
-	dLevel := statusValues[foundation.HudDungeonLevel]
-	dLevelStr := fmt.Sprintf("DL: %-2d", dLevel)
-	dLevelStr = u.colorIfDiff(dLevelStr, foundation.HudDungeonLevel, dLevel)
-
-	turns := statusValues[foundation.HudTurnsTaken]
-	turnsStr := fmt.Sprintf("T: %-4d", turns)
 
 	var statusStr string
 	if !multiLine {
@@ -1515,9 +1573,9 @@ func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags
 
 		flagString := FlagStringShort(flags)
 
-		statusStr = fmt.Sprintf("%s %s %s %s %s %s %s %s %s", goldStr, hpStr, fpStr, meleeStr, rangedStr, armorStr, dLevelStr, turnsStr, flagString)
+		statusStr = fmt.Sprintf("%s %s %s %s %s", hpStr, fpStr, equippedItem, armorStr, flagString)
 	} else {
-		statusStr = fmt.Sprintf("%s %s %s %s %s %s", goldStr, meleeStr, rangedStr, armorStr, dLevelStr, turnsStr)
+		statusStr = fmt.Sprintf("%s %s", equippedItem, armorStr)
 	}
 
 	width, _ := u.application.GetScreenSize()
@@ -1617,14 +1675,15 @@ func (u *UI) makeSideBySideModal(panelName string, primitive, qPrimitive cview.P
 }
 
 func (u *UI) OpenMenu(actions []foundation.MenuItem) {
+	u.openSimpleMenu(actions)
+}
+
+func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 	list := cview.NewList()
 	u.applyListStyle(list)
 
 	list.SetSelectedFunc(func(index int, listItem *cview.ListItem) {
-		action := actions[index]
-		list.HideContextMenu(func(primitive cview.Primitive) {
-			u.application.SetFocus(primitive)
-		})
+		action := menuItems[index]
 		if action.CloseMenus {
 			u.pages.SetCurrentPanel("main")
 		}
@@ -1632,7 +1691,7 @@ func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 	})
 
 	longestItem := 0
-	for index, a := range actions {
+	for index, a := range menuItems {
 		action := a
 		shortcut := foundation.ShortCutFromIndex(index)
 		listItem := cview.NewListItem(action.Name)
@@ -1641,7 +1700,8 @@ func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 		itemLength := len(action.Name) + 4
 		longestItem = max(longestItem, itemLength)
 	}
-	u.makeCenteredModal("contextMenu", list, len(actions), longestItem)
+	u.makeCenteredModal("contextMenu", list, len(menuItems), longestItem)
+	return list
 }
 func (u *UI) ShowMonsterInfo(monster foundation.ActorForUI) {
 	monsterNameInternalName := monster.GetInternalName()
@@ -2030,6 +2090,7 @@ func NewTextUI(settings *foundation.Configuration) *UI {
 	u := &UI{
 		targetingTiles: make(map[geometry.Point]bool),
 		animator:       NewAnimator(),
+		audioPlayer:    audio.NewPlayer(),
 		isMonochrome:   false,
 		listTable:      make(map[string]*cview.List),
 		cursorStyle:    tcell.CursorStyleSteadyBlock,
@@ -2041,6 +2102,7 @@ func NewTextUI(settings *foundation.Configuration) *UI {
 	}
 
 	u.initCoreUI()
+	u.initAudio()
 	return u
 }
 
@@ -2140,23 +2202,23 @@ func (u *UI) visibleLookup(loc geometry.Point) (foundation.TextIcon, bool) {
 func (u *UI) ShowCharacterSheet() {
 	var attributeActions []foundation.MenuItem
 
-	statList := []rpg.Stat{
-		rpg.Strength,
-		rpg.Dexterity,
-		rpg.Intelligence,
-		rpg.Health,
-		rpg.BasicSpeed,
-		rpg.HitPoints,
-		rpg.FatiguePoints,
-		rpg.Perception,
-		rpg.Will,
+	statList := []dice_curve.Stat{
+		dice_curve.Strength,
+		dice_curve.Dexterity,
+		dice_curve.Intelligence,
+		dice_curve.Health,
+		dice_curve.BasicSpeed,
+		dice_curve.HitPoints,
+		dice_curve.FatiguePoints,
+		dice_curve.Perception,
+		dice_curve.Will,
 	}
 	for _, s := range statList {
-		statInList := s
+		//statInList := s
 		attributeActions = append(attributeActions, foundation.MenuItem{
 			Name: fmt.Sprintf("+ %s", s.ToString()),
 			Action: func() {
-				u.game.IncreaseAttributeLevel(statInList)
+				//u.game.IncreaseAttributeLevel(statInList)
 				u.showCharacterActions(attributeActions)
 			},
 		})
@@ -2164,12 +2226,12 @@ func (u *UI) ShowCharacterSheet() {
 
 	var skillActions []foundation.MenuItem
 
-	skillList := []rpg.SkillName{
-		rpg.SkillNameBrawling,
-		rpg.SkillNameMeleeWeapons,
-		rpg.SkillNameShield,
-		rpg.SkillNameThrowing,
-		rpg.SkillNameMissileWeapons,
+	skillList := []dice_curve.SkillName{
+		dice_curve.SkillNameBrawling,
+		dice_curve.SkillNameMeleeWeapons,
+		dice_curve.SkillNameShield,
+		dice_curve.SkillNameThrowing,
+		dice_curve.SkillNameMissileWeapons,
 	}
 
 	for _, s := range skillList {
@@ -2177,7 +2239,7 @@ func (u *UI) ShowCharacterSheet() {
 		skillActions = append(skillActions, foundation.MenuItem{
 			Name: fmt.Sprintf("+ %s", skillInList),
 			Action: func() {
-				u.game.IncreaseSkillLevel(skillInList)
+				//u.game.IncreaseSkillLevel(skillInList)
 				u.showCharacterActions(skillActions)
 			},
 		})
@@ -2286,11 +2348,11 @@ func (u *UI) getIconForMap(worldTileType foundation.TileType) foundation.TextIco
 	return u.currentTheme.GetIconForMap(worldTileType)
 }
 
-func (u *UI) getIconForObject(object foundation.ObjectCategory) foundation.TextIcon {
+func (u *UI) getIconForObject(object foundation.ObjectForUI) foundation.TextIcon {
 	if u.isPlayerHallucinating() {
 		u.currentTheme.GetIconForObject(foundation.RandomObjectCategory())
 	}
-	return u.currentTheme.GetIconForObject(object)
+	return u.currentTheme.GetIconForObject(object.GetCategory())
 }
 
 func RightPadColored(s string, pLen int) string {
@@ -2342,7 +2404,7 @@ func (u *UI) GetAnimUncloakAtPosition(actor foundation.ActorForUI, uncloakLocati
 }
 
 func (u *UI) OpenThemesMenu() {
-	themesDir := path.Join("data", "themes")
+	themesDir := path.Join(u.settings.DataRootDir, "themes")
 	allThemes := util.FilesInDirByExtension(themesDir, "rec")
 
 	actions := make([]foundation.MenuItem, 0)
@@ -2384,7 +2446,7 @@ func (u *UI) OpenKeyMapper(layer KeyLayer) {
 }
 
 func (u *UI) ShowHelpScreen() {
-	u.ShowTextFile(path.Join("data", "help.txt"))
+	u.ShowTextFile(path.Join(u.settings.DataRootDir, "help.txt"))
 }
 
 func (u *UI) getCommandForKey(key UIKey) string {
@@ -2411,13 +2473,12 @@ func (u *UI) getAdvancedTargetingCommandForKey(key UIKey) string {
 	return ""
 }
 
-
 func (u *UI) updateLastFrame() {
 	// iterate the map and force and update of the last frame
 	for y := 0; y < u.settings.MapHeight; y++ {
 		for x := 0; x < u.settings.MapWidth; x++ {
 			pos := geometry.Point{X: x, Y: y}
-			u.renderMapPosition(pos, false)
+			u.renderMapPosition(pos, false, u.currentTheme.GetMapDefaultStyle())
 		}
 	}
 }
@@ -2440,4 +2501,118 @@ func (u *UI) GetKeysForCommandAsString(layer KeyLayer, command string) string {
 		return cmp.Compare(i, j)
 	})
 	return strings.Join(keys, ", ")
+}
+
+func (u *UI) joystickLoop() {
+	updateRate := time.Millisecond * 16
+	js, _ := joystick.Open(0)
+
+	var lastAxisData []int8
+	var newAxisData []int8
+	var lastButtonData uint32
+	analogDeadzone := int8(6)
+	leftThumbAxisXIndex := 0
+	leftThumbAxisYIndex := 1
+	rightThumbAxisXIndex := 2
+	rightThumbAxisYIndex := 3
+	for {
+		if js == nil {
+			js, _ = joystick.Open(0)
+		}
+		if js != nil {
+			state, err := js.Read()
+			newAxisData = make([]int8, len(state.AxisData))
+			for index, value := range state.AxisData {
+				newAxisData[index] = int8(value / 256)
+			}
+
+			if newAxisData[leftThumbAxisXIndex] < analogDeadzone && newAxisData[leftThumbAxisXIndex] > -analogDeadzone {
+				newAxisData[leftThumbAxisXIndex] = 0
+			}
+			if newAxisData[leftThumbAxisYIndex] < analogDeadzone && newAxisData[leftThumbAxisYIndex] > -analogDeadzone {
+				newAxisData[leftThumbAxisYIndex] = 0
+			}
+			if newAxisData[rightThumbAxisXIndex] < analogDeadzone && newAxisData[rightThumbAxisXIndex] > -analogDeadzone {
+				newAxisData[rightThumbAxisXIndex] = 0
+			}
+			if newAxisData[rightThumbAxisYIndex] < analogDeadzone && newAxisData[rightThumbAxisYIndex] > -analogDeadzone {
+				newAxisData[rightThumbAxisYIndex] = 0
+			}
+			if err == nil {
+				if slices.Equal(lastAxisData, newAxisData) && lastButtonData == state.Buttons {
+					continue
+				} else {
+					u.application.QueueEvent(NewJoyStickEvent(newAxisData, state.Buttons))
+					lastAxisData = slices.Clone(newAxisData)
+					lastButtonData = state.Buttons
+				}
+			} else {
+				js = nil
+			}
+		}
+		time.Sleep(updateRate)
+	}
+}
+
+func (u *UI) handleUnknownEvent(event tcell.Event) tcell.Event {
+	switch e := event.(type) {
+	case *EventJoy:
+		command := u.getCommandForJoystick(e)
+		u.executePlayerCommand(command)
+		u.Print(foundation.Msg(fmt.Sprintf("Joystick event: %v, %v", e.Buttons, e.AxisData)))
+	}
+	return event
+}
+
+func (u *UI) getCommandForJoystick(e *EventJoy) string {
+	if e.IsButtonDown(0) {
+		return "confirm"
+	}
+	return ""
+}
+
+func (u *UI) openPipBoy() {
+	pip := NewPipBoy()
+	u.pages.AddPanel("PipBoy", pip, true, true)
+	u.application.SetFocus(pip)
+	pip.SetOnClose(func() {
+		u.pages.HidePanel("PipBoy")
+		u.pages.SetCurrentPanel("main")
+		u.application.SetFocus(u.mapWindow)
+	})
+}
+
+func (u *UI) initAudio() {
+	go func() {
+		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "weapons"), "")
+		u.audioPlayer.LoadEnemyCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "enemies"))
+		u.audioPlayer.SoundsLoaded()
+	}()
+
+	u.animator.SetAudioCuePlayer(u.audioPlayer)
+}
+
+type EventJoy struct {
+	AxisData   []int8
+	Buttons    uint32
+	OccurredAt time.Time
+}
+
+func (e EventJoy) IsButtonReleased(index int) bool {
+	return e.Buttons&(1<<uint(index)) == 0
+}
+func (e EventJoy) IsButtonDown(index int) bool {
+	return e.Buttons&(1<<uint(index)) > 0
+}
+
+func (e EventJoy) When() time.Time {
+	return e.OccurredAt
+}
+
+func NewJoyStickEvent(data []int8, buttons uint32) tcell.Event {
+	return &EventJoy{
+		AxisData:   data,
+		Buttons:    buttons,
+		OccurredAt: time.Now(),
+	}
 }

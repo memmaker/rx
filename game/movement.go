@@ -60,12 +60,12 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	}
 
 	if actorAt, exists := g.gridMap.TryGetActorAt(newPos); exists {
-		g.playerAttack(actorAt)
+		g.playerMeleeAttack(actorAt)
 		return
 	}
 
 	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists && !objectAt.IsWalkable(g.Player) {
-		g.msg(foundation.Msg("You bump into something"))
+		objectAt.OnBump(g.Player)
 		return
 	}
 	direction = newPos.Sub(oldPos).ToDirection()

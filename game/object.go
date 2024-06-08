@@ -10,11 +10,30 @@ type Object struct {
 	category        foundation.ObjectCategory
 	onDamage        func() []foundation.Animation
 	onWalkOver      func() []foundation.Animation
+	isContainer     bool
+	containedItems  *[]foundation.ItemForUI
 	isAlive         bool
 	isDrawn         bool
 	isWalkable      bool
 	isHidden        bool
 	triggerOnDamage bool
+	onBump          func(actor *Actor)
+	name            string
+	isKnown         bool
+}
+
+func (b *Object) GetCategory() foundation.ObjectCategory {
+	if b.isContainer {
+		if b.isKnown {
+			if len(*b.containedItems) == 0 {
+				return foundation.ObjectKnownEmptyContainer
+			} else {
+				return foundation.ObjectKnownContainer
+			}
+		}
+		return foundation.ObjectUnknownContainer
+	}
+	return b.category
 }
 
 func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *Object {
@@ -34,6 +53,33 @@ func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *Object {
 	trap.SetOnWalkOver(triggerEffect)
 	trap.SetWalkable(true)
 	return trap
+}
+func (g *GameState) NewContainer(name string, items []*Item) *Object {
+	iui := itemsForUI(items)
+	container := NewObject(foundation.ObjectUnknownContainer)
+	container.isContainer = true
+	container.SetWalkable(false)
+	container.SetHidden(false)
+	itemsUI := &iui
+	container.containedItems = itemsUI
+	container.name = name
+
+	transferItem := func(itemTaken foundation.ItemForUI) {
+		for i, item := range *itemsUI {
+			if item == itemTaken {
+				*itemsUI = append((*itemsUI)[:i], (*itemsUI)[i+1:]...)
+				g.Player.GetInventory().Add(itemTaken.(*Item))
+				break
+			}
+		}
+	}
+	container.onBump = func(actor *Actor) {
+		if actor == g.Player {
+			g.msg(foundation.HiLite("You search %s", container.Name()))
+			g.ui.ShowContainer(container.Name(), itemsUI, transferItem)
+		}
+	}
+	return container
 }
 func NewObject(icon foundation.ObjectCategory) *Object {
 	return &Object{
@@ -109,9 +155,21 @@ func (b *Object) SetHidden(isHidden bool) {
 }
 
 func (b *Object) Name() string {
+	if b.name != "" {
+		return b.name
+	}
 	return b.category.String()
 }
 
 func (b *Object) IsTrap() bool {
 	return b.category.IsTrap()
+}
+
+func (b *Object) OnBump(actor *Actor) {
+	if b.onBump != nil {
+		b.onBump(actor)
+		if b.isContainer {
+			b.isKnown = true
+		}
+	}
 }

@@ -8,14 +8,10 @@ func (n EquipSlot) ToString() string {
 	switch n {
 	case SlotNameMainHand:
 		return "Wielding"
-	case SlotNameMissileLauncher:
-		return "Shooting"
 	case SlotNameOffHand:
 		return "Off Hand"
 	case SlotNameLightSource:
 		return "Light source"
-	case SlotNameOneHandedWeapon:
-		return "One Handed Weapon"
 	case SlotNameAmulet:
 		return "Around neck"
 	case SlotNameRing:
@@ -24,8 +20,6 @@ func (n EquipSlot) ToString() string {
 		return "On right hand"
 	case SlotNameRingLeft:
 		return "On left hand"
-	case SlotNameTwoHandedWeapon:
-		return "Two Handed Weapon"
 	case SlotNameArmorTorso:
 		return "On body"
 	case SlotNameArmorHead:
@@ -36,8 +30,6 @@ func (n EquipSlot) ToString() string {
 		return "On hands"
 	case SlotNameArmorBack:
 		return "On back"
-	case SlotNameQuiver:
-		return "Quivered"
 	}
 	return "Unknown"
 }
@@ -45,14 +37,6 @@ func (n EquipSlot) ToString() string {
 func (n EquipSlot) IsArmorSlot() bool {
 	switch n {
 	case SlotNameArmorTorso, SlotNameArmorHead, SlotNameArmorFeet, SlotNameArmorHands, SlotNameArmorBack, SlotNameShield:
-		return true
-	}
-	return false
-}
-
-func (n EquipSlot) IsWeaponSlot() bool {
-	switch n {
-	case SlotNameOneHandedWeapon, SlotNameTwoHandedWeapon, SlotNameMissileLauncher, SlotNameQuiver, SlotNameShield, SlotNameArmorHands:
 		return true
 	}
 	return false
@@ -70,13 +54,9 @@ const (
 	SlotNameArmorBack
 	SlotNameAmulet
 	SlotNameLightSource
-	SlotNameMissileLauncher
-	SlotNameQuiver
 
 	// On Items only
-	SlotNameOneHandedWeapon
 	SlotNameShield
-	SlotNameTwoHandedWeapon
 	SlotNameRing
 
 	// On Body only
@@ -89,18 +69,12 @@ const (
 func ItemSlotFromString(s string) EquipSlot {
 	s = strings.ToLower(strings.TrimSpace(s))
 	switch s {
-	case "missile_launcher":
-		return SlotNameMissileLauncher
 	case "light_source":
 		return SlotNameLightSource
-	case "one_handed_weapon":
-		return SlotNameOneHandedWeapon
 	case "amulet":
 		return SlotNameAmulet
 	case "ring":
 		return SlotNameRing
-	case "two_handed_weapon":
-		return SlotNameTwoHandedWeapon
 	case "torso":
 		return SlotNameArmorTorso
 	case "helmet":
@@ -111,8 +85,6 @@ func ItemSlotFromString(s string) EquipSlot {
 		return SlotNameArmorHands
 	case "cape":
 		return SlotNameArmorBack
-	case "quiver":
-		return SlotNameQuiver
 	}
 	panic("Invalid slot: " + s)
 	return SlotNameNotEquippable

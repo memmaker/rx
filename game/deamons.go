@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/special"
 )
 
 func (g *GameState) enemyMovement(playerTimeSpent int) {
@@ -28,7 +29,7 @@ func (g *GameState) enemyMovement(playerTimeSpent int) {
 	}
 }
 func (g *GameState) removeDeadAndApplyRegeneration() {
-	healInterval := 2 + (100 / g.Player.GetHealth())
+	healInterval := 2 + (100 / g.Player.charSheet.GetStat(special.Endurance))
 	hungerInterval := 300
 
 	g.Player.decrementStatusEffectCounters()
@@ -42,20 +43,20 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 	if turnsSinceEating%hungerInterval == 0 {
 		wasHungry := g.Player.IsHungry()
 		g.Player.GetFlags().Increment(foundation.FlagHunger)
-		if g.Player.IsHungry() && !wasHungry{
+		if g.Player.IsHungry() && !wasHungry {
 			g.msg(foundation.Msg("You are hungry."))
 		}
 	}
 
 	if g.Player.IsHungry() && turnsSinceEating%(healInterval*3) == 0 {
-		g.Player.LooseFatigue(1)
+		//g.Player.LooseActionPoints(1)
 	}
 
 	if !g.Player.IsHungry() && g.TurnsTaken%healInterval == 0 && len(g.playerVisibleEnemiesByDistance()) == 0 {
 		if g.Player.NeedsHealing() {
 			g.Player.Heal(1)
 		} else {
-			g.Player.AddFatiguePoints(1)
+			//g.Player.AddFatiguePoints(1)
 		}
 	}
 

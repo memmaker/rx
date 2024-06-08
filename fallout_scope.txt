@@ -1,0 +1,24 @@
+Fallout Core Features
+ - SPECIAL System
+   - Skill Applications
+ - Worldmap
+   - Random Encounters
+   - Travel
+ - Items & Actors
+   - Weapons
+   - Armor
+   - Consumables
+ - Containers
+ - Dialogue
+   - Reactions
+   - Terminals
+   - Checks / Triggers
+ - Quests
+ - Tactical Combat
+   - Melee
+   - Ranged (Aimed/Burst)
+   - Thrown
+   - Explosives
+   - Traps
+   - Critical Hits
+   - Enemy AI

@@ -1,59 +1,179 @@
 package game
 
 import (
-    "RogueUI/foundation"
-    "RogueUI/geometry"
-    "RogueUI/rpg"
-    "fmt"
-    "math/rand"
-    "strings"
+	"RogueUI/dice_curve"
+	"RogueUI/foundation"
+	"RogueUI/geometry"
+	"fmt"
+	"math/rand"
 )
 
-var NoModifiers []rpg.Modifier
+var NoModifiers []dice_curve.Modifier
+
+// MISC ACTIONS
+
+func (g *GameState) SwitchWeapons() {
+	equipment := g.Player.GetEquipment()
+	equipment.SwitchWeapons()
+}
+
+func (g *GameState) CycleTargetMode() {
+	equippedWeapon, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+	if !hasWeapon || !equippedWeapon.IsWeapon() {
+		g.msg(foundation.Msg("You have no weapon equipped"))
+		return
+	}
+	equippedWeapon.GetWeapon().CycleTargetMode()
+	g.ui.UpdateStats()
+}
 
 func (g *GameState) Wait() {
-	g.endPlayerTurn()
+	g.endPlayerTurn(10)
 }
 
-func (g *GameState) playerAttack(defender *Actor) {
-	consequences := g.actorMeleeAttack(g.Player, NoModifiers, defender, NoModifiers)
-	if !g.Player.HasFlag(foundation.FlagInvisible) {
-		defender.GetFlags().Set(foundation.FlagAwareOfPlayer)
+func (g *GameState) ReloadWeapon() {
+	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+	if !hasWeapon {
+		g.msg(foundation.Msg("You have no weapon equipped"))
+		return
 	}
-	g.ui.AddAnimations(consequences)
-	g.endPlayerTurn()
+	weaponPart := weapon.GetWeapon()
+	if weaponPart == nil {
+		g.msg(foundation.Msg("You have no weapon equipped"))
+		return
+	}
+	caliber := weaponPart.UsesAmmo()
+	if caliber == "" {
+		g.msg(foundation.Msg("This weapon does not use ammo"))
+		return
+	}
+	bulletsNeededForFullClip, ammoKindLoaded := weaponPart.BulletsNeededForFullClip()
+	if bulletsNeededForFullClip == 0 {
+		g.msg(foundation.Msg("This weapon needs no reloading"))
+		return
+	}
+	inventory := g.Player.GetInventory()
+	var ammo *Item
+	if ammoKindLoaded != "" && inventory.HasAmmo(caliber, ammoKindLoaded) {
+		ammo = inventory.RemoveAmmoByName(ammoKindLoaded, bulletsNeededForFullClip)
+	} else {
+		bulletsNeededForFullClip = weaponPart.GetMagazineSize()
+		ammo = inventory.RemoveAmmoByCaliber(caliber, bulletsNeededForFullClip)
+	}
+
+	if ammo == nil {
+		g.msg(foundation.Msg("You have no ammo for this weapon"))
+		return
+	}
+	unloadedAmmo := weaponPart.LoadAmmo(ammo)
+	if unloadedAmmo != nil {
+		inventory.Add(unloadedAmmo)
+	}
+	g.ui.UpdateStats()
+	g.ui.UpdateInventory()
 }
 
-func (g *GameState) playerMove(newPos geometry.Point) {
-	directConsequencesOfMove := g.actorMoveAnimated(g.Player, newPos)
+// ADDITIONAL MENUS
 
-	g.afterPlayerMoved()
-
-	g.ui.AddAnimations(directConsequencesOfMove)
-
-	g.endPlayerTurn()
+func (g *GameState) PlayerApplySkill() {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (g *GameState) startRangedAttackWithMissile(item *Item) {
-	g.ui.SelectTarget(g.Player.Position(), func(targetPos geometry.Point) {
-		g.actorRangedAttackWithMissile(g.Player, item, g.Player.Position(), targetPos)
+func (g *GameState) OpenTacticsMenu() {
+	var menuItems []foundation.MenuItem
+	/*
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name:       "Aimed Attack",
+			Action:     nil,
+			CloseMenus: true,
+		})
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name:       "All-Out Attack",
+			Action:     nil,
+			CloseMenus: true,
+		})
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name:       "All-Out Defense",
+			Action:     nil,
+			CloseMenus: true,
+		})
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name:       "Feint",
+			Action:     nil,
+			CloseMenus: true,
+		})
+
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name:       "Toggle Acrobatic Dodge",
+			Action:     nil,
+			CloseMenus: true,
+		})
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name:       "Defend & Retreat",
+			Action:     nil,
+			CloseMenus: true,
+		})
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name:       "Dive for cover",
+			Action:     nil,
+			CloseMenus: true,
+		})
+	*/
+
+	menuItems = append(menuItems, foundation.MenuItem{
+		Name: "Charge Attack",
+		Action: func() {
+			g.startZapEffect("charge_attack", nil)
+		},
+		CloseMenus: true,
 	})
+
+	charSheet := g.Player.GetCharSheet()
+	if charSheet.GetActionPoints() > 0 {
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: "Heroic Charge",
+			Action: func() {
+				if charSheet.GetActionPoints() > 0 {
+					payFatigue := func() {
+						charSheet.LooseActionPoints(1)
+					}
+					g.startZapEffect("heroic_charge", payFatigue)
+				} else {
+					g.msg(foundation.Msg("You are too fatigued to perform a heroic charge"))
+				}
+			},
+			CloseMenus: true,
+		})
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: "Start Sprinting",
+			Action: func() {
+				g.startSprint(g.Player)
+			},
+			CloseMenus: true,
+		})
+
+	}
+	g.ui.OpenMenu(menuItems)
 }
 
-func (g *GameState) startAimItem(item *Item) {
-	g.ui.SelectTarget(g.Player.Position(), func(targetPos geometry.Point) {
-		g.identification.SetCurrentItemInUse(item.GetInternalName())
+// ITEM MANAGEMENT & APPLICATION
+
+func (g *GameState) startZapItem(item *Item) {
+	g.ui.SelectTarget(func(targetPos geometry.Point, hitZone int) {
 		g.playerZapItemAndEndTurn(item, targetPos)
 	})
 }
-func (g *GameState) startAimZapEffect(zapEffectName string, payCost func()) {
-	g.ui.SelectTarget(g.Player.Position(), func(targetPos geometry.Point) {
+
+func (g *GameState) startZapEffect(zapEffectName string, payCost func()) {
+	g.ui.SelectTarget(func(targetPos geometry.Point, hitZone int) {
 		if payCost != nil {
 			payCost()
 		}
 		g.playerInvokeZapEffectAndEndTurn(zapEffectName, targetPos)
 	})
 }
+
 func (g *GameState) PlayerApplyItem(uiItem foundation.ItemForUI) {
 	itemStack, isItem := uiItem.(*InventoryStack)
 	if !isItem {
@@ -62,14 +182,15 @@ func (g *GameState) PlayerApplyItem(uiItem foundation.ItemForUI) {
 	item := itemStack.First()
 	g.playerUseOrZapItem(item)
 }
+
 func (g *GameState) playerUseOrZapItem(item *Item) {
 	if item.IsUsable() {
-		g.identification.SetCurrentItemInUse(item.GetInternalName())
 		g.actorUseItem(g.Player, item)
 	} else if item.IsZappable() {
-		g.startAimItem(item)
+		g.startZapItem(item)
 	}
 }
+
 func (g *GameState) actorUseItem(user *Actor, item *Item) {
 	useEffectName := item.GetUseEffectName()
 
@@ -87,270 +208,19 @@ func (g *GameState) actorUseItem(user *Actor, item *Item) {
 	g.ui.AddAnimations(consequencesOfEffect)
 
 	if user == g.Player {
-		if g.identification.CanBeIdentifiedByUsing(item.GetInternalName()) {
-			g.identification.IdentifyItem(item.GetInternalName())
-			g.ui.UpdateInventory()
-		}
 		if actionEndsTurn {
-			g.endPlayerTurn()
+			g.endPlayerTurn(10)
 		}
 	}
 }
 
-func useEffectExists(effectName string) bool {
-	_, exists := GetAllUseEffects()[effectName]
-	return exists
-}
 func (g *GameState) actorInvokeUseEffect(user *Actor, useEffectName string) (endsTurn bool, animations []foundation.Animation) {
 	if effect, exists := GetAllUseEffects()[useEffectName]; exists {
 		return effect(g, user)
 	}
 	return false, nil
 }
-func (g *GameState) actorMoveAnimated(actor *Actor, newPos geometry.Point) []foundation.Animation {
-	oldPos := actor.Position()
-	var moveAnims []foundation.Animation
-	if g.couldPlayerSeeActor(actor) && (g.canPlayerSee(newPos) || g.canPlayerSee(oldPos)) && actor != g.Player {
-		move := g.ui.GetAnimMove(actor, oldPos, newPos)
-		move.RequestMapUpdateOnFinish()
-		moveAnims = append(moveAnims, move)
-	}
-	moveAnims = append(moveAnims, g.actorMove(actor, newPos)...)
-	return moveAnims
-}
-func (g *GameState) couldPlayerSeeActor(actor *Actor) bool {
-	if actor.HasFlag(foundation.FlagInvisible) && !g.Player.HasFlag(foundation.FlagSeeInvisible) {
-		return false
-	}
 
-	return true
-}
-func (g *GameState) actorMove(actor *Actor, newPos geometry.Point) []foundation.Animation {
-	oldPos := actor.Position()
-	if oldPos == newPos {
-		return nil
-	}
-	g.gridMap.MoveActor(actor, newPos)
-	if actor.Position() == newPos {
-		return g.triggerTileEffectsAfterMovement(actor, oldPos, newPos)
-	}
-	return nil
-}
-
-type StairsInLevel int
-
-func (l StairsInLevel) AllowsUp() bool {
-	return l == StairsUpOnly || l == StairsBoth
-}
-func (l StairsInLevel) AllowsDown() bool {
-	return l == StairsDownOnly || l == StairsBoth
-}
-
-const (
-	StairsNone StairsInLevel = iota
-	StairsUpOnly
-	StairsDownOnly
-	StairsBoth
-)
-
-func (g *GameState) PlayerInteractWithMap() {
-	pos := g.Player.Position()
-	cell := g.gridMap.GetCell(pos)
-
-	isDescending := cell.TileType.IsStairsDown()
-	isAscending := cell.TileType.IsStairsUp()
-	if !isDescending && !isAscending {
-		g.msg(foundation.Msg("There are no stairs here"))
-		return
-	}
-	if isDescending && isAscending {
-		g.msg(foundation.Msg("There are both up and down stairs here."))
-		return
-	}
-
-	if isDescending {
-		g.PlayerTryDescend()
-	} else if isAscending {
-		g.PlayerTryAscend()
-	}
-}
-
-func (g *GameState) PlayerTryDescend() {
-	pos := g.Player.Position()
-	cell := g.gridMap.GetCell(pos)
-	stairs := StairsBoth
-	if cell.TileType.IsStairsDown() {
-		g.descendWithStairs(stairs)
-	}
-}
-
-func (g *GameState) PlayerTryAscend() {
-	pos := g.Player.Position()
-	cell := g.gridMap.GetCell(pos)
-	stairs := StairsBoth
-	if cell.TileType.IsStairsUp() {
-		if g.currentDungeonLevel == 1 {
-			if g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
-				g.gameWon()
-			} else {
-				g.msg(foundation.Msg("you are not leaving this place without that amulet."))
-			}
-		} else {
-			g.ascendWithStairs(stairs)
-			if !g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
-				if g.unstableStairs() {
-					if g.currentDungeonLevel < 26 {
-						stairs = StairsDownOnly
-					}
-					if rand.Intn(10) == 0 {
-						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall deep down."))
-						g.GotoDungeonLevel(g.currentDungeonLevel+2, stairs, true)
-					} else {
-						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall down."))
-						g.descendWithStairs(stairs)
-					}
-
-					return
-				}
-				g.ascensionsWithoutAmulet++
-				g.msg(foundation.Msg("you feel that the dungeon becomes unstable."))
-			}
-		}
-	}
-}
-func (g *GameState) Descend() {
-	g.descendWithStairs(StairsBoth)
-}
-
-func (g *GameState) descendWithStairs(stairs StairsInLevel) {
-	g.GotoDungeonLevel(g.currentDungeonLevel+1, stairs, true)
-}
-
-func (g *GameState) descendToRandomLocation() {
-	g.GotoDungeonLevel(g.currentDungeonLevel+1, StairsBoth, false)
-}
-
-func (g *GameState) Ascend() {
-	g.ascendWithStairs(StairsBoth)
-}
-
-func (g *GameState) ascendWithStairs(stairs StairsInLevel) {
-	if g.currentDungeonLevel == 0 {
-		return
-	}
-	if g.currentDungeonLevel == 1 {
-		g.currentDungeonLevel = 0
-		g.GotoNamedLevel("town")
-		g.gridMap.SetAllExplored()
-		g.gridMap.SetAllLit()
-	} else {
-		g.GotoDungeonLevel(g.currentDungeonLevel-1, stairs, true)
-	}
-}
-
-func (g *GameState) actorMeleeAttack(attacker *Actor, attackMod []rpg.Modifier, defender *Actor, defenseMod []rpg.Modifier) []foundation.Animation {
-	if !defender.IsAlive() {
-		return nil
-	}
-	var afterAttackAnimations []foundation.Animation
-
-	if attacker.HasFlag(foundation.FlagCanConfuse) {
-		attacker.GetFlags().Unset(foundation.FlagCanConfuse)
-		confuseAnim := confuse(g, defender)
-		afterAttackAnimations = append(afterAttackAnimations, confuseAnim...)
-		g.msg(foundation.HiLite("%s stops glowing red", attacker.Name()))
-	}
-
-	attackerMeleeSkill, attackerMeleeDamageDice := attacker.GetMelee(defender.GetInternalName())
-
-	defenseScore := defender.GetActiveDefenseScore()
-
-	attackerMeleeSkill, defenseScore = g.applyAttackAndDefenseMods(attackerMeleeSkill, attackMod, defenseScore, defenseMod)
-
-	if defender.HasFlag(foundation.FlagSleep) {
-		defenseScore = -1
-	}
-
-	outcome := rpg.Attack(attackerMeleeSkill, attackerMeleeDamageDice, defenseScore, defender.GetDamageResistance())
-
-	_, damageDone := outcome.TypeOfHit, outcome.DamageDone
-
-	for _, message := range outcome.String(attacker.Name(), defender.Name()) {
-		g.msg(foundation.Msg(message))
-	}
-
-	animAttackerIndicator := g.ui.GetAnimBackgroundColor(attacker.Position(), "VeryDarkGray", 4, nil)
-	afterAttackAnimations = append(afterAttackAnimations, animAttackerIndicator)
-
-	if outcome.IsHit() {
-		animDamage := g.damageActor(attacker.Name(), defender, damageDone)
-		//animAttack := g.ui.GetAnimAttack(attacker, defender) // currently no attack animation
-		afterAttackAnimations = append(afterAttackAnimations, animDamage...)
-		//animAttack.SetFollowUp(afterAttackAnimations)
-	} else {
-		animMiss := g.ui.GetAnimDamage(defender.Position(), 0, nil)
-		afterAttackAnimations = append(afterAttackAnimations, animMiss)
-	}
-
-	return afterAttackAnimations
-}
-
-func (g *GameState) applyAttackAndDefenseMods(attackerMeleeSkill int, attackMod []rpg.Modifier, defenseScore int, defenseMod []rpg.Modifier) (int, int) {
-	// apply situational modifiers
-	var attackModDescriptions []string
-	for _, mod := range rpg.FilterModifiers(attackMod) {
-		attackerMeleeSkill = mod.Apply(attackerMeleeSkill)
-		attackModDescriptions = append(attackModDescriptions, mod.Description())
-	}
-	var defenseModDescriptions []string
-	for _, mod := range rpg.FilterModifiers(defenseMod) {
-		defenseScore = mod.Apply(defenseScore)
-		defenseModDescriptions = append(defenseModDescriptions, mod.Description())
-	}
-	if len(attackModDescriptions) > 0 {
-		g.msg(foundation.HiLite("Attack modifiers\n%s", strings.Join(attackModDescriptions, "\n")))
-	}
-	if len(defenseModDescriptions) > 0 {
-		g.msg(foundation.HiLite("Defense modifiers\n%s", strings.Join(defenseModDescriptions, "\n")))
-	}
-	g.msg(foundation.Msg(fmt.Sprintf("Attacker Effective Skill: %d", attackerMeleeSkill)))
-	g.msg(foundation.Msg(fmt.Sprintf("Defender Effective Skill: %d", defenseScore)))
-	return attackerMeleeSkill, defenseScore
-}
-func (g *GameState) actorRangedAttack(attacker *Actor, attackMod []rpg.Modifier, defender *Actor, defenseMod []rpg.Modifier, missile *Item) []foundation.Animation {
-	if !defender.IsAlive() {
-		return nil
-	}
-
-	var rangedSkill int
-	var rangedDamage rpg.Dice
-
-	if attacker.IsLaunching(missile) {
-		launcher := attacker.GetEquipment().GetMissileLauncher()
-		rangedSkill, rangedDamage = attacker.GetRanged(defender.GetInternalName(), launcher, missile)
-	} else {
-		rangedSkill, rangedDamage = attacker.GetThrowing(defender.GetInternalName(), missile)
-	}
-
-	defenseScore := defender.GetActiveDefenseScore()
-
-	rangedSkill, defenseScore = g.applyAttackAndDefenseMods(rangedSkill, attackMod, defenseScore, defenseMod)
-
-	outcome := rpg.Attack(rangedSkill, rangedDamage, defenseScore, defender.GetDamageResistance())
-	_, damageDone := outcome.TypeOfHit, outcome.DamageDone
-
-	for _, message := range outcome.String(attacker.Name(), defender.Name()) {
-		g.msg(foundation.Msg(message))
-	}
-
-	var afterAttackAnimations []foundation.Animation
-
-	animDamage := g.damageActor(attacker.Name(), defender, damageDone)
-
-	afterAttackAnimations = append(afterAttackAnimations, animDamage...)
-
-	return afterAttackAnimations
-}
 func (g *GameState) PickupItem() {
 	inventory := g.Player.GetInventory()
 	if inventory.IsFull() {
@@ -394,7 +264,7 @@ func (g *GameState) actorDropItem(holder *Actor, item *Item) {
 	g.addItemToMap(item, holder.Position())
 	g.msg(foundation.HiLite("You dropped %s", item.Name()))
 	if holder == g.Player {
-		g.endPlayerTurn()
+		g.endPlayerTurn(g.Player.timeNeededForActions() / 2)
 	}
 }
 
@@ -403,78 +273,9 @@ func (g *GameState) inspectItem(item *Item) func() {
 		g.ui.OpenTextWindow([]string{"Item", item.name})
 	}
 }
-func (g *GameState) actorRangedAttackWithMissile(thrower *Actor, missile *Item, origin, targetPos geometry.Point) {
-	pathOfFlight := geometry.BresenhamLine(origin, targetPos, func(x, y int) bool {
-		if origin.X == x && origin.Y == y {
-			return true
-		}
-		return g.gridMap.IsCurrentlyPassable(geometry.Point{X: x, Y: y})
-	})
-	if len(pathOfFlight) > 1 {
-		// remove start
-		pathOfFlight = pathOfFlight[1:]
-	}
-	targetPos = pathOfFlight[len(pathOfFlight)-1]
-	if !g.gridMap.IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
-		targetPos = pathOfFlight[len(pathOfFlight)-2]
-	}
-	var onHitAnimations []foundation.Animation
 
-	g.removeItemFromInventory(thrower, missile)
+// EQUIP / UNEQUIP
 
-	g.addItemToMap(missile, targetPos)
-
-	throwAnim, _ := g.ui.GetAnimThrow(missile, origin, targetPos)
-
-	if g.gridMap.IsActorAt(targetPos) {
-		defender := g.gridMap.ActorAt(targetPos)
-		//isLaunch := thrower.IsLaunching(missile) // otherwise it's a throw
-		consequenceOfActorHit := g.actorRangedAttack(thrower, ModRangedDefault(thrower.Position(), defender), defender, NoModifiers, missile)
-		onHitAnimations = append(onHitAnimations, consequenceOfActorHit...)
-	} else if g.gridMap.IsObjectAt(targetPos) {
-		object := g.gridMap.ObjectAt(targetPos)
-		consequenceOfObjectHit := object.OnDamage()
-		onHitAnimations = append(onHitAnimations, consequenceOfObjectHit...)
-	}
-
-	if throwAnim != nil {
-		throwAnim.SetFollowUp(onHitAnimations)
-	}
-
-	g.ui.AddAnimations([]foundation.Animation{throwAnim})
-
-	if thrower == g.Player {
-		g.endPlayerTurn()
-	}
-}
-
-func ModRangedDefault(origin geometry.Point, target *Actor) []rpg.Modifier {
-	// TODO: Light
-	var attackMods []rpg.Modifier
-
-	// step 1. size modifier
-	sizeMod := target.GetSizeModifier()
-	if sizeMod != 0 {
-		attackMods = append(attackMods, ModFlat(sizeMod, "size"))
-	}
-
-	// step 2. range modifier
-	dist := geometry.Distance(origin, target.Position())
-	rangeUsed := int(dist)
-	distMod := rpg.GetDistanceModifier(rangeUsed)
-	if distMod != 0 {
-		attackMods = append(attackMods, ModFlat(distMod, fmt.Sprintf("range(%d)", rangeUsed)))
-	}
-
-	return attackMods
-}
-
-func OneAnimation(anim foundation.Animation) []foundation.Animation {
-	if anim == nil {
-		return nil
-	}
-	return []foundation.Animation{anim}
-}
 func (g *GameState) EquipToggle(uiItem foundation.ItemForUI) {
 	itemStack, isItem := uiItem.(*InventoryStack)
 	if !isItem {
@@ -502,9 +303,6 @@ func (g *GameState) EquipToggle(uiItem foundation.ItemForUI) {
 }
 
 func (g *GameState) actorEquipItem(wearer *Actor, item *Item) {
-	if item.IsRing() && !g.identification.IsItemIdentified(item.GetInternalName()) && g.identification.CanBeIdentifiedByUsing(item.GetInternalName()) {
-		g.identification.IdentifyItem(item.GetInternalName())
-	}
 	equipment := wearer.GetEquipment()
 	equipment.Equip(item)
 	if wearer == g.Player {
@@ -520,6 +318,7 @@ func (g *GameState) actorUnequipItem(wearer *Actor, item *Item) {
 	}
 }
 
+// SPECIAL INVENTORY INTERACTIONS
 
 func (g *GameState) ChooseItemForApply() {
 	inventory := g.GetFilteredInventory(func(item *Item) bool {
@@ -548,8 +347,6 @@ func (g *GameState) ChooseItemForApply() {
 		g.playerUseOrZapItem(item)
 	})
 }
-
-
 
 func (g *GameState) ChooseItemForDrop() {
 	inventory := g.GetFilteredInventory(func(item *Item) bool {
@@ -670,7 +467,7 @@ func (g *GameState) ChooseItemForZap() {
 			return
 		}
 		item := stack.First()
-		g.startAimItem(item)
+		g.startZapItem(item)
 		return
 
 	}
@@ -680,7 +477,7 @@ func (g *GameState) ChooseItemForZap() {
 			return
 		}
 		item := stack.First()
-		g.startAimItem(item)
+		g.startZapItem(item)
 	})
 }
 
@@ -804,7 +601,7 @@ func (g *GameState) ChooseArmorToTakeOff() {
 		return
 	}
 	if len(wornArmor) == 1 {
-		stack, isStack :=  wornArmor[0].(*InventoryStack)
+		stack, isStack := wornArmor[0].(*InventoryStack)
 		if !isStack {
 			return
 		}
@@ -831,7 +628,7 @@ func (g *GameState) ChooseRingToRemove() {
 		return
 	}
 	if len(wornRings) == 1 {
-		stack, isStack :=  wornRings[0].(*InventoryStack)
+		stack, isStack := wornRings[0].(*InventoryStack)
 		if !isStack {
 			return
 		}
@@ -847,4 +644,160 @@ func (g *GameState) ChooseRingToRemove() {
 		item := stack.First()
 		g.actorUnequipItem(g.Player, item)
 	})
+}
+
+// ASCEND / DESCEND
+
+type StairsInLevel int
+
+func (l StairsInLevel) AllowsUp() bool {
+	return l == StairsUpOnly || l == StairsBoth
+}
+func (l StairsInLevel) AllowsDown() bool {
+	return l == StairsDownOnly || l == StairsBoth
+}
+
+const (
+	StairsNone StairsInLevel = iota
+	StairsUpOnly
+	StairsDownOnly
+	StairsBoth
+)
+
+func (g *GameState) PlayerInteractWithMap() {
+	pos := g.Player.Position()
+	cell := g.gridMap.GetCell(pos)
+
+	isDescending := cell.TileType.IsStairsDown()
+	isAscending := cell.TileType.IsStairsUp()
+	if !isDescending && !isAscending {
+		g.msg(foundation.Msg("There are no stairs here"))
+		return
+	}
+	if isDescending && isAscending {
+		g.msg(foundation.Msg("There are both up and down stairs here."))
+		return
+	}
+
+	if isDescending {
+		g.PlayerTryDescend()
+	} else if isAscending {
+		g.PlayerTryAscend()
+	}
+}
+
+func (g *GameState) PlayerTryDescend() {
+	pos := g.Player.Position()
+	cell := g.gridMap.GetCell(pos)
+	stairs := StairsBoth
+	if cell.TileType.IsStairsDown() {
+		g.descendWithStairs(stairs)
+	}
+}
+
+func (g *GameState) PlayerTryAscend() {
+	pos := g.Player.Position()
+	cell := g.gridMap.GetCell(pos)
+	stairs := StairsBoth
+	if cell.TileType.IsStairsUp() {
+		if g.currentDungeonLevel == 1 {
+			if g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
+				g.gameWon()
+			} else {
+				g.msg(foundation.Msg("you are not leaving this place without that amulet."))
+			}
+		} else {
+			g.ascendWithStairs(stairs)
+			if !g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
+				if g.unstableStairs() {
+					if g.currentDungeonLevel < 26 {
+						stairs = StairsDownOnly
+					}
+					if rand.Intn(10) == 0 {
+						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall deep down."))
+						g.GotoDungeonLevel(g.currentDungeonLevel+2, stairs, true)
+					} else {
+						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall down."))
+						g.descendWithStairs(stairs)
+					}
+
+					return
+				}
+				g.ascensionsWithoutAmulet++
+				g.msg(foundation.Msg("you feel that the dungeon becomes unstable."))
+			}
+		}
+	}
+}
+func (g *GameState) Descend() {
+	g.descendWithStairs(StairsBoth)
+}
+
+func (g *GameState) descendWithStairs(stairs StairsInLevel) {
+	g.GotoDungeonLevel(g.currentDungeonLevel+1, stairs, true)
+}
+
+func (g *GameState) descendToRandomLocation() {
+	g.GotoDungeonLevel(g.currentDungeonLevel+1, StairsBoth, false)
+}
+
+func (g *GameState) Ascend() {
+	g.ascendWithStairs(StairsBoth)
+}
+
+func (g *GameState) ascendWithStairs(stairs StairsInLevel) {
+	if g.currentDungeonLevel == 0 {
+		return
+	}
+	if g.currentDungeonLevel == 1 {
+		g.currentDungeonLevel = 0
+		g.GotoNamedLevel("town")
+		g.gridMap.SetAllExplored()
+		g.gridMap.SetAllLit()
+	} else {
+		g.GotoDungeonLevel(g.currentDungeonLevel-1, stairs, true)
+	}
+}
+
+// HELPER STUFF
+
+func ModRangedDefault(origin geometry.Point, target *Actor) []dice_curve.Modifier {
+	// TODO: Light
+	var attackMods []dice_curve.Modifier
+
+	// step 1. size modifier
+	sizeMod := target.GetSizeModifier()
+	if sizeMod != 0 {
+		attackMods = append(attackMods, ModFlat(sizeMod, "size"))
+	}
+
+	// step 2. range modifier
+	dist := geometry.Distance(origin, target.Position())
+	rangeUsed := int(dist)
+	distMod := dice_curve.GetDistanceModifier(rangeUsed)
+	if distMod != 0 {
+		attackMods = append(attackMods, ModFlat(distMod, fmt.Sprintf("range(%d)", rangeUsed)))
+	}
+
+	return attackMods
+}
+
+func OneAnimation(anim foundation.Animation) []foundation.Animation {
+	if anim == nil {
+		return nil
+	}
+	return []foundation.Animation{anim}
+}
+
+func useEffectExists(effectName string) bool {
+	_, exists := GetAllUseEffects()[effectName]
+	return exists
+}
+
+func (g *GameState) couldPlayerSeeActor(actor *Actor) bool {
+	if actor.HasFlag(foundation.FlagInvisible) && !g.Player.HasFlag(foundation.FlagSeeInvisible) {
+		return false
+	}
+
+	return true
 }

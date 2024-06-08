@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"RogueUI/rpg"
 )
 
 type Equipment struct {
@@ -18,10 +18,15 @@ func NewEquipment() *Equipment {
 
 func (e *Equipment) IsEquipped(item *Item) bool {
 	slotName := item.SlotName()
-	if slotName == foundation.SlotNameTwoHandedWeapon || slotName == foundation.SlotNameOneHandedWeapon {
-		slotName = foundation.SlotNameMainHand
-	}
 
+	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
+		if slotItem, exists := e.slots[foundation.SlotNameMainHand]; exists && slotItem == item {
+			return true
+		}
+		if slotItem, exists := e.slots[foundation.SlotNameOffHand]; exists && slotItem == item {
+			return true
+		}
+	}
 	if slotName == foundation.SlotNameRing {
 		if slotItem, exists := e.slots[foundation.SlotNameRingLeft]; exists && slotItem == item {
 			return true
@@ -39,14 +44,13 @@ func (e *Equipment) IsEquipped(item *Item) bool {
 func (e *Equipment) Equip(item *Item) {
 	defer e.changed()
 	slotName := item.SlotName()
-	if slotName == foundation.SlotNameTwoHandedWeapon {
-		e.slots[foundation.SlotNameMainHand] = item
-		delete(e.slots, foundation.SlotNameOffHand)
-		return
-	}
-
-	if slotName == foundation.SlotNameOneHandedWeapon {
-		e.slots[foundation.SlotNameMainHand] = item
+	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
+		_, hasOffHandItem := e.slots[foundation.SlotNameOffHand]
+		if !hasOffHandItem {
+			e.slots[foundation.SlotNameOffHand] = item
+		} else {
+			e.slots[foundation.SlotNameMainHand] = item
+		}
 		return
 	}
 
@@ -67,14 +71,17 @@ func (e *Equipment) Equip(item *Item) {
 func (e *Equipment) UnEquip(item *Item) {
 	defer e.changed()
 	slotName := item.SlotName()
-	if slotName == foundation.SlotNameTwoHandedWeapon {
-		e.unEquipBySlot(foundation.SlotNameMainHand)
-		e.unEquipBySlot(foundation.SlotNameOffHand)
-		return
+	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
+		if slotItem, exists := e.slots[foundation.SlotNameMainHand]; exists && slotItem == item {
+			e.unEquipBySlot(foundation.SlotNameMainHand)
+			return
+		}
+		if slotItem, exists := e.slots[foundation.SlotNameOffHand]; exists && slotItem == item {
+			e.unEquipBySlot(foundation.SlotNameOffHand)
+			return
+		}
 	}
-	if slotName == foundation.SlotNameOneHandedWeapon {
-		slotName = foundation.SlotNameMainHand
-	}
+
 	if slotName == foundation.SlotNameRing {
 		if slotItem, exists := e.slots[foundation.SlotNameRingLeft]; exists && slotItem == item {
 			e.unEquipBySlot(foundation.SlotNameRingLeft)
@@ -97,39 +104,6 @@ func (e *Equipment) GetBySlot(hand foundation.EquipSlot) *Item {
 	return e.slots[hand]
 }
 
-type AttackType int
-
-const (
-	MeleeAttack AttackType = iota
-	RangedAttack
-)
-
-func (e *Equipment) GetMainWeapon(attackType AttackType) *Item {
-	isCorrectWeaponType := func(item *Item) bool {
-		if attackType == MeleeAttack {
-			return item.IsMeleeWeapon()
-		}
-		if attackType == RangedAttack {
-			return item.IsRangedWeapon()
-		}
-		return false
-	}
-	if mainHand, exists := e.slots[foundation.SlotNameMainHand]; exists && isCorrectWeaponType(mainHand) {
-		return mainHand
-	}
-	if ranged, exists := e.slots[foundation.SlotNameMissileLauncher]; exists && isCorrectWeaponType(ranged) {
-		return ranged
-	}
-	if twoHanded, exists := e.slots[foundation.SlotNameTwoHandedWeapon]; exists && isCorrectWeaponType(twoHanded) {
-		return twoHanded
-	}
-	if offHand, exists := e.slots[foundation.SlotNameOffHand]; exists && isCorrectWeaponType(offHand) {
-		return offHand
-	}
-
-	return nil
-}
-
 func (e *Equipment) GetArmor() []*Item {
 	var armor []*Item
 	for _, item := range e.slots {
@@ -140,7 +114,6 @@ func (e *Equipment) GetArmor() []*Item {
 	return armor
 
 }
-
 
 func (e *Equipment) CanEquip(item *Item) bool {
 	toBeReplaced := e.GetItemsToReplace(item)
@@ -153,25 +126,20 @@ func (e *Equipment) CanEquip(item *Item) bool {
 }
 func (e *Equipment) GetItemsToReplace(item *Item) []*Item {
 	var items []*Item
-	if item.SlotName() == foundation.SlotNameOffHand {
-		mainHandItem, hasItemInMainHand := e.slots[foundation.SlotNameMainHand]
-		if hasItemInMainHand && mainHandItem.IsTwoHandedWeapon() {
-			items = appendIfNotNil(items, e.slots[foundation.SlotNameMainHand])
-			items = appendIfNotNil(items, e.slots[foundation.SlotNameOffHand])
+	if item.SlotName() == foundation.SlotNameOffHand || item.SlotName() == foundation.SlotNameMainHand {
+		_, hasItemInMainHand := e.slots[foundation.SlotNameMainHand]
+		_, hasItemInOffHand := e.slots[foundation.SlotNameOffHand]
+
+		if !hasItemInOffHand {
 			return items
 		}
-		items = appendIfNotNil(items, e.slots[foundation.SlotNameOffHand])
-		return items
-	}
-	if item.SlotName() == foundation.SlotNameTwoHandedWeapon {
-		items = appendIfNotNil(items, e.slots[foundation.SlotNameMainHand])
-		items = appendIfNotNil(items, e.slots[foundation.SlotNameOffHand])
-		return items
-	}
-	if item.SlotName() == foundation.SlotNameOneHandedWeapon {
+		if !hasItemInMainHand {
+			return items
+		}
 		items = appendIfNotNil(items, e.slots[foundation.SlotNameMainHand])
 		return items
 	}
+
 	if item.SlotName() == foundation.SlotNameRing {
 		if e.isOneSlotAvailable(foundation.SlotNameRingLeft, foundation.SlotNameRingRight) {
 			return items
@@ -197,15 +165,14 @@ func appendIfNotNil(items []*Item, item *Item) []*Item {
 	return items
 }
 
-func (e *Equipment) HasMissileLauncherEquipped() bool {
-	slotMain := e.GetBySlot(foundation.SlotNameMissileLauncher)
+func (e *Equipment) HasRangedWeaponEquipped() bool {
+	slotMain := e.GetBySlot(foundation.SlotNameMainHand)
 	return slotMain != nil && slotMain.IsRangedWeapon()
 }
 
 func (e *Equipment) HasMeleeWeaponEquipped() bool {
 	slotMain := e.GetBySlot(foundation.SlotNameMainHand)
-	slotOff := e.GetBySlot(foundation.SlotNameOffHand)
-	return (slotMain != nil && slotMain.IsMeleeWeapon()) || (slotOff != nil && slotOff.IsMeleeWeapon())
+	return slotMain != nil && slotMain.IsMeleeWeapon()
 }
 
 func (e *Equipment) AllItems() []*Item {
@@ -223,19 +190,6 @@ func (e *Equipment) GetSlot(item *Item) foundation.EquipSlot {
 		}
 	}
 	return foundation.SlotNameNotEquippable
-}
-
-func (e *Equipment) HasThrowableQuivered() bool {
-	slot := e.GetBySlot(foundation.SlotNameQuiver)
-	return slot != nil && slot.IsThrowable()
-}
-
-func (e *Equipment) GetNextQuiveredThrowable() *Item {
-	slot := e.GetBySlot(foundation.SlotNameQuiver)
-	if slot == nil {
-		return nil
-	}
-	return slot
 }
 
 func (e *Equipment) HasWeaponEquipped() bool {
@@ -284,14 +238,14 @@ func (e *Equipment) ContainsFlag(flag foundation.ActorFlag) bool {
 	return false
 }
 
-func (e *Equipment) GetStatModifier(stat rpg.Stat) int {
+func (e *Equipment) GetStatModifier(stat dice_curve.Stat) int {
 	modifier := 0
 	for _, item := range e.slots {
 		modifier += item.GetStatBonus(stat)
 	}
 	return modifier
 }
-func (e *Equipment) GetSkillModifier(skill rpg.SkillName) int {
+func (e *Equipment) GetSkillModifier(skill dice_curve.SkillName) int {
 	modifier := 0
 	for _, item := range e.slots {
 		modifier += item.GetSkillBonus(skill)
@@ -299,43 +253,13 @@ func (e *Equipment) GetSkillModifier(skill rpg.SkillName) int {
 	return modifier
 }
 
-func (e *Equipment) GetEncumbranceFromArmor() rpg.Encumbrance {
+func (e *Equipment) GetEncumbranceFromArmor() int {
 	armor := e.GetBySlot(foundation.SlotNameArmorTorso)
-	encumbrance := rpg.EncumbranceNone
+	encumbrance := 0
 	if armor != nil {
 		encumbrance = armor.GetArmor().GetEncumbrance()
 	}
 	return encumbrance
-}
-
-func (e *Equipment) GetMissileLauncher() *Item {
-	return e.GetBySlot(foundation.SlotNameMissileLauncher)
-}
-
-func (e *Equipment) HasMissileLauncherEquippedForMissile(missile *WeaponInfo) bool {
-	launcher := e.GetMissileLauncher()
-	if launcher == nil {
-		return false
-	}
-	return missile.IsLaunchedWith(launcher.GetWeapon().GetWeaponType())
-}
-
-func (e *Equipment) GetNextQuiveredMissile() *Item {
-	slot := e.GetBySlot(foundation.SlotNameQuiver)
-	if slot == nil {
-		return nil
-	}
-	return slot
-}
-
-func (e *Equipment) HasMissileQuivered() bool {
-	slot := e.GetBySlot(foundation.SlotNameQuiver)
-	return slot != nil && slot.IsMissile()
-}
-
-func (e *Equipment) IsQuiveredItem(item *Item) bool {
-	slot := e.GetBySlot(foundation.SlotNameQuiver)
-	return slot == item
 }
 
 func (e *Equipment) AfterTurn() {
@@ -354,4 +278,30 @@ func (e *Equipment) GetAllFlags() map[foundation.ActorFlag]int {
 		flags[itemFlags] = 1
 	}
 	return flags
+}
+
+func (e *Equipment) GetMainHandItem() (*Item, bool) {
+	item, exists := e.slots[foundation.SlotNameMainHand]
+	return item, exists
+}
+
+func (e *Equipment) SwitchWeapons() {
+	mainHand := e.GetBySlot(foundation.SlotNameMainHand)
+	offHand := e.GetBySlot(foundation.SlotNameOffHand)
+	e.slots[foundation.SlotNameMainHand] = offHand
+	e.slots[foundation.SlotNameOffHand] = mainHand
+	e.changed()
+}
+
+func (e *Equipment) GetMeleeWeapon() (*Item, bool) {
+	item, exists := e.slots[foundation.SlotNameMainHand]
+	if exists && item.IsMeleeWeapon() {
+		return item, true
+	}
+	offHand, exists := e.slots[foundation.SlotNameOffHand]
+	if exists && offHand.IsMeleeWeapon() {
+		return offHand, true
+	}
+	return nil, false
+
 }

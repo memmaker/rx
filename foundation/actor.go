@@ -17,4 +17,5 @@ type ActorForUI interface {
 	HasFlag(held ActorFlag) bool
 	GetDetailInfo() []string
 	GetInternalName() string
+	GetBodyPartByIndex(part int) string
 }

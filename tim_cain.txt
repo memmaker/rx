@@ -1,0 +1,37 @@
+Thoughts on Fallout
+ - Choice & Consequence
+ - NPCs should not block paths ("Prod")
+ - Management of Companions & their Equipment
+ - The pacifist "Abbey of Lost Knowledge" (hommage to "A Canticle for Leibowitz")
+   - Preservers of Knowledge
+   - At odds with the goals of the Brotherhood of Steel
+   - Place to do research
+   - Quests for finding blueprints, text books, etc.
+ - Make the map fully explorable & procedurally generated
+   - Ruins
+   - Caves
+   - Freeways
+   - Roads
+   - Towns
+   - Vaults
+ - Creatures should respawn nearly everywhere
+   - Make it organically, certain groups come in and take over
+ - Have NPCs react to armor, weapons, companions, past actions, etc.
+   - Unique reactions for NPCs (clothing vendor and not wearing pants)
+ - The map itself should change over time, depending on your actions
+ - Endslides should include all long-term consequences
+ - Charisma should be more important
+   - NPC reactions
+   - Follower count
+   - Barter prices
+ - Clean up skills
+   - Doctor & First aid -> Medicine
+ - Traits more balanced
+   - No gifted trait
+ - Context actions for items in Quick Slot
+ - Have "Take all" button
+ - All Skills equally useful
+ - Simple junk selling
+ - Environmental storytelling
+ - Don't force level ups
+ - Allow Perks to broaden the application of skills

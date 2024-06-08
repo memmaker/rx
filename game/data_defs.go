@@ -1,9 +1,9 @@
 package game
 
 import (
+	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/recfile"
-	"RogueUI/rpg"
 	"RogueUI/util"
 	"fmt"
 	"math/rand"
@@ -99,17 +99,13 @@ func GetDataDefinitions(rootDir string) DataDefinitions {
 }
 
 func (d DataDefinitions) PickItemForLevel(random *rand.Rand, level int) ItemDef {
-	allCategories := []foundation.ItemCategory{
-		foundation.ItemCategoryGold,
-		foundation.ItemCategoryFood,
-		foundation.ItemCategoryWeapons,
-		foundation.ItemCategoryArmor,
-		foundation.ItemCategoryScrolls,
-		foundation.ItemCategoryPotions,
-		foundation.ItemCategoryWands,
-		foundation.ItemCategoryRings,
+	var allCategories []foundation.ItemCategory
+	for category, defs := range d.Items {
+		if len(defs) == 0 {
+			continue
+		}
+		allCategories = append(allCategories, category)
 	}
-
 	randomCategory := allCategories[random.Intn(len(allCategories))]
 
 	if randomCategory == foundation.ItemCategoryGold {
@@ -117,7 +113,7 @@ func (d DataDefinitions) PickItemForLevel(random *rand.Rand, level int) ItemDef 
 			Name:         "gold",
 			InternalName: "gold",
 			Category:     foundation.ItemCategoryGold,
-			Charges:      rpg.NewDice(min(10, level+1), 10, 0),
+			Charges:      dice_curve.NewDice(min(10, level+1), 10, 0),
 		}
 	}
 	items := d.Items[randomCategory]

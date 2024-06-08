@@ -11,10 +11,17 @@ type BaseAnimation struct {
 	done                func()
 	calledDone          bool
 	requestMapUpdate    bool
+	audioCue            string
 }
 
 func (p *BaseAnimation) Cancel() {
 	p.onFinishedOrCancelled()
+}
+func (p *BaseAnimation) GetAudioCue() string {
+	return p.audioCue
+}
+func (p *BaseAnimation) SetAudioCue(cueName string) {
+	p.audioCue = cueName
 }
 func (p *BaseAnimation) IsRequestingMapStateUpdate() bool {
 	return p.requestMapUpdate

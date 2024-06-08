@@ -1,9 +1,9 @@
 package console
 
 import (
+	"RogueUI/cview"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
-	"code.rocketnine.space/tslocum/cview"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"image/color"

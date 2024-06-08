@@ -8,7 +8,7 @@ package geometry
 // license that can be found in the LICENSE file.
 
 // pqInit establishes the heap invariants required by the other routines in this file.
-// Init is idempotent with respect to the heap invariants
+// init is idempotent with respect to the heap invariants
 // and may be called whenever the heap invariants may have been invalidated.
 // The complexity is O(n) where n = h.Len().
 func pqInit(h *priorityQueue) {

@@ -1,0 +1,25 @@
+security: none
+
+# main
+
+[opt]
+Quit
+[/opt]
+
+
+
+-> Checks
+CheckFlags
+CheckInventory
+CheckSkill & CheckStat
+
+
+-> Effects
+SetFlags / IncFlags / DecFlags
+AddToInventory
+AddSkill & AddStat
+TriggerEvent
+EndConversation
+EndConversationWithCombat
+TransitionToTrading
+GoToLocation

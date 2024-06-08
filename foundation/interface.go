@@ -2,13 +2,12 @@ package foundation
 
 import (
 	"RogueUI/geometry"
-	"RogueUI/rpg"
 	"RogueUI/util"
 )
 
 // Actions that the User Interface can trigger on the game
 type GameForUI interface {
-	// Init
+	// init
 
 	UIReady()
 
@@ -25,9 +24,15 @@ type GameForUI interface {
 	EquipToggle(item ItemForUI)
 	DropItem(item ItemForUI)
 	PlayerApplyItem(item ItemForUI)
-	AimedShot()
-	QuickShot()
 	Wait()
+
+	PlayerRangedAttack()
+	PlayerQuickRangedAttack()
+
+	ReloadWeapon()
+	SwitchWeapons()
+	CycleTargetMode()
+	PlayerApplySkill()
 
 	PlayerInteractWithMap() // up/down stairs..
 	PlayerTryDescend()
@@ -38,6 +43,9 @@ type GameForUI interface {
 	// State Queries
 	GetPlayerPosition() geometry.Point
 	GetCharacterSheet() []string
+
+	GetBodyPartsAndHitChances(targeted ActorForUI) []util.Tuple[string, int]
+	GetRangedHitChance(target ActorForUI) int
 
 	GetHudStats() map[HudValue]int
 	GetHudFlags() map[ActorFlag]int
@@ -56,20 +64,13 @@ type GameForUI interface {
 	OpenInventory()
 	ChooseItemForDrop()
 	ChooseItemForThrow()
-	ChooseItemForQuaff()
 	ChooseItemForEat()
-	ChooseItemForRead()
-	ChooseItemForZap()
-	ChooseItemForUse()
 	ChooseItemForApply()
-	ChooseItemForMissileLaunch()
 
 	ChooseWeaponForWield()
 	ChooseArmorForWear()
-	ChooseRingToPutOn()
 
 	ChooseArmorToTakeOff()
-	ChooseRingToRemove()
 
 	IsEquipped(item ItemForUI) bool
 
@@ -85,18 +86,17 @@ type GameForUI interface {
 
 	MapAt(loc geometry.Point) TileType
 	ItemAt(loc geometry.Point) ItemForUI
-	ObjectAt(loc geometry.Point) ObjectCategory
+	ObjectAt(loc geometry.Point) ObjectForUI
 	ActorAt(loc geometry.Point) ActorForUI
 
 	// Level up choices
-	IncreaseAttributeLevel(stat rpg.Stat)
-	IncreaseSkillLevel(skill rpg.SkillName)
 
 	// Wizard
 	Descend()
 	Ascend()
 	OpenWizardMenu()
 	GetRandomEnemyName() string
+	GetItemInMainHand() (ItemForUI, bool)
 }
 
 type PlayerMoveMode int
@@ -115,7 +115,7 @@ type MoveInfo struct {
 
 // Actions that the game can trigger on the User Interface
 type GameUI interface {
-	// Init
+	// init
 	SetGame(game GameForUI)
 	StartGameLoop()
 	InitDungeonUI()
@@ -127,7 +127,9 @@ type GameUI interface {
 	UpdateVisibleEnemies()
 
 	// Targeting
-	SelectTarget(origin geometry.Point, onSelected func(targetPos geometry.Point))
+	SelectTarget(onSelected func(targetPos geometry.Point, hitZone int))
+	SelectDirection(onSelected func(direction geometry.CompassDirection))
+	SelectBodyPart(onSelected func(victim ActorForUI, hitZone int))
 
 	// Menus / Modals / Windows
 	OpenInventoryForManagement(stack []ItemForUI)
@@ -137,6 +139,7 @@ type GameUI interface {
 	OpenMenu(actions []MenuItem)
 	OpenVendorMenu(itemsForSale []util.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
+	ShowContainer(name string, containedItems *[]ItemForUI, transfer func(ui ItemForUI))
 
 	// Auto Move Callback
 	AfterPlayerMoved(moveInfo MoveInfo)
@@ -171,12 +174,16 @@ type GameUI interface {
 	GetAnimBackgroundColor(position geometry.Point, colorName string, frameCount int, done func()) Animation
 	GetAnimAppearance(actor ActorForUI, position geometry.Point, done func()) Animation
 	GetAnimWakeUp(position geometry.Point, done func()) Animation
+	GetAnimEvade(defender ActorForUI, done func()) Animation
+
+	PlayMusic(fileName string)
 }
 
 type Animation interface {
 	IsDone() bool
 	SetFollowUp([]Animation)
 	RequestMapUpdateOnFinish()
+	SetAudioCue(cueName string)
 }
 
 type MenuItem struct {
@@ -253,3 +260,8 @@ const (
 	TileVendorArmor                            = "TileVendorArmor"
 	TileVendorAlchemist                        = "TileVendorAlchemist"
 )
+
+type CheckResult struct {
+	Success bool
+	Crit    bool
+}

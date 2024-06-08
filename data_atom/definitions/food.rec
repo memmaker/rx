@@ -1,0 +1,9 @@
+name: ration of food
+internal_name: food_ration
+category: food
+use_effect: satiate_fully
+
+name: stimpak
+internal_name: stimpak
+category: food
+use_effect: satiate_fully

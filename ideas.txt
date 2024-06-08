@@ -114,9 +114,25 @@ My House.WAD RL
 
 Post Apocalyptic Oregon Trail
 
+Multi-World
+ - Start in rogue game, which is really a holo-deck style simulation.
+ - Breaking the sim leads to a derelict space station.
+ - Find a way to escape the space station leads to a post-apocalyptic world.
 
 Missing Roguelikes
  - Cyberpunk
- - Fallout
+ - Fallout RL
+   - Use tactical combat from FO1/2
+   - Use lockpicking & hacking minigames from FO4
+   - Use weapon mods from FO4
+   - Use power armor concept from FO4, but add tethered armor
+   - Repair Items with the same item
+   - No Synths, No Ghosts, No Aliens
+   - Radiation hearable & visible and reduces max HP
+   - S: Base skill unarmed & melee, hit points, melee damage, carry amount, str. req cth reduction, throw range
+   - P:
+
+
+
  - Super Heroes
  - Pirates

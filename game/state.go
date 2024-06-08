@@ -1,11 +1,13 @@
 package game
 
 import (
+	"RogueUI/dice_curve"
 	"RogueUI/dungen"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
 	"RogueUI/gridmap"
-	"RogueUI/rpg"
+	"RogueUI/recfile"
+	"RogueUI/special"
 	"RogueUI/util"
 	"cmp"
 	"encoding/gob"
@@ -14,6 +16,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path"
 	"slices"
 	"time"
 )
@@ -50,7 +53,6 @@ type GameState struct {
 	showEverything        bool
 	playerName            string
 	dataDefinitions       DataDefinitions
-	identification        *IdentificationKnowledge
 	afterAnimationActions []func()
 
 	playerFoV               *geometry.FOV
@@ -62,31 +64,32 @@ type GameState struct {
 	ascensionsWithoutAmulet int
 }
 
+func (g *GameState) GetRangedHitChance(target foundation.ActorForUI) int {
+	defender := target.(*Actor)
+	var posInfos special.PosInfo
+	posInfos.ObstacleCount = 0
+	posInfos.Distance = g.gridMap.MoveDistance(g.Player.Position(), defender.Position())
+	posInfos.IlluminationPenalty = 0
+	equippedWeapon, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+	if !hasWeapon || !equippedWeapon.IsRangedWeapon() {
+		return 0
+	}
+	weaponSkill := equippedWeapon.GetWeapon().GetSkillUsed()
+	return special.RangedChanceToHit(posInfos, g.Player.GetCharSheet(), weaponSkill, defender.GetCharSheet(), special.Body)
+}
+
+func (g *GameState) GetItemInMainHand() (foundation.ItemForUI, bool) {
+	return g.Player.GetEquipment().GetMainHandItem()
+}
+
+func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []util.Tuple[string, int] {
+	victim := targeted.(*Actor)
+	attackerSkill, defenderSkill := 0, 0 // TODO
+	return victim.GetBodyPartsAndHitChances(attackerSkill, defenderSkill)
+}
+
 func (g *GameState) GetRandomEnemyName() string {
 	return g.dataDefinitions.RandomMonsterDef().Name
-}
-
-func (g *GameState) IncreaseSkillLevel(skill rpg.SkillName) {
-	if g.Player.charSheet.HasCharPointsLeft() {
-		g.Player.charSheet.IncreaseSkillLevel(skill)
-	} else {
-		g.msg(foundation.Msg("You have no more character points to spend"))
-	}
-
-	g.updateUIStatus()
-}
-
-func (g *GameState) IncreaseAttributeLevel(stat rpg.Stat) {
-	if stat == rpg.FatiguePoints && g.Player.charSheet.GetLevelAdjustments(rpg.FatiguePoints) >= 7 {
-		g.msg(foundation.Msg("You cannot increase your fatigue points any further"))
-		return
-	}
-	if g.Player.charSheet.HasCharPointsLeft() {
-		g.Player.charSheet.Increment(stat)
-		g.updateUIStatus()
-	} else {
-		g.msg(foundation.Msg("You have no more character points to spend"))
-	}
 }
 
 func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {
@@ -97,12 +100,12 @@ func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {
 	return nil
 }
 
-func (g *GameState) ObjectAt(loc geometry.Point) foundation.ObjectCategory {
+func (g *GameState) ObjectAt(loc geometry.Point) foundation.ObjectForUI {
 	if g.gridMap.Contains(loc) && g.gridMap.IsObjectAt(loc) {
 		objectAt := g.gridMap.ObjectAt(loc)
-		return objectAt.ObjectIcon()
+		return objectAt
 	}
-	return -1
+	return nil
 }
 
 func (g *GameState) ActorAt(loc geometry.Point) foundation.ActorForUI {
@@ -111,111 +114,6 @@ func (g *GameState) ActorAt(loc geometry.Point) foundation.ActorForUI {
 		return actorAt
 	}
 	return nil
-}
-
-func (g *GameState) AimedShot() {
-	equipment := g.Player.GetEquipment()
-	if !equipment.HasMissileQuivered() {
-		g.msg(foundation.Msg("You have no quivered missile"))
-		return
-	}
-	item := equipment.GetNextQuiveredMissile()
-	g.startRangedAttackWithMissile(item)
-}
-
-func (g *GameState) QuickShot() {
-	equipment := g.Player.GetEquipment()
-	if !equipment.HasMissileQuivered() {
-		g.msg(foundation.Msg("You have no quivered missile"))
-		return
-	}
-	item := equipment.GetNextQuiveredMissile()
-
-	enemies := g.playerVisibleEnemiesByDistance()
-	preselectedTarget := g.Player.Position()
-	if len(enemies) == 0 {
-		g.msg(foundation.Msg("No enemies in sight"))
-		return
-	}
-	preselectedTarget = enemies[0].Position()
-	g.actorRangedAttackWithMissile(g.Player, item, g.Player.Position(), preselectedTarget)
-}
-
-func (g *GameState) OpenTacticsMenu() {
-	var menuItems []foundation.MenuItem
-	/*
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Aimed Attack",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "All-Out Attack",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "All-Out Defense",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Feint",
-		Action:     nil,
-		CloseMenus: true,
-	})
-
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Toggle Acrobatic Dodge",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Defend & Retreat",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Dive for cover",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	 */
-
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name: "Charge Attack",
-		Action: func() {
-			g.startAimZapEffect("charge_attack", nil)
-		},
-		CloseMenus: true,
-	})
-
-	if g.Player.GetFatiguePoints() > 0 {
-		menuItems = append(menuItems, foundation.MenuItem{
-			Name: "Heroic Charge",
-			Action: func() {
-				if g.Player.GetFatiguePoints() > 0 {
-					payFatigue := func() {
-						g.Player.LooseFatigue(1)
-					}
-					g.startAimZapEffect("heroic_charge", payFatigue)
-				} else {
-					g.msg(foundation.Msg("You are too fatigued to perform a heroic charge"))
-				}
-			},
-			CloseMenus: true,
-		})
-		menuItems = append(menuItems, foundation.MenuItem{
-			Name: "Start Sprinting",
-			Action: func() {
-				g.startSprint(g.Player)
-			},
-			CloseMenus: true,
-		})
-
-
-	}
-	g.ui.OpenMenu(menuItems)
 }
 
 func (g *GameState) OpenHitLocationMenu() {
@@ -343,9 +241,9 @@ func (g *GameState) OpenWizardMenu() {
 			CloseMenus: true,
 		},
 		{
-			Name: "250 Char Points",
+			Name: "250 Skill Points",
 			Action: func() {
-				g.Player.AddCharacterPoints(250)
+				g.Player.GetCharSheet().AddSkillPoints(250)
 			},
 		},
 		{
@@ -399,41 +297,36 @@ func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
 	}
 }
 func (g *GameState) init() {
-	g.Player = NewPlayer(g.playerName, g.playerIcon, g.playerColor)
+	playerSheet := special.NewCharSheet()
+	playerSheet.SetSkill(special.SmallGuns, 50)
+	g.Player = NewPlayer(g.playerName, g.playerIcon, g.playerColor, playerSheet)
 
-	g.giveAndTryEquipItem(g.Player, g.NewItemFromName("main_gauche"))
-	g.giveAndTryEquipItem(g.Player, g.NewItemFromName("leather_armor"))
-	for i := 0; i < 20; i++ {
-		g.giveAndTryEquipItem(g.Player, g.NewItemFromName("arrow"))
+	gearDataFile := path.Join(g.config.DataRootDir, "definitions", "start_gear.rec")
+	if util.FileExists(gearDataFile) {
+		startGear := recfile.Read(util.MustOpen(gearDataFile))[0]
+		for _, fields := range startGear {
+			parts := fields.AsList(",")
+			amount := parts[0].AsInt()
+			itemName := parts[1].Value
+			for i := 0; i < amount; i++ {
+				g.giveAndTryEquipItem(g.Player, g.NewItemFromName(itemName))
+			}
+		}
 	}
-	for i := 0; i < 2; i++ {
-		g.giveAndTryEquipItem(g.Player, g.NewItemFromName("food_ration"))
-	}
-	//
-	g.giveAndTryEquipItem(g.Player, g.NewItemFromName("short_bow"))
 
 	equipment := g.Player.GetEquipment()
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
 		g.ui.UpdateStats()
 	})
-	g.Player.charSheet.SetStatChangedHandler(g.ui.UpdateStats)
-	g.Player.charSheet.SetResourceChangedHandler(g.ui.UpdateStats)
+	g.Player.charSheet.SetOnStatChangeHandler(func(stat special.Stat) {
+		g.ui.UpdateStats()
+	})
 
 	g.Player.GetInventory().SetOnChangeHandler(g.ui.UpdateInventory)
 
 	g.Player.GetInventory().SetOnBeforeRemove(equipment.UnEquip)
 
 	equipment.SetOnChangeHandler(g.updateUIStatus)
-
-	g.identification = NewIdentificationKnowledge()
-	g.identification.SetOnIdChanged(g.ui.UpdateInventory)
-
-	g.identification.MixScrolls(g.dataDefinitions.GetScrollInternalNames())
-	g.identification.MixPotions(g.dataDefinitions.GetPotionInternalNames())
-	g.identification.MixWands(g.dataDefinitions.GetWandInternalNames())
-	g.identification.MixRings(g.dataDefinitions.GetRingInternalNames())
-
-	g.identification.SetAlwaysIDOnUse(g.dataDefinitions.AlwaysIDOnUseInternalNames())
 
 	g.TurnsTaken = 0
 	g.logBuffer = []foundation.HiLiteString{}
@@ -442,18 +335,14 @@ func (g *GameState) init() {
 	g.showEverything = false
 }
 
-func (g *GameState) NewItemFromName(name string) *Item {
-	def := g.dataDefinitions.GetItemDefByName(name)
-	return NewItem(def, g.identification)
-}
 func (g *GameState) NewGold(amount int) *Item {
 	def := ItemDef{
 		Name:         "gold",
 		InternalName: "gold",
 		Category:     foundation.ItemCategoryGold,
-		Charges:      rpg.NewDice(1, 1, 1),
+		Charges:      dice_curve.NewDice(1, 1, 1),
 	}
-	item := NewItem(def, g.identification)
+	item := NewItem(def)
 	item.SetCharges(amount)
 	return item
 }
@@ -530,14 +419,9 @@ func (g *GameState) GetHudStats() map[foundation.HudValue]int {
 	uiStats[foundation.HudHitPoints] = g.Player.GetHitPoints()
 	uiStats[foundation.HudHitPointsMax] = g.Player.GetHitPointsMax()
 
-	uiStats[foundation.HudFatiguePoints] = g.Player.GetFatiguePoints()
-	uiStats[foundation.HudFatiguePointsMax] = g.Player.GetFatiguePointsMax()
+	uiStats[foundation.HudFatiguePoints] = g.Player.GetCharSheet().GetActionPoints()
+	uiStats[foundation.HudFatiguePointsMax] = g.Player.GetCharSheet().GetActionPointsMax()
 
-	uiStats[foundation.HudStrength] = g.Player.GetStrength()
-	uiStats[foundation.HudDexterity] = g.Player.GetDexterity()
-	uiStats[foundation.HudIntelligence] = g.Player.GetIntelligence()
-	uiStats[foundation.HudMeleeSkill] = g.Player.getMeleeSkillInUse()
-	uiStats[foundation.HudRangedSkill] = g.Player.GetSkill(rpg.SkillNameMissileWeapons)
 	uiStats[foundation.HudDamageResistance] = g.Player.GetDamageResistance()
 
 	return uiStats
@@ -611,18 +495,13 @@ func (g *GameState) appendLogMessage(message foundation.HiLiteString) {
 }
 
 // adapted from https://github.com/memmaker/rogue-pc-modern-C/blob/582340fcaef32dd91595721efb2d5db41ff3cb05/src/command.c#L35
-func (g *GameState) endPlayerTurn() {
+func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	// player has changed the game state..
-
-	g.identification.SetCurrentItemInUse("") // reset item in use
-
 	g.TurnsTaken++
 
 	didCancel := g.ui.AnimatePending() // animate player actions..
 
-	playerTimeTakeForTurn := 100 / (g.Player.GetBasicSpeed())
-
-	g.enemyMovement(playerTimeTakeForTurn)
+	g.enemyMovement(playerTimeTakenForTurn)
 
 	if didCancel {
 		g.ui.SkipAnimations()
@@ -664,33 +543,7 @@ func (g *GameState) ChooseItemForThrow() {
 			return
 		}
 		item := stack.First()
-		g.startRangedAttackWithMissile(item)
-	})
-}
-
-func (g *GameState) ChooseItemForMissileLaunch() {
-	equipment := g.Player.GetEquipment()
-	if !equipment.HasMissileLauncherEquipped() {
-		g.msg(foundation.Msg("You are not carrying a missile launcher."))
-		return
-	}
-
-	launcher := equipment.GetMissileLauncher()
-	inventory := g.GetFilteredInventory(func(item *Item) bool {
-		return item.IsMissile() && item.GetWeapon().IsLaunchedWith(launcher.GetWeapon().GetWeaponType())
-	})
-
-	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying anything that can be launched with this launcher."))
-		return
-	}
-	g.ui.OpenInventoryForSelection(inventory, "Launch what?", func(itemStack foundation.ItemForUI) {
-		stack, isStack := itemStack.(*InventoryStack)
-		if !isStack {
-			return
-		}
-		item := stack.First()
-		g.startRangedAttackWithMissile(item)
+		g.startThrowItem(item)
 	})
 }
 
@@ -739,7 +592,7 @@ func (g *GameState) addItemToMap(item *Item, mapPos geometry.Point) {
 func (g *GameState) removeItemFromInventory(holder *Actor, item *Item) {
 	equipment := holder.GetEquipment()
 	inventory := holder.GetInventory()
-	if equipment.IsQuiveredItem(item) && item.IsMissile() {
+	if item.IsMissile() {
 		nextInStack := inventory.RemoveAndGetNextInStack(item)
 		if nextInStack != nil {
 			equipment.Equip(nextInStack)
@@ -870,7 +723,23 @@ func (g *GameState) defaultStyleIcon(icon rune) foundation.TextIcon {
 }
 
 func (g *GameState) NewEnemyFromDef(def MonsterDef) *Actor {
-	actor := NewActor(def.Name, def.Icon, def.Color)
+	charSheet := special.NewCharSheet()
+
+	for stat, statValue := range def.SpecialStats {
+		charSheet.SetStat(stat, statValue)
+	}
+
+	for derivedStat, derivedStatValue := range def.DerivedStat {
+		charSheet.SetDerivedStatAbsoluteValue(derivedStat, derivedStatValue)
+	}
+
+	for skill, skillValue := range def.Skills {
+		charSheet.SetSkillAbsoluteValue(skill, skillValue)
+	}
+
+	charSheet.HealCompletely()
+
+	actor := NewActor(def.Name, def.Icon, def.Color, charSheet)
 	actor.GetFlags().Init(def.Flags.UnderlyingCopy())
 	actor.SetIntrinsicZapEffects(def.ZapEffects)
 	actor.SetIntrinsicUseEffects(def.UseEffects)
@@ -878,29 +747,12 @@ func (g *GameState) NewEnemyFromDef(def MonsterDef) *Actor {
 
 	actor.SetSizeModifier(def.SizeModifier)
 
-	actor.charSheet.SetStat(rpg.Strength, def.Strength)
-	actor.charSheet.SetStat(rpg.Dexterity, def.Dexterity)
-	actor.charSheet.SetStat(rpg.Intelligence, def.Intelligence)
-	actor.charSheet.SetStat(rpg.Health, def.Health)
-	actor.charSheet.SetStat(rpg.Will, def.Will)
-	actor.charSheet.SetStat(rpg.Perception, def.Perception)
-	actor.charSheet.SetStat(rpg.FatiguePoints, def.FatiguePoints)
-	actor.charSheet.SetStat(rpg.HitPoints, max(1, def.HitPoints)) // hack to avoid 0 hp actors which would despawn immediately
-	actor.charSheet.SetStat(rpg.BasicSpeed, def.BasicSpeed)
-	actor.charSheet.ResetResources()
-
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
-	if random.Intn(100) < def.CarryChance {
-		if random.Intn(100) < def.CarryChance {
-			itemDef := g.dataDefinitions.PickItemForLevel(random, def.DungeonLevel)
-			item := NewItem(itemDef, g.identification)
-			actor.GetInventory().Add(item)
-		} else {
-			actor.AddGold(def.Gold.Roll())
-		}
+	for _, itemName := range def.Equipment {
+		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
+		item := NewItem(itemDef)
+		actor.GetInventory().Add(item)
 	}
 
-	actor.SetIntrinsicAttacks(def.Attacks)
 	return actor
 }
 
@@ -942,7 +794,7 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 				break
 			}
 			itemDef := g.dataDefinitions.PickItemForLevel(random, level)
-			item := NewItem(itemDef, g.identification)
+			item := NewItem(itemDef)
 			if item.IsEquippable() && random.Intn(5) == 0 {
 				g.AddCurseToEquippable(item)
 			}
@@ -975,9 +827,16 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 			if !exists {
 				break
 			}
-			trapEffects := foundation.GetAllTrapCategories()
-			randomEffect := trapEffects[random.Intn(len(trapEffects))]
-			object := g.NewTrap(randomEffect)
+			/*
+				trapEffects := foundation.GetAllTrapCategories()
+				randomEffect := trapEffects[random.Intn(len(trapEffects))]
+				object := g.NewTrap(randomEffect)
+			*/
+			object := g.NewContainer("chest", []*Item{
+				g.NewItemFromName("stimpak"),
+				g.NewItemFromName("10mm_pistol"),
+			})
+
 			newMap.AddObject(object, spawnPos)
 		}
 	}
@@ -995,7 +854,7 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 			spawnMonstersInRoom(room, monsterCount)
 		}
 
-		if level > 1 && room != playerRoom && random.Intn(4) == 0 {
+		if level > 1 && room != playerRoom && random.Intn(4) < 4 {
 			objectCount := random.Intn(3) + 1
 			spawnObjectsInRoom(room, objectCount)
 		}
@@ -1046,7 +905,7 @@ func (g *GameState) openWizardCreateItemSelectionMenu(defs []ItemDef) {
 		menuActions = append(menuActions, foundation.MenuItem{
 			Name: itemDef.Name,
 			Action: func() {
-				newItem := NewItem(itemDef, g.identification)
+				newItem := NewItem(itemDef)
 				inv := g.Player.GetInventory()
 				if inv.IsFull() {
 					g.gridMap.AddItemWithDisplacement(newItem, g.Player.Position())
@@ -1164,9 +1023,9 @@ func (g *GameState) checkPlayerCanAct() {
 	}
 
 	if g.Player.HasFlag(foundation.FlagStun) {
-		_, result, _ := rpg.SuccessRoll(g.Player.GetWillpower() + g.Player.GetFlags().Get(foundation.FlagStun) - 1)
+		result := CheckStrength(g.Player)
 
-		if result.IsSuccess() {
+		if result.Success {
 			g.msg(foundation.Msg("You shake off the stun"))
 			g.Player.GetFlags().Unset(foundation.FlagStun)
 			return
@@ -1176,17 +1035,17 @@ func (g *GameState) checkPlayerCanAct() {
 		g.msg(foundation.Msg("You are stunned and cannot act"))
 
 		// TODO: animate a small delay here?
-		g.endPlayerTurn()
+		g.endPlayerTurn(g.Player.timeNeededForActions())
 	}
 	if g.Player.HasFlag(foundation.FlagHeld) {
-		_, result, marginOfSuccess := rpg.SuccessRoll(g.Player.GetStrength())
+		result := CheckStrength(g.Player)
 
-		if result.IsCriticalSucces() {
+		if result.Crit {
 			g.msg(foundation.Msg("You break free from the hold"))
 			g.Player.GetFlags().Unset(foundation.FlagHeld)
 			return
-		} else if result.IsSuccess() {
-			g.Player.GetFlags().Decrease(foundation.FlagHeld, marginOfSuccess)
+		} else if result.Success {
+			g.Player.GetFlags().Decrease(foundation.FlagHeld, 10)
 			if !g.Player.HasFlag(foundation.FlagHeld) {
 				g.msg(foundation.Msg("You break free from the hold"))
 				return
@@ -1196,7 +1055,7 @@ func (g *GameState) checkPlayerCanAct() {
 		g.msg(foundation.Msg("You are held and cannot act"))
 
 		// TODO: animate a small delay here?
-		g.endPlayerTurn()
+		g.endPlayerTurn(g.Player.timeNeededForActions())
 	}
 }
 
@@ -1302,7 +1161,7 @@ func (g *GameState) buyItemFromVendor(item foundation.ItemForUI, price int) {
 }
 
 func (g *GameState) newLevelReached(level int) {
-	g.Player.AddCharacterPoints(10)
+	//g.Player.AddCharacterPoints(10)
 	g.msg(foundation.HiLite("You've been awarded 10 character points for reaching level %s", fmt.Sprint(level)))
 }
 
@@ -1312,12 +1171,11 @@ func (g *GameState) checkTilesForHiddenObjects(tiles []geometry.Point) {
 		if g.gridMap.IsObjectAt(tile) {
 			object := g.gridMap.ObjectAt(tile)
 			if object.IsHidden() {
-				perception := g.Player.GetPerception()
-				_, result, _ := rpg.SuccessRoll(perception)
-				if result.IsSuccess() {
+				perceptionResult := CheckPerception(g.Player)
+				if perceptionResult.Success {
 					noticedSomething = true
 				}
-				if result.IsCriticalSucces() {
+				if perceptionResult.Crit {
 					object.SetHidden(false)
 				}
 			}
@@ -1340,11 +1198,14 @@ func (g *GameState) dropInventory(victim *Actor) {
 }
 
 func (g *GameState) startSprint(actor *Actor) {
-	if actor.GetFatiguePoints() < 1 {
-		g.msg(foundation.Msg("You are too tired to sprint"))
-		return
-	}
-	actor.LooseFatigue(1)
+	/*
+		if actor.GetActionPoints() < 1 {
+			g.msg(foundation.Msg("You are too tired to sprint"))
+			return
+		}
+		actor.LooseActionPoints(1)
+
+	*/
 	haste(g, actor)
 }
 
@@ -1365,17 +1226,15 @@ func (g *GameState) AddCurseToEquippable(item *Item) {
 	if item.IsMissile() { // don't curse missiles
 		return
 	}
-	if item.equipFlag == foundation.FlagNone && (item.charges == 0|| item.charges == 1) {
+	if item.equipFlag == foundation.FlagNone && (item.charges == 0 || item.charges == 1) {
 		item.equipFlag = foundation.FlagCurseStuck
 		item.charges = rand.Intn(300) + 100
 	}
 	if item.statBonus == 0 {
-		item.stat = rpg.GetRandomStat()
+		item.stat = dice_curve.GetRandomStat()
 		item.statBonus = -(rand.Intn(4) + 1)
 	}
 }
-
-
 func saveHighScoreTable(scoresFile string, scoreTable []foundation.ScoreInfo) {
 	file := util.CreateFile(scoresFile)
 	defer file.Close()
@@ -1402,49 +1261,4 @@ func LoadHighScoreTable(scoresFile string) []foundation.ScoreInfo {
 		file.Close()
 	}
 	return scoreTable
-}
-
-func NewItem(def ItemDef, id *IdentificationKnowledge) *Item {
-	charges := 1
-	if def.Charges.NotZero() {
-		charges = def.Charges.Roll()
-	}
-	item := &Item{
-		name:         def.Name,
-		internalName: def.InternalName,
-		category:     def.Category,
-		charges:      charges,
-		slot:         def.Slot,
-		id:           id,
-		stat:         def.Stat,
-		statBonus:    def.StatBonus.Roll(),
-		skill:        def.Skill,
-		skillBonus:   def.SkillBonus.Roll(),
-		equipFlag:    def.EquipFlag,
-		thrownDamage: def.ThrowDamageDice,
-	}
-
-	if def.IsValidWeapon() {
-		item.weapon = &WeaponInfo{
-			damageDice:       def.WeaponDef.DamageDice,
-			weaponType:       def.WeaponDef.Type,
-			launchedWithType: def.WeaponDef.LaunchedWithType,
-			skillUsed:        def.WeaponDef.SkillUsed,
-			damagePlus:       0,
-		}
-	}
-
-	if def.IsValidArmor() {
-		item.armor = &ArmorInfo{
-			damageResistance: def.ArmorDef.DamageResistance,
-			plus:             0,
-			encumbrance:      def.ArmorDef.Encumbrance,
-		}
-	}
-
-	item.zapEffectName = def.ZapEffect
-	item.useEffectName = def.UseEffect
-
-	return item
-
 }

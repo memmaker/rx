@@ -17,6 +17,7 @@ type ItemForUI interface {
 	Shortcut() rune
 	DisplayLength() int
 	Position() geometry.Point
+	LongNameWithColors(colorCode string) string
 }
 
 type ItemCategory int
@@ -41,6 +42,12 @@ func (c ItemCategory) String() string {
 		return "Wands"
 	case ItemCategoryAmulets:
 		return "Amulets"
+	case ItemCategoryAmmo:
+		return "Ammo"
+	case ItemCategoryBooks:
+		return "Books"
+	case ItemCategoryConsumables:
+		return "Consumables"
 	case ItemCategoryOther:
 		return "Other"
 	}
@@ -57,10 +64,14 @@ const (
 	ItemCategoryPotions
 	ItemCategoryWands
 	ItemCategoryAmulets
+	ItemCategoryAmmo
+	ItemCategoryBooks
+	ItemCategoryConsumables
 	ItemCategoryOther
 )
+
 func RandomItemCategory() ItemCategory {
-	return ItemCategory(rand.Intn(int(ItemCategoryOther)+1))
+	return ItemCategory(rand.Intn(int(ItemCategoryOther) + 1))
 }
 func ItemCategoryFromString(s string) ItemCategory {
 	s = strings.TrimPrefix(strings.ToLower(s), "item")
@@ -83,6 +94,12 @@ func ItemCategoryFromString(s string) ItemCategory {
 		return ItemCategoryWands
 	case "amulets":
 		return ItemCategoryAmulets
+	case "ammo":
+		return ItemCategoryAmmo
+	case "books":
+		return ItemCategoryBooks
+	case "consumables":
+		return ItemCategoryConsumables
 	case "other":
 		return ItemCategoryOther
 	}

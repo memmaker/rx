@@ -1,4 +1,4 @@
-package rpg
+package dice_curve
 
 type MeleeDamage struct {
 	StrengthThreshold int
