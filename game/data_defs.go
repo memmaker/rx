@@ -12,7 +12,7 @@ import (
 
 type DataDefinitions struct {
 	Items    map[foundation.ItemCategory][]ItemDef
-	Monsters []MonsterDef
+	Monsters []ActorDef
 }
 
 func (d DataDefinitions) HasItems(category foundation.ItemCategory) bool {
@@ -86,10 +86,10 @@ func GetDataDefinitions(rootDir string) DataDefinitions {
 	monsterRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
-	var monsters []MonsterDef
+	var monsters []ActorDef
 
 	if len(monsterRecords) > 0 {
-		monsters = MonsterDefsFromRecords(monsterRecords)
+		monsters = ActorDefsFromRecords(monsterRecords)
 	}
 
 	return DataDefinitions{
@@ -116,13 +116,26 @@ func (d DataDefinitions) PickItemForLevel(random *rand.Rand, level int) ItemDef 
 			Charges:      dice_curve.NewDice(min(10, level+1), 10, 0),
 		}
 	}
-	items := d.Items[randomCategory]
+	items := filterItemDefs(d.Items[randomCategory], func(def ItemDef) bool {
+		return !def.Tags.Contains(foundation.TagNoLoot)
+	})
 
 	return items[random.Intn(len(items))]
 }
 
-func (d DataDefinitions) PickMonsterForLevel(random *rand.Rand, level int) MonsterDef {
-	var filteredMonsters []MonsterDef
+func filterItemDefs(defs []ItemDef, keep func(def ItemDef) bool) []ItemDef {
+	var filtered []ItemDef
+	for _, def := range defs {
+		if keep(def) {
+			filtered = append(filtered, def)
+		}
+	}
+	return filtered
+
+}
+
+func (d DataDefinitions) PickMonsterForLevel(random *rand.Rand, level int) ActorDef {
+	var filteredMonsters []ActorDef
 
 	for _, monster := range d.Monsters {
 		if monster.DungeonLevel <= level {
@@ -136,7 +149,7 @@ func (d DataDefinitions) PickMonsterForLevel(random *rand.Rand, level int) Monst
 	return filteredMonsters[random.Intn(len(filteredMonsters))]
 }
 
-func (d DataDefinitions) RandomMonsterDef() MonsterDef {
+func (d DataDefinitions) RandomMonsterDef() ActorDef {
 	return d.Monsters[rand.Intn(len(d.Monsters))]
 }
 
@@ -198,6 +211,15 @@ func (d DataDefinitions) GetItemDefByName(name string) ItemDef {
 		}
 	}
 	panic("Item not found: " + name)
+}
+
+func (d DataDefinitions) GetMonsterByName(name string) ActorDef {
+	for _, monster := range d.Monsters {
+		if monster.InternalName == name {
+			return monster
+		}
+	}
+	panic("Monster not found: " + name)
 }
 
 func mapItemDefs(defs []ItemDef, mapper func(ItemDef) string) []string {

@@ -22,7 +22,7 @@ LightRed: 255 | 85 | 85
 Magenta: 209 | 31 | 209
 LightMagenta: 255 | 85 | 255
 Orange: 227 | 114 | 0
-Brown: 150 | 89 | 0
+Brown: 120 | 69 | 0
 LightBrown: 255 | 188 | 105
 Yellow: 255 | 255 | 85
 DarkYellow: 191 | 188 | 2
@@ -30,35 +30,6 @@ DirtyBlue: 90 | 126 | 166
 DirtyYellow: 210 | 210 | 168
 LightGray: 170 | 170 | 170
 White: 255 | 255 | 255
-
-%rec: ui
-
-BorderBackground: Black
-BorderForeground: LightGray
-#
-MapDefaultForeground: DirtyBlue
-MapDefaultBackground: Cyan
-#
-MapDefaultForegroundLight: White
-MapDefaultForegroundDark: DarkGray
-#
-UIForeground: LightGray
-UIBackground: Black
-#
-UIForegroundHighlighted: White
-
-%rec: inventory
-#
-# Inventory Item colors
-ItemGold: Yellow
-ItemFood: LightGreen
-ItemWeapons: LightGray
-ItemArmor: Blue
-ItemScrolls: LightGray
-ItemPotions: Brown
-ItemWands: Green
-ItemAmmo: Red
-ItemAmulets: LightMagenta
 
 %rec: map
 
@@ -68,7 +39,7 @@ TileEmpty_Colors: Black | Black
 TileFloor: ∙
 TileFloor_Colors: DirtyBlue | Cyan
 TileWall: #
-TileWall_Colors: DirtyBlue | Cyan
+TileWall_Colors: Black | DirtyBlue
 TileRoomFloor: ∙
 TileRoomFloor_Colors: DirtyBlue | Cyan
 TileRoomWallHorizontal: ▀
@@ -139,72 +110,121 @@ TileVendorArmor: 3
 TileVendorArmor_Colors: LightBrown | Black
 TileVendorAlchemist: 4
 TileVendorAlchemist_Colors: Blue | Black
+TileCaveWall: ^
+TileCaveWall_Colors: LightBrown | Brown
+TileCaveFloor: ∙
+TileCaveFloor_Colors: LightBrown | Brown
+TileDesertTransition: °
+TileDesertTransition_Colors: White | LightBrown
+TileVaultTransition: *
+TileVaultTransition_Colors: LightGray | Gray
+TileSecurityWindow: ■
+TileSecurityWindow_Colors: LightBlue | LightGray
+TileFurniture: =
+TileFurniture_Colors: LightBlue
+
+%rec: inventory
+#
+# Inventory Item colors
+ItemGold: Yellow
+ItemFood: LightGreen
+ItemWeapons: LightGray
+ItemArmor: Blue
+ItemScrolls: LightGray
+ItemPotions: Brown
+ItemLockpicks: Green
+ItemAmmo: Red
+ItemAmulets: LightMagenta
+ItemKeys: LightMagenta
 
 %rec: items
 
 # Items
 ItemGold: ⣴
-ItemGold_Colors: Yellow | Cyan
+ItemGold_Colors: Yellow
 #
 ItemFood: ☙
-ItemFood_Colors: LightGreen | Cyan
+ItemFood_Colors: LightGreen
 #
 ItemWeapons: ↑
-ItemWeapons_Colors: LightBrown | Cyan
+ItemWeapons_Colors: LightBrown
 #
 ItemArmor: ❖
-ItemArmor_Colors: Orange | Cyan
+ItemArmor_Colors: Orange
 # ☥
 ItemScrolls: ≡
 ItemScrolls_Colors: Black | LightBrown
 #
 ItemPotions: ⚱
-ItemPotions_Colors: Blue | Cyan
+ItemPotions_Colors: Blue
 #
-ItemWands: τ
-ItemWands_Colors: Green | Cyan
+ItemLockpicks: τ
+ItemLockpicks_Colors: Green
 #
 ItemAmmo: ○
-ItemAmmo_Colors: LightRed | Cyan
+ItemAmmo_Colors: LightRed
 #
 ItemAmulets: &
-ItemAmulets_Colors: LightMagenta | Cyan
+ItemAmulets_Colors: LightMagenta
+#
+ItemKeys: &
+ItemKeys_Colors: LightMagenta
 
 %rec: objects
 
 # Objects
-ClosedDoor: ■
-ClosedDoor_Colors: LightGray | Black
+ClosedDoor: ╺
+ClosedDoor_Colors: LightGray | Brown
 #
-OpenDoor: ■
-OpenDoor_Colors: LightGray | Black
+LockedDoor: ╺
+LockedDoor_Colors: LightRed | Brown
+#
+OpenDoor: ▐
+OpenDoor_Colors: Brown
+#
+BrokenDoor: ■
+BrokenDoor_Colors: Brown
 #
 ExplodingTrap: ♦
-ExplodingTrap_Colors: LightGray | Cyan
+ExplodingTrap_Colors: LightGray
 #
 SlowTrap: Θ
-SlowTrap_Colors: LightRed | Cyan
+SlowTrap_Colors: LightRed
 #
 TeleportTrap: ^
-TeleportTrap_Colors: LightRed | Cyan
+TeleportTrap_Colors: LightRed
 #
 DartTrap: ^
-DartTrap_Colors: LightRed | Cyan
+DartTrap_Colors: LightRed
 #
 ArrowTrap: ^
-ArrowTrap_Colors: LightRed | Cyan
+ArrowTrap_Colors: LightRed
 #
 DescendTrap: ^
-DescendTrap_Colors: LightRed | Cyan
+DescendTrap_Colors: LightRed
+#
+Terminal: ■
+Terminal_Colors: Green | LightGray
 #
 UnknownContainer: ?
-UnknownContainer_Colors: LightRed | Cyan
+UnknownContainer_Colors: LightRed
 #
 KnownContainer: !
-KnownContainer_Colors: LightRed | Cyan
+KnownContainer_Colors: LightRed
 #
 KnownEmptyContainer: !
-KnownEmptyContainer_Colors: LightGray | Cyan
+KnownEmptyContainer_Colors: LightGray
+
+
+%rec: ui
+
+UIForeground: LightGray
+UIBackground: Black
+#
+UIForegroundHighlighted: White
+#
+BorderBackground: Black
+BorderForeground: LightGray
 
 %rec: borders
 

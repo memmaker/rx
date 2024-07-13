@@ -1,0 +1,72 @@
+Issues of all Vaults:
+ - Water Supply & Purification
+ - Food Supply & Production
+ - Energy Supply & Production
+ - Maintenance of the Vault
+ - Security of the Vault
+ - Morale of the Vault Dwellers
+ - A healthy gene pool
+
+Control Vault that is ran like an experiment
+Overseer wants to stay in power, fakes Vault-Tec instructions
+to ensure no democracy is established.
+The Overseer found a way to exploit the inhabitants.
+
+
+Pacify Dwellers with Digital Media
+
+Truman Twin Vaults
+One Vault is secretly recorded and broadcast to another
+
+The Hope Files
+Trying to document how long people keep up hope under
+extreme circumstances, with details on how to destroy all hope.
+
+The DNA Files
+Trying to document how long the DNA pool of a Vault can keep healthy.
+With details on how to prolong the DNA pool.
+
+
+Vault Escape Hooks
+
+ - Sneaky Bastard: Follow people who do leave the vault and just sneak out after them
+ - Door Opener: Lockpick & Hack your way out
+ - Smooth Talker: Just convince the guards / Overseer to let you go
+ - Violent Bastard: Kill the guards, take their keys
+ - Sabotage the water chip / supplies
+
+Certainly! Here’s a list of potential quest hooks for a player aiming to leave a still-closed vault in a Fallout game:
+
+- **Mysterious Signal**: The Vault's communication system picks up a mysterious radio signal from outside. Investigate the source and content of the message, which might provide a way to open the vault or hint at resources/survivors outside.
+
+- **Vault Malfunction**: Critical systems within the vault begin to fail. The Overseer tasks the player with finding a way to repair the systems, which may require accessing external components or resources only found outside.
+
+- **Secret Exit**: Rumors of a hidden, emergency exit circulate among the vault dwellers. The player must uncover clues and possibly old schematics or diaries to locate and access this exit.
+
+- **Lost Technology**: The vault’s archives mention a piece of pre-war technology designed to control or override the vault's locking mechanism. The player must find this device, rumored to be hidden in an inaccessible part of the vault or just outside.
+
+- **Overseer's Challenge**: The Overseer sets a series of tests or tasks to determine if the player is capable of surviving outside. Successfully completing these trials earns the player the Overseer’s permission to leave.
+
+- **Rebel Faction**: A group of vault dwellers is planning an unauthorized breakout. The player can join this faction, aiding in their plans, or work to stop them, potentially earning the Overseer’s trust and a sanctioned exit.
+
+- **Historical Records**: The player discovers ancient records or logs from the vault’s construction detailing how and why the vault was meant to stay closed. These records may include instructions for a protocol to open the vault in case of specific conditions.
+
+- **Sickness Outbreak**: A mysterious illness begins to spread within the vault. The player is tasked with finding a cure, which requires venturing outside to gather rare ingredients or contact external medical facilities.
+
+- **Environmental Readings**: The vault’s sensors detect stable environmental conditions for the first time. The Overseer authorizes a scouting mission to verify these readings, and the player is selected to lead this mission.
+
+- **Supplies Running Low**: Essential supplies are running dangerously low. The player is assigned to lead an expedition to find external sources of food, water, or other critical resources.
+
+- **Vault Experiment**: The player discovers that the vault is part of a social experiment and that it’s supposed to open under certain conditions that have now been met. The player must present this evidence to convince the Overseer to open the vault.
+
+- **Diplomatic Mission**: Contact is made with another vault or a community of survivors outside. The player is chosen to represent their vault in establishing relations, trade, or alliances with this external group.
+
+- **Uncovered Prophecy**: The player finds an old prophecy or legend among the vault's relics, suggesting that they are destined to leave the vault and achieve something significant outside.
+
+- **Escape Plot**: The player learns of an escape plot initiated by a past vault dweller who was never seen again. Investigate their plans and follow in their footsteps to discover a way out.
+
+- **Natural Disaster**: An impending natural disaster threatens the vault’s structural integrity. Evacuation becomes necessary, and the player is tasked with leading the effort to find a safe exit and ensure the survival of the vault's inhabitants.
+
+- **Technological Upgrade**: The vault’s AI or computer system suggests an upgrade or procedure that requires external components or data. The player must venture out to retrieve these materials to improve or repair vital systems.
+
+These quest hooks can be developed further based on the overarching storyline, character development, and specific game mechanics within the Fallout universe.

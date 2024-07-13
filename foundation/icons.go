@@ -39,3 +39,7 @@ func (i TextIcon) WithBold() TextIcon {
 	i.Attributes |= tcell.AttrBold
 	return i
 }
+
+func (i TextIcon) HasEmptyBackground() bool {
+	return i.Bg == color.RGBA{}
+}

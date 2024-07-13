@@ -89,3 +89,24 @@ func ItemSlotFromString(s string) EquipSlot {
 	panic("Invalid slot: " + s)
 	return SlotNameNotEquippable
 }
+
+type ItemTags uint32
+
+func (t ItemTags) Contains(tag ItemTags) bool {
+	return t&tag != 0
+}
+
+const (
+	TagNone   ItemTags = 0
+	TagNoLoot ItemTags = 1 << iota
+)
+
+func ItemTagFromString(s string) ItemTags {
+	s = strings.ToLower(s)
+	switch s {
+	case "no_loot":
+		return TagNoLoot
+	}
+	panic("Unknown item tag: " + s)
+	return TagNone
+}

@@ -185,6 +185,25 @@ func (r Record) ToFixedSizeValueList(fieldNamesInOrder []string) []string {
 	return result
 }
 
+func (r Record) FindValueForKey(key string) string {
+	for _, field := range r {
+		if field.Name == key {
+			return field.Value
+		}
+	}
+	return ""
+}
+
+func (r Record) WithPoppedValue(key string) (Record, string) {
+	for i, field := range r {
+		if field.Name == key {
+			return append(r[:i], r[i+1:]...), field.Value
+		}
+	}
+	return r, ""
+
+}
+
 type RecReader struct {
 	records           map[string][]Record
 	currentRecord     []Field
@@ -287,6 +306,14 @@ func ReadMulti(input io.Reader) map[string][]Record {
 		reader.ReadLine(scanner.Text())
 	}
 	return reader.End()
+}
+
+func RecordFromSlice(data []string) Record {
+	reader := NewReader()
+	for _, line := range data {
+		reader.ReadLine(line)
+	}
+	return reader.End()["default"][0]
 }
 func Write(file io.StringWriter, records []Record) error {
 	return WriteMulti(file, map[string][]Record{"default": records})

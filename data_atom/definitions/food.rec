@@ -7,3 +7,7 @@ name: stimpak
 internal_name: stimpak
 category: food
 use_effect: satiate_fully
+
+name: bobby pin
+internal_name: bobby_pin
+category: lockpicks

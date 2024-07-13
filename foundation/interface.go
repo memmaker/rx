@@ -3,6 +3,7 @@ package foundation
 import (
 	"RogueUI/geometry"
 	"RogueUI/util"
+	"strings"
 )
 
 // Actions that the User Interface can trigger on the game
@@ -88,6 +89,7 @@ type GameForUI interface {
 	ItemAt(loc geometry.Point) ItemForUI
 	ObjectAt(loc geometry.Point) ObjectForUI
 	ActorAt(loc geometry.Point) ActorForUI
+	DownedActorAt(loc geometry.Point) ActorForUI
 
 	// Level up choices
 
@@ -139,7 +141,7 @@ type GameUI interface {
 	OpenMenu(actions []MenuItem)
 	OpenVendorMenu(itemsForSale []util.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
-	ShowContainer(name string, containedItems *[]ItemForUI, transfer func(ui ItemForUI))
+	ShowContainer(name string, containedItems []ItemForUI, transfer func(ui ItemForUI))
 
 	// Auto Move Callback
 	AfterPlayerMoved(moveInfo MoveInfo)
@@ -177,6 +179,10 @@ type GameUI interface {
 	GetAnimEvade(defender ActorForUI, done func()) Animation
 
 	PlayMusic(fileName string)
+	SetConversationState(text string, options []MenuItem, isTerminal bool)
+	CloseConversation()
+	StartHackingGame(identifier uint64, difficulty Difficulty, previousGuesses []string, onCompletion func(previousGuesses []string, success InteractionResult))
+	StartLockpickGame(difficulty Difficulty, getLockpickCount func() int, removeLockpick func(), onCompletion func(result InteractionResult))
 }
 
 type Animation interface {
@@ -249,6 +255,7 @@ const (
 	TileDoorLocked                             = "TileDoorLocked"
 	TileStairsUp                               = "TileStairsUp"
 	TileStairsDown                             = "TileStairsDown"
+	TileTransition                             = "TileTransition"
 	TileMountain                               = "TileMountain"
 	TileGrass                                  = "TileGrass"
 	TileTree                                   = "TileTree"
@@ -259,9 +266,175 @@ const (
 	TileVendorWeapons                          = "TileVendorWeapons"
 	TileVendorArmor                            = "TileVendorArmor"
 	TileVendorAlchemist                        = "TileVendorAlchemist"
+	TileCaveWall                               = "TileCaveWall"
+	TileCaveFloor                              = "TileCaveFloor"
+	TileVaultTransition                        = "TileVaultTransition"
+	TileDesertTransition                       = "TileDesertTransition"
+	TileSecurityWindow                         = "TileSecurityWindow"
+	TileFurniture                              = "TileFurniture"
 )
+
+func FeatureFromName(feature string) TileType {
+	feature = strings.ToLower(feature)
+	switch feature {
+	case "floor":
+		return TileFloor
+	case "wall":
+		return TileWall
+	case "roomfloor":
+		return TileRoomFloor
+	case "roomwallhorizontal":
+		return TileRoomWallHorizontal
+	case "roomwallvertical":
+		return TileRoomWallVertical
+	case "roomwallcornertopleft":
+		return TileRoomWallCornerTopLeft
+	case "roomwallcornertopright":
+		return TileRoomWallCornerTopRight
+	case "roomwallcornerbottomright":
+		return TileRoomWallCornerBottomRight
+	case "roomwallcornerbottomleft":
+		return TileRoomWallCornerBottomLeft
+	case "corridorfloor":
+		return TileCorridorFloor
+	case "corridorwall":
+		return TileCorridorWall
+	case "corridorwallhorizontal":
+		return TileCorridorWallHorizontal
+	case "corridorwallvertical":
+		return TileCorridorWallVertical
+	case "corridorwallcornertopleft":
+		return TileCorridorWallCornerTopLeft
+	case "corridorwallcornertopright":
+		return TileCorridorWallCornerTopRight
+	case "corridorwallcornerbottomright":
+		return TileCorridorWallCornerBottomRight
+	case "corridorwallcornerbottomleft":
+		return TileCorridorWallCornerBottomLeft
+	case "walltjunctiontop":
+		return TileWallTJunctionTop
+	case "walltjunctionright":
+		return TileWallTJunctionRight
+	case "walltjunctionbottom":
+		return TileWallTJunctionBottom
+	case "walltjunctionleft":
+		return TileWallTJunctionLeft
+	case "dooropen":
+		return TileDoorOpen
+	case "doorclosed":
+		return TileDoorClosed
+	case "doorbroken":
+		return TileDoorBroken
+	case "doorlocked":
+		return TileDoorLocked
+	case "stairsup":
+		return TileStairsUp
+	case "stairsdown":
+		return TileStairsDown
+	case "transition":
+		return TileTransition
+	case "mountain":
+		return TileMountain
+	case "grass":
+		return TileGrass
+	case "tree":
+		return TileTree
+	case "water":
+		return TileWater
+	case "lava":
+		return TileLava
+	case "chasm":
+		return TileChasm
+	case "vendorgeneral":
+		return TileVendorGeneral
+	case "vendorweapons":
+		return TileVendorWeapons
+	case "vendorarmor":
+		return TileVendorArmor
+	case "vendoralchemist":
+		return TileVendorAlchemist
+	case "cavewall":
+		return TileCaveWall
+	case "cavefloor":
+		return TileCaveFloor
+	case "vaulttransition":
+		return TileVaultTransition
+	case "deserttransition":
+		return TileDesertTransition
+	case "securitywindow":
+		return TileSecurityWindow
+	case "furniture":
+		return TileFurniture
+	}
+	panic("Unknown feature: " + feature)
+	return TileEmpty
+}
+
+func (t TileType) IsWalkable() bool {
+	switch t {
+	case TileFloor, TileRoomFloor, TileCorridorFloor, TileStairsUp, TileStairsDown, TileTransition, TileGrass, TileCaveFloor:
+		return true
+	}
+	return false
+}
+
+func (t TileType) IsTransparent() bool {
+	switch t {
+	case TileFloor, TileRoomFloor, TileCorridorFloor, TileStairsUp, TileStairsDown, TileTransition, TileGrass, TileCaveFloor, TileDoorOpen, TileSecurityWindow, TileFurniture:
+		return true
+	}
+	return false
+}
 
 type CheckResult struct {
 	Success bool
 	Crit    bool
+}
+
+type InteractionResult uint8
+
+func (r InteractionResult) String() string {
+	switch r {
+	case Success:
+		return "Success"
+	case Failure:
+		return "Failure"
+	case Cancel:
+		return "Cancel"
+	}
+	return "Unknown"
+}
+
+const (
+	Success InteractionResult = iota
+	Failure
+	Cancel
+)
+
+type Difficulty uint8
+
+const (
+	VeryEasy Difficulty = iota
+	Easy
+	Medium
+	Hard
+	VeryHard
+)
+
+func DifficultyFromString(difficulty string) Difficulty {
+	difficulty = strings.ToLower(difficulty)
+	switch difficulty {
+	case "veryeasy":
+		return VeryEasy
+	case "easy":
+		return Easy
+	case "medium":
+		return Medium
+	case "hard":
+		return Hard
+	case "veryhard":
+		return VeryHard
+	}
+	panic("Unknown difficulty: " + difficulty)
+	return Medium
 }

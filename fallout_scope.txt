@@ -9,6 +9,21 @@ Fallout Core Features
    - Armor
    - Consumables
  - Containers
+ - Doors
+   - Lockable
+   - Pickable
+   - Breakable
+   - Openable
+ - Skill applications
+   - Sneaking (toggle button)
+   - First Aid / Doctor (apply at resting?)
+   - Steal / Plant (context action on actors)
+   - Lockpick (context action on doors)
+   - Science (context action on terminals)
+   - Repair (context action on items/objects)
+   - Barter (apply at trading)
+   - Speech (apply at dialogue)
+   - Traps (context action on traps)
  - Dialogue
    - Reactions
    - Terminals
@@ -20,5 +35,5 @@ Fallout Core Features
    - Thrown
    - Explosives
    - Traps
-   - Critical Hits
+   - Critical Hits / Fails
    - Enemy AI

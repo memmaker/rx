@@ -46,8 +46,12 @@ func (c ItemCategory) String() string {
 		return "Ammo"
 	case ItemCategoryBooks:
 		return "Books"
+	case ItemCategoryLockpicks:
+		return "Lockpicks"
 	case ItemCategoryConsumables:
 		return "Consumables"
+	case ItemCategoryKeys:
+		return "Keys"
 	case ItemCategoryOther:
 		return "Other"
 	}
@@ -67,6 +71,8 @@ const (
 	ItemCategoryAmmo
 	ItemCategoryBooks
 	ItemCategoryConsumables
+	ItemCategoryLockpicks
+	ItemCategoryKeys
 	ItemCategoryOther
 )
 
@@ -96,10 +102,14 @@ func ItemCategoryFromString(s string) ItemCategory {
 		return ItemCategoryAmulets
 	case "ammo":
 		return ItemCategoryAmmo
+	case "lockpicks":
+		return ItemCategoryLockpicks
 	case "books":
 		return ItemCategoryBooks
 	case "consumables":
 		return ItemCategoryConsumables
+	case "keys":
+		return ItemCategoryKeys
 	case "other":
 		return ItemCategoryOther
 	}

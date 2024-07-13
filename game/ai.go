@@ -9,6 +9,10 @@ import (
 func (g *GameState) aiAct(enemy *Actor) {
 	distanceToPlayer := geometry.DistanceChebyshev(enemy.Position(), g.Player.Position())
 
+	isHostile := enemy.IsHostile()
+	if !isHostile {
+		return
+	}
 	sameRoom := g.isInPlayerRoom(enemy.Position()) || distanceToPlayer <= 1
 
 	if enemy.HasFlag(foundation.FlagStun) {
@@ -38,18 +42,10 @@ func (g *GameState) aiAct(enemy *Actor) {
 	}
 
 	if enemy.IsSleeping() {
-		if sameRoom {
-			if enemy.HasFlag(foundation.FlagMean) && CanPerceive(enemy, g.Player) {
-				enemy.WakeUp()
-				g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
-				g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
-			} else if !enemy.HasFlag(foundation.FlagMean) && CanPerceive(enemy, g.Player) && rand.Intn(10) == 0 {
-				enemy.WakeUp()
-				g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
-				g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
-			} else {
-				return
-			}
+		if sameRoom && CanPerceive(enemy, g.Player) && rand.Intn(10) == 0 {
+			enemy.WakeUp()
+			g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
+			g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
 		} else {
 			return
 		}
@@ -79,7 +75,7 @@ func (g *GameState) aiAct(enemy *Actor) {
 	}
 
 	losToPlayer := g.canPlayerSee(enemy.Position())
-	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && sameRoom && losToPlayer && (enemy.HasFlag(foundation.FlagMean) || CanPerceive(enemy, g.Player)) {
+	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && sameRoom && losToPlayer && CanPerceive(enemy, g.Player) {
 		enemy.GetFlags().Set(foundation.FlagAwareOfPlayer)
 		g.msg(foundation.HiLite("%s notices you", enemy.Name()))
 	}

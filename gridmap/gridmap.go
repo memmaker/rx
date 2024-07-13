@@ -561,14 +561,15 @@ func NewMapFromString[ActorType interface {
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
-}](width, height int, inputString string, mapper func(gridMap *GridMap[ActorType, ItemType, ObjectType], icon rune, pos geometry.Point)) *GridMap[ActorType, ItemType, ObjectType] {
+}](width, height int, inputString []rune, mapper func(gridMap *GridMap[ActorType, ItemType, ObjectType], icon rune, pos geometry.Point)) *GridMap[ActorType, ItemType, ObjectType] {
 	emptyMap := NewEmptyMap[ActorType, ItemType, ObjectType](width, height)
 	size := width * height
-	if len(inputString) < size {
+	if len(inputString) != size {
+		panic("Input string does not match map size")
 		return emptyMap
 	}
 	for i := 0; i < size; i++ {
-		icon := rune(inputString[i])
+		icon := inputString[i]
 		mapper(emptyMap, icon, geometry.Point{X: i % width, Y: i / width})
 	}
 	return emptyMap
@@ -1049,7 +1050,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) MoveDownedActor(actor ActorTy
 	if m.cells[newPos.Y*m.mapWidth+newPos.X].DownedActor != nil {
 		return
 	}
-	m.cells[actor.Position().Y*m.mapWidth+actor.Position().X] = m.cells[actor.Position().Y*m.mapWidth+actor.Position().X].WithDownedActorHereRemoved(actor)
+	if m.cells[actor.Position().Y*m.mapWidth+actor.Position().X].DownedActor != nil && *m.cells[actor.Position().Y*m.mapWidth+actor.Position().X].DownedActor == actor {
+		m.cells[actor.Position().Y*m.mapWidth+actor.Position().X] = m.cells[actor.Position().Y*m.mapWidth+actor.Position().X].WithDownedActorHereRemoved(actor)
+	}
 	actor.SetPosition(newPos)
 	m.cells[newPos.Y*m.mapWidth+newPos.X] = m.cells[newPos.Y*m.mapWidth+newPos.X].WithDownedActor(actor)
 }

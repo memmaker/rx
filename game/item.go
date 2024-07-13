@@ -5,8 +5,11 @@ import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/geometry"
+	"RogueUI/util"
 	"fmt"
 	"image/color"
+	"strconv"
+	"strings"
 )
 
 type Item struct {
@@ -29,12 +32,44 @@ type Item struct {
 
 	equipFlag    foundation.ActorFlag
 	thrownDamage dice_curve.Dice
+	tags         foundation.ItemTags
 }
 
-func (g *GameState) NewItemFromName(name string) *Item {
-	def := g.dataDefinitions.GetItemDefByName(name)
-	return NewItem(def)
+func (g *GameState) NewItemFromName(itemName string) *Item {
+	var item *Item
+	charges := 1
+	if util.LooksLikeAFunction(itemName) {
+		name, args := util.GetNameAndArgs(itemName)
+		switch name {
+		case "key":
+			item = NewKey(args.Get(0), args.Get(1))
+		}
+	} else if strings.Contains(itemName, "|") {
+		parts := strings.Split(itemName, "|")
+		itemName = strings.TrimSpace(parts[0])
+		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
+		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
+		item = NewItem(itemDef)
+		item.SetCharges(charges)
+	} else {
+		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
+		item = NewItem(itemDef)
+		item.SetCharges(charges)
+	}
+
+	return item
 }
+
+func NewKey(keyID, displayName string) *Item {
+	return &Item{
+		name:         displayName,
+		internalName: keyID,
+		category:     foundation.ItemCategoryKeys,
+		charges:      -1,
+		slot:         foundation.SlotNameNotEquippable,
+	}
+}
+
 func NewItem(def ItemDef) *Item {
 	charges := 1
 	if def.Charges.NotZero() {
@@ -42,6 +77,7 @@ func NewItem(def ItemDef) *Item {
 	}
 	item := &Item{
 		name:         def.Name,
+		tags:         def.Tags,
 		internalName: def.InternalName,
 		category:     def.Category,
 		charges:      charges,
@@ -131,7 +167,7 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 	if i.IsWeapon() {
 		weapon := i.weapon
-		line = cview.Escape(fmt.Sprintf("%s (%s)", i.Name(), weapon.GetDamage().ShortString()))
+		line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), weapon.GetDamage().ShortString()))
 	}
 	if i.IsArmor() {
 		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
@@ -140,7 +176,7 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 		line = cview.Escape(fmt.Sprintf("%s (%d turns)", i.Name(), i.charges))
 	}
 	if i.IsAmmo() {
-		line = cview.Escape(fmt.Sprintf("%s x%d", i.Name(), i.GetCharges()))
+		line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetCharges()))
 	}
 	return colorCode + line + "[-]"
 }
@@ -379,4 +415,16 @@ func (i *Item) Merge(ammo *Item) {
 
 func (i *Item) GetAmmo() *AmmoInfo {
 	return i.ammo
+}
+
+func (i *Item) IsLockpick() bool {
+	return i.category == foundation.ItemCategoryLockpicks
+}
+
+func (i *Item) IsKey() bool {
+	return i.category == foundation.ItemCategoryKeys
+}
+
+func (i *Item) HasTag(tag foundation.ItemTags) bool {
+	return i.tags.Contains(tag)
 }

@@ -4,7 +4,7 @@
 ^^^^^     ^^^^^^^^^^^^^^^^^^^^^^^^^                          ^^^^^^^^^^^^^^^^^^^
 ^^^^      ^^^^^^^^^^^^^^^^^^^^^^                       r    ^^^^^^^^^^^^^^^^^^^^
 ^^^       ^^^^^^^^ ^^^^^^^^^^^^                             ^^^^^^^^^^^^^^*^^^^^
-^^^       ^^^^^^^^   ^^^^^^^^^^                                   ^^^^^^^   ^^^^
+^^^       ^^^^^^^^   ^^^^^^^^^^                                   ^^^^^^^   2^^^
 ^^^ ! r   ^^^^^^^^^^   ^^^^^^^                                         1     ^^^
 ^^^       ^^^^^^^^^^   ^^^^^^^       ^^                                      ^^^
 ^^         ^^^^^^^^^    ^^^^^^       ^^^                                     ^^^
@@ -19,23 +19,24 @@
 °°°     ^^^^^^^^^                  ^^^^^                                  !  ^^^
 °°°    ^^^^^^^^^^               ^^^^^^^^                                 r   ^^^
 °°°°  ^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^           ^^^                      ^^
-°°°°°^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^
+°°°°°^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+°°°°°^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ## Legend
-
-^ = Wall | Solid Rock
-* = Transition | a vault door | vault_13 | entrance
-° = Transition | a path leading outside | world_map | vault_13
+<space> = Tile | CaveFloor | cave floor
+^ = Tile | CaveWall | solid rock
+* = VaultTransition | vault_84 | a vault door | v84_lvl_1 | entrance
+° = DesertTransition | world_map | a path leading outside | world_map | vault_13
 r = Actor | rat
-! = Loot | 1-2
+! = Container | vault_bag | vault bag
 1 = DeadActor | dweller_corpse
+2 = Terminal | v84_door_terminal | vault door controls
 
-## Containers
+## ObjectRecords
+name: vault_bag
+random_loot_quality: 1
+random_loot_count: 1-2
+item: stimpak
 
-name: dweller_corpse
-description: a dead vault dweller
-icon: %
-color: blue
-item: 10mm Pistol
-item: 10mm JHP | 24
-item: Stimpak
+## InitFlags
+lock(v84_cave/vault_84) = 1

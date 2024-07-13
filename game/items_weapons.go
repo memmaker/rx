@@ -164,7 +164,10 @@ func (i *WeaponInfo) LoadAmmo(ammo *Item) *Item {
 	}
 	oldAmmo := i.loadedInMagazine
 	i.loadedInMagazine = ammo
-	return oldAmmo
+	if oldAmmo.GetCharges() > 0 {
+		return oldAmmo
+	}
+	return nil
 }
 
 func (i *WeaponInfo) IsRanged() bool {

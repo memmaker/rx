@@ -60,10 +60,17 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	}
 
 	if actorAt, exists := g.gridMap.TryGetActorAt(newPos); exists {
-		g.playerMeleeAttack(actorAt)
+		if actorAt.IsHostile() {
+			g.playerMeleeAttack(actorAt)
+		} else {
+			g.StartDialogue(actorAt.GetInternalName(), false)
+		}
 		return
 	}
 
+	if downedActorAt, exists := g.gridMap.TryGetDownedActorAt(newPos); exists {
+		g.openInventoryOf(downedActorAt)
+	}
 	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists && !objectAt.IsWalkable(g.Player) {
 		objectAt.OnBump(g.Player)
 		return
@@ -76,6 +83,33 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 		NewPos:    newPos,
 		Mode:      foundation.PlayerMoveModeManual,
 	})
+}
+
+func (g *GameState) openInventoryOf(actor *Actor) {
+	inventory := actor.GetInventory()
+
+	stackRef := itemStacksForUI(inventory.StackedItemsWithFilter(func(item *Item) bool {
+		return !item.HasTag(foundation.TagNoLoot)
+	}))
+
+	if inventory.IsEmpty() || len(stackRef) == 0 {
+		g.msg(foundation.HiLite("There is nothing to pick up"))
+		return
+	}
+
+	transfer := func(itemUI foundation.ItemForUI) {
+		itemStack := itemUI.(*InventoryStack)
+		for _, item := range itemStack.GetItems() {
+			inventory.Remove(item)
+			g.Player.GetInventory().Add(item)
+		}
+
+		if !inventory.IsEmpty() {
+			g.openInventoryOf(actor)
+		}
+	}
+	g.ui.ShowContainer(actor.Name(), stackRef, transfer)
+
 }
 func (g *GameState) afterPlayerMoved() {
 	// explore the map

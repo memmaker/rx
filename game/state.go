@@ -18,6 +18,7 @@ import (
 	"os"
 	"path"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -38,7 +39,7 @@ type GameState struct {
 
 	logBuffer []foundation.HiLiteString
 
-	gridMap       *gridmap.GridMap[*Actor, *Item, *Object]
+	gridMap       *gridmap.GridMap[*Actor, *Item, Object]
 	dungeonLayout *dungen.DungeonMap
 
 	currentDungeonLevel              int
@@ -62,6 +63,9 @@ type GameState struct {
 	playerColor             string
 	config                  *foundation.Configuration
 	ascensionsWithoutAmulet int
+	mapLoader               MapLoader
+	gameFlags               util.StringFlags
+	terminalGuesses         map[string][]string
 }
 
 func (g *GameState) GetRangedHitChance(target foundation.ActorForUI) int {
@@ -115,7 +119,13 @@ func (g *GameState) ActorAt(loc geometry.Point) foundation.ActorForUI {
 	}
 	return nil
 }
-
+func (g *GameState) DownedActorAt(loc geometry.Point) foundation.ActorForUI {
+	if g.gridMap.Contains(loc) && g.gridMap.IsDownedActorAt(loc) {
+		actorAt := g.gridMap.DownedActorAt(loc)
+		return actorAt
+	}
+	return nil
+}
 func (g *GameState) OpenHitLocationMenu() {
 	var menuItems []foundation.MenuItem
 	menuItems = append(menuItems, foundation.MenuItem{
@@ -219,6 +229,88 @@ func (g *GameState) IsSomethingBlockingTargetingAtLoc(point geometry.Point) bool
 	return !g.gridMap.IsCurrentlyPassable(point)
 }
 
+func (g *GameState) OpenDialogueNode(conversation *Conversation, node ConversationNode, isTerminal bool) {
+	endConversation := false
+	var effectCalls []func()
+	for _, effect := range node.Effects {
+		if effect == "EndConversation" {
+			endConversation = true
+		} else {
+			if util.LooksLikeAFunction(effect) {
+				name, args := util.GetNameAndArgs(effect)
+				switch name {
+				case "Hacking":
+					terminalID := args.Get(0)
+					difficulty := args.Get(1)
+					flagName := args.Get(2)
+					followUpNode := args.Get(3)
+
+					effectCalls = append(effectCalls, func() {
+						previousGuesses := g.terminalGuesses[terminalID]
+						g.ui.StartHackingGame(util.MurmurHash(flagName), foundation.DifficultyFromString(difficulty), previousGuesses, func(pGuesses []string, result foundation.InteractionResult) {
+							g.terminalGuesses[terminalID] = pGuesses
+							if result == foundation.Success {
+								g.gameFlags.SetFlag(flagName)
+							}
+							nextNode := conversation.GetNodeByName(followUpNode)
+							g.OpenDialogueNode(conversation, nextNode, isTerminal)
+							return
+						})
+					})
+				default:
+					g.ApplyEffect(name, args)
+				}
+			}
+		}
+	}
+
+	nodeText := node.NpcText
+	var nodeOptions []foundation.MenuItem
+	if endConversation {
+		nodeOptions = append(nodeOptions, foundation.MenuItem{
+			Name:       "<End Conversation>",
+			Action:     g.ui.CloseConversation,
+			CloseMenus: true,
+		})
+	} else {
+		for _, o := range node.Options {
+			option := o
+			if option.displayCondition != nil {
+				evalResult, err := option.displayCondition.Evaluate(nil)
+				asBool := evalResult.(bool)
+				if err != nil || !asBool {
+					continue
+				}
+			}
+			nodeOptions = append(nodeOptions, foundation.MenuItem{
+				Name: option.playerText,
+				Action: func() {
+					nextNode := conversation.GetNextNode(option)
+					g.OpenDialogueNode(conversation, nextNode, isTerminal)
+				},
+				CloseMenus: true,
+			})
+		}
+	}
+
+	g.ui.SetConversationState(nodeText, nodeOptions, isTerminal)
+	for _, effectCall := range effectCalls {
+		effectCall()
+	}
+}
+
+func (g *GameState) ApplyEffect(name string, args []string) {
+	switch name {
+	case "SetFlag":
+		flagName := strings.Trim(args[0], "'\" ")
+		g.gameFlags.SetFlag(flagName)
+	case "ClearFlag":
+		flagName := strings.Trim(args[0], "'\" ")
+		g.gameFlags.ClearFlag(flagName)
+	}
+	return
+}
+
 func (g *GameState) OpenWizardMenu() {
 	g.ui.OpenMenu([]foundation.MenuItem{
 		{
@@ -229,21 +321,44 @@ func (g *GameState) OpenWizardMenu() {
 		{
 			Name: "Load Test Map",
 			Action: func() {
-				g.GotoNamedLevel("line_room")
+				g.GotoNamedLevel("v84_cave", "vault_84")
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Goto Town",
+			Name: "Test Lockpick (VeryEasy)",
 			Action: func() {
-				g.GotoNamedLevel("town")
+				g.ui.StartLockpickGame(foundation.VeryEasy, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
+					g.msg(foundation.HiLite("Lockpick result: %s", result.String()))
+				})
 			},
-			CloseMenus: true,
+		},
+		{
+			Name: "Test Lockpick (Medium)",
+			Action: func() {
+				g.ui.StartLockpickGame(foundation.Medium, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
+					g.msg(foundation.HiLite("Lockpick result: %s", result.String()))
+				})
+			},
+		},
+		{
+			Name: "Test Lockpick (Very Hard)",
+			Action: func() {
+				g.ui.StartLockpickGame(foundation.VeryHard, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
+					g.msg(foundation.HiLite("Lockpick result: %s", result.String()))
+				})
+			},
 		},
 		{
 			Name: "250 Skill Points",
 			Action: func() {
 				g.Player.GetCharSheet().AddSkillPoints(250)
+			},
+		},
+		{
+			Name: "Show Flags",
+			Action: func() {
+				g.ui.OpenTextWindow(g.gameFlags.ToStringArray())
 			},
 		},
 		{
@@ -272,6 +387,20 @@ func (g *GameState) OpenWizardMenu() {
 	})
 }
 
+func (g *GameState) StartDialogue(name string, isTerminal bool) {
+	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", name+".txt")
+	if !util.FileExists(conversationFilename) {
+		return
+	}
+	conversation, err := g.ParseConversation(conversationFilename)
+	if err != nil {
+		panic(err)
+		return
+	}
+	rootNode := conversation.GetRootNode()
+	g.OpenDialogueNode(conversation, rootNode, isTerminal)
+}
+
 func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameState {
 	g := &GameState{
 		config:              config,
@@ -281,9 +410,11 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 		maximumDungeonLevel: 26,
 		ui:                  ui,
 		tileStyle:           0,
+		gameFlags:           make(util.StringFlags),
 		dataDefinitions:     GetDataDefinitions(config.DataRootDir),
 		playerFoV:           geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
 		visionRange:         14,
+		terminalGuesses:     make(map[string][]string),
 	}
 	g.init()
 	ui.SetGame(g)
@@ -297,6 +428,7 @@ func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
 	}
 }
 func (g *GameState) init() {
+	g.mapLoader = NewTextMapLoader(g)
 	playerSheet := special.NewCharSheet()
 	playerSheet.SetSkill(special.SmallGuns, 50)
 	g.Player = NewPlayer(g.playerName, g.playerIcon, g.playerColor, playerSheet)
@@ -346,6 +478,7 @@ func (g *GameState) NewGold(amount int) *Item {
 	item.SetCharges(amount)
 	return item
 }
+
 func (g *GameState) Reset() {
 	g.init()
 	g.moveIntoDungeon()
@@ -442,6 +575,10 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	}
 	if g.gridMap.IsActorAt(pos) && g.Player.Position() != pos {
 		actor := g.gridMap.ActorAt(pos)
+		return foundation.HiLite("You see %s here", actor.Name())
+	}
+	if g.gridMap.IsDownedActorAt(pos) && g.Player.Position() != pos {
+		actor := g.gridMap.DownedActorAt(pos)
 		return foundation.HiLite("You see %s here", actor.Name())
 	}
 	if g.gridMap.IsItemAt(pos) {
@@ -569,6 +706,13 @@ func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 		actor := *mapCell.Actor
 		if actor.IsDrawn(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
 			return foundation.EntityTypeActor
+		}
+	}
+
+	if mapCell.DownedActor != nil {
+		actor := *mapCell.DownedActor
+		if actor.IsDrawn(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
+			return foundation.EntityTypeDownedActor
 		}
 	}
 
@@ -722,7 +866,7 @@ func (g *GameState) defaultStyleIcon(icon rune) foundation.TextIcon {
 	}
 }
 
-func (g *GameState) NewEnemyFromDef(def MonsterDef) *Actor {
+func (g *GameState) NewEnemyFromDef(def ActorDef) *Actor {
 	charSheet := special.NewCharSheet()
 
 	for stat, statValue := range def.SpecialStats {
@@ -746,10 +890,9 @@ func (g *GameState) NewEnemyFromDef(def MonsterDef) *Actor {
 	actor.SetInternalName(def.InternalName)
 
 	actor.SetSizeModifier(def.SizeModifier)
-
+	actor.SetRelationToPlayer(def.DefaultRelation)
 	for _, itemName := range def.Equipment {
-		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
-		item := NewItem(itemDef)
+		item := g.NewItemFromName(itemName)
 		actor.GetInventory().Add(item)
 	}
 
@@ -765,7 +908,8 @@ func (g *GameState) actorKilled(causeOfDeath string, victim *Actor) {
 	}
 	g.msg(foundation.HiLite("%s killed %s", causeOfDeath, victim.Name()))
 
-	g.dropInventory(victim)
+	//g.dropInventory(victim)
+	g.gridMap.SetActorToDowned(victim)
 }
 
 func (g *GameState) revealAll() {
@@ -774,6 +918,9 @@ func (g *GameState) revealAll() {
 }
 
 func (g *GameState) isInPlayerRoom(position geometry.Point) bool {
+	if g.dungeonLayout == nil {
+		return true
+	}
 	playerRoom := g.getPlayerRoom()
 	if playerRoom == nil {
 		return false
@@ -781,7 +928,7 @@ func (g *GameState) isInPlayerRoom(position geometry.Point) bool {
 	return playerRoom.ContainsIncludingWalls(position)
 }
 
-func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.GridMap[*Actor, *Item, *Object], dungeon *dungen.DungeonMap) {
+func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.GridMap[*Actor, *Item, Object], dungeon *dungen.DungeonMap) {
 
 	playerRoom := dungeon.GetRoomAt(g.Player.Position())
 
@@ -823,7 +970,7 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 
 	spawnObjectsInRoom := func(room *dungen.DungeonRoom, objectCount int) {
 		for i := 0; i < objectCount; i++ {
-			spawnPos, exists := room.GetRandomAbsoluteFloorPositionWithFilter(random, newMap.IsEmptyNonSpecialFloor)
+			_, exists := room.GetRandomAbsoluteFloorPositionWithFilter(random, newMap.IsEmptyNonSpecialFloor)
 			if !exists {
 				break
 			}
@@ -832,12 +979,8 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 				randomEffect := trapEffects[random.Intn(len(trapEffects))]
 				object := g.NewTrap(randomEffect)
 			*/
-			object := g.NewContainer("chest", []*Item{
-				g.NewItemFromName("stimpak"),
-				g.NewItemFromName("10mm_pistol"),
-			})
 
-			newMap.AddObject(object, spawnPos)
+			//newMap.AddObject(object, spawnPos)
 		}
 	}
 
@@ -959,7 +1102,7 @@ func (g *GameState) openWizardCreateTrapMenu() {
 	g.ui.OpenMenu(menuActions)
 }
 
-func (g *GameState) spawnCrawlerInWall(monsterDef MonsterDef) {
+func (g *GameState) spawnCrawlerInWall(monsterDef ActorDef) {
 	playerRoom := g.getPlayerRoom()
 	if playerRoom == nil {
 		return
@@ -1138,7 +1281,7 @@ func (g *GameState) triggerTileEffectsAfterMovement(actor *Actor, oldPos, newPos
 			playerMoveAnim.RequestMapUpdateOnFinish()
 			animations = append(animations, playerMoveAnim)
 		}
-		triggeredEffectAnimations := objectAt.OnWalkOver()
+		triggeredEffectAnimations := objectAt.OnWalkOver(actor)
 		animations = append(animations, triggeredEffectAnimations...)
 		return animations
 	}

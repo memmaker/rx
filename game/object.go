@@ -5,40 +5,29 @@ import (
 	"RogueUI/geometry"
 )
 
-type Object struct {
+type BaseObject struct {
 	position        geometry.Point
 	category        foundation.ObjectCategory
-	onDamage        func() []foundation.Animation
-	onWalkOver      func() []foundation.Animation
-	isContainer     bool
-	containedItems  *[]foundation.ItemForUI
+	onDamage        func(actor *Actor) []foundation.Animation
+	onWalkOver      func(actor *Actor) []foundation.Animation
 	isAlive         bool
 	isDrawn         bool
 	isWalkable      bool
 	isHidden        bool
 	triggerOnDamage bool
 	onBump          func(actor *Actor)
-	name            string
-	isKnown         bool
+	internalName    string
+	displayName     string
+	isTransparent   bool
 }
 
-func (b *Object) GetCategory() foundation.ObjectCategory {
-	if b.isContainer {
-		if b.isKnown {
-			if len(*b.containedItems) == 0 {
-				return foundation.ObjectKnownEmptyContainer
-			} else {
-				return foundation.ObjectKnownContainer
-			}
-		}
-		return foundation.ObjectUnknownContainer
-	}
+func (b *BaseObject) GetCategory() foundation.ObjectCategory {
 	return b.category
 }
 
-func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *Object {
+func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *BaseObject {
 	trap := NewObject(trapType)
-	triggerEffect := func() []foundation.Animation {
+	triggerEffect := func(actor *Actor) []foundation.Animation {
 		if trap.isAlive {
 			trap.isAlive = false
 			zapEffect := ZapEffectFromName(trapType.ZapEffect())
@@ -54,122 +43,129 @@ func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *Object {
 	trap.SetWalkable(true)
 	return trap
 }
-func (g *GameState) NewContainer(name string, items []*Item) *Object {
-	iui := itemsForUI(items)
-	container := NewObject(foundation.ObjectUnknownContainer)
-	container.isContainer = true
-	container.SetWalkable(false)
-	container.SetHidden(false)
-	itemsUI := &iui
-	container.containedItems = itemsUI
-	container.name = name
 
-	transferItem := func(itemTaken foundation.ItemForUI) {
-		for i, item := range *itemsUI {
-			if item == itemTaken {
-				*itemsUI = append((*itemsUI)[:i], (*itemsUI)[i+1:]...)
-				g.Player.GetInventory().Add(itemTaken.(*Item))
-				break
-			}
-		}
-	}
-	container.onBump = func(actor *Actor) {
+func (g *GameState) NewTerminal(name string) *BaseObject {
+	terminal := NewObject(foundation.ObjectTerminal)
+	terminal.SetWalkable(false)
+	terminal.SetHidden(false)
+	terminal.SetTransparent(true)
+	terminal.internalName = name
+
+	terminal.onBump = func(actor *Actor) {
 		if actor == g.Player {
-			g.msg(foundation.HiLite("You search %s", container.Name()))
-			g.ui.ShowContainer(container.Name(), itemsUI, transferItem)
+			g.StartDialogue(name, true)
 		}
 	}
-	return container
+	return terminal
 }
-func NewObject(icon foundation.ObjectCategory) *Object {
-	return &Object{
+func NewObject(icon foundation.ObjectCategory) *BaseObject {
+	return &BaseObject{
 		category: icon,
 		isAlive:  true,
 		isDrawn:  true,
 	}
 }
 
-func (b *Object) SetOnDamage(onDamage func() []foundation.Animation) {
+func (b *BaseObject) SetOnDamage(onDamage func(actor *Actor) []foundation.Animation) {
 	b.onDamage = onDamage
 }
-func (b *Object) Position() geometry.Point {
+func (b *BaseObject) Position() geometry.Point {
 	return b.position
 }
 
-func (b *Object) ObjectIcon() foundation.ObjectCategory {
-	return b.category
-}
-
-func (b *Object) SetPosition(pos geometry.Point) {
+func (b *BaseObject) SetPosition(pos geometry.Point) {
 	b.position = pos
 }
-func (b *Object) OnDamage() []foundation.Animation {
+func (b *BaseObject) OnDamage(actor *Actor) []foundation.Animation {
 	if b.onDamage != nil && b.triggerOnDamage {
-		return b.onDamage()
+		return b.onDamage(actor)
 	}
 	return nil
 }
-func (b *Object) OnWalkOver() []foundation.Animation {
+func (b *BaseObject) OnWalkOver(actor *Actor) []foundation.Animation {
 	if b.onWalkOver != nil {
-		return b.onWalkOver()
+		return b.onWalkOver(actor)
 	}
 	return nil
 }
-func (b *Object) IsWalkable(actor *Actor) bool {
+func (b *BaseObject) IsWalkable(actor *Actor) bool {
 	return b.isWalkable
 }
 
-func (b *Object) IsTransparent() bool {
-	return false
+func (b *BaseObject) IsTransparent() bool {
+	return b.isTransparent
 }
-func (b *Object) IsPassableForProjectile() bool {
+func (b *BaseObject) IsPassableForProjectile() bool {
 	return false
 }
 
-func (b *Object) IsAlive() bool {
+func (b *BaseObject) IsAlive() bool {
 	return b.isAlive
 }
 
-func (b *Object) SetDrawOnMap(drawOnMap bool) {
+func (b *BaseObject) SetDrawOnMap(drawOnMap bool) {
 	b.isDrawn = drawOnMap
 }
 
-func (b *Object) IsDrawn() bool {
+func (b *BaseObject) IsDrawn() bool {
 	return b.isDrawn && !b.isHidden
 }
 
-func (b *Object) SetOnWalkOver(handler func() []foundation.Animation) {
+func (b *BaseObject) SetOnWalkOver(handler func(actor *Actor) []foundation.Animation) {
 	b.onWalkOver = handler
 }
 
-func (b *Object) SetWalkable(isWalkable bool) {
+func (b *BaseObject) SetWalkable(isWalkable bool) {
 	b.isWalkable = isWalkable
 }
 
-func (b *Object) IsHidden() bool {
+func (b *BaseObject) IsHidden() bool {
 	return b.isHidden
 }
 
-func (b *Object) SetHidden(isHidden bool) {
+func (b *BaseObject) SetHidden(isHidden bool) {
 	b.isHidden = isHidden
 }
 
-func (b *Object) Name() string {
-	if b.name != "" {
-		return b.name
+func (b *BaseObject) Name() string {
+	if b.displayName != "" {
+		return b.displayName
 	}
 	return b.category.String()
 }
 
-func (b *Object) IsTrap() bool {
+func (b *BaseObject) IsTrap() bool {
 	return b.category.IsTrap()
 }
 
-func (b *Object) OnBump(actor *Actor) {
+func (b *BaseObject) OnBump(actor *Actor) {
 	if b.onBump != nil {
 		b.onBump(actor)
-		if b.isContainer {
-			b.isKnown = true
-		}
 	}
+}
+
+func (b *BaseObject) SetTransparent(transparent bool) {
+	b.isTransparent = transparent
+}
+
+func (b *BaseObject) SetDisplayName(name string) {
+	b.displayName = name
+}
+
+type Object interface {
+	Name() string
+	GetCategory() foundation.ObjectCategory
+	Position() geometry.Point
+	SetPosition(pos geometry.Point)
+	SetHidden(isHidden bool)
+	IsHidden() bool
+	IsWalkable(actor *Actor) bool
+	IsTransparent() bool
+	IsPassableForProjectile() bool
+	IsAlive() bool
+	IsDrawn() bool
+	IsTrap() bool
+	OnDamage(actor *Actor) []foundation.Animation
+	OnWalkOver(actor *Actor) []foundation.Animation
+	OnBump(actor *Actor)
 }

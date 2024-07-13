@@ -75,37 +75,33 @@ type UI struct {
 	commandTable    map[string]func()
 	keyTable        map[KeyLayer]map[UIKey]string
 
-	lastFrameIcons   map[geometry.Point]rune
-	lastFrameStyle   map[geometry.Point]tcell.Style
-	isAnimationFrame bool
-	lastHudStats     map[foundation.HudValue]int
+	lastFrameIcons     map[geometry.Point]rune
+	lastFrameStyle     map[geometry.Point]tcell.Style
+	isAnimationFrame   bool
+	lastHudStats       map[foundation.HudValue]int
+	dialogueText       *cview.TextView
+	dialogueOptions    *cview.List
+	dialogueIsTerminal bool
 }
 
-func (u *UI) ShowContainer(name string, containedItems *[]foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
-	if len(*containedItems) == 0 {
-		u.openTextModal([]string{"The container is empty."})
-		return
-	}
+func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
 	var menuItems []foundation.MenuItem
-	for _, i := range *containedItems {
-		item := i
-		menuItems = append(menuItems, foundation.MenuItem{
-			Name: item.InventoryNameWithColors(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(item.GetCategory()))),
-			Action: func() {
-				transfer(item)
-				if len(*containedItems) > 0 {
-					u.ShowContainer(name, containedItems, transfer)
-				} else {
-					u.UpdateLogWindow()
-				}
-			},
-			CloseMenus: true,
-		})
-	}
 	closeContainer := func() {
 		u.pages.HidePanel("contextMenu")
 		u.UpdateLogWindow()
 	}
+	for _, i := range containedItems {
+		item := i
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: item.InventoryNameWithColors(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(item.GetCategory()))),
+			Action: func() {
+				closeContainer()
+				transfer(item)
+			},
+			CloseMenus: false,
+		})
+	}
+
 	menu := u.openSimpleMenu(menuItems)
 	menu.SetTitle(name)
 	keyForTakeAll := u.GetKeysForCommandAsString(KeyLayerMain, "use")
@@ -119,7 +115,7 @@ func (u *UI) ShowContainer(name string, containedItems *[]foundation.ItemForUI, 
 		command := u.getCommandForKey(uiKey)
 
 		if command == "use" {
-			for _, item := range *containedItems {
+			for _, item := range containedItems {
 				transfer(item)
 			}
 			closeContainer()
@@ -377,6 +373,8 @@ func (u *UI) GetAnimMove(actor foundation.ActorForUI, old geometry.Point, new ge
 }
 
 func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
+	mapIconHere := u.currentTheme.GetIconForMap(u.game.MapAt(actor.Position()))
+
 	isHallucinating := u.isPlayerHallucinating()
 	if isHallucinating {
 		randomLetter := rune('A' + rand.Intn(26))
@@ -386,7 +384,7 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
 		return foundation.TextIcon{
 			Rune: randomLetter,
 			Fg:   u.currentTheme.GetRandomColor(),
-			Bg:   u.currentTheme.GetIconForMap(foundation.TileFloor).Bg,
+			Bg:   mapIconHere.Bg,
 		}
 	}
 
@@ -399,9 +397,11 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
 			Bg:   u.currentTheme.GetColorByName("White"),
 		}
 	} else {
-		backGroundColor = u.currentTheme.GetIconForMap(foundation.TileFloor).Bg
+		backGroundColor = mapIconHere.Bg
 	}
-
+	if !actor.IsAlive() {
+		return actor.TextIcon(backGroundColor, u.currentTheme.GetColorByName).WithRune('%').WithFg(u.currentTheme.GetColorByName("Red"))
+	}
 	return actor.TextIcon(backGroundColor, u.currentTheme.GetColorByName)
 }
 
@@ -474,7 +474,7 @@ func (u *UI) GetAnimRadialAlert(position geometry.Point, dijkstra map[geometry.P
 
 func (u *UI) GetAnimTeleport(user foundation.ActorForUI, origin, targetPos geometry.Point, appearOnMap func()) (foundation.Animation, foundation.Animation) {
 	originalIcon := u.getIconForActor(user)
-	mapBackground := u.currentTheme.GetUIColor(UIColorMapDefaultBackground)
+	mapBackground := u.getMapTileBackgroundColor(origin)
 	lightCyan := u.currentTheme.GetColorByName("LightCyan")
 	white := u.currentTheme.GetColorByName("White")
 	lightGray := u.currentTheme.GetColorByName("LightGray")
@@ -502,7 +502,7 @@ func (u *UI) GetAnimTeleport(user foundation.ActorForUI, origin, targetPos geome
 
 func (u *UI) GetAnimAppearance(actor foundation.ActorForUI, targetPos geometry.Point, done func()) foundation.Animation {
 	originalIcon := u.getIconForActor(actor)
-	mapBackground := u.currentTheme.GetUIColor(UIColorMapDefaultBackground)
+	mapBackground := u.getMapTileBackgroundColor(targetPos)
 	lightCyan := u.currentTheme.GetColorByName("LightCyan")
 	white := u.currentTheme.GetColorByName("White")
 	lightGray := u.currentTheme.GetColorByName("LightGray")
@@ -554,8 +554,8 @@ func (u *UI) GetAnimWakeUp(location geometry.Point, done func()) foundation.Anim
 
 		cycleIcon := foundation.TextIcon{
 			Rune: wakeUpRunes[i],
-			Fg:   u.currentTheme.GetUIColor(UIColorMapDefaultForeground),
-			Bg:   u.currentTheme.GetUIColor(UIColorMapDefaultBackground),
+			Fg:   u.currentTheme.GetUIColor(UIColorUIForeground),
+			Bg:   u.currentTheme.GetColorByName("black"),
 		}
 
 		frames := []foundation.TextIcon{
@@ -609,8 +609,8 @@ func (u *UI) GetAnimConfuse(location geometry.Point, done func()) foundation.Ani
 
 		cycleIcon := foundation.TextIcon{
 			Rune: randomRune(),
-			Fg:   u.currentTheme.GetUIColor(UIColorMapDefaultForeground),
-			Bg:   u.currentTheme.GetUIColor(UIColorMapDefaultBackground),
+			Fg:   u.currentTheme.GetUIColor(UIColorUIForeground),
+			Bg:   u.currentTheme.GetUIColor(UIColorUIBackground),
 		}
 
 		frames := []foundation.TextIcon{
@@ -762,7 +762,7 @@ func (u *UI) GetAnimProjectile(icon rune, fgColor string, origin geometry.Point,
 	textIcon := foundation.TextIcon{
 		Rune: icon,
 		Fg:   u.currentTheme.GetColorByName(fgColor),
-		Bg:   u.currentTheme.GetUIColor(UIColorMapDefaultBackground),
+		Bg:   u.getMapTileBackgroundColor(origin), // TODO: this won't work when there is a transition
 	}
 	return u.GetAnimProjectileWithIcon(textIcon, origin, target, done)
 }
@@ -797,7 +797,7 @@ func (u *UI) GetAnimProjectileWithTrail(leadIcon rune, colorNames []string, path
 			trailIcons = append(trailIcons, foundation.TextIcon{
 				Rune: leadIcon,
 				Fg:   u.currentTheme.GetColorByName(cName),
-				Bg:   u.currentTheme.GetUIColor(UIColorMapDefaultBackground),
+				Bg:   u.currentTheme.GetColorByName("Black"),
 			})
 		} else {
 			trailIcons = append(trailIcons, foundation.TextIcon{
@@ -1382,9 +1382,6 @@ func (u *UI) UpdateVisibleEnemies() {
 		barIcon := '*'
 		if enemy.HasFlag(foundation.FlagSleep) {
 			barIcon = 'z'
-			if enemy.HasFlag(foundation.FlagMean) {
-				barIcon = 'Z'
-			}
 		} else if !enemy.HasFlag(foundation.FlagAwareOfPlayer) {
 			barIcon = '?'
 		}
@@ -1674,6 +1671,125 @@ func (u *UI) makeSideBySideModal(panelName string, primitive, qPrimitive cview.P
 	u.application.SetFocus(qPrimitive)
 }
 
+func (u *UI) makeTopAndBottomModal(panelName string, primitive, qPrimitive cview.Primitive) {
+	modalContainer := wrapPrimitivesTopToBottom(primitive, qPrimitive)
+
+	if inputCapturer, ok := primitive.(InputCapturer); ok {
+		inputCapturer.SetInputCapture(u.popOnEscape)
+	}
+
+	if inputCapturer, ok := qPrimitive.(InputCapturer); ok {
+		inputCapturer.SetInputCapture(u.popOnEscape)
+	}
+	u.pages.AddPanel(panelName, modalContainer, true, true)
+	u.pages.ShowPanel(panelName)
+	u.application.SetFocus(qPrimitive)
+}
+func (u *UI) StartLockpickGame(difficulty foundation.Difficulty, getLockpickCount func() int, removeLockpick func(), onCompletion func(result foundation.InteractionResult)) {
+
+	panelName := "lockpickGame"
+	lockpickGame := NewLockpickGame(rand.Int63(), difficulty, getLockpickCount, removeLockpick, func(result foundation.InteractionResult) {
+		u.pages.RemovePanel(panelName)
+		u.pages.SetCurrentPanel("main")
+		onCompletion(result)
+	})
+	lockpickGame.SetAudioPlayer(u.audioPlayer)
+	u.pages.AddPanel(panelName, lockpickGame, true, true)
+	u.pages.ShowPanel(panelName)
+	u.application.SetFocus(lockpickGame)
+}
+func (u *UI) StartHackingGame(identifier uint64, difficulty foundation.Difficulty, previousGuesses []string, onCompletion func(previousGuesses []string, success foundation.InteractionResult)) {
+	passwordFile := "4-letter-words.txt"
+	fakeCount := 4
+	switch difficulty {
+	case foundation.VeryEasy:
+		passwordFile = "4-letter-words.txt"
+		fakeCount = 4
+	case foundation.Easy:
+		passwordFile = "5-letter-words.txt"
+		fakeCount = 4
+	case foundation.Medium:
+		passwordFile = "6-letter-words.txt"
+		fakeCount = 5
+	case foundation.Hard:
+		passwordFile = "7-letter-words.txt"
+		fakeCount = 5
+	case foundation.VeryHard:
+		passwordFile = "8-letter-words.txt"
+		fakeCount = 6
+	}
+	passFile := path.Join(u.settings.DataRootDir, "wordlists", passwordFile)
+	passwords := util.ReadFileAsLines(passFile)
+	rnd := rand.New(rand.NewSource(int64(identifier)))
+
+	// shuffle the passwords
+	permutedIndexes := rnd.Perm(len(passwords))
+
+	var fakes []string
+	var correct string
+
+	for i := 0; i < fakeCount; i++ {
+		fakes = append(fakes, passwords[permutedIndexes[i]])
+	}
+	correct = passwords[permutedIndexes[fakeCount]]
+
+	hackingGame := NewHackingGame(correct, fakes, func(previousGuesses []string, result foundation.InteractionResult) {
+		u.pages.HidePanel("hackingGame")
+		onCompletion(previousGuesses, result)
+	})
+	hackingGame.SetAudioPlayer(u.audioPlayer)
+	hackingGame.SetGuesses(previousGuesses)
+	panelName := "hackingGame"
+	u.pages.AddPanel(panelName, hackingGame, true, true)
+	u.pages.ShowPanel(panelName)
+	u.application.SetFocus(hackingGame)
+}
+
+func (u *UI) SetConversationState(starterText string, starterOptions []foundation.MenuItem, isTerminal bool) {
+	u.dialogueIsTerminal = isTerminal
+	if !u.pages.HasPanel("conversation") && isTerminal {
+		u.audioPlayer.PlayCue("ui/terminal_poweron")
+	}
+	// text field
+	if u.dialogueText == nil {
+		textField := cview.NewTextView()
+
+		textField.SetBorder(true)
+		textField.SetScrollable(true)
+		textField.SetDynamicColors(true)
+		textField.SetWordWrap(true)
+		u.dialogueText = textField
+	}
+	u.dialogueText.SetText(starterText)
+
+	// menu
+	if u.dialogueOptions == nil {
+		choicesMenu := cview.NewList()
+		u.applyListStyle(choicesMenu)
+		u.dialogueOptions = choicesMenu
+	}
+	u.dialogueOptions.SetSelectedFunc(func(index int, listItem *cview.ListItem) {
+		action := starterOptions[index]
+		if action.CloseMenus {
+			u.pages.SetCurrentPanel("main")
+		}
+		action.Action()
+	})
+	setListItemsFromMenuItems(u.dialogueOptions, starterOptions)
+	u.makeTopAndBottomModal("conversation", u.dialogueText, u.dialogueOptions)
+}
+
+func (u *UI) CloseConversation() {
+	if u.dialogueIsTerminal {
+		u.audioPlayer.PlayCue("ui/terminal_poweroff")
+	}
+	u.pages.RemovePanel("conversation")
+	u.pages.SetCurrentPanel("main")
+	u.dialogueOptions = nil
+	u.dialogueText = nil
+	u.dialogueIsTerminal = false
+}
+
 func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 	u.openSimpleMenu(actions)
 }
@@ -1690,6 +1806,13 @@ func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 		action.Action()
 	})
 
+	longestItem := setListItemsFromMenuItems(list, menuItems)
+	u.makeCenteredModal("contextMenu", list, len(menuItems), longestItem)
+	return list
+}
+
+func setListItemsFromMenuItems(list *cview.List, menuItems []foundation.MenuItem) int {
+	list.Clear()
 	longestItem := 0
 	for index, a := range menuItems {
 		action := a
@@ -1700,9 +1823,9 @@ func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 		itemLength := len(action.Name) + 4
 		longestItem = max(longestItem, itemLength)
 	}
-	u.makeCenteredModal("contextMenu", list, len(menuItems), longestItem)
-	return list
+	return longestItem
 }
+
 func (u *UI) ShowMonsterInfo(monster foundation.ActorForUI) {
 	monsterNameInternalName := monster.GetInternalName()
 	lorePath := path.Join(u.settings.DataRootDir, "lore", "monsters", monsterNameInternalName+".txt")
@@ -1816,7 +1939,7 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 
 	if action == cview.MouseLeftDown {
 		mousePos := geometry.Point{X: newX, Y: newY}
-		if u.currentMouseX > u.settings.MapWidth {
+		if u.currentMouseX >= u.settings.MapWidth {
 			// clicked on right panel
 			u.onRightPanelClicked(mousePos)
 			return nil, action
@@ -2181,12 +2304,18 @@ func (u *UI) mapLookup(loc geometry.Point) (foundation.TextIcon, bool) {
 	}
 	return foundation.TextIcon{}, false
 }
-
+func (u *UI) getMapTileBackgroundColor(loc geometry.Point) color.RGBA {
+	icon := u.getIconForMap(u.game.MapAt(loc))
+	return icon.Bg
+}
 func (u *UI) visibleLookup(loc geometry.Point) (foundation.TextIcon, bool) {
 	entityType := u.game.TopEntityAt(loc)
 	switch entityType {
 	case foundation.EntityTypeActor:
 		actor := u.game.ActorAt(loc)
+		return u.getIconForActor(actor), true
+	case foundation.EntityTypeDownedActor:
+		actor := u.game.DownedActorAt(loc)
 		return u.getIconForActor(actor), true
 	case foundation.EntityTypeItem:
 		item := u.game.ItemAt(loc)
@@ -2341,7 +2470,12 @@ func (u *UI) getIconForItem(itemCategory foundation.ItemCategory) foundation.Tex
 	if u.isPlayerHallucinating() {
 		u.currentTheme.GetIconForItem(foundation.RandomItemCategory())
 	}
-	return u.currentTheme.GetIconForItem(itemCategory)
+	iconForItem := u.currentTheme.GetIconForItem(itemCategory)
+	if iconForItem.HasEmptyBackground() {
+		mapIconHere := u.currentTheme.GetIconForMap(foundation.TileFloor)
+		return iconForItem.WithBg(mapIconHere.Bg)
+	}
+	return iconForItem
 }
 
 func (u *UI) getIconForMap(worldTileType foundation.TileType) foundation.TextIcon {
@@ -2352,7 +2486,12 @@ func (u *UI) getIconForObject(object foundation.ObjectForUI) foundation.TextIcon
 	if u.isPlayerHallucinating() {
 		u.currentTheme.GetIconForObject(foundation.RandomObjectCategory())
 	}
-	return u.currentTheme.GetIconForObject(object.GetCategory())
+	objectIcon := u.currentTheme.GetIconForObject(object.GetCategory())
+	if objectIcon.HasEmptyBackground() {
+		mapIconHere := u.currentTheme.GetIconForMap(u.game.MapAt(object.Position()))
+		return objectIcon.WithBg(mapIconHere.Bg)
+	}
+	return objectIcon
 }
 
 func RightPadColored(s string, pLen int) string {
@@ -2585,6 +2724,7 @@ func (u *UI) openPipBoy() {
 func (u *UI) initAudio() {
 	go func() {
 		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "weapons"), "")
+		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "ui"), "")
 		u.audioPlayer.LoadEnemyCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "enemies"))
 		u.audioPlayer.SoundsLoaded()
 	}()

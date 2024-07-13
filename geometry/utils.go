@@ -350,7 +350,7 @@ func RotateVector(point Point, angleInDegrees float64) Point {
 	sin := math.Sin(radians)
 	x := float64(point.X)*cos - float64(point.Y)*sin
 	y := float64(point.X)*sin + float64(point.Y)*cos
-	return Point{X: int(x), Y: int(y)}
+	return Point{X: int(math.Round(x)), Y: int(math.Round(y))}
 }
 
 type FrameEncoder struct {

@@ -97,6 +97,10 @@ func (i InventoryStack) First() *Item {
 	return i.items[0]
 
 }
+
+func (i InventoryStack) GetItems() []*Item {
+	return i.items
+}
 func (i *Inventory) StackedItems() []*InventoryStack {
 	return i.StackedItemsWithFilter(func(item *Item) bool { return true })
 }
@@ -254,6 +258,41 @@ func (i *Inventory) RemoveAmmoByName(name string, amount int) *Item {
 func (i *Inventory) HasAmmo(caliber string, name string) bool {
 	for _, invItem := range i.items {
 		if invItem.IsAmmoOfCaliber(caliber) && invItem.GetInternalName() == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *Inventory) GetPointer() *[]*Item {
+	return &i.items
+}
+
+func (i *Inventory) GetLockpickCount() int {
+	count := 0
+	for _, invItem := range i.items {
+		if invItem.IsLockpick() {
+			count += invItem.GetCharges()
+		}
+	}
+	return count
+}
+
+func (i *Inventory) RemoveLockpick() {
+	for _, invItem := range i.items {
+		if invItem.IsLockpick() {
+			invItem.ConsumeCharge()
+			if invItem.GetCharges() == 0 {
+				i.Remove(invItem)
+			}
+			break
+		}
+	}
+}
+
+func (i *Inventory) HasKey(identifier string) bool {
+	for _, invItem := range i.items {
+		if invItem.IsKey() && invItem.GetInternalName() == identifier {
 			return true
 		}
 	}

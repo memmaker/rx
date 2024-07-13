@@ -519,7 +519,7 @@ func (g *GameState) damageLocation(damageSource string, targetPos geometry.Point
 
 	} else if g.gridMap.IsObjectAt(targetPos) {
 		object := g.gridMap.ObjectAt(targetPos)
-		return object.OnDamage()
+		return object.OnDamage(nil)
 	}
 	return nil
 }

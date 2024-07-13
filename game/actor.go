@@ -19,6 +19,26 @@ import (
 // Armor Class: 10
 // Hit Points: 12/12
 // Damage: 1d4
+type PlayerRelation uint8
+
+const (
+	Neutral PlayerRelation = iota
+	Hostile
+	Ally
+)
+
+func PlayerRelationFromString(str string) PlayerRelation {
+	str = strings.ToLower(str)
+	switch str {
+	case "neutral":
+		return Neutral
+	case "hostile":
+		return Hostile
+	case "ally":
+		return Ally
+	}
+	return Neutral
+}
 
 type Actor struct {
 	internalName string
@@ -41,6 +61,8 @@ type Actor struct {
 	sizeModifier           int
 	timeEnergy             int
 	body                   []*foundation.BodyPart
+
+	relation PlayerRelation
 }
 
 func NewPlayer(name string, playerIcon rune, playerColor string, character *special.CharSheet) *Actor {
@@ -60,6 +82,7 @@ func NewActor(name string, icon rune, color string, character *special.CharSheet
 		equipment:   NewEquipment(),
 		charSheet:   character,
 		body:        body,
+		relation:    Neutral,
 		statusFlags: foundation.NewMapFlags(),
 	}
 
@@ -555,4 +578,24 @@ func (a *Actor) GetCharSheet() *special.CharSheet {
 
 func (a *Actor) IsHuman() bool {
 	return a.internalName == "human" || a.internalName == "player" || a.internalName == ""
+}
+
+func (a *Actor) Kill() {
+	a.charSheet.Kill()
+}
+
+func (a *Actor) HasKey(identifier string) bool {
+	return a.GetInventory().HasKey(identifier)
+}
+
+func (a *Actor) IsHostile() bool {
+	return a.relation == Hostile
+}
+
+func (a *Actor) SetRelationToPlayer(relation PlayerRelation) {
+	a.relation = relation
+}
+
+func (a *Actor) SetDisplayName(name string) {
+	a.name = name
 }

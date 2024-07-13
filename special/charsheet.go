@@ -85,7 +85,6 @@ const (
 	Unarmed
 	MeleeWeapons
 	Throwing
-	FirstAid
 	Doctor
 	Sneak
 	Lockpick
@@ -114,8 +113,6 @@ func SkillFromName(name string) Skill {
 		return MeleeWeapons
 	case "throwing":
 		return Throwing
-	case "first_aid":
-		return FirstAid
 	case "doctor":
 		return Doctor
 	case "sneak":
@@ -296,19 +293,17 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 func (cs *CharSheet) getSkillBase(skill Skill) int {
 	switch skill {
 	case SmallGuns:
-		return 5 + (cs.GetStat(Agility) * 4)
+		return 5 + (cs.GetStat(Perception) * 4)
 	case BigGuns:
-		return cs.GetStat(Agility) * 2
+		return cs.GetStat(Strength) + cs.GetStat(Perception) + 5
 	case EnergyWeapons:
-		return cs.GetStat(Agility) * 2
+		return cs.GetStat(Perception) * 2
 	case Unarmed:
 		return 30 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
 	case MeleeWeapons:
 		return 20 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
 	case Throwing:
 		return 4 * cs.GetStat(Agility)
-	case FirstAid:
-		return 2 * (cs.GetStat(Perception) + cs.GetStat(Intelligence))
 	case Doctor:
 		return 5 + cs.GetStat(Perception) + cs.GetStat(Intelligence)
 	case Sneak:
@@ -322,15 +317,15 @@ func (cs *CharSheet) getSkillBase(skill Skill) int {
 	case Science:
 		return 4 * cs.GetStat(Intelligence)
 	case Repair:
-		return 3 * cs.GetStat(Intelligence)
+		return 2*cs.GetStat(Intelligence) + cs.GetStat(Luck)
 	case Speech:
-		return 5 * cs.GetStat(Charisma)
+		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Intelligence)
 	case Barter:
 		return 4 * cs.GetStat(Charisma)
 	case Gambling:
 		return 5 * cs.GetStat(Luck)
 	case Outdoorsman:
-		return 2 * (cs.GetStat(Endurance) + cs.GetStat(Intelligence))
+		return 5 + cs.GetStat(Endurance) + cs.GetStat(Intelligence) + cs.GetStat(Luck)
 	}
 	panic("invalid skill")
 	return 0
@@ -481,4 +476,9 @@ func (cs *CharSheet) SetSkillAbsoluteValue(skill Skill, value int) {
 	}
 	delta := value - currentValue
 	cs.skillAdjustments[skill] = delta
+}
+
+func (cs *CharSheet) Kill() {
+	cs.hitPointsCurrent = 0
+	cs.onDerivedStatChanged(HitPoints)
 }

@@ -12,83 +12,13 @@ import (
 	"time"
 )
 
-func (g *GameState) GotoNamedLevel(levelName string) {
-	mapData := ReadFileAsOneStringWithoutNewLines(path.Join(g.config.DataRootDir, "prefabs", levelName+".txt"))
-	if mapData == "" {
+func (g *GameState) GotoNamedLevel(levelName string, location string) {
+	newMap := g.mapLoader.LoadMap(levelName)
+
+	if newMap == nil {
+		g.msg(foundation.Msg("It's impossible to move there.."))
 		return
 	}
-	var spawnPos geometry.Point
-	simpleMapper := func(gridMap *gridmap.GridMap[*Actor, *Item, *Object], icon rune, pos geometry.Point) {
-		switch icon {
-		case '@':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileFloor,
-				DefinedDescription: "floor",
-				IsWalkable:         true,
-				IsTransparent:      true,
-			})
-			spawnPos = pos
-		case '^':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileMountain,
-				DefinedDescription: "wall",
-				IsWalkable:         false,
-				IsTransparent:      false,
-			})
-		case '#':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileWall,
-				DefinedDescription: "wall",
-				IsWalkable:         false,
-				IsTransparent:      true,
-			})
-		case ' ':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileFloor,
-				DefinedDescription: "floor",
-				IsWalkable:         true,
-				IsTransparent:      true,
-			})
-		case '>':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileStairsDown,
-				DefinedDescription: "stairs down",
-				IsWalkable:         true,
-				IsTransparent:      true,
-			})
-		case '1':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileVendorGeneral,
-				DefinedDescription: "a general store",
-				IsWalkable:         true,
-				IsTransparent:      true,
-			})
-		case '2':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileVendorArmor,
-				DefinedDescription: "an armor store",
-				IsWalkable:         true,
-				IsTransparent:      true,
-			})
-		case '3':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileVendorWeapons,
-				DefinedDescription: "a weapon store",
-				IsWalkable:         true,
-				IsTransparent:      true,
-			})
-		case '4':
-			gridMap.SetTile(pos, gridmap.Tile{
-				Feature:            foundation.TileVendorAlchemist,
-				DefinedDescription: "an alchemist outlet",
-				IsWalkable:         true,
-				IsTransparent:      true,
-			})
-		}
-	}
-	w, h := g.gridMap.GetWidth(), g.gridMap.GetHeight()
-	newMap := gridmap.NewMapFromString[*Actor, *Item, *Object](w, h, mapData, simpleMapper)
-	newMap.SetCardinalMovementOnly(!g.config.DiagonalMovementEnabled)
 
 	if g.gridMap != nil {
 		g.gridMap.RemoveActor(g.Player)
@@ -97,7 +27,8 @@ func (g *GameState) GotoNamedLevel(levelName string) {
 
 	g.dungeonLayout = nil
 
-	newMap.AddActor(g.Player, spawnPos)
+	namedLocation := newMap.GetNamedLocation(location)
+	newMap.AddActor(g.Player, namedLocation)
 
 	g.gridMap = newMap
 
@@ -131,7 +62,7 @@ func (g *GameState) GotoDungeonLevel(level int, stairs StairsInLevel, placePlaye
 
 	g.dungeonLayout = dungeon
 
-	newMap := gridmap.NewEmptyMap[*Actor, *Item, *Object](mapWidth, mapHeight)
+	newMap := gridmap.NewEmptyMap[*Actor, *Item, Object](mapWidth, mapHeight)
 	newMap.SetCardinalMovementOnly(!g.config.DiagonalMovementEnabled)
 
 	stairsUp, stairsDown := g.decorateMapWithTiles(newMap, dungeon, stairs)
@@ -168,7 +99,7 @@ func (g *GameState) GotoDungeonLevel(level int, stairs StairsInLevel, placePlaye
 	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", "08vats.ogg"))
 }
 
-func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, *Object], dungeon *dungen.DungeonMap, stairs StairsInLevel) (geometry.Point, geometry.Point) {
+func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, Object], dungeon *dungen.DungeonMap, stairs StairsInLevel) (geometry.Point, geometry.Point) {
 	mapWidth, mapHeight := dungeon.GetSize()
 
 	floorTile := gridmap.Tile{

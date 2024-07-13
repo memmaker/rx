@@ -67,3 +67,4 @@ armor_energy: 3, 30
 armor_radiation_reduction: 0
 armor_encumbrance: 3
 chance: 100
+tags: no_loot

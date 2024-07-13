@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
 	github.com/gopxl/beep v1.4.1 // indirect
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect

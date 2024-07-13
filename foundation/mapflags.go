@@ -29,8 +29,6 @@ func (f ActorFlag) String() string { // Nice strings for display
 		return "Wall Crawl"
 	case FlagGold:
 		return "Gold"
-	case FlagMean:
-		return "Mean"
 	case FlagScared:
 		return "Scared"
 	case FlagCancel:
@@ -89,8 +87,6 @@ func (f ActorFlag) StringShort() string { // short abbreviated strings (2-3 lett
 		return "Chs"
 	case FlagGold:
 		return "Gld"
-	case FlagMean:
-		return "Mn"
 	case FlagScared:
 		return "Scd"
 	case FlagCancel:
@@ -143,7 +139,6 @@ const (
 	FlagRegenerating
 	FlagWallCrawl
 	FlagGold
-	FlagMean
 	FlagScared
 	FlagChase
 	FlagCancel
@@ -174,7 +169,6 @@ func AllFlagsExceptGoldOrdered() []ActorFlag {
 		FlagFly,
 		FlagRegenerating,
 		FlagWallCrawl,
-		FlagMean,
 		FlagScared,
 		FlagCancel,
 		FlagBlind,
@@ -216,8 +210,6 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagWallCrawl
 	case "gold":
 		return FlagGold
-	case "mean":
-		return FlagMean
 	case "scared":
 		return FlagScared
 	case "cancel":

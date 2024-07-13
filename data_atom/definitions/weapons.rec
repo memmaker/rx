@@ -2,7 +2,7 @@
 name: Mandibles
 internal_name: ant_mandibles
 category: weapons
-tags: no_drop
+tags: no_loot
 weapon_type: sword
 weapon_damage: 1-3
 weapon_skill_used: unarmed

@@ -33,6 +33,7 @@ type ItemDef struct {
 
 	Skill      dice_curve.SkillName
 	SkillBonus dice_curve.Dice
+	Tags       foundation.ItemTags
 }
 
 func (i ItemDef) IsValidArmor() bool {
@@ -67,6 +68,8 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 			itemDef.InternalName = field.Value
 		case "category":
 			itemDef.Category = foundation.ItemCategoryFromString(field.Value)
+		case "tags":
+			itemDef.Tags |= foundation.ItemTagFromString(field.Value)
 		case "slot":
 			itemDef.Slot = foundation.ItemSlotFromString(field.Value)
 		case "ammo_damage":

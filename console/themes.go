@@ -1,6 +1,7 @@
 package console
 
 import (
+	"RogueUI/cview"
 	"RogueUI/foundation"
 	"RogueUI/recfile"
 	"RogueUI/util"
@@ -201,7 +202,10 @@ func readColorField(field recfile.Field, colors ColorTheme) (string, color.RGBA,
 	// color def
 	colorNames := field.AsList("|")
 	fgColor := colors.GetByName(colorNames[0].Value)
-	bgColor := colors.GetByName(colorNames[1].Value)
+	bgColor := color.RGBA{}
+	if len(colorNames) > 1 {
+		bgColor = colors.GetByName(colorNames[1].Value)
+	}
 	return tileType, fgColor, bgColor
 }
 
@@ -228,11 +232,7 @@ const (
 type UIColor int
 
 const (
-	UIColorMapDefaultBackground UIColor = iota
-	UIColorMapDefaultForeground
-	UIColorMapDefaultForegroundLight
-	UIColorMapDefaultForegroundDark
-	UIColorUIBackground
+	UIColorUIBackground UIColor = iota
 	UIColorUIForeground
 	UIColorBorderBackground
 	UIColorBorderForeground
@@ -243,14 +243,6 @@ const (
 func UIColorFromString(s string) UIColor {
 	s = strings.ToLower(s)
 	switch s {
-	case "mapdefaultbackground":
-		return UIColorMapDefaultBackground
-	case "mapdefaultforeground":
-		return UIColorMapDefaultForeground
-	case "mapdefaultforegroundlight":
-		return UIColorMapDefaultForegroundLight
-	case "mapdefaultforegrounddark":
-		return UIColorMapDefaultForegroundDark
 	case "uiforeground":
 		return UIColorUIForeground
 	case "uiforegroundhighlighted":
@@ -263,7 +255,7 @@ func UIColorFromString(s string) UIColor {
 		return UIColorBorderForeground
 	}
 	println("WARNING: Unknown color: ", s)
-	return UIColorMapDefaultBackground
+	return UIColorUIForeground
 }
 
 type BorderCases int
@@ -330,25 +322,7 @@ func BorderCaseFromString(s string) BorderCases {
 	return BorderHorizontal
 }
 
-func (t Theme) SetBorders(s *struct {
-	Horizontal       rune
-	Vertical         rune
-	TopLeft          rune
-	TopRight         rune
-	BottomLeft       rune
-	BottomRight      rune
-	LeftT            rune
-	RightT           rune
-	TopT             rune
-	BottomT          rune
-	Cross            rune
-	HorizontalFocus  rune
-	VerticalFocus    rune
-	TopLeftFocus     rune
-	TopRightFocus    rune
-	BottomLeftFocus  rune
-	BottomRightFocus rune
-}) {
+func (t Theme) SetBorders(s *cview.BorderDef) {
 	s.Horizontal = t.uiBorder[BorderHorizontal]
 	s.Vertical = t.uiBorder[BorderVertical]
 	s.TopLeft = t.uiBorder[BorderTopLeft]

@@ -24,6 +24,20 @@ func MaxLen(text []string) int {
 	}
 	return maxLength
 }
+
+func MurmurHash(text string) uint64 {
+	hasher := New64()
+	hasher.Write([]byte(text))
+	return hasher.Sum64()
+}
+
+func StringSum(text string) int64 {
+	var intSum int64
+	for _, b := range []rune(text) {
+		intSum += int64(b)
+	}
+	return intSum
+}
 func RightPad(s string, pLen int) string {
 	return s + strings.Repeat(" ", pLen-len(s))
 }

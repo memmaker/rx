@@ -48,7 +48,7 @@ func (g *GameState) ReloadWeapon() {
 		return
 	}
 	bulletsNeededForFullClip, ammoKindLoaded := weaponPart.BulletsNeededForFullClip()
-	if bulletsNeededForFullClip == 0 {
+	if bulletsNeededForFullClip <= 0 {
 		g.msg(foundation.Msg("This weapon needs no reloading"))
 		return
 	}
@@ -666,6 +666,20 @@ const (
 
 func (g *GameState) PlayerInteractWithMap() {
 	pos := g.Player.Position()
+
+	transition, transitionExists := g.gridMap.GetTransitionAt(pos)
+	if transitionExists {
+		currentMapName := g.gridMap.GetName()
+		location := g.gridMap.GetNamedLocationByPos(pos)
+		lockFlagName := fmt.Sprintf("lock(%s/%s)", currentMapName, location)
+		if g.gameFlags.HasFlag(lockFlagName) {
+			g.msg(foundation.Msg("The way is blocked"))
+			return
+		}
+		g.GotoNamedLevel(transition.TargetMap, transition.TargetLocation)
+		return
+	}
+
 	cell := g.gridMap.GetCell(pos)
 
 	isDescending := cell.TileType.IsStairsDown()
@@ -751,7 +765,7 @@ func (g *GameState) ascendWithStairs(stairs StairsInLevel) {
 	}
 	if g.currentDungeonLevel == 1 {
 		g.currentDungeonLevel = 0
-		g.GotoNamedLevel("town")
+		g.GotoNamedLevel("town", "spawn")
 		g.gridMap.SetAllExplored()
 		g.gridMap.SetAllLit()
 	} else {

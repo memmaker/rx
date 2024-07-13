@@ -17,7 +17,7 @@ func (a Arguments) Get(index int) string {
 	if index >= len(a) || index < 0 {
 		return ""
 	}
-	return a[index]
+	return strings.Trim(a[index], "'\" ")
 }
 
 func (a Arguments) GetInt(index int) int {
@@ -64,7 +64,7 @@ func GetNameAndArgs(line string) (string, Arguments) {
 	if argString == "" {
 		return name, Arguments{}
 	}
-	args := trimAll(strings.Split(argString, "|"))
+	args := trimAll(strings.Split(argString, ","))
 	return name, args
 }
 

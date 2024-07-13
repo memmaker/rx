@@ -30,6 +30,15 @@ func wrapPrimitivesSideBySide(p, q cview.Primitive, width, height int) cview.Pri
 	return flex
 }
 
+func wrapPrimitivesTopToBottom(p, q cview.Primitive) cview.Primitive {
+
+	container := cview.NewFlex()
+	container.SetDirection(cview.FlexRow)
+	container.AddItem(p, 0, 1, false)
+	container.AddItem(q, 0, 1, true)
+
+	return container
+}
 func wrapPrimitiveForModalCentered(p cview.Primitive, width, height int) cview.Primitive {
 	container := cview.NewFlex()
 	container.SetDirection(cview.FlexRow)

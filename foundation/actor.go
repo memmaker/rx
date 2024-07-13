@@ -18,4 +18,5 @@ type ActorForUI interface {
 	GetDetailInfo() []string
 	GetInternalName() string
 	GetBodyPartByIndex(part int) string
+	IsAlive() bool
 }

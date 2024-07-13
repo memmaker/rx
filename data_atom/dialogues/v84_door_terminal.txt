@@ -1,0 +1,47 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: ** Vault-Tec Door Control Terminal **
+effect: None
+#
+o_text: Close the door.
+o_cond: HasFlag('v84_cave_terminal_door_controls') && !HasFlag('lock(v84_cave/vault_84)')
+o_goto: CloseDoor
+#
+o_text: Open the door.
+o_cond: HasFlag('v84_cave_terminal_door_controls') && HasFlag('lock(v84_cave/vault_84)')
+o_goto: OpenDoor
+#
+o_text: Access the vault door controls. [Hacking]
+o_cond: !HasFlag('v84_cave_terminal_door_controls')
+o_goto: AccessControls
+#
+o_text: Leave.
+o_goto: End
+
+name: AccessControls
+npc: ** Vault-Tec Door Control Terminal **
++ > Please enter your password.
+effect: Hacking('v84_cave_terminal', 'Easy', 'v84_cave_terminal_door_controls', 'DefaultIntroduction')
+
+name: OpenDoor
+npc: ** Vault-Tec Door Control Terminal **
++ > Door is now open.
+effect: EndConversation
+effect: ClearFlag('lock(v84_cave/vault_84)')
+
+name: CloseDoor
+npc: ** Vault-Tec Door Control Terminal **
++ > Door is now closed.
+effect: EndConversation
+effect: SetFlag('lock(v84_cave/vault_84)')
+
+name: End
+npc: ** Vault-Tec Door Control Terminal **
++ > Have a nice day.
+effect: EndConversation

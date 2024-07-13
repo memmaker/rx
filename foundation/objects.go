@@ -1,9 +1,14 @@
 package foundation
 
-import "math/rand"
+import (
+	"RogueUI/geometry"
+	"math/rand"
+	"strings"
+)
 
 type ObjectForUI interface {
 	GetCategory() ObjectCategory
+	Position() geometry.Point
 }
 type ObjectCategory int
 
@@ -15,9 +20,15 @@ const (
 	ObjectArrowTrap
 	ObjectDescendTrap
 	ObjectBearTrap
+	ObjectTerminal
 	ObjectUnknownContainer
 	ObjectKnownContainer
 	ObjectKnownEmptyContainer
+	ObjectLockedDoor
+	ObjectClosedDoor
+	ObjectOpenDoor
+	ObjectBrokenDoor
+	ObjectElevator
 )
 
 func RandomObjectCategory() ObjectCategory {
@@ -52,39 +63,64 @@ func (o ObjectCategory) String() string {
 		return "Descend Trap"
 	case ObjectBearTrap:
 		return "Bear Trap"
+	case ObjectLockedDoor:
+		return "Locked Door"
+	case ObjectClosedDoor:
+		return "Closed Door"
+	case ObjectOpenDoor:
+		return "Open Door"
+	case ObjectBrokenDoor:
+		return "Broken Door"
+	case ObjectTerminal:
+		return "Terminal"
 	case ObjectKnownContainer:
 		return "Known Container"
 	case ObjectKnownEmptyContainer:
 		return "Known Empty Container"
 	case ObjectUnknownContainer:
 		return "Unknown Container"
+	case ObjectElevator:
+		return "Elevator"
 	default:
 		return "Unknown"
 	}
 }
 
 func ObjectCategoryFromString(s string) ObjectCategory {
+	s = strings.ToLower(s)
 	switch s {
-	case "ExplodingTrap":
+	case "explodingtrap":
 		return ObjectExplodingTrap
-	case "SlowTrap":
+	case "slowtrap":
 		return ObjectSlowTrap
-	case "TeleportTrap":
+	case "teleporttrap":
 		return ObjectTeleportTrap
-	case "DartTrap":
+	case "darttrap":
 		return ObjectDartTrap
-	case "ArrowTrap":
+	case "arrowtrap":
 		return ObjectArrowTrap
-	case "DescendTrap":
+	case "descendtrap":
 		return ObjectDescendTrap
-	case "BearTrap":
+	case "beartrap":
 		return ObjectBearTrap
-	case "KnownContainer":
+	case "knowncontainer":
 		return ObjectKnownContainer
-	case "KnownEmptyContainer":
+	case "knownemptycontainer":
 		return ObjectKnownEmptyContainer
-	case "UnknownContainer":
+	case "unknowncontainer":
 		return ObjectUnknownContainer
+	case "lockeddoor":
+		return ObjectLockedDoor
+	case "closeddoor":
+		return ObjectClosedDoor
+	case "opendoor":
+		return ObjectOpenDoor
+	case "brokendoor":
+		return ObjectBrokenDoor
+	case "terminal":
+		return ObjectTerminal
+	case "elevator":
+		return ObjectElevator
 	default:
 		return -1
 	}

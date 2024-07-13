@@ -296,7 +296,7 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 		onHitAnimations = append(onHitAnimations, consequenceOfActorHit...)
 	} else if g.gridMap.IsObjectAt(targetPos) {
 		object := g.gridMap.ObjectAt(targetPos)
-		consequenceOfObjectHit := object.OnDamage()
+		consequenceOfObjectHit := object.OnDamage(thrower)
 		onHitAnimations = append(onHitAnimations, consequenceOfObjectHit...)
 	}
 

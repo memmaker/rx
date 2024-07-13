@@ -9,3 +9,9 @@ func Clamp(min, max, value float64) float64 {
 	}
 	return value
 }
+func AbsInt(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}

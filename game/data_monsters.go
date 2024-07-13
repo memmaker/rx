@@ -27,7 +27,7 @@ type IntrinsicAttack struct {
 	DamageDice dice_curve.Dice
 	AttackName string
 }
-type MonsterDef struct {
+type ActorDef struct {
 	Name         string
 	InternalName string
 	Icon         rune
@@ -41,26 +41,32 @@ type MonsterDef struct {
 	DungeonLevel int
 	Flags        *foundation.MapFlags
 
-	Equipment []string
-	XP        int
+	Equipment       []string
+	XP              int
+	DefaultRelation PlayerRelation
 }
 
-func MonsterDefsFromRecords(records []recfile.Record) []MonsterDef {
-	var monsters []MonsterDef
+func ActorDefsFromRecords(records []recfile.Record) []ActorDef {
+	var monsters []ActorDef
 	for _, record := range records {
-		monsterDef := NewMonsterDefFromRecord(record)
+		monsterDef := NewActorDefFromRecord(record)
 		monsters = append(monsters, monsterDef)
 	}
 	return monsters
 }
 
-func NewMonsterDefFromRecord(record recfile.Record) MonsterDef {
-	monsterDef := MonsterDef{
+func NewActorDefFromRecord(record recfile.Record) ActorDef {
+	monsterDef := ActorDef{
 		Flags:        foundation.NewMapFlags(),
 		SpecialStats: make(map[special.Stat]int),
 		DerivedStat:  make(map[special.DerivedStat]int),
 		Skills:       make(map[special.Skill]int),
 	}
+	monsterDef = fillDefinitionFromRecord(monsterDef, record)
+	return monsterDef
+}
+
+func fillDefinitionFromRecord(monsterDef ActorDef, record recfile.Record) ActorDef {
 	for _, field := range record {
 		switch field.Name {
 		case "name":
@@ -117,6 +123,8 @@ func NewMonsterDefFromRecord(record recfile.Record) MonsterDef {
 			monsterDef.DerivedStat[special.Dodge] = field.AsInt()
 		case "equipment":
 			monsterDef.Equipment = append(monsterDef.Equipment, field.Value)
+		case "default_relation":
+			monsterDef.DefaultRelation = PlayerRelationFromString(field.Value)
 		case "flags":
 			for _, mFlag := range field.AsList("|") {
 				monsterDef.Flags.Set(foundation.ActorFlagFromString(mFlag.Value))
