@@ -40,3 +40,9 @@ item: stimpak
 
 ## InitFlags
 lock(v84_cave/vault_84) = 1
+
+Name: Transition
+Description: a vault door
+Location: vault_84
+TargetMap: v84_lvl_1
+TargetLocation: entrance

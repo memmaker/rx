@@ -2,7 +2,10 @@ package game
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/recfile"
+	"github.com/memmaker/go/textiles"
+	"strings"
 )
 
 type BaseObject struct {
@@ -19,6 +22,11 @@ type BaseObject struct {
 	internalName    string
 	displayName     string
 	isTransparent   bool
+	icon            textiles.TextIcon
+}
+
+func (b *BaseObject) GetIcon() textiles.TextIcon {
+	return b.icon
 }
 
 func (b *BaseObject) GetCategory() foundation.ObjectCategory {
@@ -44,16 +52,36 @@ func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *BaseObject {
 	return trap
 }
 
-func (g *GameState) NewTerminal(name string) *BaseObject {
+func (g *GameState) NewTerminal(rec recfile.Record, palette textiles.ColorPalette) *BaseObject {
 	terminal := NewObject(foundation.ObjectTerminal)
 	terminal.SetWalkable(false)
 	terminal.SetHidden(false)
 	terminal.SetTransparent(true)
-	terminal.internalName = name
+
+	var scriptName string
+	var icon textiles.TextIcon
+
+	for _, field := range rec {
+		switch strings.ToLower(field.Name) {
+		case "dialogue":
+			scriptName = field.Value
+		case "icon":
+			icon.Char = field.AsRune()
+		case "foreground":
+			icon.Fg = palette.Get(field.Value)
+		case "background":
+			icon.Bg = palette.Get(field.Value)
+		case "position":
+			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
+			terminal.SetPosition(spawnPos)
+		}
+	}
+	terminal.internalName = scriptName
+	terminal.icon = icon
 
 	terminal.onBump = func(actor *Actor) {
 		if actor == g.Player {
-			g.StartDialogue(name, true)
+			g.StartDialogue(scriptName, true)
 		}
 	}
 	return terminal
@@ -168,4 +196,5 @@ type Object interface {
 	OnDamage(actor *Actor) []foundation.Animation
 	OnWalkOver(actor *Actor) []foundation.Animation
 	OnBump(actor *Actor)
+	GetIcon() textiles.TextIcon
 }

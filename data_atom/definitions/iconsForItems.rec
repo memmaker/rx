@@ -1,0 +1,48 @@
+%rec: default
+
+Name: Gold
+Icon: ⣴
+Foreground: Yellow
+InventoryColor: Yellow
+
+Name: Food
+Icon: ☙
+Foreground: neon_green_1
+InventoryColor: neon_green_1
+
+Name: Weapons
+Icon: ↑
+Foreground: light_gray_5
+Background: yellow_9
+InventoryColor: yellow_9
+
+Name: Armor
+Icon: ❖
+Foreground: light_blue_12
+Background: blue_1
+InventoryColor: blue_1
+
+Name: Notes
+Icon: ≡
+Foreground: Orange
+InventoryColor: Orange
+
+Name: Drinks
+Icon: ⚱
+Foreground: Blue
+InventoryColor: Blue
+
+Name: Lockpicks
+Icon: τ
+Foreground: light_gray_2
+InventoryColor: light_gray_2
+
+Name: Ammo
+Icon: ○
+Foreground: yellow_2
+InventoryColor: yellow_2
+
+Name: Keys
+Icon: &
+Foreground: LightMagenta
+InventoryColor: LightMagenta

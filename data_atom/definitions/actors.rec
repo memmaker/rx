@@ -1,0 +1,51 @@
+%rec: default
+
+Description: a rat
+Name: rat
+Foreground: light_gray_3
+Icon: r
+xp: 25
+body: quadruped
+strength: 1
+perception: 2
+endurance: 3
+charisma: 4
+intelligence: 5
+agility: 6
+luck: 7
+hp: 5
+dodge: 0
+ap: 2
+default_relation: hostile
+equipment: ant_chitin_armor
+equipment: ant_mandibles
+
+Description: a vault dweller
+Name: vault_dweller
+Icon: v
+Foreground: light_blue
+xp: 25
+body: human
+strength: 5
+perception: 5
+endurance: 5
+charisma: 5
+intelligence: 5
+agility: 5
+luck: 5
+hp: 20
+dodge: 5
+ap: 4
+default_relation: neutral
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
+
+Description: a dead vault dweller
+Name: dweller_corpse
+Icon: v
+Foreground: light_blue
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
+

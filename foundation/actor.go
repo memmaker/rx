@@ -1,14 +1,14 @@
 package foundation
 
 import (
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 )
 
 type ActorForUI interface {
-	Icon() rune
-	TextIcon(background color.RGBA, getColor func(string) color.RGBA) TextIcon
-	Color() string
+	GetIcon() textiles.TextIcon
+	TextIcon(background color.RGBA) textiles.TextIcon
 	Name() string
 	Position() geometry.Point
 	GetListInfo() string

@@ -2,15 +2,16 @@ package console
 
 import (
 	"RogueUI/audio"
-	"RogueUI/cview"
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
-	"RogueUI/util"
 	"cmp"
 	"fmt"
 	"github.com/0xcafed00d/joystick"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/cview"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 	"math"
 	"math/rand"
@@ -40,7 +41,7 @@ type UI struct {
 
 	audioPlayer *audio.Player
 
-	currentTheme Theme
+	uiTheme Theme
 
 	mapOverlay *Overlay
 
@@ -59,8 +60,6 @@ type UI struct {
 
 	animator  *Animator
 	targetPos geometry.Point
-
-	isMonochrome bool
 
 	listTable map[string]*cview.List
 
@@ -84,6 +83,10 @@ type UI struct {
 	dialogueIsTerminal bool
 }
 
+func (u *UI) SetColors(palette textiles.ColorPalette, colors map[foundation.ItemCategory]color.RGBA) {
+	u.uiTheme = NewUIThemeFromDataDir(u.settings.DataRootDir, palette, colors)
+}
+
 func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
 	var menuItems []foundation.MenuItem
 	closeContainer := func() {
@@ -93,7 +96,7 @@ func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, t
 	for _, i := range containedItems {
 		item := i
 		menuItems = append(menuItems, foundation.MenuItem{
-			Name: item.InventoryNameWithColors(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(item.GetCategory()))),
+			Name: item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory())),
 			Action: func() {
 				closeContainer()
 				transfer(item)
@@ -130,13 +133,13 @@ func (u *UI) PlayMusic(fileName string) {
 	u.audioPlayer.Stream(fileName)
 }
 
-func (u *UI) OpenVendorMenu(itemsForSale []util.Tuple[foundation.ItemForUI, int], buyItem func(ui foundation.ItemForUI, price int)) {
+func (u *UI) OpenVendorMenu(itemsForSale []fxtools.Tuple[foundation.ItemForUI, int], buyItem func(ui foundation.ItemForUI, price int)) {
 	var menuItems []foundation.MenuItem
 	for _, i := range itemsForSale {
 		item := i.GetItem1()
 		price := i.GetItem2()
 		menuItems = append(menuItems, foundation.MenuItem{
-			Name: fmt.Sprintf("%s (%d)", item.InventoryNameWithColors(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(item.GetCategory()))), price),
+			Name: fmt.Sprintf("%s (%d)", item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory())), price),
 			Action: func() {
 				buyItem(item, price)
 			},
@@ -150,7 +153,7 @@ func (u *UI) GetAnimBackgroundColor(position geometry.Point, colorName string, f
 		return nil
 	}
 	iconAtLocation, _ := u.mapLookup(position)
-	bgColor := u.currentTheme.GetColorByName(colorName)
+	bgColor := u.uiTheme.GetColorByName(colorName)
 	return NewCoverAnimation(position, iconAtLocation.WithBg(bgColor), frameCount, done)
 }
 
@@ -177,7 +180,7 @@ func (u *UI) showWinScreen(scoreInfo foundation.ScoreInfo, highScores []foundati
 	textView.SetTextAlign(cview.AlignCenter)
 	textView.SetTitleAlign(cview.AlignCenter)
 
-	winMessage := util.ReadFileAsLines(path.Join(u.settings.DataRootDir, "win.txt"))
+	winMessage := fxtools.ReadFileAsLines(path.Join(u.settings.DataRootDir, "win.txt"))
 
 	gameOverMessage := []string{
 		"",
@@ -225,7 +228,6 @@ func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []founda
 		"",
 		fmt.Sprintf("%s", scoreInfo.PlayerName),
 		fmt.Sprintf("Gold: %d", scoreInfo.Gold),
-		fmt.Sprintf("Deepest Level: %d", scoreInfo.MaxLevel),
 		fmt.Sprintf("Cause of Death: %s", scoreInfo.DescriptiveMessage),
 	}
 	restartText := []string{
@@ -296,9 +298,9 @@ func toLinesOfText(highScores []foundation.ScoreInfo) []string {
 		}
 		scoreLine := ""
 		if highScore.Escaped {
-			scoreLine = fmt.Sprintf("[#c9c54d::b]%d. %s: %d Gold, Lvl: %d, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.MaxLevel, highScore.DescriptiveMessage)
+			scoreLine = fmt.Sprintf("[#c9c54d::b]%d. %s: %d Gold, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
 		} else {
-			scoreLine = fmt.Sprintf("%d. %s: %d Gold, Lvl: %d, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.MaxLevel, highScore.DescriptiveMessage)
+			scoreLine = fmt.Sprintf("%d. %s: %d Gold, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
 		}
 		scoreTable = append(scoreTable, scoreLine)
 	}
@@ -367,13 +369,13 @@ func (u *UI) AfterPlayerMoved(moveInfo foundation.MoveInfo) {
 
 func (u *UI) GetAnimMove(actor foundation.ActorForUI, old geometry.Point, new geometry.Point) foundation.Animation {
 	if u.settings.AnimationsEnabled && u.settings.AnimateMovement {
-		return NewMovementAnimation(u.getIconForActor(actor), old, new, u.currentTheme.GetColorByName, nil)
+		return NewMovementAnimation(u.getIconForActor(actor), old, new, u.uiTheme.GetColorByName, nil)
 	}
 	return nil
 }
 
-func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
-	mapIconHere := u.currentTheme.GetIconForMap(u.game.MapAt(actor.Position()))
+func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
+	mapIconHere := u.game.MapAt(actor.Position())
 
 	isHallucinating := u.isPlayerHallucinating()
 	if isHallucinating {
@@ -381,9 +383,9 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
 		if rand.Intn(2) == 0 {
 			randomLetter = unicode.ToLower(randomLetter)
 		}
-		return foundation.TextIcon{
-			Rune: randomLetter,
-			Fg:   u.currentTheme.GetRandomColor(),
+		return textiles.TextIcon{
+			Char: randomLetter,
+			Fg:   u.uiTheme.GetRandomColor(),
 			Bg:   mapIconHere.Bg,
 		}
 	}
@@ -391,18 +393,18 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) foundation.TextIcon {
 	var backGroundColor color.RGBA
 
 	if actor.HasFlag(foundation.FlagHeld) {
-		return foundation.TextIcon{
-			Rune: actor.Icon(),
-			Fg:   u.currentTheme.GetColorByName("Blue"),
-			Bg:   u.currentTheme.GetColorByName("White"),
+		return textiles.TextIcon{
+			Char: actor.GetIcon().Char,
+			Fg:   u.uiTheme.GetColorByName("Blue_1"),
+			Bg:   u.uiTheme.GetColorByName("White"),
 		}
 	} else {
 		backGroundColor = mapIconHere.Bg
 	}
 	if !actor.IsAlive() {
-		return actor.TextIcon(backGroundColor, u.currentTheme.GetColorByName).WithRune('%').WithFg(u.currentTheme.GetColorByName("Red"))
+		return actor.TextIcon(backGroundColor).WithRune('%').WithFg(u.uiTheme.GetColorByName("Red_1"))
 	}
-	return actor.TextIcon(backGroundColor, u.currentTheme.GetColorByName)
+	return actor.TextIcon(backGroundColor)
 }
 
 func (u *UI) isPlayerHallucinating() bool {
@@ -413,13 +415,13 @@ func (u *UI) isPlayerHallucinating() bool {
 
 func (u *UI) GetAnimQuickMove(actor foundation.ActorForUI, path []geometry.Point) foundation.Animation {
 	if u.settings.AnimationsEnabled && u.settings.AnimateMovement {
-		animation := NewMovementAnimation(u.getIconForActor(actor), actor.Position(), path[len(path)-1], u.currentTheme.GetColorByName, nil)
+		animation := NewMovementAnimation(u.getIconForActor(actor), actor.Position(), path[len(path)-1], u.uiTheme.GetColorByName, nil)
 		animation.EnableQuickMoveMode(path)
 		return animation
 	}
 	return nil
 }
-func (u *UI) GetAnimCover(loc geometry.Point, icon foundation.TextIcon, turns int, done func()) foundation.Animation {
+func (u *UI) GetAnimCover(loc geometry.Point, icon textiles.TextIcon, turns int, done func()) foundation.Animation {
 	if u.settings.AnimationsEnabled && u.settings.AnimateMovement {
 		return NewCoverAnimation(loc, icon, turns, done)
 	}
@@ -438,7 +440,7 @@ func (u *UI) GetAnimDamage(defenderPos geometry.Point, damage int, done func()) 
 	animation.SetDoneCallback(done)
 	return animation
 }
-func (u *UI) GetAnimTiles(positions []geometry.Point, frames []foundation.TextIcon, done func()) foundation.Animation {
+func (u *UI) GetAnimTiles(positions []geometry.Point, frames []textiles.TextIcon, done func()) foundation.Animation {
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateEffects {
 		return nil
 	}
@@ -450,7 +452,7 @@ func (u *UI) GetAnimRadialReveal(position geometry.Point, dijkstra map[geometry.
 		return nil
 	}
 
-	animation := NewRadialAnimation(position, dijkstra, u.currentTheme.GetColorByName, u.mapLookup, done)
+	animation := NewRadialAnimation(position, dijkstra, u.uiTheme.GetColorByName, u.mapLookup, done)
 	animation.SetKeepDrawingCoveredGround(true)
 	animation.SetUseIconColors(false)
 	return animation
@@ -460,14 +462,14 @@ func (u *UI) GetAnimRadialAlert(position geometry.Point, dijkstra map[geometry.P
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateEffects {
 		return nil
 	}
-	lookup := func(loc geometry.Point) (foundation.TextIcon, bool) {
-		return foundation.TextIcon{
-			Rune: '‼',
-			Fg:   u.currentTheme.GetColorByName("Black"),
-			Bg:   u.currentTheme.GetColorByName("Red"),
+	lookup := func(loc geometry.Point) (textiles.TextIcon, bool) {
+		return textiles.TextIcon{
+			Char: '‼',
+			Fg:   u.uiTheme.GetColorByName("Black"),
+			Bg:   u.uiTheme.GetColorByName("Red_1"),
 		}, true
 	}
-	animation := NewRadialAnimation(position, dijkstra, u.currentTheme.GetColorByName, lookup, done)
+	animation := NewRadialAnimation(position, dijkstra, u.uiTheme.GetColorByName, lookup, done)
 	animation.SetUseIconColors(true)
 	return animation
 }
@@ -475,23 +477,23 @@ func (u *UI) GetAnimRadialAlert(position geometry.Point, dijkstra map[geometry.P
 func (u *UI) GetAnimTeleport(user foundation.ActorForUI, origin, targetPos geometry.Point, appearOnMap func()) (foundation.Animation, foundation.Animation) {
 	originalIcon := u.getIconForActor(user)
 	mapBackground := u.getMapTileBackgroundColor(origin)
-	lightCyan := u.currentTheme.GetColorByName("LightCyan")
-	white := u.currentTheme.GetColorByName("White")
-	lightGray := u.currentTheme.GetColorByName("LightGray")
-	vanishAnim := u.GetAnimTiles([]geometry.Point{origin}, []foundation.TextIcon{
+	lightCyan := u.uiTheme.GetColorByName("LightCyan")
+	white := u.uiTheme.GetColorByName("White")
+	lightGray := u.uiTheme.GetColorByName("light_gray_5")
+	vanishAnim := u.GetAnimTiles([]geometry.Point{origin}, []textiles.TextIcon{
 		originalIcon.WithFg(white),
 		originalIcon.WithFg(white),
 		originalIcon.WithFg(lightCyan),
-		{Rune: '*', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '*', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '+', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '+', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '|', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '|', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '∙', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '.', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '.', Fg: lightGray, Bg: mapBackground},
-		{Rune: '.', Fg: u.currentTheme.GetColorByName("DarkGray"), Bg: mapBackground},
+		{Char: '*', Fg: lightCyan, Bg: mapBackground},
+		{Char: '*', Fg: lightCyan, Bg: mapBackground},
+		{Char: '+', Fg: lightCyan, Bg: mapBackground},
+		{Char: '+', Fg: lightCyan, Bg: mapBackground},
+		{Char: '|', Fg: lightCyan, Bg: mapBackground},
+		{Char: '|', Fg: lightCyan, Bg: mapBackground},
+		{Char: '∙', Fg: lightCyan, Bg: mapBackground},
+		{Char: '.', Fg: lightCyan, Bg: mapBackground},
+		{Char: '.', Fg: lightGray, Bg: mapBackground},
+		{Char: '.', Fg: u.uiTheme.GetColorByName("dark_gray_3"), Bg: mapBackground},
 	}, nil)
 	vanishAnim.RequestMapUpdateOnFinish()
 
@@ -503,34 +505,34 @@ func (u *UI) GetAnimTeleport(user foundation.ActorForUI, origin, targetPos geome
 func (u *UI) GetAnimAppearance(actor foundation.ActorForUI, targetPos geometry.Point, done func()) foundation.Animation {
 	originalIcon := u.getIconForActor(actor)
 	mapBackground := u.getMapTileBackgroundColor(targetPos)
-	lightCyan := u.currentTheme.GetColorByName("LightCyan")
-	white := u.currentTheme.GetColorByName("White")
-	lightGray := u.currentTheme.GetColorByName("LightGray")
-	appearAnim := u.GetAnimTiles([]geometry.Point{targetPos}, []foundation.TextIcon{
-		{Rune: '.', Fg: u.currentTheme.GetColorByName("DarkGray"), Bg: mapBackground},
-		{Rune: '.', Fg: lightGray, Bg: mapBackground},
-		{Rune: '.', Fg: lightGray, Bg: mapBackground},
-		{Rune: '.', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '∙', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '|', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '|', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '+', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '+', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '*', Fg: lightCyan, Bg: mapBackground},
-		{Rune: '*', Fg: lightCyan, Bg: mapBackground},
-		{Rune: originalIcon.Rune, Fg: white, Bg: mapBackground},
-		{Rune: originalIcon.Rune, Fg: white, Bg: mapBackground},
-		{Rune: originalIcon.Rune, Fg: lightCyan, Bg: mapBackground},
-		{Rune: originalIcon.Rune, Fg: lightCyan, Bg: mapBackground},
-		{Rune: originalIcon.Rune, Fg: white, Bg: mapBackground},
-		{Rune: originalIcon.Rune, Fg: white, Bg: mapBackground},
+	lightCyan := u.uiTheme.GetColorByName("LightCyan")
+	white := u.uiTheme.GetColorByName("White")
+	lightGray := u.uiTheme.GetColorByName("light_gray_5")
+	appearAnim := u.GetAnimTiles([]geometry.Point{targetPos}, []textiles.TextIcon{
+		{Char: '.', Fg: u.uiTheme.GetColorByName("dark_gray_3"), Bg: mapBackground},
+		{Char: '.', Fg: lightGray, Bg: mapBackground},
+		{Char: '.', Fg: lightGray, Bg: mapBackground},
+		{Char: '.', Fg: lightCyan, Bg: mapBackground},
+		{Char: '∙', Fg: lightCyan, Bg: mapBackground},
+		{Char: '|', Fg: lightCyan, Bg: mapBackground},
+		{Char: '|', Fg: lightCyan, Bg: mapBackground},
+		{Char: '+', Fg: lightCyan, Bg: mapBackground},
+		{Char: '+', Fg: lightCyan, Bg: mapBackground},
+		{Char: '*', Fg: lightCyan, Bg: mapBackground},
+		{Char: '*', Fg: lightCyan, Bg: mapBackground},
+		{Char: originalIcon.Char, Fg: white, Bg: mapBackground},
+		{Char: originalIcon.Char, Fg: white, Bg: mapBackground},
+		{Char: originalIcon.Char, Fg: lightCyan, Bg: mapBackground},
+		{Char: originalIcon.Char, Fg: lightCyan, Bg: mapBackground},
+		{Char: originalIcon.Char, Fg: white, Bg: mapBackground},
+		{Char: originalIcon.Char, Fg: white, Bg: mapBackground},
 	}, done)
 	return appearAnim
 }
 
 func (u *UI) GetAnimEvade(defender foundation.ActorForUI, done func()) foundation.Animation {
 	actorIcon := u.getIconForActor(defender)
-	return u.GetAnimTiles([]geometry.Point{defender.Position()}, []foundation.TextIcon{
+	return u.GetAnimTiles([]geometry.Point{defender.Position()}, []textiles.TextIcon{
 		actorIcon.WithItalic(),
 		actorIcon.WithItalic().WithBold(),
 		actorIcon.WithItalic(),
@@ -546,19 +548,19 @@ func (u *UI) GetAnimWakeUp(location geometry.Point, done func()) foundation.Anim
 	diagonalNeighbors := neigh.Diagonal(location, keepAllNeighbors)
 
 	wakeUpRunes := []rune("????")
-	yellow := u.currentTheme.GetColorByName("Yellow")
+	yellow := u.uiTheme.GetColorByName("Yellow_1")
 	var prevAnim foundation.Animation
 	var rootAnim foundation.Animation
 	runeCount := len(wakeUpRunes)
 	for i := 0; i < runeCount; i++ {
 
-		cycleIcon := foundation.TextIcon{
-			Rune: wakeUpRunes[i],
-			Fg:   u.currentTheme.GetUIColor(UIColorUIForeground),
-			Bg:   u.currentTheme.GetColorByName("black"),
+		cycleIcon := textiles.TextIcon{
+			Char: wakeUpRunes[i],
+			Fg:   u.uiTheme.GetUIColor(UIColorUIForeground),
+			Bg:   u.uiTheme.GetColorByName("black"),
 		}
 
-		frames := []foundation.TextIcon{
+		frames := []textiles.TextIcon{
 			cycleIcon.WithFg(yellow),
 			cycleIcon.WithFg(yellow),
 		}
@@ -597,7 +599,7 @@ func (u *UI) GetAnimConfuse(location geometry.Point, done func()) foundation.Ani
 	randomRune := func() rune {
 		return confuseRune[rand.Intn(len(confuseRune))]
 	}
-	confuseColors := []color.RGBA{u.currentTheme.GetColorByName("LightMagenta"), u.currentTheme.GetColorByName("LightRed"), u.currentTheme.GetColorByName("Yellow"), u.currentTheme.GetColorByName("LightGreen"), u.currentTheme.GetColorByName("LightBlue")}
+	confuseColors := []color.RGBA{u.uiTheme.GetColorByName("LightMagenta"), u.uiTheme.GetColorByName("LightRed"), u.uiTheme.GetColorByName("Yellow_1"), u.uiTheme.GetColorByName("LightGreen"), u.uiTheme.GetColorByName("light_blue_3")}
 	randomColor := func() color.RGBA {
 		return confuseColors[rand.Intn(len(confuseColors))]
 	}
@@ -607,13 +609,13 @@ func (u *UI) GetAnimConfuse(location geometry.Point, done func()) foundation.Ani
 	var rootAnim foundation.Animation
 	for i := 0; i < cycleCount; i++ {
 
-		cycleIcon := foundation.TextIcon{
-			Rune: randomRune(),
-			Fg:   u.currentTheme.GetUIColor(UIColorUIForeground),
-			Bg:   u.currentTheme.GetUIColor(UIColorUIBackground),
+		cycleIcon := textiles.TextIcon{
+			Char: randomRune(),
+			Fg:   u.uiTheme.GetUIColor(UIColorUIForeground),
+			Bg:   u.uiTheme.GetUIColor(UIColorUIBackground),
 		}
 
-		frames := []foundation.TextIcon{
+		frames := []textiles.TextIcon{
 			cycleIcon.WithFg(randomColor()),
 			cycleIcon.WithFg(randomColor()),
 			cycleIcon.WithFg(randomColor()),
@@ -644,107 +646,107 @@ func (u *UI) GetAnimConfuse(location geometry.Point, done func()) foundation.Ani
 	return rootAnim
 }
 func (u *UI) GetAnimBreath(path []geometry.Point, done func()) foundation.Animation {
-	projAnim := u.GetAnimTiles(path, []foundation.TextIcon{
-		{Rune: '.', Fg: u.currentTheme.GetColorByName("White"), Bg: u.currentTheme.GetColorByName("Black")},
-		{Rune: '∙', Fg: u.currentTheme.GetColorByName("White"), Bg: u.currentTheme.GetColorByName("Black")},
-		{Rune: '*', Fg: u.currentTheme.GetColorByName("White"), Bg: u.currentTheme.GetColorByName("Black")},
-		{Rune: '*', Fg: u.currentTheme.GetColorByName("Yellow"), Bg: u.currentTheme.GetColorByName("Black")},
-		{Rune: '*', Fg: u.currentTheme.GetColorByName("Red"), Bg: u.currentTheme.GetColorByName("Black")},
-		{Rune: '*', Fg: u.currentTheme.GetColorByName("LightGray"), Bg: u.currentTheme.GetColorByName("Black")},
-		{Rune: '*', Fg: u.currentTheme.GetColorByName("DarkGray"), Bg: u.currentTheme.GetColorByName("Black")},
+	projAnim := u.GetAnimTiles(path, []textiles.TextIcon{
+		{Char: '.', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '∙', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Yellow"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Red"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("light_gray_5"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("dark_gray_3"), Bg: u.uiTheme.GetColorByName("Black")},
 	}, done)
 	return projAnim
 }
 func (u *UI) GetAnimVorpalizeWeapon(origin geometry.Point, done func()) []foundation.Animation {
-	effectIcon := foundation.TextIcon{
-		Rune: '+',
-		Fg:   u.currentTheme.GetColorByName("White"),
-		Bg:   u.currentTheme.GetColorByName("Black"),
+	effectIcon := textiles.TextIcon{
+		Char: '+',
+		Fg:   u.uiTheme.GetColorByName("White"),
+		Bg:   u.uiTheme.GetColorByName("Black"),
 	}
 	outmostPositions := geometry.CircleAround(origin, 2)
 	outerPositions := geometry.CircleAround(origin, 1)
 
-	animationInner := u.GetAnimTiles([]geometry.Point{origin}, []foundation.TextIcon{
-		effectIcon.WithBg(u.currentTheme.GetColorByName("White")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("White")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("LightGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("DarkGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("Black")),
+	animationInner := u.GetAnimTiles([]geometry.Point{origin}, []textiles.TextIcon{
+		effectIcon.WithBg(u.uiTheme.GetColorByName("White")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("White")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("dark_gray_3")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("Black")),
 	}, done)
-	animationCenter := u.GetAnimTiles(outerPositions, []foundation.TextIcon{
-		effectIcon.WithBg(u.currentTheme.GetColorByName("White")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("LightGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("DarkGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("Black")),
+	animationCenter := u.GetAnimTiles(outerPositions, []textiles.TextIcon{
+		effectIcon.WithBg(u.uiTheme.GetColorByName("White")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("dark_gray_3")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("Black")),
 	}, nil)
 
-	animationOuter := u.GetAnimTiles(outmostPositions, []foundation.TextIcon{
-		effectIcon.WithBg(u.currentTheme.GetColorByName("LightGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("DarkGray")),
-		effectIcon.WithBg(u.currentTheme.GetColorByName("Black")).WithFg(u.currentTheme.GetColorByName("Black")),
+	animationOuter := u.GetAnimTiles(outmostPositions, []textiles.TextIcon{
+		effectIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("dark_gray_3")),
+		effectIcon.WithBg(u.uiTheme.GetColorByName("Black")).WithFg(u.uiTheme.GetColorByName("Black")),
 	}, nil)
 
 	return []foundation.Animation{animationInner, animationCenter, animationOuter}
 }
 func (u *UI) GetAnimEnchantWeapon(player foundation.ActorForUI, location geometry.Point, done func()) foundation.Animation {
 	playerIcon := u.getIconForActor(player)
-	frames := []foundation.TextIcon{
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")).WithFg(u.currentTheme.GetColorByName("Black")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")).WithFg(u.currentTheme.GetColorByName("Black")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightCyan")).WithFg(u.currentTheme.GetColorByName("Black")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightCyan")).WithFg(u.currentTheme.GetColorByName("Black")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightCyan")).WithFg(u.currentTheme.GetColorByName("Black")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")).WithFg(u.currentTheme.GetColorByName("DarkGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")).WithFg(u.currentTheme.GetColorByName("DarkGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightBlue")).WithFg(u.currentTheme.GetColorByName("DarkGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("Blue")).WithFg(u.currentTheme.GetColorByName("LightGray")),
+	frames := []textiles.TextIcon{
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")).WithFg(u.uiTheme.GetColorByName("Black")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")).WithFg(u.uiTheme.GetColorByName("Black")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("LightCyan")).WithFg(u.uiTheme.GetColorByName("Black")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("LightCyan")).WithFg(u.uiTheme.GetColorByName("Black")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("LightCyan")).WithFg(u.uiTheme.GetColorByName("Black")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")).WithFg(u.uiTheme.GetColorByName("dark_gray_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")).WithFg(u.uiTheme.GetColorByName("dark_gray_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_blue_3")).WithFg(u.uiTheme.GetColorByName("dark_gray_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue_1")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("Blue")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
 	}
 	return u.GetAnimTiles([]geometry.Point{location}, frames, done)
 }
 func (u *UI) GetAnimEnchantArmor(player foundation.ActorForUI, location geometry.Point, done func()) foundation.Animation {
 	playerIcon := u.getIconForActor(player)
-	frames := []foundation.TextIcon{
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")).WithFg(u.currentTheme.GetColorByName("Black")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")).WithFg(u.currentTheme.GetColorByName("White")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")).WithFg(u.currentTheme.GetColorByName("White")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")).WithFg(u.currentTheme.GetColorByName("White")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("LightGray")).WithFg(u.currentTheme.GetColorByName("White")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")).WithFg(u.currentTheme.GetColorByName("LightGray")),
-		playerIcon.WithBg(u.currentTheme.GetColorByName("DarkGray")).WithFg(u.currentTheme.GetColorByName("LightGray")),
+	frames := []textiles.TextIcon{
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")).WithFg(u.uiTheme.GetColorByName("Black")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")).WithFg(u.uiTheme.GetColorByName("White")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")).WithFg(u.uiTheme.GetColorByName("White")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")).WithFg(u.uiTheme.GetColorByName("White")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("light_gray_5")).WithFg(u.uiTheme.GetColorByName("White")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
+		playerIcon.WithBg(u.uiTheme.GetColorByName("dark_gray_3")).WithFg(u.uiTheme.GetColorByName("light_gray_5")),
 	}
 
 	return u.GetAnimTiles([]geometry.Point{location}, frames, done)
@@ -753,20 +755,20 @@ func (u *UI) GetAnimThrow(item foundation.ItemForUI, origin geometry.Point, targ
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateProjectiles {
 		return nil, 0
 	}
-	textIcon := u.getIconForItem(item.GetCategory())
+	textIcon := item.GetIcon()
 
 	return u.GetAnimProjectileWithIcon(textIcon, origin, target, nil)
 }
 
 func (u *UI) GetAnimProjectile(icon rune, fgColor string, origin geometry.Point, target geometry.Point, done func()) (foundation.Animation, int) {
-	textIcon := foundation.TextIcon{
-		Rune: icon,
-		Fg:   u.currentTheme.GetColorByName(fgColor),
+	textIcon := textiles.TextIcon{
+		Char: icon,
+		Fg:   u.uiTheme.GetColorByName(fgColor),
 		Bg:   u.getMapTileBackgroundColor(origin), // TODO: this won't work when there is a transition
 	}
 	return u.GetAnimProjectileWithIcon(textIcon, origin, target, done)
 }
-func (u *UI) GetAnimProjectileWithIcon(textIcon foundation.TextIcon, origin geometry.Point, target geometry.Point, done func()) (foundation.Animation, int) {
+func (u *UI) GetAnimProjectileWithIcon(textIcon textiles.TextIcon, origin geometry.Point, target geometry.Point, done func()) (foundation.Animation, int) {
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateProjectiles {
 		return nil, 0
 	}
@@ -790,20 +792,20 @@ func (u *UI) GetAnimProjectileWithTrail(leadIcon rune, colorNames []string, path
 		return nil, 0
 	}
 
-	var trailIcons []foundation.TextIcon
+	var trailIcons []textiles.TextIcon
 
 	for i, cName := range colorNames {
 		if i == 0 {
-			trailIcons = append(trailIcons, foundation.TextIcon{
-				Rune: leadIcon,
-				Fg:   u.currentTheme.GetColorByName(cName),
-				Bg:   u.currentTheme.GetColorByName("Black"),
+			trailIcons = append(trailIcons, textiles.TextIcon{
+				Char: leadIcon,
+				Fg:   u.uiTheme.GetColorByName(cName),
+				Bg:   u.uiTheme.GetColorByName("Black"),
 			})
 		} else {
-			trailIcons = append(trailIcons, foundation.TextIcon{
-				Rune: ' ',
-				Fg:   u.currentTheme.GetColorByName("Black"),
-				Bg:   u.currentTheme.GetColorByName(cName),
+			trailIcons = append(trailIcons, textiles.TextIcon{
+				Char: ' ',
+				Fg:   u.uiTheme.GetColorByName("Black"),
+				Bg:   u.uiTheme.GetColorByName(cName),
 			})
 		}
 	}
@@ -891,7 +893,7 @@ func darkenScreen(screen tcell.Screen) bool {
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			dist := geometry.Distance(centerPos, geometry.Point{X: x, Y: y})
-			percent := util.Clamp(0.2, 1.0, (float64(dist)/float64(maxDist))+0.5)
+			percent := fxtools.Clamp(0.2, 1.0, (float64(dist)/float64(maxDist))+0.5)
 			workDone := darkenScreenLocation(screen, x, y, int32(float64(darkenAmount)*percent))
 			if workDone {
 				workLeft = true
@@ -914,7 +916,7 @@ func darkenScreenLocation(screen tcell.Screen, x int, y int, darkenAmount int32)
 }
 
 func (u *UI) ShowTextFile(fileName string) {
-	lines := util.ReadFileAsLines(fileName)
+	lines := fxtools.ReadFileAsLines(fileName)
 	u.OpenTextWindow(lines)
 }
 func (u *UI) OpenTextWindow(description []string) {
@@ -922,7 +924,7 @@ func (u *UI) OpenTextWindow(description []string) {
 }
 
 func (u *UI) ShowTextFileFullscreen(filename string, onClose func()) {
-	lines := util.ReadFileAsLines(filename)
+	lines := fxtools.ReadFileAsLines(filename)
 	textView := cview.NewTextView()
 	textView.SetBorder(false)
 	u.setColoredText(textView, strings.Join(lines, "\n"))
@@ -957,24 +959,18 @@ func (u *UI) newTextModal(description []string) *cview.TextView {
 	textView := cview.NewTextView()
 	textView.SetBorder(true)
 
-	textView.SetTextColor(u.currentTheme.GetUIColorForTcell(UIColorUIForeground))
-	textView.SetBackgroundColor(u.currentTheme.GetUIColorForTcell(UIColorUIBackground))
+	textView.SetTextColor(u.uiTheme.GetUIColorForTcell(UIColorUIForeground))
+	textView.SetBackgroundColor(u.uiTheme.GetUIColorForTcell(UIColorUIBackground))
 
-	textView.SetBorderColor(u.currentTheme.GetUIColorForTcell(UIColorBorderForeground))
+	textView.SetBorderColor(u.uiTheme.GetUIColorForTcell(UIColorBorderForeground))
 
 	u.setColoredText(textView, strings.Join(description, "\n"))
 	return textView
 }
 
 func (u *UI) setColoredText(view *cview.TextView, text string) {
-	if u.isMonochrome {
-		stripped := cview.StripTags([]byte(text), true, true)
-		view.SetDynamicColors(false)
-		view.SetBytes(stripped)
-	} else {
-		view.SetDynamicColors(true)
-		view.SetText(text)
-	}
+	view.SetDynamicColors(true)
+	view.SetText(text)
 }
 
 func (u *UI) UpdateLogWindow() {
@@ -989,7 +985,7 @@ func (u *UI) UpdateLogWindow() {
 	*/
 	var asColoredStrings []string
 	for i, message := range logMessages {
-		fadePercent := util.Clamp(0.2, 1.0, float64(i+1)/float64(len(logMessages)))
+		fadePercent := fxtools.Clamp(0.2, 1.0, float64(i+1)/float64(len(logMessages)))
 		asColoredStrings = append(asColoredStrings, u.ToColoredText(message, fadePercent))
 	}
 
@@ -1000,17 +996,17 @@ func (u *UI) ToColoredText(h foundation.HiLiteString, intensity float64) string 
 	if h.IsEmpty() {
 		return ""
 	}
-	textColor := u.currentTheme.GetUIColor(UIColorUIForeground)
-	hiLiteColor := u.currentTheme.GetUIColor(UIColorTextForegroundHighlighted)
+	textColor := u.uiTheme.GetUIColor(UIColorUIForeground)
+	hiLiteColor := u.uiTheme.GetUIColor(UIColorTextForegroundHighlighted)
 	if intensity < 1.0 {
-		textColor = util.SetBrightness(textColor, intensity)
-		hiLiteColor = util.SetBrightness(hiLiteColor, intensity)
+		textColor = fxtools.SetBrightness(textColor, intensity)
+		hiLiteColor = fxtools.SetBrightness(hiLiteColor, intensity)
 	}
-	textColorCode := RGBAToFgColorCode(textColor)
+	textColorCode := textiles.RGBAToFgColorCode(textColor)
 	if h.FormatString == "" {
 		return fmt.Sprintf("%s%s", textColorCode, h.Value[0])
 	}
-	hiLiteColorCode := RGBAToFgColorCode(hiLiteColor)
+	hiLiteColorCode := textiles.RGBAToFgColorCode(hiLiteColor)
 	anyValues := make([]interface{}, len(h.Value)+1)
 	anyValues[0] = textColorCode
 	for i, v := range h.Value {
@@ -1072,7 +1068,7 @@ func (u *UI) InitDungeonUI() {
 	}
 
 	u.setupCommandTable()
-	u.loadKeyMap(u.settings.KeyMapFileFullPath())
+	u.loadKeyMap(path.Join(u.settings.DataRootDir, "keymaps", "default.txt"))
 
 	u.application.GetScreen().SetCursorStyle(tcell.CursorStyleSteadyBlock)
 
@@ -1132,7 +1128,7 @@ func (u *UI) InitDungeonUI() {
 
 	u.mapOverlay = NewOverlay(u.settings.MapWidth, u.settings.MapHeight)
 
-	u.setTheme(u.settings.ThemeFullPath())
+	u.setTheme()
 }
 func (u *UI) handleMainInput(ev *tcell.EventKey) *tcell.EventKey {
 	mod, _, ch := ev.Modifiers(), ev.Key(), ev.Rune()
@@ -1179,10 +1175,9 @@ func (u *UI) continueAutoRun(direction geometry.CompassDirection) {
 }
 
 func (u *UI) applyStylingToUI() {
-	u.isMonochrome = u.currentTheme.IsMonochrome()
 
-	fg := u.currentTheme.GetUIColorForTcell(UIColorUIForeground)
-	bg := u.currentTheme.GetUIColorForTcell(UIColorUIBackground)
+	fg := u.uiTheme.GetUIColorForTcell(UIColorUIForeground)
+	bg := u.uiTheme.GetUIColorForTcell(UIColorUIBackground)
 	u.statusBar.SetTextColor(fg)
 	u.statusBar.SetBackgroundColor(bg)
 
@@ -1190,25 +1185,25 @@ func (u *UI) applyStylingToUI() {
 	u.messageLabel.SetBackgroundColor(bg)
 	u.messageLabel.SetBorderColor(fg)
 	u.messageLabel.SetScrollBarColor(fg)
-	u.messageLabel.SetDynamicColors(!u.isMonochrome)
+	u.messageLabel.SetDynamicColors(true)
 
 	u.rightPanel.SetTextColor(fg)
 	u.rightPanel.SetBorderColor(fg)
 	u.rightPanel.SetBackgroundColor(bg)
-	u.rightPanel.SetDynamicColors(!u.isMonochrome)
+	u.rightPanel.SetDynamicColors(true)
 	u.rightPanel.SetTextAlign(cview.AlignRight)
 
 	u.lowerRightPanel.SetTextColor(fg)
 	u.lowerRightPanel.SetBorderColor(fg)
 	u.lowerRightPanel.SetBackgroundColor(bg)
-	u.lowerRightPanel.SetDynamicColors(!u.isMonochrome)
+	u.lowerRightPanel.SetDynamicColors(true)
 	u.lowerRightPanel.SetTextAlign(cview.AlignLeft)
 
 	u.mapOverlay.SetDefaultColors(tcellColorToRGBA(bg), tcellColorToRGBA(fg))
 }
-func (u *UI) setTheme(fileName string) {
-	u.currentTheme = NewThemeFromFile(fileName)
-	u.currentTheme.SetBorders(&cview.Borders)
+
+func (u *UI) setTheme() {
+	u.uiTheme.SetBorders(&cview.Borders)
 	u.applyStylingToUI()
 	u.UpdateInventory()
 	u.UpdateVisibleEnemies()
@@ -1220,7 +1215,7 @@ func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (
 	if !u.gameIsReady {
 		return x, y, width, height
 	}
-	defaultMapStyle := u.currentTheme.GetMapDefaultStyle()
+	defaultMapStyle := u.uiTheme.GetMapDefaultStyle()
 	for row := y; row < y+height; row++ {
 		for col := x; col < x+width; col++ {
 
@@ -1243,7 +1238,7 @@ func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (
 
 func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool, style tcell.Style) (rune, tcell.Style) {
 	var ch rune
-	var textIcon foundation.TextIcon
+	var textIcon textiles.TextIcon
 	var isPositionAnimated bool
 	foundIcon := false
 
@@ -1261,15 +1256,15 @@ func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool, sty
 	var fg, bg color.RGBA
 
 	if foundIcon {
-		ch, fg, bg = textIcon.Rune, textIcon.Fg, textIcon.Bg
+		ch, fg, bg = textIcon.Char, textIcon.Fg, textIcon.Bg
 		style = style.Attributes(textIcon.Attributes)
 	} else {
 		ch = ' '
-		fg = u.currentTheme.GetUIColor(UIColorUIForeground)
-		bg = u.currentTheme.GetUIColor(UIColorUIBackground)
+		fg = u.uiTheme.GetUIColor(UIColorUIForeground)
+		bg = u.uiTheme.GetUIColor(UIColorUIBackground)
 	}
 
-	if !u.isMonochrome { // apply gamma
+	if true { // apply gamma
 		style = style.Foreground(tcell.NewRGBColor(int32(applyGamma(fg.R, u.gamma)), int32(applyGamma(fg.G, u.gamma)), int32(applyGamma(fg.B, u.gamma))))
 		style = style.Background(tcell.NewRGBColor(int32(applyGamma(bg.R, u.gamma)), int32(applyGamma(bg.G, u.gamma)), int32(applyGamma(bg.B, u.gamma))))
 	}
@@ -1295,7 +1290,7 @@ func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool, sty
 
 func applyGamma(colorChannel uint8, gamma float64) uint8 {
 	colorAsFloat := float64(colorChannel) / 255.0
-	gammaCorrected := util.Clamp(0, 1, math.Pow(colorAsFloat, gamma))
+	gammaCorrected := fxtools.Clamp(0, 1, math.Pow(colorAsFloat, gamma))
 	asEightBit := uint8(gammaCorrected * 255.0)
 	return asEightBit
 }
@@ -1332,7 +1327,7 @@ func (u *UI) UpdateInventory() {
 			return
 		}
 		getItemName = func(item foundation.ItemForUI, isEquipped bool) string {
-			itemIcon := u.currentTheme.GetIconForItem(item.GetCategory()).WithFg(u.currentTheme.GetInventoryItemColor(item.GetCategory())).WithBg(u.currentTheme.GetUIColor(UIColorUIBackground))
+			itemIcon := item.GetIcon().WithFg(u.uiTheme.GetInventoryItemColor(item.GetCategory())).WithBg(u.uiTheme.GetUIColor(UIColorUIBackground))
 			if isEquipped {
 				itemIcon = itemIcon.Reversed()
 			}
@@ -1341,7 +1336,7 @@ func (u *UI) UpdateInventory() {
 		}
 	} else {
 		getItemName = func(item foundation.ItemForUI, isEquipped bool) string {
-			nameWithColorsAndShortcut := item.InventoryNameWithColorsAndShortcut(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(item.GetCategory())))
+			nameWithColorsAndShortcut := item.InventoryNameWithColorsAndShortcut(u.uiTheme.GetInventoryItemColorCode(item.GetCategory()))
 			if isEquipped {
 				nameWithColorsAndShortcut = nameWithColorsAndShortcut[:2] + "+" + nameWithColorsAndShortcut[3:]
 			}
@@ -1359,9 +1354,9 @@ func (u *UI) UpdateInventory() {
 	u.rightPanel.SetText("\n" + strings.Join(asString, "\n"))
 }
 
-func IconAsString(icon foundation.TextIcon) string {
-	code := RGBAToColorCodes(icon.Fg, icon.Bg)
-	return fmt.Sprintf("%s%s[-:-]", code, string(icon.Rune))
+func IconAsString(icon textiles.TextIcon) string {
+	code := textiles.RGBAToColorCodes(icon.Fg, icon.Bg)
+	return fmt.Sprintf("%s%s[-:-]", code, string(icon.Char))
 }
 
 func (u *UI) UpdateVisibleEnemies() {
@@ -1370,8 +1365,8 @@ func (u *UI) UpdateVisibleEnemies() {
 	var asString []string
 	for _, enemy := range visibleEnemies {
 		icon := u.getIconForActor(enemy)
-		iconColor := RGBAToFgColorCode(icon.Fg)
-		iconString := fmt.Sprintf("%s%s[-]", iconColor, string(icon.Rune))
+		iconColor := textiles.RGBAToFgColorCode(icon.Fg)
+		iconString := fmt.Sprintf("%s%s[-]", iconColor, string(icon.Char))
 		hp, hpMax := enemy.GetHitPoints(), enemy.GetHitPointsMax()
 		asPercent := float64(hp) / float64(hpMax)
 
@@ -1399,14 +1394,14 @@ func (u *UI) UpdateVisibleEnemies() {
 func (u *UI) FullColorBarFromPercent(currentVal, maxVal, width int) string {
 	percent := float64(currentVal) / float64(maxVal)
 	colorChangeIndex := int(math.Round(percent * float64(width)))
-	white := u.currentTheme.GetColorByName("White")
-	colorCode := RGBAToColorCodes(u.currentTheme.GetColorByName("Green"), white)
+	white := u.uiTheme.GetColorByName("White")
+	colorCode := textiles.RGBAToColorCodes(u.uiTheme.GetColorByName("Green_1"), white)
 	if percent < 0.50 {
-		colorCode = RGBAToColorCodes(u.currentTheme.GetColorByName("Red"), white)
+		colorCode = textiles.RGBAToColorCodes(u.uiTheme.GetColorByName("Red_1"), white)
 	} else if percent < 0.75 {
-		colorCode = RGBAToColorCodes(u.currentTheme.GetColorByName("Yellow"), u.currentTheme.GetColorByName("Black"))
+		colorCode = textiles.RGBAToColorCodes(u.uiTheme.GetColorByName("Yellow_1"), u.uiTheme.GetColorByName("Black"))
 	}
-	darkGrayCode := RGBAToColorCodes(u.currentTheme.GetColorByName("DarkGray"), white)
+	darkGrayCode := textiles.RGBAToColorCodes(u.uiTheme.GetColorByName("dark_gray_3"), white)
 
 	valString := fmt.Sprintf("%d/%d", currentVal, maxVal)
 	xForCenter := (width - len(valString)) / 2
@@ -1419,18 +1414,18 @@ func (u *UI) FullColorBarFromPercent(currentVal, maxVal, width int) string {
 }
 
 func (u *UI) RuneBarWithColor(icon rune, fgColorName, bgColorName string, current, max int) string {
-	colorCode := RGBAToColorCodes(u.currentTheme.GetColorByName(fgColorName), u.currentTheme.GetColorByName(bgColorName))
-	darkGrayCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("DarkGray"))
+	colorCode := textiles.RGBAToColorCodes(u.uiTheme.GetColorByName(fgColorName), u.uiTheme.GetColorByName(bgColorName))
+	darkGrayCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("dark_gray_3"))
 	return colorCode + strings.Repeat(string(icon), current) + "[-:-]" + darkGrayCode + strings.Repeat(" ", max-current) + "[-]"
 }
 
 func (u *UI) RuneBarFromPercent(icon rune, percent float64, width int) string {
 	repeats := int(math.Round(percent * float64(width)))
-	colorCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("Green"))
+	colorCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Green_1"))
 	if percent < 0.50 {
-		colorCode = RGBAToFgColorCode(u.currentTheme.GetColorByName("Red"))
+		colorCode = textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Red_1"))
 	} else if percent < 0.75 {
-		colorCode = RGBAToFgColorCode(u.currentTheme.GetColorByName("Yellow"))
+		colorCode = textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Yellow_1"))
 	}
 	return colorCode + strings.Repeat(string(icon), repeats) + "[-]" + strings.Repeat(" ", width-repeats)
 }
@@ -1450,7 +1445,7 @@ func (u *UI) UpdateStats() {
 
 	itemName := "| none |"
 	if isEquipped {
-		itemName = "| " + equippedItem.LongNameWithColors(RGBAToFgColorCode(u.currentTheme.GetInventoryItemColor(equippedItem.GetCategory()))) + " |"
+		itemName = "| " + equippedItem.LongNameWithColors(textiles.RGBAToFgColorCode(u.uiTheme.GetInventoryItemColor(equippedItem.GetCategory()))) + " |"
 	}
 
 	multiLine := u.isStatusBarMultiLine()
@@ -1468,7 +1463,7 @@ func (u *UI) UpdateStats() {
 		fatigueMax := statusValues[foundation.HudFatiguePointsMax]
 
 		// display as bar
-		fatigueBarContent := u.RuneBarWithColor('!', "VeryLightBlue", "Blue", fatigueCurrent, fatigueMax)
+		fatigueBarContent := u.RuneBarWithColor('!', "light_blue_1", "light_blue_5", fatigueCurrent, fatigueMax)
 		fpBarStr := fmt.Sprintf("FP [%s]", fatigueBarContent)
 
 		longFlags := FlagStringLong(flags)
@@ -1545,7 +1540,7 @@ func (u *UI) colorIfDiff(statStr string, stat foundation.HudValue, currentValue 
 	if lastValue == currentValue {
 		return statStr
 	}
-	hiCode := RGBAToFgColorCode(u.currentTheme.GetColorByName("Yellow"))
+	hiCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Yellow"))
 	return fmt.Sprintf("%s%s[-]", hiCode, statStr)
 }
 func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags map[foundation.ActorFlag]int, multiLine bool, equippedItem string) string {
@@ -1583,16 +1578,16 @@ func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags
 func expandToWidth(statusStr string, width int) string {
 	statusWidth := cview.TaggedStringWidth(statusStr)
 	if statusWidth < width {
-		statusStr = util.RightPadCount(statusStr, width-statusWidth)
+		statusStr = fxtools.RightPadCount(statusStr, width-statusWidth)
 	}
 	return statusStr
 }
 
 func (u *UI) openInventory(items []foundation.ItemForUI) *TextInventory {
 	list := NewTextInventory()
-	list.SetLineColor(u.currentTheme.GetInventoryItemColor)
+	list.SetLineColor(u.uiTheme.GetInventoryItemColor)
 	list.SetEquippedTest(u.game.IsEquipped)
-	list.SetStyle(u.currentTheme.defaultStyle)
+	list.SetStyle(u.uiTheme.defaultStyle)
 
 	list.SetItems(items)
 
@@ -1719,7 +1714,7 @@ func (u *UI) StartHackingGame(identifier uint64, difficulty foundation.Difficult
 		fakeCount = 6
 	}
 	passFile := path.Join(u.settings.DataRootDir, "wordlists", passwordFile)
-	passwords := util.ReadFileAsLines(passFile)
+	passwords := fxtools.ReadFileAsLines(passFile)
 	rnd := rand.New(rand.NewSource(int64(identifier)))
 
 	// shuffle the passwords
@@ -1833,7 +1828,7 @@ func (u *UI) ShowMonsterInfo(monster foundation.ActorForUI) {
 	panels.SetFullScreen(true)
 	panels.SetTabSwitcherDivider("|", "|", "|")
 	monsterInfo := monster.GetDetailInfo()
-	monsterLore := util.ReadFileAsLines(lorePath)
+	monsterLore := fxtools.ReadFileAsLines(lorePath)
 	if len(monsterLore) == 0 {
 		u.openTextModal(monsterInfo)
 		return
@@ -1970,8 +1965,8 @@ func (u *UI) setupListForUI(panelName string, list *cview.List) {
 }
 
 func (u *UI) applyListStyle(list *cview.List) {
-	fg := u.currentTheme.GetUIColorForTcell(UIColorUIForeground)
-	bg := u.currentTheme.GetUIColorForTcell(UIColorUIBackground)
+	fg := u.uiTheme.GetUIColorForTcell(UIColorUIForeground)
+	bg := u.uiTheme.GetUIColorForTcell(UIColorUIBackground)
 
 	list.SetBorder(true)
 	list.SetWrapAround(true)
@@ -2064,7 +2059,7 @@ func (u *UI) ShowVisibleEnemies() {
 	var infoTexts []string
 	for _, enemy := range listOfEnemies {
 		info := enemy.GetListInfo()
-		info = fmt.Sprintf("%c - %s", u.getIconForActor(enemy).Rune, info)
+		info = fmt.Sprintf("%c - %s", u.getIconForActor(enemy).Char, info)
 		infoTexts = append(infoTexts, info)
 	}
 	u.OpenTextWindow(infoTexts)
@@ -2080,7 +2075,7 @@ func (u *UI) ShowVisibleItems() {
 	var infoTexts []string
 	for _, item := range listOfItems {
 		info := item.GetListInfo()
-		info = fmt.Sprintf("%c - %s", u.getIconForItem(item.GetCategory()).Rune, info)
+		info = fmt.Sprintf("%c - %s", item.GetIcon().Char, info)
 		infoTexts = append(infoTexts, info)
 	}
 	u.OpenTextWindow(infoTexts)
@@ -2214,7 +2209,6 @@ func NewTextUI(settings *foundation.Configuration) *UI {
 		targetingTiles: make(map[geometry.Point]bool),
 		animator:       NewAnimator(),
 		audioPlayer:    audio.NewPlayer(),
-		isMonochrome:   false,
 		listTable:      make(map[string]*cview.List),
 		cursorStyle:    tcell.CursorStyleSteadyBlock,
 		gamma:          1.0,
@@ -2295,20 +2289,27 @@ func directionToRune(dir geometry.CompassDirection) rune {
 	return 'w'
 }
 
-func (u *UI) mapLookup(loc geometry.Point) (foundation.TextIcon, bool) {
+func (u *UI) mapLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 	if u.game.IsVisibleToPlayer(loc) {
 		return u.visibleLookup(loc)
 	} else if u.game.IsExplored(loc) && u.game.IsLit(loc) {
-		icon := u.getIconForMap(u.game.MapAt(loc))
+		icon := u.getIconForMap(loc)
 		return icon, true
 	}
-	return foundation.TextIcon{}, false
+	return textiles.TextIcon{}, false
 }
 func (u *UI) getMapTileBackgroundColor(loc geometry.Point) color.RGBA {
-	icon := u.getIconForMap(u.game.MapAt(loc))
+	icon := u.getIconForMap(loc)
 	return icon.Bg
 }
-func (u *UI) visibleLookup(loc geometry.Point) (foundation.TextIcon, bool) {
+func (u *UI) visibleLookup(loc geometry.Point) (textiles.TextIcon, bool) {
+	conditionalBackgroundWrapper := func(i textiles.TextIcon) textiles.TextIcon {
+		if i.HasBackground() {
+			return i
+		}
+		mapIcon := u.getIconForMap(loc)
+		return i.WithBg(mapIcon.Bg)
+	}
 	entityType := u.game.TopEntityAt(loc)
 	switch entityType {
 	case foundation.EntityTypeActor:
@@ -2319,12 +2320,12 @@ func (u *UI) visibleLookup(loc geometry.Point) (foundation.TextIcon, bool) {
 		return u.getIconForActor(actor), true
 	case foundation.EntityTypeItem:
 		item := u.game.ItemAt(loc)
-		return u.getIconForItem(item.GetCategory()), true
+		return conditionalBackgroundWrapper(item.GetIcon()), true
 	case foundation.EntityTypeObject:
 		object := u.game.ObjectAt(loc)
-		return u.getIconForObject(object), true
+		return conditionalBackgroundWrapper(object.GetIcon()), true
 	}
-	icon := u.getIconForMap(u.game.MapAt(loc))
+	icon := u.getIconForMap(loc)
 	return icon, true
 }
 
@@ -2436,8 +2437,8 @@ func (u *UI) charSheetView() (*cview.TextView, []string) {
 	textView := cview.NewTextView()
 	textView.SetBorder(true)
 
-	fg := u.currentTheme.GetUIColorForTcell(UIColorUIForeground)
-	bg := u.currentTheme.GetUIColorForTcell(UIColorUIBackground)
+	fg := u.uiTheme.GetUIColorForTcell(UIColorUIForeground)
+	bg := u.uiTheme.GetUIColorForTcell(UIColorUIBackground)
 
 	textView.SetTextColor(fg)
 	textView.SetBorderColor(fg)
@@ -2466,64 +2467,36 @@ func (u *UI) onRightPanelClicked(clickPos geometry.Point) {
 	}
 }
 
-func (u *UI) getIconForItem(itemCategory foundation.ItemCategory) foundation.TextIcon {
-	if u.isPlayerHallucinating() {
-		u.currentTheme.GetIconForItem(foundation.RandomItemCategory())
-	}
-	iconForItem := u.currentTheme.GetIconForItem(itemCategory)
-	if iconForItem.HasEmptyBackground() {
-		mapIconHere := u.currentTheme.GetIconForMap(foundation.TileFloor)
-		return iconForItem.WithBg(mapIconHere.Bg)
-	}
-	return iconForItem
-}
-
-func (u *UI) getIconForMap(worldTileType foundation.TileType) foundation.TextIcon {
-	return u.currentTheme.GetIconForMap(worldTileType)
-}
-
-func (u *UI) getIconForObject(object foundation.ObjectForUI) foundation.TextIcon {
-	if u.isPlayerHallucinating() {
-		u.currentTheme.GetIconForObject(foundation.RandomObjectCategory())
-	}
-	objectIcon := u.currentTheme.GetIconForObject(object.GetCategory())
-	if objectIcon.HasEmptyBackground() {
-		mapIconHere := u.currentTheme.GetIconForMap(u.game.MapAt(object.Position()))
-		return objectIcon.WithBg(mapIconHere.Bg)
-	}
-	return objectIcon
-}
-
 func RightPadColored(s string, pLen int) string {
 	return s + strings.Repeat(" ", pLen-cview.TaggedStringWidth(s))
 }
 
 func (u *UI) GetAnimExplosion(hitPositions []geometry.Point, done func()) foundation.Animation {
-	white := u.currentTheme.GetColorByName("White")
-	background := u.currentTheme.GetIconForMap(foundation.TileFloor).Bg
-	yellow := u.currentTheme.GetColorByName("Yellow")
-	red := u.currentTheme.GetColorByName("Red")
-	lightGray := u.currentTheme.GetColorByName("LightGray")
-	darkGray := u.currentTheme.GetColorByName("DarkGray")
-	frames := []foundation.TextIcon{
-		{Rune: '.', Fg: white, Bg: background},
-		{Rune: '∙', Fg: white, Bg: background},
-		{Rune: '*', Fg: white, Bg: background},
-		{Rune: '*', Fg: yellow, Bg: background},
-		{Rune: '*', Fg: red, Bg: background},
-		{Rune: '*', Fg: lightGray, Bg: background},
-		{Rune: '*', Fg: darkGray, Bg: background},
+	white := u.uiTheme.GetColorByName("White")
+	background := u.uiTheme.GetUIColor(UIColorUIBackground)
+	yellow := u.uiTheme.GetColorByName("Yellow")
+	red := u.uiTheme.GetColorByName("Red")
+	lightGray := u.uiTheme.GetColorByName("light_gray_5")
+	darkGray := u.uiTheme.GetColorByName("dark_gray_3")
+	frames := []textiles.TextIcon{
+		{Char: '.', Fg: white, Bg: background},
+		{Char: '∙', Fg: white, Bg: background},
+		{Char: '*', Fg: white, Bg: background},
+		{Char: '*', Fg: yellow, Bg: background},
+		{Char: '*', Fg: red, Bg: background},
+		{Char: '*', Fg: lightGray, Bg: background},
+		{Char: '*', Fg: darkGray, Bg: background},
 	}
 	return u.GetAnimTiles(hitPositions, frames, done)
 }
 
 func (u *UI) GetAnimUncloakAtPosition(actor foundation.ActorForUI, uncloakLocation geometry.Point) (foundation.Animation, int) {
 	actorIcon := u.getIconForActor(actor)
-	tileIcon := u.currentTheme.GetIconForMap(u.game.MapAt(uncloakLocation))
-	lightGray := u.currentTheme.GetColorByName("LightGray")
-	darkGray := u.currentTheme.GetColorByName("DarkGray")
-	black := u.currentTheme.GetColorByName("Black")
-	frames := []foundation.TextIcon{
+	tileIcon := u.getIconForMap(uncloakLocation)
+	lightGray := u.uiTheme.GetColorByName("light_gray_5")
+	darkGray := u.uiTheme.GetColorByName("dark_gray_3")
+	black := u.uiTheme.GetColorByName("Black")
+	frames := []textiles.TextIcon{
 		tileIcon,
 		tileIcon.WithFg(lightGray),
 		tileIcon.WithFg(lightGray),
@@ -2542,24 +2515,6 @@ func (u *UI) GetAnimUncloakAtPosition(actor foundation.ActorForUI, uncloakLocati
 	return uncloakAnim, len(frames)
 }
 
-func (u *UI) OpenThemesMenu() {
-	themesDir := path.Join(u.settings.DataRootDir, "themes")
-	allThemes := util.FilesInDirByExtension(themesDir, "rec")
-
-	actions := make([]foundation.MenuItem, 0)
-	for _, t := range allThemes {
-		themeFile := t
-		themeName := strings.TrimSuffix(path.Base(themeFile), ".rec")
-		actions = append(actions, foundation.MenuItem{
-			Name: themeName,
-			Action: func() {
-				u.setTheme(themeFile)
-			},
-		})
-	}
-
-	u.OpenMenu(actions)
-}
 func (u *UI) remapCommand(layer KeyLayer, command string) {
 	u.Print(foundation.Msg("Press the key you want to bind to this command"))
 	key := u.getPressedKey()
@@ -2617,7 +2572,7 @@ func (u *UI) updateLastFrame() {
 	for y := 0; y < u.settings.MapHeight; y++ {
 		for x := 0; x < u.settings.MapWidth; x++ {
 			pos := geometry.Point{X: x, Y: y}
-			u.renderMapPosition(pos, false, u.currentTheme.GetMapDefaultStyle())
+			u.renderMapPosition(pos, false, u.uiTheme.GetMapDefaultStyle())
 		}
 	}
 }
@@ -2730,6 +2685,15 @@ func (u *UI) initAudio() {
 	}()
 
 	u.animator.SetAudioCuePlayer(u.audioPlayer)
+}
+
+func (u *UI) getIconForMap(loc geometry.Point) textiles.TextIcon {
+	colored := u.game.MapAt(loc)
+	return textiles.TextIcon{
+		Char: colored.Char,
+		Fg:   colored.Fg,
+		Bg:   colored.Bg,
+	}
 }
 
 type EventJoy struct {

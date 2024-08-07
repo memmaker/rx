@@ -1,6 +1,6 @@
-name: vault suit
-internal_name: vault_suit
-category: armor
+Description: vault suit
+Name: vault_suit
+Category: Armor
 slot: torso
 armor_physical: 0, 5
 armor_energy: 0, 0
@@ -8,9 +8,9 @@ armor_radiation_reduction: 0
 armor_encumbrance: 0
 chance: 20
 
-name: leather armor
-internal_name: leather_armor
-category: armor
+Description: leather armor
+Name: leather_armor
+Category: Armor
 slot: torso
 armor_physical: 0, 5
 armor_energy: 0, 0
@@ -18,9 +18,9 @@ armor_radiation_reduction: 0
 armor_encumbrance: 0
 chance: 75
 
-name: metal armor
-internal_name: metal_armor
-category: armor
+Description: metal armor
+Name: metal_armor
+Category: Armor
 slot: torso
 armor_physical: 0, 5
 armor_energy: 0, 0
@@ -28,9 +28,9 @@ armor_radiation_reduction: 0
 armor_encumbrance: 0
 chance: 63
 
-name: combat armor
-internal_name: combat_armor
-category: armor
+Description: combat armor
+Name: combat_armor
+Category: Armor
 slot: torso
 armor_physical: 0, 5
 armor_energy: 0, 0
@@ -38,9 +38,9 @@ armor_radiation_reduction: 0
 armor_encumbrance: 0
 chance: 95
 
-name: combat armor mk2
-internal_name: combat_armor_mk2
-category: armor
+Description: combat armor mk2
+Name: combat_armor_mk2
+Category: Armor
 slot: torso
 armor_physical: 4, 50
 armor_energy: 3, 30
@@ -48,9 +48,9 @@ armor_radiation_reduction: 0
 armor_encumbrance: 3
 chance: 100
 
-name: tesla armor
-internal_name: tesla_armor
-category: armor
+Description: tesla armor
+Name: tesla_armor
+Category: Armor
 slot: torso
 armor_physical: 3, 40
 armor_energy: 4, 50
@@ -58,9 +58,9 @@ armor_radiation_reduction: 0
 armor_encumbrance: 4
 chance: 100
 
-name: Chitin Armor
-internal_name: ant_chitin_armor
-category: armor
+Description: Chitin Armor
+Name: ant_chitin_armor
+Category: Armor
 slot: torso
 armor_physical: 3, 40
 armor_energy: 3, 30

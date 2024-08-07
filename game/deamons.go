@@ -6,9 +6,6 @@ import (
 )
 
 func (g *GameState) enemyMovement(playerTimeSpent int) {
-	if g.currentDungeonLevel <= 2 {
-		playerTimeSpent /= 2
-	}
 	gridMap := g.gridMap
 	allEnemies := gridMap.Actors()
 	for _, enemy := range allEnemies {

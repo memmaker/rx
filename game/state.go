@@ -4,14 +4,15 @@ import (
 	"RogueUI/dice_curve"
 	"RogueUI/dungen"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
 	"RogueUI/gridmap"
-	"RogueUI/recfile"
 	"RogueUI/special"
-	"RogueUI/util"
 	"cmp"
 	"encoding/gob"
 	"fmt"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/recfile"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 	"log"
 	"math/rand"
@@ -28,6 +29,10 @@ import (
 
 // map window size in a console : 23x80
 
+type MapLoader interface {
+	LoadMap(mapName string) *gridmap.GridMap[*Actor, *Item, Object]
+}
+
 type GameState struct {
 	Player *Actor
 
@@ -35,16 +40,12 @@ type GameState struct {
 
 	ui foundation.GameUI
 
-	textIcons []foundation.TextIcon
+	textIcons []textiles.TextIcon
 
 	logBuffer []foundation.HiLiteString
 
 	gridMap       *gridmap.GridMap[*Actor, *Item, Object]
 	dungeonLayout *dungen.DungeonMap
-
-	currentDungeonLevel              int
-	maximumDungeonLevel              int
-	deepestDungeonLevelPlayerReached int
 
 	tileStyle         int
 	defaultBackground color.RGBA
@@ -58,14 +59,16 @@ type GameState struct {
 
 	playerFoV               *geometry.FOV
 	visionRange             int
-	genericWallIconIndex    foundation.TextIcon
-	playerIcon              rune
+	genericWallIconIndex    textiles.TextIcon
+	playerIcon              textiles.TextIcon
 	playerColor             string
 	config                  *foundation.Configuration
 	ascensionsWithoutAmulet int
 	mapLoader               MapLoader
-	gameFlags               util.StringFlags
+	gameFlags               fxtools.StringFlags
 	terminalGuesses         map[string][]string
+	iconsForItems           map[foundation.ItemCategory]textiles.TextIcon
+	iconsForObjects         map[foundation.ObjectCategory]textiles.TextIcon
 }
 
 func (g *GameState) GetRangedHitChance(target foundation.ActorForUI) int {
@@ -86,14 +89,14 @@ func (g *GameState) GetItemInMainHand() (foundation.ItemForUI, bool) {
 	return g.Player.GetEquipment().GetMainHandItem()
 }
 
-func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []util.Tuple[string, int] {
+func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []fxtools.Tuple[string, int] {
 	victim := targeted.(*Actor)
 	attackerSkill, defenderSkill := 0, 0 // TODO
 	return victim.GetBodyPartsAndHitChances(attackerSkill, defenderSkill)
 }
 
 func (g *GameState) GetRandomEnemyName() string {
-	return g.dataDefinitions.RandomMonsterDef().Name
+	return g.dataDefinitions.RandomMonsterDef().Description
 }
 
 func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {
@@ -236,8 +239,8 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 		if effect == "EndConversation" {
 			endConversation = true
 		} else {
-			if util.LooksLikeAFunction(effect) {
-				name, args := util.GetNameAndArgs(effect)
+			if fxtools.LooksLikeAFunction(effect) {
+				name, args := fxtools.GetNameAndArgs(effect)
 				switch name {
 				case "Hacking":
 					terminalID := args.Get(0)
@@ -247,7 +250,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 
 					effectCalls = append(effectCalls, func() {
 						previousGuesses := g.terminalGuesses[terminalID]
-						g.ui.StartHackingGame(util.MurmurHash(flagName), foundation.DifficultyFromString(difficulty), previousGuesses, func(pGuesses []string, result foundation.InteractionResult) {
+						g.ui.StartHackingGame(fxtools.MurmurHash(flagName), foundation.DifficultyFromString(difficulty), previousGuesses, func(pGuesses []string, result foundation.InteractionResult) {
 							g.terminalGuesses[terminalID] = pGuesses
 							if result == foundation.Success {
 								g.gameFlags.SetFlag(flagName)
@@ -389,7 +392,7 @@ func (g *GameState) OpenWizardMenu() {
 
 func (g *GameState) StartDialogue(name string, isTerminal bool) {
 	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", name+".txt")
-	if !util.FileExists(conversationFilename) {
+	if !fxtools.FileExists(conversationFilename) {
 		return
 	}
 	conversation, err := g.ParseConversation(conversationFilename)
@@ -402,24 +405,38 @@ func (g *GameState) StartDialogue(name string, isTerminal bool) {
 }
 
 func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameState {
+	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
+	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
 	g := &GameState{
-		config:              config,
-		playerName:          config.PlayerName,
-		playerColor:         "White",
-		playerIcon:          '@',
-		maximumDungeonLevel: 26,
-		ui:                  ui,
-		tileStyle:           0,
-		gameFlags:           make(util.StringFlags),
-		dataDefinitions:     GetDataDefinitions(config.DataRootDir),
-		playerFoV:           geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
-		visionRange:         14,
-		terminalGuesses:     make(map[string][]string),
+		config:      config,
+		playerName:  config.PlayerName,
+		playerColor: "White",
+		playerIcon: textiles.TextIcon{
+			Char: '@',
+			Fg:   color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		},
+		ui:              ui,
+		tileStyle:       0,
+		gameFlags:       make(fxtools.StringFlags),
+		dataDefinitions: GetDataDefinitions(config.DataRootDir, palette),
+		playerFoV:       geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
+		visionRange:     14,
+		terminalGuesses: make(map[string][]string),
 	}
+	g.loadIcons(palette)
+
 	g.init()
 	ui.SetGame(g)
 
 	return g
+}
+func (g *GameState) loadIcons(palette textiles.ColorPalette) {
+	itemCats, objTypes, inventoryColors := loadIconsForItemsAndObjects(g.config.DataRootDir, palette)
+	g.iconsForItems = itemCats
+	g.iconsForObjects = objTypes
+	g.ui.SetColors(palette, inventoryColors)
+
+	g.mapLoader = NewRecMapLoader(g, palette)
 }
 func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
 	actor.GetInventory().Add(item)
@@ -428,14 +445,16 @@ func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
 	}
 }
 func (g *GameState) init() {
-	g.mapLoader = NewTextMapLoader(g)
+
+	// now, the ui needs both the palette and the inventory colors..
+
 	playerSheet := special.NewCharSheet()
 	playerSheet.SetSkill(special.SmallGuns, 50)
-	g.Player = NewPlayer(g.playerName, g.playerIcon, g.playerColor, playerSheet)
+	g.Player = NewPlayer(g.playerName, g.playerIcon, playerSheet)
 
 	gearDataFile := path.Join(g.config.DataRootDir, "definitions", "start_gear.rec")
-	if util.FileExists(gearDataFile) {
-		startGear := recfile.Read(util.MustOpen(gearDataFile))[0]
+	if fxtools.FileExists(gearDataFile) {
+		startGear := recfile.Read(fxtools.MustOpen(gearDataFile))[0]
 		for _, fields := range startGear {
 			parts := fields.AsList(",")
 			amount := parts[0].AsInt()
@@ -462,17 +481,15 @@ func (g *GameState) init() {
 
 	g.TurnsTaken = 0
 	g.logBuffer = []foundation.HiLiteString{}
-	g.currentDungeonLevel = 0
-	g.deepestDungeonLevelPlayerReached = 0
 	g.showEverything = false
 }
 
 func (g *GameState) NewGold(amount int) *Item {
 	def := ItemDef{
-		Name:         "gold",
-		InternalName: "gold",
-		Category:     foundation.ItemCategoryGold,
-		Charges:      dice_curve.NewDice(1, 1, 1),
+		Description: "gold",
+		Name:        "gold",
+		Category:    foundation.ItemCategoryGold,
+		Charges:     dice_curve.NewDice(1, 1, 1),
 	}
 	item := NewItem(def)
 	item.SetCharges(amount)
@@ -523,7 +540,8 @@ func (g *GameState) UIReady() {
 
 func (g *GameState) moveIntoDungeon() {
 	g.ui.InitDungeonUI()
-	g.GotoDungeonLevel(1, StairsBoth, true)
+	//g.GotoDungeonLevel(1, StairsBoth, true)
+	g.GotoNamedLevel("testmap", "Spawn")
 }
 
 func (g *GameState) updateUIStatus() {
@@ -546,7 +564,6 @@ func (g *GameState) GetHudStats() map[foundation.HudValue]int {
 	//g.Player.stats
 
 	uiStats[foundation.HudTurnsTaken] = g.TurnsTaken
-	uiStats[foundation.HudDungeonLevel] = g.currentDungeonLevel
 	uiStats[foundation.HudGold] = g.Player.GetGold()
 
 	uiStats[foundation.HudHitPoints] = g.Player.GetHitPoints()
@@ -591,7 +608,7 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	}
 
 	cell := g.gridMap.GetCell(pos)
-	if !cell.TileType.IsSpecial() && isMovement {
+	if isMovement {
 		return foundation.NoMsg()
 	}
 	tileDesc := cell.TileType.DefinedDescription
@@ -688,12 +705,12 @@ func (g *GameState) GetInventory() []foundation.ItemForUI {
 	return itemStacksForUI(g.Player.GetInventory().StackedItems())
 }
 
-func (g *GameState) MapAt(mapPos geometry.Point) foundation.TileType {
-	if !g.gridMap.Contains(mapPos) {
-		return foundation.TileEmpty
+func (g *GameState) MapAt(loc geometry.Point) textiles.TextIcon {
+	if !g.gridMap.Contains(loc) {
+		return textiles.TextIcon{}
 	}
-	mapCell := g.gridMap.GetCell(mapPos)
-	return mapCell.TileType.Icon()
+	mapCell := g.gridMap.GetCell(loc)
+	return mapCell.TileType.Icon
 }
 func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 	if !g.gridMap.Contains(mapPos) {
@@ -789,9 +806,6 @@ func (g *GameState) playerVisibleItemsByDistance() []*Item {
 // Should be functionally identical to bool cansee(y, x) in chase.c
 // https://github.com/memmaker/rogue-pc-modern-C/blob/582340fcaef32dd91595721efb2d5db41ff3cb05/src/chase.c#L387
 func (g *GameState) canPlayerSee(pos geometry.Point) bool {
-	if g.currentDungeonLevel == 0 {
-		return true
-	}
 	playerRoom := g.getPlayerRoom()
 	playerPos := g.Player.Position()
 	if g.dungeonLayout == nil {
@@ -858,9 +872,9 @@ func (g *GameState) hasPaidWithCharge(user *Actor, item *Item) bool {
 	return true
 }
 
-func (g *GameState) defaultStyleIcon(icon rune) foundation.TextIcon {
-	return foundation.TextIcon{
-		Rune: icon,
+func (g *GameState) defaultStyleIcon(icon rune) textiles.TextIcon {
+	return textiles.TextIcon{
+		Char: icon,
 		Fg:   g.defaultForeground,
 		Bg:   g.defaultBackground,
 	}
@@ -883,14 +897,17 @@ func (g *GameState) NewEnemyFromDef(def ActorDef) *Actor {
 
 	charSheet.HealCompletely()
 
-	actor := NewActor(def.Name, def.Icon, def.Color, charSheet)
+	actor := NewActor(def.Description, def.Icon, charSheet)
 	actor.GetFlags().Init(def.Flags.UnderlyingCopy())
 	actor.SetIntrinsicZapEffects(def.ZapEffects)
 	actor.SetIntrinsicUseEffects(def.UseEffects)
-	actor.SetInternalName(def.InternalName)
+	actor.SetInternalName(def.Name)
 
 	actor.SetSizeModifier(def.SizeModifier)
 	actor.SetRelationToPlayer(def.DefaultRelation)
+	actor.SetPosition(def.Position)
+	actor.SetDialogueFile(def.DialogueFile)
+
 	for _, itemName := range def.Equipment {
 		item := g.NewItemFromName(itemName)
 		actor.GetInventory().Add(item)
@@ -1046,7 +1063,7 @@ func (g *GameState) openWizardCreateItemSelectionMenu(defs []ItemDef) {
 	for _, def := range defs {
 		itemDef := def
 		menuActions = append(menuActions, foundation.MenuItem{
-			Name: itemDef.Name,
+			Name: itemDef.Description,
 			Action: func() {
 				newItem := NewItem(itemDef)
 				inv := g.Player.GetInventory()
@@ -1067,7 +1084,7 @@ func (g *GameState) openWizardCreateMonsterMenu() {
 	for _, def := range defs {
 		monsterDef := def
 		menuActions = append(menuActions, foundation.MenuItem{
-			Name: monsterDef.Name,
+			Name: monsterDef.Description,
 			Action: func() {
 				if monsterDef.Flags.IsSet(foundation.FlagWallCrawl) {
 					g.spawnCrawlerInWall(monsterDef)
@@ -1119,7 +1136,6 @@ func (g *GameState) gameWon() {
 	scoreInfo := foundation.ScoreInfo{
 		PlayerName:         g.Player.Name(),
 		Gold:               g.calculateTotalNetWorth(),
-		MaxLevel:           g.deepestDungeonLevelPlayerReached,
 		DescriptiveMessage: "ESCAPED the dungeon",
 		Escaped:            true,
 	}
@@ -1131,7 +1147,6 @@ func (g *GameState) gameOver(death string) {
 	scoreInfo := foundation.ScoreInfo{
 		PlayerName:         g.Player.Name(),
 		Gold:               g.calculateTotalNetWorth(),
-		MaxLevel:           g.deepestDungeonLevelPlayerReached,
 		DescriptiveMessage: death,
 		Escaped:            false,
 	}
@@ -1246,13 +1261,7 @@ func (g *GameState) writePlayerScore(info foundation.ScoreInfo) []foundation.Sco
 		if !i.Escaped && j.Escaped {
 			return 1
 		}
-		if i.Escaped && j.Escaped {
-			return cmp.Compare(j.Gold, i.Gold)
-		}
-		if i.MaxLevel == j.MaxLevel {
-			return cmp.Compare(j.Gold, i.Gold)
-		}
-		return cmp.Compare(j.MaxLevel, i.MaxLevel)
+		return cmp.Compare(i.Gold, j.Gold)
 	})
 
 	if len(scoreTable) > 15 {
@@ -1266,13 +1275,6 @@ func (g *GameState) writePlayerScore(info foundation.ScoreInfo) []foundation.Sco
 
 func (g *GameState) triggerTileEffectsAfterMovement(actor *Actor, oldPos, newPos geometry.Point) []foundation.Animation {
 	isPlayer := actor == g.Player
-	cell := g.gridMap.GetCell(newPos)
-	if cell.TileType.IsVendor() && isPlayer {
-		itemsForVendor := []util.Tuple[foundation.ItemForUI, int]{
-			{g.NewItemFromName("mace"), 100},
-		}
-		g.ui.OpenVendorMenu(itemsForVendor, g.buyItemFromVendor)
-	}
 	if g.gridMap.IsObjectAt(newPos) {
 		objectAt := g.gridMap.ObjectAt(newPos)
 		var animations []foundation.Animation
@@ -1353,13 +1355,10 @@ func (g *GameState) startSprint(actor *Actor) {
 }
 
 func (g *GameState) unstableStairs() bool {
-	if g.currentDungeonLevel >= 26 {
-		return false
-	}
 	if g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
 		return false
 	}
-	chance := util.Clamp(0, 0.9, float64(min(10, g.ascensionsWithoutAmulet))/10.0)
+	chance := fxtools.Clamp(0, 0.9, float64(min(10, g.ascensionsWithoutAmulet))/10.0)
 	return rand.Float64() < chance
 }
 
@@ -1378,8 +1377,73 @@ func (g *GameState) AddCurseToEquippable(item *Item) {
 		item.statBonus = -(rand.Intn(4) + 1)
 	}
 }
+
+func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, newMap *gridmap.GridMap[*Actor, *Item, Object]) Object {
+	objectType := record.FindValueForKeyIgnoreCase("name")
+	switch strings.ToLower(objectType) {
+	case "elevator":
+		elevator := g.NewElevator(record, palette)
+		newMap.AddNamedLocation(elevator.GetIdentifier(), elevator.Position())
+		return elevator
+	case "unknowncontainer":
+		return g.NewContainer(record, palette)
+	case "terminal":
+		return g.NewTerminal(record, palette)
+	case "lockeddoor":
+		fallthrough
+	case "closeddoor":
+		fallthrough
+	case "brokendoor":
+		fallthrough
+	case "opendoor":
+		return g.NewDoor(record, palette)
+	}
+	return nil
+}
+
+func loadIconsForItemsAndObjects(dataDirectory string, colors textiles.ColorPalette) (map[foundation.ItemCategory]textiles.TextIcon, map[foundation.ObjectCategory]textiles.TextIcon, map[foundation.ItemCategory]color.RGBA) {
+	convertItemCategories := func(r map[string]textiles.IconRecord) map[foundation.ItemCategory]textiles.TextIcon {
+		convertMap := make(map[foundation.ItemCategory]textiles.TextIcon)
+		for name, rec := range r {
+			category := foundation.ItemCategoryFromString(name)
+			icon := textiles.NewTextIconFromNamedColorChar(rec.Icon, colors)
+			convertMap[category] = icon
+		}
+		return convertMap
+	}
+
+	convertObjectCategories := func(r map[string]textiles.IconRecord) map[foundation.ObjectCategory]textiles.TextIcon {
+		convertMap := make(map[foundation.ObjectCategory]textiles.TextIcon)
+		for name, rec := range r {
+			category := foundation.ObjectCategoryFromString(name)
+			icon := textiles.NewTextIconFromNamedColorChar(rec.Icon, colors)
+			convertMap[category] = icon
+		}
+		return convertMap
+	}
+
+	itemCategoryFile := path.Join(dataDirectory, "definitions", "iconsForItems.rec")
+	itemCatRecords := fxtools.MustOpen(itemCategoryFile)
+	iconsForItems := textiles.ReadIconRecordsIntoMap(itemCatRecords)
+
+	objectTypeFile := path.Join(dataDirectory, "definitions", "iconsForObjects.rec")
+	iconsForObjects := textiles.ReadIconRecordsIntoMap(fxtools.MustOpen(objectTypeFile))
+
+	return convertItemCategories(iconsForItems), convertObjectCategories(iconsForObjects), loadInventoryColors(iconsForItems, colors)
+}
+
+func loadInventoryColors(records map[string]textiles.IconRecord, palette textiles.ColorPalette) map[foundation.ItemCategory]color.RGBA {
+	inventoryItemColors := make(map[foundation.ItemCategory]color.RGBA)
+	for name, rec := range records {
+		if field, exists := rec.Meta.FindFieldIgnoreCase("InventoryColor"); exists {
+			inventoryItemColors[foundation.ItemCategoryFromString(name)] = palette.Get(field.Value)
+		}
+	}
+	return inventoryItemColors
+}
+
 func saveHighScoreTable(scoresFile string, scoreTable []foundation.ScoreInfo) {
-	file := util.CreateFile(scoresFile)
+	file := fxtools.CreateFile(scoresFile)
 	defer file.Close()
 	encoder := gob.NewEncoder(file)
 	err := encoder.Encode(scoreTable)
@@ -1390,7 +1454,7 @@ func saveHighScoreTable(scoresFile string, scoreTable []foundation.ScoreInfo) {
 
 func LoadHighScoreTable(scoresFile string) []foundation.ScoreInfo {
 	var scoreTable []foundation.ScoreInfo
-	if util.FileExists(scoresFile) { // read from file
+	if fxtools.FileExists(scoresFile) { // read from file
 		file, err := os.Open(scoresFile)
 		if err != nil {
 			log.Fatal(err)

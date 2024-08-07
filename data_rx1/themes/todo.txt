@@ -9,7 +9,7 @@ func (u *UI) setAmberStyle() {
 }
 
 func (g *GameState) setDOSCP437Style() {
-	g.textIcons = []foundation.TextIcon{
+	g.textIcons = []textiles.TextIcon{
 		// Player: Always hardcoded to index 0
 		{Rune: '☻', Fg: foundation.Yellow, Bg: foundation.Black},
 
@@ -55,13 +55,13 @@ func (g *GameState) setDOSCP437Style() {
 		{Rune: '♀', Fg: foundation.LightBlue, Bg: foundation.Black},
 	}
 
-	g.textIcons = append(g.textIcons, foundation.TextIcon{Rune: '█', Fg: foundation.Brown, Bg: foundation.Black})
+	g.textIcons = append(g.textIcons, textiles.TextIcon{Rune: '█', Fg: foundation.Brown, Bg: foundation.Black})
 }
 
 func (g *GameState) setUnixASCIIStyle() {
 	g.defaultBackground = foundation.Black
 	g.defaultForeground = foundation.LightGray
-	g.textIcons = []foundation.TextIcon{
+	g.textIcons = []textiles.TextIcon{
 		// Player: 0
 		{Rune: '@', Fg: foundation.LightGray, Bg: foundation.Black},
 
@@ -99,12 +99,12 @@ func (g *GameState) setUnixASCIIStyle() {
 		// amulet(?)
 		{Rune: '&', Fg: foundation.LightGray, Bg: foundation.Black},
 	}
-	g.textIcons = append(g.textIcons, foundation.TextIcon{Rune: '#', Fg: foundation.LightGray, Bg: foundation.Black})
+	g.textIcons = append(g.textIcons, textiles.TextIcon{Rune: '#', Fg: foundation.LightGray, Bg: foundation.Black})
 
 }
 
 func (g *GameState) setHackStyle() {
-	g.textIcons = []foundation.TextIcon{
+	g.textIcons = []textiles.TextIcon{
 		// Player: Always hardcoded to index 0
 		{Rune: '@', Fg: foundation.White, Bg: foundation.Black},
 
@@ -149,14 +149,14 @@ func (g *GameState) setHackStyle() {
 		{Rune: '&', Fg: foundation.LightMagenta, Bg: foundation.Black},
 	}
 
-	g.textIcons = append(g.textIcons, foundation.TextIcon{Rune: '#', Fg: foundation.White, Bg: foundation.Black})
+	g.textIcons = append(g.textIcons, textiles.TextIcon{Rune: '#', Fg: foundation.White, Bg: foundation.Black})
 
 }
 
 //█▄▌▐▀
 
 func (g *GameState) setShadedStyle() {
-	g.textIcons = []foundation.TextIcon{
+	g.textIcons = []textiles.TextIcon{
 		// Player: Always hardcoded to index 0
 		{Rune: '@', Fg: foundation.White, Bg: foundation.Black},
 

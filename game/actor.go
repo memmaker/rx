@@ -3,10 +3,11 @@ package game
 import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
 	"RogueUI/special"
-	"RogueUI/util"
 	"fmt"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 	"math/rand"
 	"strings"
@@ -55,29 +56,28 @@ type Actor struct {
 	intrinsicZapEffects []string
 	intrinsicUseEffects []string
 
-	icon                   rune
-	color                  string
+	icon                   textiles.TextIcon
 	currentIntrinsicAttack int
 	sizeModifier           int
 	timeEnergy             int
 	body                   []*foundation.BodyPart
 
-	relation PlayerRelation
+	relation     PlayerRelation
+	dialogueFile string
 }
 
-func NewPlayer(name string, playerIcon rune, playerColor string, character *special.CharSheet) *Actor {
-	player := NewActor(name, playerIcon, playerColor, character)
+func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet) *Actor {
+	player := NewActor(name, icon, character)
 	return player
 }
 
-func NewActor(name string, icon rune, color string, character *special.CharSheet) *Actor {
+func NewActor(name string, icon textiles.TextIcon, character *special.CharSheet) *Actor {
 
 	body := foundation.BodyByName("human", character.GetHitPointsMax())
 
 	a := &Actor{
 		name:        name,
 		icon:        icon,
-		color:       color,
 		inventory:   NewInventory(23),
 		equipment:   NewEquipment(),
 		charSheet:   character,
@@ -93,15 +93,19 @@ func NewActor(name string, icon rune, color string, character *special.CharSheet
 	return a
 }
 
-func (a *Actor) GetBodyPartsAndHitChances(attackerSkill int, defenderSkill int) []util.Tuple[string, int] {
-	var result []util.Tuple[string, int]
+func (a *Actor) SetDialogueFile(scriptName string) {
+	a.dialogueFile = scriptName
+}
+
+func (a *Actor) GetBodyPartsAndHitChances(attackerSkill int, defenderSkill int) []fxtools.Tuple[string, int] {
+	var result []fxtools.Tuple[string, int]
 	defenseChance := dice_curve.ChanceOfSuccess(defenderSkill)
 	for _, part := range a.body {
 		effectiveSkill := attackerSkill + part.SizeModifier
 		hitChance := dice_curve.ChanceOfSuccess(effectiveSkill)
 		combinedChanceToHit := hitChance * (1 - defenseChance)
 		chanceAsInt := int(combinedChanceToHit * 100)
-		result = append(result, util.Tuple[string, int]{Item1: part.Name, Item2: chanceAsInt})
+		result = append(result, fxtools.Tuple[string, int]{Item1: part.Name, Item2: chanceAsInt})
 	}
 	return result
 }
@@ -113,8 +117,8 @@ func (a *Actor) GetBodyPartByIndex(part int) string {
 	return a.body[part].Name
 }
 
-func (a *Actor) Color() string {
-	return a.color
+func (a *Actor) GetIcon() textiles.TextIcon {
+	return a.icon
 }
 
 type CapModifier struct {
@@ -244,7 +248,7 @@ func ModHalveWhen(reason string, isInjured func() bool) PercentageModifier {
 	}
 }
 
-func (a *Actor) Icon() rune {
+func (a *Actor) Icon() textiles.TextIcon {
 	return a.icon
 }
 func (a *Actor) GetListInfo() string {
@@ -383,16 +387,9 @@ func (a *Actor) IsFatigued() bool {
 	belowOneThird := fpCurrent < fpMax/3
 	return belowOneThird
 }
-func (a *Actor) GetColor() string {
-	return a.color
-}
 
-func (a *Actor) TextIcon(bg color.RGBA, getColor func(string) color.RGBA) foundation.TextIcon {
-	return foundation.TextIcon{
-		Rune: a.icon,
-		Fg:   getColor(a.color),
-		Bg:   bg,
-	}
+func (a *Actor) TextIcon(bg color.RGBA) textiles.TextIcon {
+	return a.icon.WithBg(bg)
 }
 
 func (a *Actor) GetDetailInfo() []string {
@@ -401,17 +398,17 @@ func (a *Actor) GetDetailInfo() []string {
 	result = append(result, fmt.Sprintf("Name: %s", a.Name()))
 
 	// melee attack
-	statRows := []util.TableRow{
-		util.TableRow{Columns: []string{"Str:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Strength))}},
-		util.TableRow{Columns: []string{"Per:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Perception))}},
-		util.TableRow{Columns: []string{"End:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Endurance))}},
-		util.TableRow{Columns: []string{"Cha:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Charisma))}},
-		util.TableRow{Columns: []string{"Int:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Intelligence))}},
-		util.TableRow{Columns: []string{"Agi:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Agility))}},
-		util.TableRow{Columns: []string{"Lck:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Luck))}},
+	statRows := []fxtools.TableRow{
+		fxtools.TableRow{Columns: []string{"Str:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Strength))}},
+		fxtools.TableRow{Columns: []string{"Per:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Perception))}},
+		fxtools.TableRow{Columns: []string{"End:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Endurance))}},
+		fxtools.TableRow{Columns: []string{"Cha:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Charisma))}},
+		fxtools.TableRow{Columns: []string{"Int:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Intelligence))}},
+		fxtools.TableRow{Columns: []string{"Agi:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Agility))}},
+		fxtools.TableRow{Columns: []string{"Lck:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Luck))}},
 	}
 
-	derivedStatRows := []util.TableRow{
+	derivedStatRows := []fxtools.TableRow{
 		{Columns: []string{"HP:", fmt.Sprintf("%d/%d", a.GetHitPoints(), a.GetHitPointsMax())}},
 		{Columns: []string{"AP:", fmt.Sprintf("%d/%d", a.charSheet.GetActionPoints(), a.charSheet.GetActionPointsMax())}},
 		{Columns: []string{"Speed:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.Speed))}},
@@ -420,14 +417,14 @@ func (a *Actor) GetDetailInfo() []string {
 		{Columns: []string{"Carry Weight:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.CarryWeight))}},
 	}
 
-	resistanceRows := []util.TableRow{
+	resistanceRows := []fxtools.TableRow{
 		{Columns: []string{"Physical:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.DamageResistance))}},
 		{Columns: []string{"Energy:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.EnergyResistance))}},
 		{Columns: []string{"Poison :", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.PoisonResistance))}},
 		{Columns: []string{"Radiation:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.RadiationResistance))}},
 	}
 
-	skillRows := []util.TableRow{
+	skillRows := []fxtools.TableRow{
 		{Columns: []string{"Melee Weapons:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.MeleeWeapons))}},
 		{Columns: []string{"Unarmed:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Unarmed))}},
 		{Columns: []string{"Throwing:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Throwing))}},
@@ -444,10 +441,10 @@ func (a *Actor) GetDetailInfo() []string {
 		{Columns: []string{"Outdoorsman:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Outdoorsman))}},
 	}
 
-	statLines := util.TableLayout(statRows, []util.TextAlignment{util.AlignLeft, util.AlignLeft})
-	skillLines := util.TableLayout(skillRows, []util.TextAlignment{util.AlignLeft, util.AlignLeft})
-	derivedLines := util.TableLayout(derivedStatRows, []util.TextAlignment{util.AlignLeft, util.AlignLeft})
-	resistanceLines := util.TableLayout(resistanceRows, []util.TextAlignment{util.AlignLeft, util.AlignLeft})
+	statLines := fxtools.TableLayout(statRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
+	skillLines := fxtools.TableLayout(skillRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
+	derivedLines := fxtools.TableLayout(derivedStatRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
+	resistanceLines := fxtools.TableLayout(resistanceRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
 	result = append(result, "", "> Stats:")
 	result = append(result, statLines...)
 	result = append(result, "", "> Derived Stats:")
@@ -598,4 +595,8 @@ func (a *Actor) SetRelationToPlayer(relation PlayerRelation) {
 
 func (a *Actor) SetDisplayName(name string) {
 	a.name = name
+}
+
+func (a *Actor) GetDialogueFile() string {
+	return a.dialogueFile
 }

@@ -3,13 +3,17 @@ package game
 import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"RogueUI/recfile"
 	"RogueUI/special"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/recfile"
+	"github.com/memmaker/go/textiles"
+	"strings"
 )
 
 type ItemDef struct {
-	Name         string
-	InternalName string
+	Description string
+	Name        string
 
 	Slot foundation.EquipSlot
 
@@ -34,6 +38,8 @@ type ItemDef struct {
 	Skill      dice_curve.SkillName
 	SkillBonus dice_curve.Dice
 	Tags       foundation.ItemTags
+	Position   geometry.Point
+	icon       textiles.TextIcon
 }
 
 func (i ItemDef) IsValidArmor() bool {
@@ -48,24 +54,38 @@ func (i ItemDef) IsValidAmmo() bool {
 	return i.AmmoDef.IsValid()
 }
 
-func ItemDefsFromRecords(otherRecords []recfile.Record) []ItemDef {
+func (i ItemDef) WithIcon(icon textiles.TextIcon) ItemDef {
+	i.icon = icon
+	return i
+}
+
+func ItemDefsFromRecords(otherRecords []recfile.Record, palette textiles.ColorPalette) []ItemDef {
 	var items []ItemDef
 	for _, record := range otherRecords {
-		itemDef := NewItemDefFromRecord(record)
+		itemDef := NewItemDefFromRecord(record, palette)
 		items = append(items, itemDef)
 	}
 	return items
 }
 
-func NewItemDefFromRecord(record recfile.Record) ItemDef {
+func NewItemDefFromRecord(record recfile.Record, palette textiles.ColorPalette) ItemDef {
 	itemDef := ItemDef{}
-
+	var icon textiles.TextIcon
 	for _, field := range record {
-		switch field.Name {
+		switch strings.ToLower(field.Name) {
 		case "name":
 			itemDef.Name = field.Value
-		case "internal_name":
-			itemDef.InternalName = field.Value
+		case "icon":
+			icon.Char = field.AsRune()
+		case "foreground":
+			icon.Fg = palette.Get(field.Value)
+		case "background":
+			icon.Bg = palette.Get(field.Value)
+		case "position":
+			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
+			itemDef.Position = spawnPos
+		case "description":
+			itemDef.Description = field.Value
 		case "category":
 			itemDef.Category = foundation.ItemCategoryFromString(field.Value)
 		case "tags":
@@ -73,7 +93,7 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 		case "slot":
 			itemDef.Slot = foundation.ItemSlotFromString(field.Value)
 		case "ammo_damage":
-			itemDef.AmmoDef.Damage = special.ParseInterval(field.Value)
+			itemDef.AmmoDef.Damage = fxtools.ParseInterval(field.Value)
 		case "ammo_type":
 			itemDef.AmmoDef.Kind = field.Value
 		case "weapon_type":
@@ -83,7 +103,7 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 		case "weapon_skill_used":
 			itemDef.WeaponDef.SkillUsed = special.SkillFromName(field.Value)
 		case "weapon_damage":
-			itemDef.WeaponDef.Damage = special.ParseInterval(field.Value)
+			itemDef.WeaponDef.Damage = fxtools.ParseInterval(field.Value)
 		case "weapon_magazine_size":
 			itemDef.WeaponDef.MagazineSize = field.AsInt()
 		case "weapon_burst_rounds":
@@ -151,5 +171,5 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 		}
 	}
 
-	return itemDef
+	return itemDef.WithIcon(icon)
 }

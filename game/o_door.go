@@ -1,6 +1,12 @@
 package game
 
-import "RogueUI/foundation"
+import (
+	"RogueUI/foundation"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/recfile"
+	"github.com/memmaker/go/textiles"
+	"strings"
+)
 
 type DoorState int
 
@@ -13,10 +19,9 @@ const (
 
 type Door struct {
 	*BaseObject
-	state         DoorState
-	keyIdentifier string
-	lockedFlag    string
-	lockDiff      foundation.Difficulty
+	state      DoorState
+	lockedFlag string
+	lockDiff   foundation.Difficulty
 }
 
 func (b *Door) GetCategory() foundation.ObjectCategory {
@@ -44,14 +49,11 @@ func (b *Door) IsTransparent() bool {
 }
 
 func (b *Door) IsWalkable(actor *Actor) bool {
-	return b.state != DoorLocked || (actor != nil && actor.HasKey(b.keyIdentifier))
+	return b.state != DoorLocked || (actor != nil && actor.HasKey(b.lockedFlag))
 }
 
 func (b *Door) SetLockedByFlag(flag string) {
 	b.lockedFlag = flag
-}
-func (b *Door) SetLockedByKey(keyIdentifier string) {
-	b.keyIdentifier = keyIdentifier
 }
 func (b *Door) SetLockDifficulty(difficulty foundation.Difficulty) {
 	b.lockDiff = difficulty
@@ -70,13 +72,13 @@ func (b *Door) SetStateFromCategory(cat foundation.ObjectCategory) {
 	}
 }
 
-func (g *GameState) NewDoor(displayName string) *Door {
+func (g *GameState) NewDoor(rec recfile.Record, palette textiles.ColorPalette) *Door {
 	door := &Door{
 		BaseObject: &BaseObject{
 			category:    foundation.ObjectClosedDoor,
 			isAlive:     true,
 			isDrawn:     true,
-			displayName: displayName,
+			displayName: "a door",
 		},
 		lockDiff: foundation.Easy,
 	}
@@ -87,7 +89,7 @@ func (g *GameState) NewDoor(displayName string) *Door {
 	door.onBump = func(actor *Actor) {
 		if actor == g.Player && door.state == DoorLocked {
 
-			if door.keyIdentifier != "" && actor.HasKey(door.keyIdentifier) {
+			if door.lockedFlag != "" && actor.HasKey(door.lockedFlag) {
 				door.state = DoorClosed
 				g.msg(foundation.Msg("You unlocked the door"))
 				return
@@ -101,5 +103,36 @@ func (g *GameState) NewDoor(displayName string) *Door {
 			})
 		}
 	}
+
+	var icon textiles.TextIcon
+	for _, field := range rec {
+		switch strings.ToLower(field.Name) {
+		case "name":
+			switch strings.ToLower(field.Value) {
+			case "lockeddoor":
+				door.state = DoorLocked
+			case "closeddoor":
+				door.state = DoorClosed
+			case "opendoor":
+				door.state = DoorOpen
+			case "brokendoor":
+				door.state = DoorBroken
+			}
+		case "icon":
+			icon.Char = field.AsRune()
+		case "foreground":
+			icon.Fg = palette.Get(field.Value)
+		case "background":
+			icon.Bg = palette.Get(field.Value)
+		case "lockflag":
+			door.lockedFlag = field.Value
+		case "lockdifficulty":
+			door.lockDiff = foundation.DifficultyFromString(field.Value)
+		case "position":
+			door.position, _ = geometry.NewPointFromEncodedString(field.Value)
+		}
+	}
+	door.icon = icon
+
 	return door
 }

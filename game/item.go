@@ -1,12 +1,13 @@
 package game
 
 import (
-	"RogueUI/cview"
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
-	"RogueUI/util"
 	"fmt"
+	"github.com/memmaker/go/cview"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 	"strconv"
 	"strings"
@@ -33,13 +34,14 @@ type Item struct {
 	equipFlag    foundation.ActorFlag
 	thrownDamage dice_curve.Dice
 	tags         foundation.ItemTags
+	icon         textiles.TextIcon
 }
 
 func (g *GameState) NewItemFromName(itemName string) *Item {
 	var item *Item
 	charges := 1
-	if util.LooksLikeAFunction(itemName) {
-		name, args := util.GetNameAndArgs(itemName)
+	if fxtools.LooksLikeAFunction(itemName) {
+		name, args := fxtools.GetNameAndArgs(itemName)
 		switch name {
 		case "key":
 			item = NewKey(args.Get(0), args.Get(1))
@@ -48,11 +50,11 @@ func (g *GameState) NewItemFromName(itemName string) *Item {
 		parts := strings.Split(itemName, "|")
 		itemName = strings.TrimSpace(parts[0])
 		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
-		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
+		itemDef := g.dataDefinitions.GetItemDefByName(itemName, g.iconsForItems)
 		item = NewItem(itemDef)
 		item.SetCharges(charges)
 	} else {
-		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
+		itemDef := g.dataDefinitions.GetItemDefByName(itemName, g.iconsForItems)
 		item = NewItem(itemDef)
 		item.SetCharges(charges)
 	}
@@ -76,9 +78,9 @@ func NewItem(def ItemDef) *Item {
 		charges = def.Charges.Roll()
 	}
 	item := &Item{
-		name:         def.Name,
+		name:         def.Description,
 		tags:         def.Tags,
-		internalName: def.InternalName,
+		internalName: def.Name,
 		category:     def.Category,
 		charges:      charges,
 		slot:         def.Slot,
@@ -88,6 +90,8 @@ func NewItem(def ItemDef) *Item {
 		skillBonus:   def.SkillBonus.Roll(),
 		equipFlag:    def.EquipFlag,
 		thrownDamage: def.ThrowDamageDice,
+		position:     def.Position,
+		icon:         def.icon,
 	}
 
 	if def.IsValidAmmo() {
@@ -427,4 +431,12 @@ func (i *Item) IsKey() bool {
 
 func (i *Item) HasTag(tag foundation.ItemTags) bool {
 	return i.tags.Contains(tag)
+}
+
+func (i *Item) GetIcon() textiles.TextIcon {
+	return i.icon
+}
+
+func (i *Item) SetIcon(icon textiles.TextIcon) {
+	i.icon = icon
 }

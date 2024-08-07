@@ -2,11 +2,11 @@ package console
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/geometry"
-	"RogueUI/util"
 	"bufio"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
 	"regexp"
 	"strings"
 )
@@ -69,14 +69,11 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["tactics"] = u.game.OpenTacticsMenu
 	u.commandTable["character"] = u.ShowCharacterSheet
 	u.commandTable["wizard"] = u.game.OpenWizardMenu
-	u.commandTable["themes"] = u.OpenThemesMenu
 	u.commandTable["log"] = u.ShowLog
 	u.commandTable["monsters"] = u.ShowVisibleEnemies
 	u.commandTable["items"] = u.ShowVisibleItems
 	u.commandTable["help"] = u.ShowHelpScreen
 	u.commandTable["log"] = u.ShowLog
-	u.commandTable["wiz_ascend"] = u.game.Ascend
-	u.commandTable["wiz_descend"] = u.game.Descend
 
 	u.commandTable["north"] = func() { u.game.ManualMovePlayer(geometry.North) }
 	u.commandTable["south"] = func() { u.game.ManualMovePlayer(geometry.South) }
@@ -141,12 +138,9 @@ func (u *UI) setupCommandTable() {
 
 	//u.commandTable["targeted_shot"] = u.game.TargetedShot
 
-	u.commandTable["quick_shot"] = u.game.PlayerQuickRangedAttack
 	u.commandTable["pickup"] = u.game.PickupItem
 	u.commandTable["map_interaction"] = u.game.PlayerInteractWithMap
 	u.commandTable["run_direction"] = u.ChooseDirectionForRun
-	u.commandTable["descend"] = u.game.PlayerTryDescend
-	u.commandTable["ascend"] = u.game.PlayerTryAscend
 	u.commandTable["wait"] = u.game.Wait
 	u.commandTable["show_key_bindings"] = u.showKeyBindings
 	u.commandTable["open_pip_boy"] = u.openPipBoy
@@ -188,9 +182,6 @@ func (u *UI) showKeyBindings() {
 		"gamma_down":        "Gamma Down",
 		"toggle_cursor":     "Toggle Cursor",
 		"throw":             "Throw",
-		"quaff":             "Quaff",
-		"read":              "Read",
-		"zap":               "Zap",
 		"use":               "Use",
 		"apply":             "Apply",
 		"wear":              "Wear",
@@ -200,9 +191,9 @@ func (u *UI) showKeyBindings() {
 		"ring_remove":       "Remove Ring",
 		"drop":              "Drop",
 		"eat":               "Eat",
-		"launch":            "Launch",
+		"attack":            "Attack",
+		"quick_attack":      "Quick Attack",
 		"aim":               "Aim",
-		"quick_shot":        "Quick Shot",
 		"pickup":            "Pickup",
 		"map_interaction":   "Map Interaction",
 		"run_direction":     "Run Direction",
@@ -244,22 +235,15 @@ func (u *UI) showKeyBindings() {
 
 	rightColCommands := []string{
 		"use",
-		"zap",
-		"apply",
 		"throw",
-		"quaff",
-		"read",
-		"eat",
 		"wield",
 		"wear",
 		"take_off",
-		"ring_put_on",
-		"ring_remove",
 		"drop",
 		"pickup",
-		"launch",
+		"attack",
+		"quick_attack",
 		"aim",
-		"quick_shot",
 		"look",
 		"overlay_monsters",
 		"overlay_items",
@@ -272,7 +256,7 @@ func (u *UI) showKeyBindings() {
 		"quit",
 	}
 
-	rowsOfTable := make([]util.TableRow, 0)
+	rowsOfTable := make([]fxtools.TableRow, 0)
 	lines := max(len(leftColCommands), len(rightColCommands))
 	for i := 0; i < lines; i++ {
 		leftKeys := ""
@@ -287,17 +271,17 @@ func (u *UI) showKeyBindings() {
 			rightCmd = rightColCommands[i]
 			rightKeys = u.GetKeysForCommandAsString(KeyLayerMain, rightCmd)
 		}
-		rowsOfTable = append(rowsOfTable, util.TableRow{
+		rowsOfTable = append(rowsOfTable, fxtools.TableRow{
 			Columns: []string{" ", leftKeys, friendlyNames[leftCmd], "   ", rightKeys, friendlyNames[rightCmd]},
 		})
 	}
-	commandTableRender := util.TableLayout(rowsOfTable, []util.TextAlignment{
-		util.AlignLeft,
-		util.AlignLeft,
-		util.AlignLeft,
-		util.AlignLeft,
-		util.AlignLeft,
-		util.AlignLeft,
+	commandTableRender := fxtools.TableLayout(rowsOfTable, []fxtools.TextAlignment{
+		fxtools.AlignLeft,
+		fxtools.AlignLeft,
+		fxtools.AlignLeft,
+		fxtools.AlignLeft,
+		fxtools.AlignLeft,
+		fxtools.AlignLeft,
 	})
 
 	u.OpenTextWindow(commandTableRender)
@@ -344,7 +328,7 @@ func (u *UI) loadKeyMap(filename string) {
 		KeyLayerAdvancedTargeting:    make(map[UIKey]string),
 	}
 
-	file := util.MustOpen(filename)
+	file := fxtools.MustOpen(filename)
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	currentLayer := KeyLayerMain

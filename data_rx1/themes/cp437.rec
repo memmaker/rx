@@ -45,7 +45,7 @@ OLD
 		{Rune: '♀', Fg: foundation.LightBlue, Bg: foundation.Black},
 	}
 
-	g.textIcons = append(g.textIcons, foundation.TextIcon{Rune: '█', Fg: foundation.Brown, Bg: foundation.Black})
+	g.textIcons = append(g.textIcons, textiles.TextIcon{Rune: '█', Fg: foundation.Brown, Bg: foundation.Black})
 
 */
 

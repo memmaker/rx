@@ -1,12 +1,12 @@
 package gridmap
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/geometry"
-	"RogueUI/util"
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"io"
 	"math"
 	"math/rand"
@@ -331,7 +331,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetActorToNormal(person Actor
 func (m *GridMap[ActorType, ItemType, ObjectType]) MoveItem(item ItemType, to geometry.Point) {
 	m.cells[item.Position().Y*m.mapWidth+item.Position().X] = m.cells[item.Position().Y*m.mapWidth+item.Position().X].WithItemHereRemoved(item)
 	item.SetPosition(to)
-	//util.XYToIndex()
+	//fxtools.XYToIndex()
 	m.cells[to.Y*m.mapWidth+to.X] = m.cells[to.Y*m.mapWidth+to.X].WithItem(item)
 }
 
@@ -1277,7 +1277,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) RemoveNamedLocation(namedLoca
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsDamagingTileAt(p geometry.Point) bool {
 	tileType := m.CellAt(p).TileType
-	return tileType.IsChasm() || tileType.IsLava()
+	return tileType.IsDamaging
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) RandomPosAround(pos geometry.Point) geometry.Point {
@@ -1413,12 +1413,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) WriteTiles(out io.Writer) {
 	}
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) ReadTiles(in io.Reader) {
-	for i, _ := range m.cells {
-		m.cells[i].TileType = NewTileFromBinary(in)
-	}
-}
-
 func (m *GridMap[ActorType, ItemType, ObjectType]) Transitions() map[geometry.Point]Transition {
 	return m.transitionMap
 }
@@ -1449,12 +1443,12 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetNamedTriggerAt(pos geometr
 	}
 	return Trigger{}, false
 }
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetTileIcon(pos geometry.Point, index foundation.TileType) {
-	m.cells[pos.Y*m.mapWidth+pos.X].TileType.Feature = index
+func (m *GridMap[ActorType, ItemType, ObjectType]) SetTileIcon(pos geometry.Point, index textiles.TextIcon) {
+	m.cells[pos.Y*m.mapWidth+pos.X].TileType.Icon = index
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) GetTileIconAt(pos geometry.Point) foundation.TileType {
-	return m.cells[pos.Y*m.mapWidth+pos.X].TileType.Feature
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetTileIconAt(pos geometry.Point) textiles.TextIcon {
+	return m.cells[pos.Y*m.mapWidth+pos.X].TileType.Icon
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) RemoveNamedRegion(regionName string) {
@@ -1541,14 +1535,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) PrintWithHighlight(hiPos geom
 			pos := geometry.Point{X: x, Y: y}
 			if pos == hiPos {
 				fmt.Printf("X")
-			} else if m.IsStairsAt(pos) {
-				tile := m.GetCell(pos).TileType
-				if tile.IsStairsUp() {
-					fmt.Printf("<")
-				} else if tile.IsStairsDown() {
-					fmt.Printf(">")
-				}
-
 			} else if m.IsActorAt(pos) {
 				fmt.Printf("a")
 			} else if m.IsTileWalkable(pos) {
@@ -1562,11 +1548,11 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) PrintWithHighlight(hiPos geom
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) CanPlaceActorHere(pos geometry.Point) bool {
-	return m.IsWalkable(pos) && !m.IsActorAt(pos) && !m.IsObviousHazardAt(pos) && !m.IsTileSpecial(pos)
+	return m.IsWalkable(pos) && !m.IsActorAt(pos) && !m.IsObviousHazardAt(pos)
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) CanPlaceItemHere(pos geometry.Point) bool {
-	return m.IsWalkable(pos) && !m.IsItemAt(pos) && !m.IsTileSpecial(pos)
+	return m.IsWalkable(pos) && !m.IsItemAt(pos)
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetMetaString(info []string) {
@@ -1578,13 +1564,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetMetaString() []string {
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) AddToMetaInfo(infoLine string) {
 	m.metaInfoString = append(m.metaInfoString, infoLine)
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsStairsAt(point geometry.Point) bool {
-	if !m.Contains(point) {
-		return false
-	}
-	return m.GetCell(point).TileType.IsStairs()
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredActors(f func(actor ActorType) bool) []ActorType {
@@ -1612,9 +1591,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) ApplyToActorsAt(positions []g
 	}
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) RayCast(origin, direction geometry.PointF, isBlockingRay func(geometry.Point) bool) util.HitInfo2D {
+func (m *GridMap[ActorType, ItemType, ObjectType]) RayCast(origin, direction geometry.PointF, isBlockingRay func(geometry.Point) bool) fxtools.HitInfo2D {
 	direction = direction.Normalize()
-	hitInfo := util.Raycast2D(origin.X, origin.Y, direction.X, direction.Y, func(x, y int64) bool {
+	hitInfo := fxtools.Raycast2D(origin.X, origin.Y, direction.X, direction.Y, func(x, y int64) bool {
 		currentMapCell := geometry.Point{X: int(x), Y: int(y)}
 		if currentMapCell == origin.ToPoint() {
 			return false
@@ -1624,18 +1603,18 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) RayCast(origin, direction geo
 	return hitInfo
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) ReflectingRayCast(origin, direction geometry.PointF, maxReflections int, isBlockingRay func(geometry.Point) bool) []util.HitInfo2D {
+func (m *GridMap[ActorType, ItemType, ObjectType]) ReflectingRayCast(origin, direction geometry.PointF, maxReflections int, isBlockingRay func(geometry.Point) bool) []fxtools.HitInfo2D {
 	direction = direction.Normalize()
-	hitInfos := util.ReflectingRaycast2D(origin.X, origin.Y, direction.X, direction.Y, maxReflections, func(x, y int64) bool {
+	hitInfos := fxtools.ReflectingRaycast2D(origin.X, origin.Y, direction.X, direction.Y, maxReflections, func(x, y int64) bool {
 		currentMapCell := geometry.Point{X: int(x), Y: int(y)}
 		return isBlockingRay(currentMapCell)
 	})
 	return hitInfos
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) ChainedRayCast(origin, direction geometry.PointF, isBlockingRay func(geometry.Point) bool, nextTarget func(geometry.Point) (bool, geometry.Point)) []util.HitInfo2D {
+func (m *GridMap[ActorType, ItemType, ObjectType]) ChainedRayCast(origin, direction geometry.PointF, isBlockingRay func(geometry.Point) bool, nextTarget func(geometry.Point) (bool, geometry.Point)) []fxtools.HitInfo2D {
 	direction = direction.Normalize()
-	hitInfos := util.ChainedRaycast2D(origin.X, origin.Y, direction.X, direction.Y, func(x, y int64) bool {
+	hitInfos := fxtools.ChainedRaycast2D(origin.X, origin.Y, direction.X, direction.Y, func(x, y int64) bool {
 		currentMapCell := geometry.Point{X: int(x), Y: int(y)}
 		return isBlockingRay(currentMapCell)
 
@@ -1784,11 +1763,11 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsDownedActor(actor ActorType
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) CanPlaceObjectHere(pos geometry.Point) bool {
-	return m.IsWalkable(pos) && !m.IsObjectAt(pos) && !m.IsTileSpecial(pos)
+	return m.IsWalkable(pos) && !m.IsObjectAt(pos)
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsEmptyNonSpecialFloor(pos geometry.Point) bool {
-	return m.Contains(pos) && m.IsTileWalkable(pos) && !m.IsActorAt(pos) && !m.IsDownedActorAt(pos) && !m.IsItemAt(pos) && !m.IsObjectAt(pos) && !m.IsTileSpecial(pos)
+	return m.Contains(pos) && m.IsTileWalkable(pos) && !m.IsActorAt(pos) && !m.IsDownedActorAt(pos) && !m.IsItemAt(pos) && !m.IsObjectAt(pos)
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredAdjacentPositions(positions []geometry.Point, keep func(pos geometry.Point) bool) []geometry.Point {
@@ -1949,10 +1928,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) ForceSpawnActorInWall(actor A
 	m.allActors = append(m.allActors, actor)
 	actor.SetPosition(to)
 	m.cells[to.X+to.Y*m.mapWidth] = m.cells[to.X+to.Y*m.mapWidth].WithActor(actor)
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsTileSpecial(pos geometry.Point) bool {
-	return m.GetCell(pos).TileType.IsSpecial()
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetAllLit() {

@@ -1,111 +1,46 @@
 package console
 
 import (
-	"RogueUI/cview"
 	"RogueUI/foundation"
-	"RogueUI/recfile"
-	"RogueUI/util"
-	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/cview"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/recfile"
+	"github.com/memmaker/go/textiles"
 	"image/color"
-	"math/rand"
+	"path"
 	"strings"
 )
 
-type ColorTheme map[string]color.RGBA
-
-func (c ColorTheme) GetByName(name string) color.RGBA {
-	name = strings.ToLower(name)
-	return c[name]
-}
-func (c ColorTheme) GetAsFgColorCode(name string) string {
-	name = strings.ToLower(name)
-	return RGBAToFgColorCode(c[name])
-}
-func (c ColorTheme) GetAsBgColorCode(name string) string {
-	name = strings.ToLower(name)
-	return RGBAToBgColorCode(c[name])
-}
-func RGBAToFgColorCode(color color.RGBA) string {
-	hexFormat := fmt.Sprintf("#%02x%02x%02x", color.R, color.G, color.B)
-	return fmt.Sprintf("[%s]", hexFormat)
-}
-func RGBAToColorCodes(fg, bg color.RGBA) string {
-	bgHex := fmt.Sprintf("#%02x%02x%02x", bg.R, bg.G, bg.B)
-	fgHex := fmt.Sprintf("#%02x%02x%02x", fg.R, fg.G, fg.B)
-
-	return fmt.Sprintf("[%s:%s]", fgHex, bgHex)
-}
-func RGBAToBgColorCode(color color.RGBA) string {
-	hexFormat := fmt.Sprintf("#%02x%02x%02x", color.R, color.G, color.B)
-	return fmt.Sprintf("[:%s]", hexFormat)
-}
-
 type Theme struct {
-	colorDefs  ColorTheme
-	playerIcon foundation.TextIcon
-
 	uiColors map[UIColor]color.RGBA
 
-	uiStyles            map[UIStyle]tcell.Style
-	inventoryItemColors map[foundation.ItemCategory]color.RGBA
+	uiBorder     map[BorderCases]rune
+	defaultStyle tcell.Style
 
-	uiBorder map[BorderCases]rune
+	palette textiles.ColorPalette
 
-	iconsForItems   map[foundation.ItemCategory]foundation.TextIcon
-	iconsForObjects map[foundation.ObjectCategory]foundation.TextIcon
-	iconsForMap     map[foundation.TileType]foundation.TextIcon
-	defaultStyle    tcell.Style
-	isMonoChrome    bool
+	inventoryColors map[foundation.ItemCategory]color.RGBA
 }
 
-func (t Theme) GetIconForItem(category foundation.ItemCategory) foundation.TextIcon {
-	return t.iconsForItems[category]
-}
-
-func (t Theme) GetIconForMap(tileType foundation.TileType) foundation.TextIcon {
-	return t.iconsForMap[tileType]
-}
-
-func (t Theme) GetIconForObject(object foundation.ObjectCategory) foundation.TextIcon {
-	return t.iconsForObjects[object]
-}
-
-func (t Theme) GetInventoryItemColor(category foundation.ItemCategory) color.RGBA {
-	return t.inventoryItemColors[category]
-}
-
-func NewThemeFromFile(filename string) Theme {
-	file := util.MustOpen(filename)
+func NewUIThemeFromDataDir(dataDirectory string, palette textiles.ColorPalette, inventory map[foundation.ItemCategory]color.RGBA) Theme {
+	uiThemeFile := path.Join(dataDirectory, "themes", "ui.rec")
+	file := fxtools.MustOpen(uiThemeFile)
 	defer file.Close()
 	records := recfile.ReadMulti(file)
 
-	colors := loadColors(records["colors"][0])
-
-	//uiColors, uiStyles, inventoryItemColors := loadUIStyles(records["ui"])
-
-	inventoryItemColors := loadInventoryColors(records["inventory"][0], colors)
 	uiBorders := loadBorders(records["borders"][0])
-	uiColors := loadUIColors(records["ui"][0], colors)
-
-	iconsForMap := loadIconsForMap(records["map"][0], colors)
-	iconsForItems := loadIconsForItems(records["items"][0], colors)
-	iconsForObjects := loadIconsForObjects(records["objects"][0], colors)
+	uiColors := loadUIColors(records["ui"][0])
 
 	var defaultStyle tcell.Style
 	defaultStyle = defaultStyle.Foreground(toTcellColor(uiColors[UIColorUIForeground])).Background(toTcellColor(uiColors[UIColorUIBackground]))
 
 	return Theme{
-		colorDefs: colors,
-
-		uiColors: uiColors,
-		//uiStyles:            uiStyles,
-		inventoryItemColors: inventoryItemColors,
-		iconsForItems:       iconsForItems,
-		iconsForObjects:     iconsForObjects,
-		iconsForMap:         iconsForMap,
-		uiBorder:            uiBorders,
-		defaultStyle:        defaultStyle,
+		palette:         palette,
+		uiColors:        uiColors,
+		uiBorder:        uiBorders,
+		defaultStyle:    defaultStyle,
+		inventoryColors: inventory,
 	}
 }
 
@@ -117,11 +52,11 @@ func (t Theme) GetUIColorForTcell(foreground UIColor) tcell.Color {
 	return toTcellColor(t.uiColors[foreground])
 }
 
-func loadUIColors(record recfile.Record, colors ColorTheme) map[UIColor]color.RGBA {
+func loadUIColors(record recfile.Record) map[UIColor]color.RGBA {
 	uiColors := make(map[UIColor]color.RGBA)
 	for _, field := range record {
 		colorName := UIColorFromString(field.Name)
-		colorValue := colors.GetByName(field.Value)
+		colorValue := field.AsRGB("|")
 		uiColors[colorName] = colorValue
 	}
 	return uiColors
@@ -137,97 +72,6 @@ func loadBorders(record recfile.Record) map[BorderCases]rune {
 	return borders
 
 }
-
-func loadInventoryColors(record recfile.Record, colors ColorTheme) map[foundation.ItemCategory]color.RGBA {
-	inventoryColors := make(map[foundation.ItemCategory]color.RGBA)
-	for _, field := range record {
-		itemName := foundation.ItemCategoryFromString(field.Name)
-		colorName := field.Value
-		inventoryColors[itemName] = colors.GetByName(colorName)
-	}
-	return inventoryColors
-}
-
-func loadIconsForObjects(record recfile.Record, colors ColorTheme) map[foundation.ObjectCategory]foundation.TextIcon {
-	icons := make(map[foundation.ObjectCategory]foundation.TextIcon)
-	for _, field := range record {
-		if strings.ContainsRune(field.Name, '_') {
-			objectName, fgColor, bgColor := readColorField(field, colors)
-			objectType := foundation.ObjectCategoryFromString(objectName)
-			icons[objectType] = icons[objectType].WithColors(fgColor, bgColor)
-		} else {
-			objectType := foundation.ObjectCategoryFromString(field.Name)
-			icons[objectType] = icons[objectType].WithRune([]rune(field.Value)[0])
-		}
-	}
-	return icons
-
-}
-
-func loadIconsForItems(record recfile.Record, colors ColorTheme) map[foundation.ItemCategory]foundation.TextIcon {
-	icons := make(map[foundation.ItemCategory]foundation.TextIcon)
-	for _, field := range record {
-		if strings.ContainsRune(field.Name, '_') {
-			itemName, fgColor, bgColor := readColorField(field, colors)
-			itemType := foundation.ItemCategoryFromString(itemName)
-			icons[itemType] = icons[itemType].WithColors(fgColor, bgColor)
-		} else {
-			itemType := foundation.ItemCategoryFromString(field.Name)
-			icons[itemType] = icons[itemType].WithRune([]rune(field.Value)[0])
-		}
-	}
-	return icons
-
-}
-
-func loadIconsForMap(record recfile.Record, colors ColorTheme) map[foundation.TileType]foundation.TextIcon {
-	icons := make(map[foundation.TileType]foundation.TextIcon)
-	for _, field := range record {
-		if strings.ContainsRune(field.Name, '_') {
-			tileName, fgColor, bgColor := readColorField(field, colors)
-			tileType := foundation.TileType(tileName)
-			icons[tileType] = icons[tileType].WithColors(fgColor, bgColor)
-		} else {
-			tileType := foundation.TileType(field.Name)
-			icons[tileType] = icons[tileType].WithRune([]rune(field.Value)[0])
-		}
-	}
-	return icons
-
-}
-
-func readColorField(field recfile.Field, colors ColorTheme) (string, color.RGBA, color.RGBA) {
-	tileName := strings.Split(field.Name, "_")[0]
-	tileType := tileName
-	// color def
-	colorNames := field.AsList("|")
-	fgColor := colors.GetByName(colorNames[0].Value)
-	bgColor := color.RGBA{}
-	if len(colorNames) > 1 {
-		bgColor = colors.GetByName(colorNames[1].Value)
-	}
-	return tileType, fgColor, bgColor
-}
-
-func loadColors(record recfile.Record) ColorTheme {
-	colors := make(map[string]color.RGBA)
-	for _, field := range record {
-		colorName := strings.ToLower(field.Name) // case insensitive
-		colorValue := field.AsRGB("|")
-		colors[colorName] = colorValue
-	}
-	return colors
-}
-
-type UIStyle int
-
-const (
-	UIStyleNormal UIStyle = iota
-	UIStyleHighlighted
-	UIStyleSelected
-	UIStyleBorder
-	UIStyleBorderFocused
-)
 
 type UIColor int
 
@@ -342,22 +186,27 @@ func (t Theme) SetBorders(s *cview.BorderDef) {
 	s.BottomRightFocus = t.uiBorder[BorderBottomRightFocus]
 }
 
-func (t Theme) GetColorByName(colorName string) color.RGBA {
-	return t.colorDefs.GetByName(colorName)
-}
-
 func (t Theme) GetMapDefaultStyle() tcell.Style {
 	return t.defaultStyle
 }
 
-func (t Theme) IsMonochrome() bool {
-	return t.isMonoChrome
+func (t Theme) GetInventoryItemColorCode(category foundation.ItemCategory) string {
+	return textiles.RGBAToFgColorCode(t.inventoryColors[category])
+}
+
+func (t Theme) GetColorByName(name string) color.RGBA {
+	return t.palette.Get(name)
 }
 
 func (t Theme) GetRandomColor() color.RGBA {
-	var colors []color.RGBA
-	for _, c := range t.colorDefs {
-		colors = append(colors, c)
-	}
-	return colors[rand.Intn(len(colors))]
+	return t.palette.GetRandomColor()
+}
+
+func (t Theme) GetInventoryItemColor(category foundation.ItemCategory) color.RGBA {
+	return t.inventoryColors[category]
+}
+
+func (t Theme) WithInventoryColors(colors map[foundation.ItemCategory]color.RGBA) Theme {
+	t.inventoryColors = colors
+	return t
 }

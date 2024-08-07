@@ -1,21 +1,21 @@
 package console
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 )
 
 type Overlay struct {
 	width             int
 	height            int
-	grid              []foundation.TextIcon
+	grid              []textiles.TextIcon
 	defaultBackground color.RGBA
 	defaultForeground color.RGBA
 }
 
 func NewOverlay(width int, height int) *Overlay {
-	grid := make([]foundation.TextIcon, width*height)
+	grid := make([]textiles.TextIcon, width*height)
 	o := &Overlay{width: width, height: height, grid: grid}
 	o.ClearAll()
 	return o
@@ -26,14 +26,14 @@ func (o *Overlay) SetDefaultColors(fg, bg color.RGBA) {
 	o.defaultBackground = bg
 }
 
-func (o *Overlay) Set(x, y int, icon foundation.TextIcon) {
+func (o *Overlay) Set(x, y int, icon textiles.TextIcon) {
 	o.grid[y*o.width+x] = icon
 }
 
 func (o *Overlay) ClearAll() {
 	for i := range o.grid {
-		o.grid[i] = foundation.TextIcon{
-			Rune: -1,
+		o.grid[i] = textiles.TextIcon{
+			Char: -1,
 		}
 	}
 }
@@ -43,7 +43,7 @@ func (o *Overlay) Print(x, y int, text string) {
 		if x+i >= o.width {
 			break
 		}
-		o.grid[y*o.width+x+i] = foundation.TextIcon{Rune: r, Fg: o.defaultForeground, Bg: o.defaultBackground}
+		o.grid[y*o.width+x+i] = textiles.TextIcon{Char: r, Fg: o.defaultForeground, Bg: o.defaultBackground}
 	}
 }
 
@@ -54,9 +54,9 @@ func (o *Overlay) IsSet(x, y int) bool {
 	if !o.Contains(x, y) {
 		return false
 	}
-	return o.grid[y*o.width+x].Rune != -1
+	return o.grid[y*o.width+x].Char != -1
 }
-func (o *Overlay) Get(x, y int) foundation.TextIcon {
+func (o *Overlay) Get(x, y int) textiles.TextIcon {
 	return o.grid[y*o.width+x]
 }
 
@@ -65,11 +65,11 @@ func (o *Overlay) AsciiLine(origin geometry.Point, dest geometry.Point, steps []
 		return
 	}
 
-	horzRune := foundation.TextIcon{Rune: '-', Fg: o.defaultForeground, Bg: o.defaultBackground}
-	vertRune := foundation.TextIcon{Rune: '|', Fg: o.defaultForeground, Bg: o.defaultBackground}
-	blToTrRune := foundation.TextIcon{Rune: '/', Fg: o.defaultForeground, Bg: o.defaultBackground}
-	tlToBrRune := foundation.TextIcon{Rune: '\\', Fg: o.defaultForeground, Bg: o.defaultBackground}
-	directionToLineRune := map[geometry.Point]foundation.TextIcon{
+	horzRune := textiles.TextIcon{Char: '-', Fg: o.defaultForeground, Bg: o.defaultBackground}
+	vertRune := textiles.TextIcon{Char: '|', Fg: o.defaultForeground, Bg: o.defaultBackground}
+	blToTrRune := textiles.TextIcon{Char: '/', Fg: o.defaultForeground, Bg: o.defaultBackground}
+	tlToBrRune := textiles.TextIcon{Char: '\\', Fg: o.defaultForeground, Bg: o.defaultBackground}
+	directionToLineRune := map[geometry.Point]textiles.TextIcon{
 		geometry.Point{1, 0}:   horzRune,
 		geometry.Point{-1, 0}:  horzRune,
 		geometry.Point{0, 1}:   vertRune,

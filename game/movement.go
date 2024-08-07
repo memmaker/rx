@@ -2,7 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
 
@@ -20,6 +20,11 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	}
 
 	newPos := oldPos.Add(direction.ToPoint())
+
+	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists && !objectAt.IsWalkable(g.Player) {
+		objectAt.OnBump(g.Player)
+		return
+	}
 
 	if !g.gridMap.Contains(newPos) || !g.gridMap.IsTileWalkable(newPos) {
 		if !g.config.WallSlide {
@@ -63,17 +68,13 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 		if actorAt.IsHostile() {
 			g.playerMeleeAttack(actorAt)
 		} else {
-			g.StartDialogue(actorAt.GetInternalName(), false)
+			g.StartDialogue(actorAt.GetDialogueFile(), false)
 		}
 		return
 	}
 
 	if downedActorAt, exists := g.gridMap.TryGetDownedActorAt(newPos); exists {
 		g.openInventoryOf(downedActorAt)
-	}
-	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists && !objectAt.IsWalkable(g.Player) {
-		objectAt.OnBump(g.Player)
-		return
 	}
 	direction = newPos.Sub(oldPos).ToDirection()
 	g.playerMove(newPos)
@@ -132,9 +133,6 @@ func (g *GameState) updateDijkstraMap() {
 }
 
 func (g *GameState) exploreMap() {
-	if g.currentDungeonLevel == 0 {
-		return
-	}
 	if g.dungeonLayout == nil { // no dungeon as a base
 		g.updatePlayerFoVAndApplyExploration()
 		return

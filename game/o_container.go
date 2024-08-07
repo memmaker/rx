@@ -1,6 +1,12 @@
 package game
 
-import "RogueUI/foundation"
+import (
+	"RogueUI/foundation"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/recfile"
+	"github.com/memmaker/go/textiles"
+	"strings"
+)
 
 type Container struct {
 	*BaseObject
@@ -44,7 +50,7 @@ func (b *Container) AddItem(item *Item) {
 	b.containedItems = append(b.containedItems, item)
 }
 
-func (g *GameState) NewContainer(displayName string) *Container {
+func (g *GameState) NewContainer(rec recfile.Record, palette textiles.ColorPalette) Object {
 	container := &Container{
 		BaseObject: &BaseObject{
 			category: foundation.ObjectUnknownContainer,
@@ -55,7 +61,6 @@ func (g *GameState) NewContainer(displayName string) *Container {
 	container.SetWalkable(false)
 	container.SetHidden(false)
 	container.SetTransparent(true)
-	container.displayName = displayName
 
 	container.onBump = func(actor *Actor) {
 		if actor == g.Player {
@@ -66,6 +71,25 @@ func (g *GameState) NewContainer(displayName string) *Container {
 			g.openContainer(container)
 		}
 	}
+	var icon textiles.TextIcon
+	for _, field := range rec {
+		switch strings.ToLower(field.Name) {
+		case "description":
+			container.displayName = field.Value
+		case "icon":
+			icon.Char = field.AsRune()
+		case "foreground":
+			icon.Fg = palette.Get(field.Value)
+		case "background":
+			icon.Bg = palette.Get(field.Value)
+		case "position":
+			container.position, _ = geometry.NewPointFromEncodedString(field.Value)
+		case "item":
+			item := g.NewItemFromName(field.Value)
+			container.AddItem(item)
+		}
+	}
+	container.icon = icon
 	return container
 }
 

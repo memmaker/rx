@@ -2,7 +2,8 @@ package console
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 )
 
 type BaseAnimation struct {
@@ -55,14 +56,14 @@ func (p *BaseAnimation) GetFollowUp() []foundation.Animation {
 type ProjectileAnimation struct {
 	*BaseAnimation
 	path             []geometry.Point
-	icon             foundation.TextIcon
-	drawables        map[geometry.Point]foundation.TextIcon
+	icon             textiles.TextIcon
+	drawables        map[geometry.Point]textiles.TextIcon
 	currentPathIndex int
-	lookup           func(loc geometry.Point) (foundation.TextIcon, bool)
-	trail            []foundation.TextIcon
+	lookup           func(loc geometry.Point) (textiles.TextIcon, bool)
+	trail            []textiles.TextIcon
 }
 
-func NewProjectileAnimation(path []geometry.Point, icon foundation.TextIcon, lookup func(loc geometry.Point) (foundation.TextIcon, bool), done func()) *ProjectileAnimation {
+func NewProjectileAnimation(path []geometry.Point, icon textiles.TextIcon, lookup func(loc geometry.Point) (textiles.TextIcon, bool), done func()) *ProjectileAnimation {
 	return &ProjectileAnimation{
 		BaseAnimation: &BaseAnimation{
 			done: done,
@@ -70,7 +71,7 @@ func NewProjectileAnimation(path []geometry.Point, icon foundation.TextIcon, loo
 		path:   path,
 		icon:   icon,
 		lookup: lookup,
-		drawables: map[geometry.Point]foundation.TextIcon{
+		drawables: map[geometry.Point]textiles.TextIcon{
 			path[0]: icon,
 		},
 	}
@@ -80,7 +81,7 @@ func (p *ProjectileAnimation) GetPriority() int {
 	return 1
 }
 
-func (p *ProjectileAnimation) GetDrawables() map[geometry.Point]foundation.TextIcon {
+func (p *ProjectileAnimation) GetDrawables() map[geometry.Point]textiles.TextIcon {
 	return p.drawables
 }
 
@@ -97,7 +98,7 @@ func (p *ProjectileAnimation) NextFrame() {
 		return
 	}
 	drawIcon := p.icon
-	if p.icon.Rune < 0 && p.lookup != nil {
+	if p.icon.Char < 0 && p.lookup != nil {
 		icon, exists := p.lookup(p.path[p.currentPathIndex])
 		if exists {
 			drawIcon = icon.WithBg(p.icon.Bg)
@@ -110,7 +111,7 @@ func (p *ProjectileAnimation) NextFrame() {
 		for i := 0; i < trailLength; i++ {
 			pathPos := p.path[p.currentPathIndex-i-1]
 			trailIcon := p.trail[i]
-			if trailIcon.Rune < 0 && p.lookup != nil {
+			if trailIcon.Char < 0 && p.lookup != nil {
 				icon, exists := p.lookup(pathPos)
 				if exists {
 					trailIcon = icon.WithBg(trailIcon.Bg)
@@ -125,6 +126,6 @@ func (p *ProjectileAnimation) IsDone() bool {
 	return p.currentPathIndex > len(p.path)-1 || p.finishedOrCancelled
 }
 
-func (p *ProjectileAnimation) SetTrail(icons []foundation.TextIcon) {
+func (p *ProjectileAnimation) SetTrail(icons []textiles.TextIcon) {
 	p.trail = icons
 }

@@ -1,7 +1,8 @@
 package foundation
 
 import (
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"math/rand"
 	"strings"
 )
@@ -18,6 +19,7 @@ type ItemForUI interface {
 	DisplayLength() int
 	Position() geometry.Point
 	LongNameWithColors(colorCode string) string
+	GetIcon() textiles.TextIcon
 }
 
 type ItemCategory int
@@ -44,7 +46,7 @@ func (c ItemCategory) String() string {
 		return "Amulets"
 	case ItemCategoryAmmo:
 		return "Ammo"
-	case ItemCategoryBooks:
+	case ItemCategoryReadables:
 		return "Books"
 	case ItemCategoryLockpicks:
 		return "Lockpicks"
@@ -69,7 +71,7 @@ const (
 	ItemCategoryWands
 	ItemCategoryAmulets
 	ItemCategoryAmmo
-	ItemCategoryBooks
+	ItemCategoryReadables
 	ItemCategoryConsumables
 	ItemCategoryLockpicks
 	ItemCategoryKeys
@@ -105,11 +107,15 @@ func ItemCategoryFromString(s string) ItemCategory {
 	case "lockpicks":
 		return ItemCategoryLockpicks
 	case "books":
-		return ItemCategoryBooks
+		return ItemCategoryReadables
+	case "drinks":
+		return ItemCategoryConsumables
 	case "consumables":
 		return ItemCategoryConsumables
 	case "keys":
 		return ItemCategoryKeys
+	case "notes":
+		return ItemCategoryReadables
 	case "other":
 		return ItemCategoryOther
 	}

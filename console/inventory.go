@@ -1,11 +1,12 @@
 package console
 
 import (
-	"RogueUI/cview"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/cview"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 	"strings"
 	"unicode"
@@ -51,7 +52,7 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 	for lineIndex, invItem := range i.items {
 		item := invItem
 		shortcut := invItem.Shortcut()
-		line := invItem.InventoryNameWithColorsAndShortcut(RGBAToFgColorCode(i.lineColor(invItem.GetCategory())))
+		line := invItem.InventoryNameWithColorsAndShortcut(textiles.RGBAToFgColorCode(i.lineColor(invItem.GetCategory())))
 		taggedStringWidth := cview.TaggedStringWidth(line)
 		if taggedStringWidth < i.listWidth {
 			line = RightPadColored(line, i.listWidth)

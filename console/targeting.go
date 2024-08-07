@@ -1,11 +1,11 @@
 package console
 
 import (
-	"RogueUI/cview"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/cview"
+	"github.com/memmaker/go/geometry"
 	"strconv"
 	"strings"
 )

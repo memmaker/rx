@@ -1,22 +1,22 @@
 package console
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 )
 
 type TransitionAnimation struct {
 	*BaseAnimation
-	drawables    map[geometry.Point]foundation.TextIcon
+	drawables    map[geometry.Point]textiles.TextIcon
 	currentFrame int
 	bounds       geometry.Rect
-	lookup       func(loc geometry.Point) (foundation.TextIcon, bool)
+	lookup       func(loc geometry.Point) (textiles.TextIcon, bool)
 	getColor     func(colorName string) color.RGBA
 }
 
-func NewTransitionAnimation(target geometry.Rect, getColor func(colorName string) color.RGBA, lookup func(loc geometry.Point) (foundation.TextIcon, bool), done func()) *TransitionAnimation {
-	drawables := map[geometry.Point]foundation.TextIcon{}
+func NewTransitionAnimation(target geometry.Rect, getColor func(colorName string) color.RGBA, lookup func(loc geometry.Point) (textiles.TextIcon, bool), done func()) *TransitionAnimation {
+	drawables := map[geometry.Point]textiles.TextIcon{}
 	target.Iter(func(pos geometry.Point) {
 		icon, exists := lookup(pos)
 		if exists {
@@ -39,7 +39,7 @@ func (p *TransitionAnimation) GetPriority() int {
 	return 1
 }
 
-func (p *TransitionAnimation) GetDrawables() map[geometry.Point]foundation.TextIcon {
+func (p *TransitionAnimation) GetDrawables() map[geometry.Point]textiles.TextIcon {
 	return p.drawables
 }
 
@@ -48,7 +48,7 @@ func (p *TransitionAnimation) NextFrame() {
 		return
 	}
 	blackColor := p.getColor("Black")
-	black := foundation.TextIcon{Rune: ' ', Fg: blackColor, Bg: blackColor}
+	black := textiles.TextIcon{Char: ' ', Fg: blackColor, Bg: blackColor}
 	// next path index
 	p.currentFrame = p.currentFrame + 1
 	if p.IsDone() {

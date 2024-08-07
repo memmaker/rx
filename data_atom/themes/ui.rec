@@ -1,0 +1,28 @@
+%rec: ui
+UIForeground: 168 | 168 | 168
+UIBackground: 10 | 10 | 10
+#
+UIForegroundHighlighted: 255 | 255 | 255
+#
+BorderBackground: 10 | 10 | 10
+BorderForeground: 168 | 168 | 168
+
+%rec: borders
+
+UIBorder_Horizontal: -
+UIBorder_Vertical: |
+UIBorder_TopLeft: ┌
+UIBorder_TopRight: ┐
+UIBorder_BottomLeft: └
+UIBorder_BottomRight: ┘
+UIBorder_LeftT: -
+UIBorder_RightT: -
+UIBorder_TopT: |
+UIBorder_BottomT: |
+UIBorder_Cross: +
+UIBorder_HorizontalFocus: ─
+UIBorder_VerticalFocus: │
+UIBorder_TopLeftFocus: ┌
+UIBorder_TopRightFocus: ┐
+UIBorder_BottomLeftFocus: └
+UIBorder_BottomRightFocus: ┘

@@ -3,9 +3,10 @@ package game
 import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"RogueUI/recfile"
-	"RogueUI/util"
 	"fmt"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/recfile"
+	"github.com/memmaker/go/textiles"
 	"math/rand"
 	"path"
 )
@@ -20,76 +21,52 @@ func (d DataDefinitions) HasItems(category foundation.ItemCategory) bool {
 	return ok && len(defines) > 0
 }
 
-func GetDataDefinitions(rootDir string) DataDefinitions {
+func GetDataDefinitions(rootDir string, palette textiles.ColorPalette) DataDefinitions {
 	dataDir := path.Join(rootDir, "definitions")
 
-	readCloser := util.MustOpen(path.Join(dataDir, "armor.rec"))
+	readCloser := fxtools.MustOpen(path.Join(dataDir, "armor.rec"))
 	armorRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
-	readCloser = util.MustOpen(path.Join(dataDir, "weapons.rec"))
+	readCloser = fxtools.MustOpen(path.Join(dataDir, "weapons.rec"))
 	weaponRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
-	readCloser = util.MustOpen(path.Join(dataDir, "scrolls.rec"))
-	scrollRecords := recfile.Read(readCloser)
-	readCloser.Close()
-
-	readCloser = util.MustOpen(path.Join(dataDir, "potions.rec"))
-	potionRecords := recfile.Read(readCloser)
-	readCloser.Close()
-
-	readCloser = util.MustOpen(path.Join(dataDir, "wands.rec"))
-	wandRecords := recfile.Read(readCloser)
-	readCloser.Close()
-
-	readCloser = util.MustOpen(path.Join(dataDir, "rings.rec"))
-	ringRecords := recfile.Read(readCloser)
-	readCloser.Close()
-
-	readCloser = util.MustOpen(path.Join(dataDir, "amulets.rec"))
-	amuletRecords := recfile.Read(readCloser)
-	readCloser.Close()
-
-	readCloser = util.MustOpen(path.Join(dataDir, "food.rec"))
+	readCloser = fxtools.MustOpen(path.Join(dataDir, "food.rec"))
 	foodRecords := recfile.Read(readCloser)
+	readCloser.Close()
+
+	readCloser = fxtools.MustOpen(path.Join(dataDir, "miscItems.rec"))
+	miscRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
 	items := make(map[foundation.ItemCategory][]ItemDef)
 
 	if len(weaponRecords) > 0 {
-		items[foundation.ItemCategoryWeapons] = ItemDefsFromRecords(weaponRecords)
+		items[foundation.ItemCategoryWeapons] = ItemDefsFromRecords(weaponRecords, palette)
 	}
 	if len(armorRecords) > 0 {
-		items[foundation.ItemCategoryArmor] = ItemDefsFromRecords(armorRecords)
+		items[foundation.ItemCategoryArmor] = ItemDefsFromRecords(armorRecords, palette)
 	}
-	if len(scrollRecords) > 0 {
-		items[foundation.ItemCategoryScrolls] = ItemDefsFromRecords(scrollRecords)
-	}
-	if len(potionRecords) > 0 {
-		items[foundation.ItemCategoryPotions] = ItemDefsFromRecords(potionRecords)
-	}
-	if len(wandRecords) > 0 {
-		items[foundation.ItemCategoryWands] = ItemDefsFromRecords(wandRecords)
-	}
-	if len(ringRecords) > 0 {
-		items[foundation.ItemCategoryRings] = ItemDefsFromRecords(ringRecords)
-	}
-	if len(amuletRecords) > 0 {
-		items[foundation.ItemCategoryAmulets] = ItemDefsFromRecords(amuletRecords)
+	if len(miscRecords) > 0 {
+		miscItems := ItemDefsFromRecords(miscRecords, palette)
+		for _, i := range miscItems {
+			category := i.Category
+			items[category] = append(items[category], i)
+		}
 	}
 	if len(foodRecords) > 0 {
-		items[foundation.ItemCategoryFood] = ItemDefsFromRecords(foodRecords)
+		items[foundation.ItemCategoryFood] = ItemDefsFromRecords(foodRecords, palette)
 	}
 
-	readCloser = util.MustOpen(path.Join(dataDir, "monsters.rec"))
+	readCloser = fxtools.MustOpen(path.Join(dataDir, "actors.rec"))
 	monsterRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
 	var monsters []ActorDef
 
 	if len(monsterRecords) > 0 {
-		monsters = ActorDefsFromRecords(monsterRecords)
+		monsters = ActorDefsFromRecords(monsterRecords, palette)
 	}
 
 	return DataDefinitions{
@@ -110,10 +87,10 @@ func (d DataDefinitions) PickItemForLevel(random *rand.Rand, level int) ItemDef 
 
 	if randomCategory == foundation.ItemCategoryGold {
 		return ItemDef{
-			Name:         "gold",
-			InternalName: "gold",
-			Category:     foundation.ItemCategoryGold,
-			Charges:      dice_curve.NewDice(min(10, level+1), 10, 0),
+			Description: "gold",
+			Name:        "gold",
+			Category:    foundation.ItemCategoryGold,
+			Charges:     dice_curve.NewDice(min(10, level+1), 10, 0),
 		}
 	}
 	items := filterItemDefs(d.Items[randomCategory], func(def ItemDef) bool {
@@ -155,25 +132,25 @@ func (d DataDefinitions) RandomMonsterDef() ActorDef {
 
 func (d DataDefinitions) GetScrollInternalNames() []string {
 	return mapItemDefs(d.Items[foundation.ItemCategoryScrolls], func(def ItemDef) string {
-		return def.InternalName
+		return def.Name
 	})
 }
 
 func (d DataDefinitions) GetPotionInternalNames() []string {
 	return mapItemDefs(d.Items[foundation.ItemCategoryPotions], func(def ItemDef) string {
-		return def.InternalName
+		return def.Name
 	})
 }
 
 func (d DataDefinitions) GetWandInternalNames() []string {
 	return mapItemDefs(d.Items[foundation.ItemCategoryWands], func(def ItemDef) string {
-		return def.InternalName
+		return def.Name
 	})
 }
 
 func (d DataDefinitions) GetRingInternalNames() []string {
 	return mapItemDefs(d.Items[foundation.ItemCategoryRings], func(def ItemDef) string {
-		return def.InternalName
+		return def.Name
 	})
 }
 
@@ -181,7 +158,7 @@ func (d DataDefinitions) AlwaysIDOnUseInternalNames() []string {
 	var names []string
 
 	mapToInternalNames := func(def ItemDef) string {
-		return def.InternalName
+		return def.Name
 	}
 	filter := func(def ItemDef) bool {
 		return def.AlwaysIDOnUse
@@ -202,11 +179,11 @@ func (d DataDefinitions) AlwaysIDOnUseInternalNames() []string {
 	return names
 }
 
-func (d DataDefinitions) GetItemDefByName(name string) ItemDef {
+func (d DataDefinitions) GetItemDefByName(name string, icons map[foundation.ItemCategory]textiles.TextIcon) ItemDef {
 	for _, defs := range d.Items {
 		for _, def := range defs {
-			if def.InternalName == name {
-				return def
+			if def.Name == name {
+				return def.WithIcon(icons[def.Category])
 			}
 		}
 	}
@@ -215,7 +192,7 @@ func (d DataDefinitions) GetItemDefByName(name string) ItemDef {
 
 func (d DataDefinitions) GetMonsterByName(name string) ActorDef {
 	for _, monster := range d.Monsters {
-		if monster.InternalName == name {
+		if monster.Name == name {
 			return monster
 		}
 	}

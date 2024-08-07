@@ -1,7 +1,7 @@
 
-name: Mandibles
-internal_name: ant_mandibles
-category: weapons
+Description: Mandibles
+Name: ant_mandibles
+Category: Weapons
 tags: no_loot
 weapon_type: sword
 weapon_damage: 1-3
@@ -9,9 +9,9 @@ weapon_skill_used: unarmed
 weapon_targeting_mode: single
 weapon_targeting_mode: aimed
 
-name: combat knife
-internal_name: combat_knife
-category: weapons
+Description: combat knife
+Name: combat_knife
+Category: Weapons
 weapon_type: sword
 weapon_damage: 1-4
 thrown_damage: 1-3
@@ -19,9 +19,9 @@ weapon_skill_used: melee_weapons
 weapon_targeting_mode: single
 weapon_targeting_mode: aimed
 
-name: baseball bat
-internal_name: baseball_bat
-category: weapons
+Description: baseball bat
+Name: baseball_bat
+Category: Weapons
 weapon_type: club
 weapon_damage: 2-4
 thrown_damage: 1-3
@@ -29,9 +29,9 @@ weapon_skill_used: melee_weapons
 weapon_targeting_mode: single
 weapon_targeting_mode: aimed
 
-name: long sword
-internal_name: long_sword
-category: weapons
+Description: long sword
+Name: long_sword
+Category: Weapons
 weapon_type: sword
 weapon_damage: 3-4
 thrown_damage: 1-2
@@ -39,9 +39,9 @@ weapon_skill_used: melee_weapons
 weapon_targeting_mode: single
 weapon_targeting_mode: aimed
 
-name: 10mm pistol
-internal_name: 10mm_pistol
-category: weapons
+Description: 10mm pistol
+Name: 10mm_pistol
+Category: Weapons
 thrown_damage: 1-1
 weapon_type: pistol
 weapon_damage: 1-1
@@ -51,21 +51,21 @@ weapon_targeting_mode: aimed
 weapon_magazine_size: 12
 weapon_uses_ammo: 10mm_round
 
-name: 10mm JHP
-internal_name: 10mm_jhp
+Description: 10mm JHP
+Name: 10mm_jhp
 category: ammo
 ammo_damage: 2-3
 ammo_type: 10mm_round
 
-name: 10mm AP
-internal_name: 10mm_ap
+Description: 10mm AP
+Name: 10mm_ap
 category: ammo
 ammo_damage: 2-3
 ammo_type: 10mm_round
 
-name: hunting rifle
-internal_name: hunting_rifle
-category: weapons
+Description: hunting rifle
+Name: hunting_rifle
+Category: Weapons
 weapon_type: rifle
 weapon_damage: 8-20
 thrown_damage: 1-1
@@ -75,14 +75,14 @@ weapon_skill_used: small_guns
 weapon_targeting_mode: single
 weapon_targeting_mode: aimed
 
-name: 7.62mm round
-internal_name: 7.62mm_round
+Description: 7.62mm round
+Name: 7.62mm_round
 category: ammo
 ammo_damage: 2-5
 
-name: spear
-internal_name: spear
-category: weapons
+Description: spear
+Name: spear
+Category: Weapons
 weapon_type: spear
 weapon_damage: 2-3
 thrown_damage: 1-6
@@ -90,9 +90,9 @@ weapon_skill_used: melee_weapons
 weapon_targeting_mode: single
 weapon_targeting_mode: aimed
 
-name: powerfist
-internal_name: powerfist
-category: weapons
+Description: powerfist
+Name: powerfist
+Category: Weapons
 weapon_type: spear
 weapon_damage: 5-8
 thrown_damage: 1-6

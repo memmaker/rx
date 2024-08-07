@@ -1,7 +1,8 @@
 package foundation
 
 import (
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"math/rand"
 	"strings"
 )
@@ -9,6 +10,7 @@ import (
 type ObjectForUI interface {
 	GetCategory() ObjectCategory
 	Position() geometry.Point
+	GetIcon() textiles.TextIcon
 }
 type ObjectCategory int
 

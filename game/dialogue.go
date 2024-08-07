@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/recfile"
 	"github.com/Knetic/govaluate"
+	"github.com/memmaker/go/recfile"
 	"os"
 	"strings"
 )

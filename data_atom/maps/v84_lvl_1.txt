@@ -42,7 +42,7 @@ L = Container | locker | a locker
 ## ObjectRecords
 name: locker
 random_loot_quality: 1
-random_loot_count: 0-1
+random_loot_count: 1-2
 
 ## ActorRecords
 

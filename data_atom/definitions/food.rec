@@ -1,13 +1,18 @@
-name: ration of food
-internal_name: food_ration
-category: food
+Description: ration of food
+Name: food_ration
+Category: food
 use_effect: satiate_fully
 
-name: stimpak
-internal_name: stimpak
-category: food
+Description: stimpak
+Name: stimpak
+Category: food
 use_effect: satiate_fully
 
-name: bobby pin
-internal_name: bobby_pin
-category: lockpicks
+Description: heavy stimpak
+Name: heavy_stimpak
+Category: food
+use_effect: satiate_fully
+
+Description: bobby pin
+Name: bobby_pin
+Category: lockpicks

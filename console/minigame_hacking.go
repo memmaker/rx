@@ -1,14 +1,14 @@
 package console
 
 import (
-	"RogueUI/cview"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
-	"RogueUI/util"
 	"cmp"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
+	"github.com/memmaker/go/cview"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
 	"math/rand"
 	"slices"
 	"strings"
@@ -37,7 +37,7 @@ func NewHackingGame(correctPassword string, fakePasswords []string, close func(p
 	box := cview.NewBox()
 	//box.SetBorder(true)
 
-	intSum := util.StringSum(correctPassword)
+	intSum := fxtools.StringSum(correctPassword)
 	rnd := rand.New(rand.NewSource(intSum))
 	wordsToInsert := []string{correctPassword}
 	wordsToInsert = append(wordsToInsert, fakePasswords...)
@@ -94,7 +94,7 @@ func (hg *HackingGame) layout(width, height int) {
 	hg.wordIndices = make([]int, len(hg.wordsToInsert))
 	isIndexAvailable := func(index int) bool {
 		for _, i := range hg.wordIndices {
-			if i == index || util.AbsInt(i-index) <= wordLength {
+			if i == index || fxtools.AbsInt(i-index) <= wordLength {
 				return false
 			}
 		}

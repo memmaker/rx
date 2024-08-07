@@ -1,18 +1,18 @@
 package console
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 )
 
 type RadialAnimation struct {
 	*BaseAnimation
-	drawables    map[geometry.Point]foundation.TextIcon
+	drawables    map[geometry.Point]textiles.TextIcon
 	currentFrame int
 	origin       geometry.Point
 	dijkstra     map[geometry.Point]int
-	lookup       func(loc geometry.Point) (foundation.TextIcon, bool)
+	lookup       func(loc geometry.Point) (textiles.TextIcon, bool)
 
 	closedPositions          map[geometry.Point]bool
 	maxDist                  int
@@ -21,8 +21,8 @@ type RadialAnimation struct {
 	getColor                 func(colorName string) color.RGBA
 }
 
-func NewRadialAnimation(origin geometry.Point, dijkstra map[geometry.Point]int, getColor func(colorName string) color.RGBA, lookup func(loc geometry.Point) (foundation.TextIcon, bool), done func()) *RadialAnimation {
-	drawables := map[geometry.Point]foundation.TextIcon{}
+func NewRadialAnimation(origin geometry.Point, dijkstra map[geometry.Point]int, getColor func(colorName string) color.RGBA, lookup func(loc geometry.Point) (textiles.TextIcon, bool), done func()) *RadialAnimation {
+	drawables := map[geometry.Point]textiles.TextIcon{}
 	maxDist := 0
 	for _, dist := range dijkstra {
 		if dist > maxDist {
@@ -53,7 +53,7 @@ func (p *RadialAnimation) GetPriority() int {
 	return 1
 }
 
-func (p *RadialAnimation) GetDrawables() map[geometry.Point]foundation.TextIcon {
+func (p *RadialAnimation) GetDrawables() map[geometry.Point]textiles.TextIcon {
 	return p.drawables
 }
 func (p *RadialAnimation) curDist() int {
@@ -103,7 +103,7 @@ func (p *RadialAnimation) NextFrame() {
 			}
 			dist := p.dijkstra[pos]
 			if dist <= p.curDist() && dist > p.curDist()-35 {
-				lightGray := p.getColor("LightGray")
+				lightGray := p.getColor("light_gray_5")
 				black := p.getColor("Black")
 				p.drawables[pos] = icon.WithFg(lightGray).WithBg(black)
 			} else {

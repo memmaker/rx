@@ -1,8 +1,8 @@
 package console
 
 import (
-	"RogueUI/cview"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/cview"
 )
 
 type PipBoy struct {

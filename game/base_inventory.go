@@ -1,11 +1,12 @@
 package game
 
 import (
-	"RogueUI/cview"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
 	"cmp"
 	"fmt"
+	"github.com/memmaker/go/cview"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 	"slices"
 )
@@ -33,6 +34,10 @@ func (i *Inventory) Items() []*Item {
 type InventoryStack struct {
 	items    []*Item
 	invIndex int
+}
+
+func (i InventoryStack) GetIcon() textiles.TextIcon {
+	return i.items[0].GetIcon()
 }
 
 func (i InventoryStack) LongNameWithColors(colorCode string) string {

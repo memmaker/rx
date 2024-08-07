@@ -3,9 +3,8 @@ package game
 import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"RogueUI/geometry"
 	"fmt"
-	"math/rand"
+	"github.com/memmaker/go/geometry"
 )
 
 var NoModifiers []dice_curve.Modifier
@@ -678,98 +677,6 @@ func (g *GameState) PlayerInteractWithMap() {
 		}
 		g.GotoNamedLevel(transition.TargetMap, transition.TargetLocation)
 		return
-	}
-
-	cell := g.gridMap.GetCell(pos)
-
-	isDescending := cell.TileType.IsStairsDown()
-	isAscending := cell.TileType.IsStairsUp()
-	if !isDescending && !isAscending {
-		g.msg(foundation.Msg("There are no stairs here"))
-		return
-	}
-	if isDescending && isAscending {
-		g.msg(foundation.Msg("There are both up and down stairs here."))
-		return
-	}
-
-	if isDescending {
-		g.PlayerTryDescend()
-	} else if isAscending {
-		g.PlayerTryAscend()
-	}
-}
-
-func (g *GameState) PlayerTryDescend() {
-	pos := g.Player.Position()
-	cell := g.gridMap.GetCell(pos)
-	stairs := StairsBoth
-	if cell.TileType.IsStairsDown() {
-		g.descendWithStairs(stairs)
-	}
-}
-
-func (g *GameState) PlayerTryAscend() {
-	pos := g.Player.Position()
-	cell := g.gridMap.GetCell(pos)
-	stairs := StairsBoth
-	if cell.TileType.IsStairsUp() {
-		if g.currentDungeonLevel == 1 {
-			if g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
-				g.gameWon()
-			} else {
-				g.msg(foundation.Msg("you are not leaving this place without that amulet."))
-			}
-		} else {
-			g.ascendWithStairs(stairs)
-			if !g.Player.GetInventory().HasItemWithName("amulet_of_yendor") {
-				if g.unstableStairs() {
-					if g.currentDungeonLevel < 26 {
-						stairs = StairsDownOnly
-					}
-					if rand.Intn(10) == 0 {
-						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall deep down."))
-						g.GotoDungeonLevel(g.currentDungeonLevel+2, stairs, true)
-					} else {
-						g.msg(foundation.Msg("the stairs are crumbling beneath you, you fall down."))
-						g.descendWithStairs(stairs)
-					}
-
-					return
-				}
-				g.ascensionsWithoutAmulet++
-				g.msg(foundation.Msg("you feel that the dungeon becomes unstable."))
-			}
-		}
-	}
-}
-func (g *GameState) Descend() {
-	g.descendWithStairs(StairsBoth)
-}
-
-func (g *GameState) descendWithStairs(stairs StairsInLevel) {
-	g.GotoDungeonLevel(g.currentDungeonLevel+1, stairs, true)
-}
-
-func (g *GameState) descendToRandomLocation() {
-	g.GotoDungeonLevel(g.currentDungeonLevel+1, StairsBoth, false)
-}
-
-func (g *GameState) Ascend() {
-	g.ascendWithStairs(StairsBoth)
-}
-
-func (g *GameState) ascendWithStairs(stairs StairsInLevel) {
-	if g.currentDungeonLevel == 0 {
-		return
-	}
-	if g.currentDungeonLevel == 1 {
-		g.currentDungeonLevel = 0
-		g.GotoNamedLevel("town", "spawn")
-		g.gridMap.SetAllExplored()
-		g.gridMap.SetAllLit()
-	} else {
-		g.GotoDungeonLevel(g.currentDungeonLevel-1, stairs, true)
 	}
 }
 

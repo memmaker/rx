@@ -2,7 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
 
@@ -350,9 +350,9 @@ func playerVorpalizeWeapon(g *GameState, actor *Actor) []foundation.Animation {
 		for _, def := range defs {
 			monsterDef := def
 			menuActions = append(menuActions, foundation.MenuItem{
-				Name: monsterDef.Name,
+				Name: monsterDef.Description,
 				Action: func() {
-					weaponItem.GetWeapon().Vorpalize(monsterDef.InternalName)
+					weaponItem.GetWeapon().Vorpalize(monsterDef.Name)
 					//playerInventory.Add(armorItem)
 					//if wasEquipped {playerEquipment.Equip(armorItem)}
 					g.msg(foundation.HiLite("Your %s gives off a flash of intense white light", weaponItem.Name()))

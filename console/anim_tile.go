@@ -1,20 +1,20 @@
 package console
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/geometry"
+	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 )
 
 type TilesAnimation struct {
 	*BaseAnimation
 	positions    []geometry.Point
-	frames       []foundation.TextIcon
-	drawables    map[geometry.Point]foundation.TextIcon
+	frames       []textiles.TextIcon
+	drawables    map[geometry.Point]textiles.TextIcon
 	currentFrame int
 }
 
-func NewTilesAnimation(positions []geometry.Point, icons []foundation.TextIcon, done func()) *TilesAnimation {
-	drawables := map[geometry.Point]foundation.TextIcon{}
+func NewTilesAnimation(positions []geometry.Point, icons []textiles.TextIcon, done func()) *TilesAnimation {
+	drawables := map[geometry.Point]textiles.TextIcon{}
 	for _, pos := range positions {
 		drawables[pos] = icons[0]
 	}
@@ -32,7 +32,7 @@ func (p *TilesAnimation) GetPriority() int {
 	return 1
 }
 
-func (p *TilesAnimation) GetDrawables() map[geometry.Point]foundation.TextIcon {
+func (p *TilesAnimation) GetDrawables() map[geometry.Point]textiles.TextIcon {
 	return p.drawables
 }
 

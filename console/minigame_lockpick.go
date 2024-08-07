@@ -1,9 +1,9 @@
 package console
 
 import (
-	"RogueUI/cview"
 	"RogueUI/foundation"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/cview"
 	"math/rand"
 	"slices"
 )

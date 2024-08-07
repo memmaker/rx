@@ -1,10 +1,9 @@
 package foundation
 
 import (
-	"RogueUI/recfile"
-	"RogueUI/util"
+	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/recfile"
 	"os"
-	"path"
 	"time"
 )
 
@@ -20,8 +19,6 @@ type Configuration struct {
 	DiagonalMovementEnabled    bool
 	AutoPickup                 bool
 	PlayerName                 string
-	KeyMapFile                 string
-	Theme                      string
 	WallSlide                  bool
 	DataRootDir                string
 	DefaultToAdvancedTargeting bool
@@ -29,11 +26,11 @@ type Configuration struct {
 
 func NewConfigurationFromFile(file string) *Configuration {
 	configuration := NewDefaultConfiguration()
-	if !util.FileExists(file) {
+	if !fxtools.FileExists(file) {
 		configuration.WriteToFile(file)
 		return configuration
 	}
-	openFile := util.MustOpen(file)
+	openFile := fxtools.MustOpen(file)
 	defer openFile.Close()
 	data := recfile.Read(openFile)
 	for _, field := range data[0] {
@@ -60,10 +57,6 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.AutoPickup = field.AsBool()
 		case "WallSlide":
 			configuration.WallSlide = field.AsBool()
-		case "KeyMapFile":
-			configuration.KeyMapFile = field.Value
-		case "Theme":
-			configuration.Theme = field.Value
 		case "PlayerName":
 			configuration.PlayerName = field.Value
 		case "DataRootDir":
@@ -90,8 +83,6 @@ func NewDefaultConfiguration() *Configuration {
 		WallSlide:                  true,
 		PlayerName:                 "Rogue",
 		DataRootDir:                "data",
-		KeyMapFile:                 path.Join("keymaps", "default.txt"),
-		Theme:                      path.Join("themes", "ascii.rec"),
 		DefaultToAdvancedTargeting: false,
 	}
 }
@@ -113,8 +104,6 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "MapHeight", Value: recfile.IntStr(c.MapHeight)},
 			recfile.Field{Name: "DiagonalMovementEnabled", Value: recfile.BoolStr(c.DiagonalMovementEnabled)},
 			recfile.Field{Name: "AutoPickup", Value: recfile.BoolStr(c.AutoPickup)},
-			recfile.Field{Name: "KeyMapFile", Value: c.KeyMapFile},
-			recfile.Field{Name: "Theme", Value: c.Theme},
 			recfile.Field{Name: "WallSlide", Value: recfile.BoolStr(c.WallSlide)},
 			recfile.Field{Name: "PlayerName", Value: c.PlayerName},
 			recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
@@ -123,12 +112,4 @@ func (c *Configuration) WriteToFile(filename string) {
 	file, _ := os.Create(filename)
 	defer file.Close()
 	recfile.Write(file, records)
-}
-
-func (c *Configuration) KeyMapFileFullPath() string {
-	return path.Join(c.DataRootDir, c.KeyMapFile)
-}
-
-func (c *Configuration) ThemeFullPath() string {
-	return path.Join(c.DataRootDir, c.Theme)
 }
