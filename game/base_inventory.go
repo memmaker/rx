@@ -223,7 +223,7 @@ func (i *Inventory) HasItemWithName(internalName string) bool {
 	return false
 }
 
-func (i *Inventory) RemoveAmmoByCaliber(ammo string, neededBullets int) *Item {
+func (i *Inventory) RemoveAmmoByCaliber(ammo int, neededBullets int) *Item {
 	for _, invItem := range i.items {
 		if invItem.IsAmmoOfCaliber(ammo) {
 			availableBullets := invItem.GetCharges()
@@ -260,7 +260,7 @@ func (i *Inventory) RemoveAmmoByName(name string, amount int) *Item {
 
 }
 
-func (i *Inventory) HasAmmo(caliber string, name string) bool {
+func (i *Inventory) HasAmmo(caliber int, name string) bool {
 	for _, invItem := range i.items {
 		if invItem.IsAmmoOfCaliber(caliber) && invItem.GetInternalName() == name {
 			return true

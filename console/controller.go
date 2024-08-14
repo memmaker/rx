@@ -1058,6 +1058,7 @@ func (u *UI) InitDungeonUI(palette textiles.ColorPalette, invColors map[foundati
 
 	u.rightPanel = cview.NewTextView()
 	u.rightPanel.SetScrollable(false)
+	u.rightPanel.SetScrollBarVisibility(cview.ScrollBarNever)
 	u.rightPanel.SetDynamicColors(true)
 	u.rightPanel.SetWrap(false)
 	u.lowerRightPanel = cview.NewTextView()

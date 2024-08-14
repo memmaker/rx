@@ -40,6 +40,9 @@ type ItemDef struct {
 	Position   geometry.Point
 	TextFile   string
 	LockFlag   string
+	Size       int
+	Cost       int
+	Weight     int
 }
 
 func (i ItemDef) IsValidArmor() bool {
@@ -64,7 +67,11 @@ func ItemDefsFromRecords(otherRecords []recfile.Record) []ItemDef {
 }
 
 func NewItemDefFromRecord(record recfile.Record) ItemDef {
-	itemDef := ItemDef{}
+	itemDef := ItemDef{
+		WeaponDef: WeaponDef{
+			CaliberIndex: -1,
+		},
+	}
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		case "name":
@@ -76,18 +83,32 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 			itemDef.Description = field.Value
 		case "category":
 			itemDef.Category = foundation.ItemCategoryFromString(field.Value)
+		case "size":
+			itemDef.Size = field.AsInt()
+		case "cost":
+			itemDef.Cost = field.AsInt()
+		case "weight":
+			itemDef.Weight = field.AsInt()
 		case "tags":
 			itemDef.Tags |= foundation.ItemTagFromString(field.Value)
 		case "slot":
 			itemDef.Slot = foundation.ItemSlotFromString(field.Value)
-		case "ammo_damage":
-			itemDef.AmmoDef.Damage = fxtools.ParseInterval(field.Value)
-		case "ammo_type":
-			itemDef.AmmoDef.Kind = field.Value
+		case "ammo_dmg_multiplier":
+			itemDef.AmmoDef.DamageMultiplier = field.AsInt()
+		case "ammo_dmg_divisor":
+			itemDef.AmmoDef.DamageDivisor = field.AsInt()
+		case "ammo_ac_modifier":
+			itemDef.AmmoDef.ACModifier = field.AsInt()
+		case "ammo_dr_modifier":
+			itemDef.AmmoDef.DRModifier = field.AsInt()
+		case "ammo_rounds_in_magazine":
+			itemDef.AmmoDef.RoundsInMagazine = field.AsInt()
+		case "ammo_caliber_index":
+			itemDef.AmmoDef.CaliberIndex = field.AsInt()
 		case "weapon_type":
 			itemDef.WeaponDef.Type = WeaponTypeFromString(field.Value)
-		case "weapon_uses_ammo":
-			itemDef.WeaponDef.UsesAmmo = field.Value
+		case "weapon_caliber_index":
+			itemDef.WeaponDef.CaliberIndex = field.AsInt()
 		case "weapon_skill_used":
 			itemDef.WeaponDef.SkillUsed = special.SkillFromName(field.Value)
 		case "weapon_damage":
@@ -96,8 +117,10 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 			itemDef.WeaponDef.MagazineSize = field.AsInt()
 		case "weapon_burst_rounds":
 			itemDef.WeaponDef.BurstRounds = field.AsInt()
-		case "weapon_targeting_mode":
-			itemDef.WeaponDef.TargetingMode |= TargetingModeFromString(field.Value)
+		case "weapon_attack_mode_one":
+			itemDef.WeaponDef.TargetingModeOne = TargetingModeFromString(field.Value)
+		case "weapon_attack_mode_two":
+			itemDef.WeaponDef.TargetingModeTwo = TargetingModeFromString(field.Value)
 		case "thrown_damage":
 			itemDef.ThrowDamageDice = dice_curve.ParseDice(field.Value)
 		case "shot_max_range":

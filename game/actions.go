@@ -43,16 +43,17 @@ func (g *GameState) ReloadWeapon() {
 		g.msg(foundation.Msg("You have no weapon equipped"))
 		return
 	}
-	caliber := weaponPart.UsesAmmo()
-	if caliber == "" {
+	if !weaponPart.NeedsAmmo() {
 		g.msg(foundation.Msg("This weapon does not use ammo"))
 		return
 	}
+
 	bulletsNeededForFullClip, ammoKindLoaded := weaponPart.BulletsNeededForFullClip()
 	if bulletsNeededForFullClip <= 0 {
 		g.msg(foundation.Msg("This weapon needs no reloading"))
 		return
 	}
+	caliber := weaponPart.GetCaliber()
 	inventory := g.Player.GetInventory()
 	var ammo *Item
 	if ammoKindLoaded != "" && inventory.HasAmmo(caliber, ammoKindLoaded) {

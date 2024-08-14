@@ -116,8 +116,12 @@ func NewItem(def ItemDef, icon textiles.TextIcon) *Item {
 
 	if def.IsValidAmmo() {
 		item.ammo = &AmmoInfo{
-			damage: def.AmmoDef.Damage,
-			kind:   def.AmmoDef.Kind,
+			DamageMultiplier: def.AmmoDef.DamageMultiplier,
+			DamageDivisor:    def.AmmoDef.DamageDivisor,
+			ACModifier:       def.AmmoDef.ACModifier,
+			DRModifier:       def.AmmoDef.DRModifier,
+			RoundsInMagazine: def.AmmoDef.RoundsInMagazine,
+			CaliberIndex:     def.AmmoDef.CaliberIndex,
 		}
 	}
 
@@ -125,13 +129,14 @@ func NewItem(def ItemDef, icon textiles.TextIcon) *Item {
 		item.weapon = &WeaponInfo{
 			damageDice:       def.WeaponDef.Damage,
 			weaponType:       def.WeaponDef.Type,
-			usesAmmo:         def.WeaponDef.UsesAmmo,
 			skillUsed:        def.WeaponDef.SkillUsed,
 			magazineSize:     def.WeaponDef.MagazineSize,
 			burstRounds:      def.WeaponDef.BurstRounds,
+			caliberIndex:     def.WeaponDef.CaliberIndex,
 			loadedInMagazine: nil,
 			qualityInPercent: 100,
-			targetingMode:    def.WeaponDef.TargetingMode,
+			targetingModeOne: def.WeaponDef.TargetingModeOne,
+			targetingModeTwo: def.WeaponDef.TargetingModeTwo,
 		}
 		item.weapon.CycleTargetMode()
 		item.slot = foundation.SlotNameMainHand
@@ -275,11 +280,11 @@ func (i *Item) CanStackWith(other *Item) bool {
 		return false
 	}
 
-	if i.IsAmmo() && other.IsAmmo() && i.ammo.damage == other.ammo.damage {
-		return true
+	if i.charges != other.charges {
+		return false
 	}
 
-	if i.charges != other.charges {
+	if i.IsAmmo() && other.IsAmmo() && !i.GetAmmo().Equals(other.GetAmmo()) {
 		return false
 	}
 
@@ -291,7 +296,7 @@ func (i *Item) SlotName() foundation.EquipSlot {
 }
 
 func (i *Item) IsEquippable() bool {
-	return i.slot != foundation.SlotNameNotEquippable
+	return i.IsWeapon() || i.IsArmor() || i.IsShield() || i.IsRing()
 }
 
 func (i *Item) IsMeleeWeapon() bool {
@@ -413,8 +418,8 @@ func (i *Item) IsAmmo() bool {
 	return i.ammo != nil
 }
 
-func (i *Item) IsAmmoOfCaliber(ammo string) bool {
-	return i.IsAmmo() && i.ammo.kind == ammo
+func (i *Item) IsAmmoOfCaliber(ammo int) bool {
+	return i.IsAmmo() && i.GetAmmo().CaliberIndex == ammo
 }
 
 func (i *Item) RemoveCharges(spent int) {

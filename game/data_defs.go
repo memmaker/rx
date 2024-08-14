@@ -34,6 +34,10 @@ func GetDataDefinitions(rootDir string, palette textiles.ColorPalette) DataDefin
 	weaponRecords := recfile.Read(readCloser)
 	readCloser.Close()
 
+	readCloser = fxtools.MustOpen(path.Join(dataDir, "ammo.rec"))
+	ammoRecords := recfile.Read(readCloser)
+	readCloser.Close()
+
 	readCloser = fxtools.MustOpen(path.Join(dataDir, "food.rec"))
 	foodRecords := recfile.Read(readCloser)
 	readCloser.Close()
@@ -49,6 +53,9 @@ func GetDataDefinitions(rootDir string, palette textiles.ColorPalette) DataDefin
 	}
 	if len(armorRecords) > 0 {
 		items[foundation.ItemCategoryArmor] = ItemDefsFromRecords(armorRecords)
+	}
+	if len(ammoRecords) > 0 {
+		items[foundation.ItemCategoryAmmo] = ItemDefsFromRecords(ammoRecords)
 	}
 	if len(miscRecords) > 0 {
 		miscItems := ItemDefsFromRecords(miscRecords)
@@ -148,31 +155,6 @@ func (d DataDefinitions) GetRingInternalNames() []string {
 	return mapItemDefs(d.Items[foundation.ItemCategoryRings], func(def ItemDef) string {
 		return def.Name
 	})
-}
-
-func (d DataDefinitions) AlwaysIDOnUseInternalNames() []string {
-	var names []string
-
-	mapToInternalNames := func(def ItemDef) string {
-		return def.Name
-	}
-	filter := func(def ItemDef) bool {
-		return def.AlwaysIDOnUse
-	}
-	scrolls := mapAndFilterItemDefs(d.Items[foundation.ItemCategoryScrolls], filter, mapToInternalNames)
-
-	potions := mapAndFilterItemDefs(d.Items[foundation.ItemCategoryPotions], filter, mapToInternalNames)
-
-	wands := mapAndFilterItemDefs(d.Items[foundation.ItemCategoryWands], filter, mapToInternalNames)
-
-	rings := mapAndFilterItemDefs(d.Items[foundation.ItemCategoryRings], filter, mapToInternalNames)
-
-	names = append(names, scrolls...)
-	names = append(names, potions...)
-	names = append(names, wands...)
-	names = append(names, rings...)
-
-	return names
 }
 
 func (d DataDefinitions) GetItemDefByName(name string) ItemDef {

@@ -34,7 +34,7 @@ func (g *GameState) PlayerRangedAttack() {
 		return
 	}
 	targetMode := weapon.GetCurrentTargetingMode()
-	if targetMode == TargetingModeAimed {
+	if targetMode == TargetingModeFireAimed {
 		g.ui.SelectBodyPart(func(victim foundation.ActorForUI, bodyPart int) {
 			g.msg(foundation.HiLite("You aim at %s's %s", victim.Name(), victim.GetBodyPartByIndex(bodyPart)))
 			target := victim.(*Actor)
@@ -75,8 +75,8 @@ func (g *GameState) PlayerQuickRangedAttack() {
 	}
 
 	mode := weapon.GetCurrentTargetingMode()
-	if mode == TargetingModeAimed {
-		mode = TargetingModeSingle
+	if mode == TargetingModeFireAimed {
+		mode = TargetingModeFireSingle
 	}
 	shotAnim := g.actorRangedAttack(g.Player, mainHandItem, mode, enemies[0], 2)
 	g.ui.AddAnimations(shotAnim)
@@ -210,9 +210,9 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, mode Ta
 
 	bulletsSpent := 1
 	weapon := weaponItem.GetWeapon()
-	if mode == TargetingModeBurst {
+	if mode == TargetingModeFireBurst {
 		bulletsSpent = min(weapon.GetLoadedBullets(), weapon.GetBurstRounds())
-	} else if mode == TargetingModeFullAuto {
+	} else if mode == TargetingModeFireFullAuto {
 		bulletsSpent = weapon.GetLoadedBullets()
 	}
 

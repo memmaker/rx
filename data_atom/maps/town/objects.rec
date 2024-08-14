@@ -1,51 +1,10 @@
 %rec: default
 
-Category: Readable
-Name: MetalSign
-Description: a degraded handwritten note
-Text: Keep out! I am Drinking.
-Position: (25,16)
-
-Category: LockedDoor
-Description: a door
-LockFlag: doc_offices
-NumberLock: 0451
-Position: (35,5)
-
-Category: NamedLocation
-Identifier: Spawn
-Position: (2,11)
-
 Category: Transition
 Location: doc_stairs
 TargetMap: doc_basement
 TargetLocation: stairs_up
 Position: (53,6)
-
-Category: LockedDoor
-Description: a locked door
-LockFlag: bar_door_security
-NumberLock: 1996
-Position: (78,10)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (45,16)
-
-Category: Readable
-Name: MetalSign
-Description: a metal sign
-Text: Lucy & Jeff Burton
-+ Home Sweet Home
-Position: (47,16)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (13,16)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (27,16)
 
 Category: ClosedDoor
 Description: a closed door
@@ -53,41 +12,13 @@ Position: (26,5)
 
 Category: Readable
 Name: MetalSign
-Description: a rotten sign
-Text: Serpent's Den
-+ FOR BIKERS ONLY
-Position: (63,12)
-
-Category: Readable
-Name: MetalSign
 Description: a sign
 Text: Independent Power & Gas
 Position: (11,16)
 
-Category: Transition
-Location: serpents_den_stairs
-TargetMap: serpents_den_cellar
-TargetLocation: stairs_up
-Position: (76,10)
-
 Category: OpenDoor
 Description: a door
 Position: (7,6)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (63,11)
-
-Category: Readable
-Name: MetalSign
-Description: a metal sign
-Text: Dr. Winters
-Position: (38,7)
-
-Category: Terminal
-Description: a terminal
-Dialogue: terminal_test
-Position: (53,4)
 
 Category: LockedDoor
 Description: a locked door
@@ -105,4 +36,73 @@ Category: LockedDoor
 Description: a locked door
 LockFlag: doc_offices
 Position: (47,5)
+
+Category: NamedLocation
+Identifier: Spawn
+Position: (2,11)
+
+Category: LockedDoor
+Description: a locked door
+LockFlag: bar_door_security
+NumberLock: 1996
+Position: (78,10)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (63,11)
+
+Category: Readable
+Name: MetalSign
+Description: a degraded handwritten note
+Text: Keep out! I am Drinking.
+Position: (25,16)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (13,16)
+
+Category: Readable
+Name: MetalSign
+Description: a rotten sign
+Text: Serpent's Den
++ FOR BIKERS ONLY
+Position: (63,12)
+
+Category: Transition
+Location: serpents_den_stairs
+TargetMap: serpents_den_cellar
+TargetLocation: stairs_up
+Position: (76,10)
+
+Category: Readable
+Name: MetalSign
+Description: a metal sign
+Text: Dr. Winters
+Position: (38,7)
+
+Category: LockedDoor
+Description: a door
+LockFlag: doc_offices
+NumberLock: 0451
+Position: (35,5)
+
+Category: Readable
+Name: MetalSign
+Description: a metal sign
+Text: Lucy & Jeff Burton
++ Home Sweet Home
+Position: (47,16)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (27,16)
+
+Category: Terminal
+Description: a terminal
+Dialogue: terminal_test
+Position: (53,4)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (45,16)
 
