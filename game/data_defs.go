@@ -114,13 +114,7 @@ func filterItemDefs(defs []ItemDef, keep func(def ItemDef) bool) []ItemDef {
 }
 
 func (d DataDefinitions) PickMonsterForLevel(random *rand.Rand, level int) ActorDef {
-	var filteredMonsters []ActorDef
-
-	for _, monster := range d.Monsters {
-		if monster.DungeonLevel <= level {
-			filteredMonsters = append(filteredMonsters, monster)
-		}
-	}
+	filteredMonsters := d.Monsters
 
 	if len(filteredMonsters) == 0 {
 		panic(fmt.Sprintf("No monsters found for level %d", level))

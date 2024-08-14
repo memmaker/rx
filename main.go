@@ -20,8 +20,6 @@ import (
 func main() {
 	//testMapGen()
 	//return
-	mergeFO2Audio()
-	return
 
 	//setKeypadToApplicationMode()   // set application mode
 	//estKeyCodes()
@@ -73,20 +71,6 @@ func main() {
 	gameUI.StartGameLoop()
 }
 
-func mergeFO2Audio() {
-	sourceDir := path.Join("data_atom", "audio", "critters")
-	targetDir := path.Join("data_atom", "audio", "enemies")
-
-	entries, _ := os.ReadDir(sourceDir)
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			critterName, actionName := getCritterAndActionNameFromDir(entry.Name())
-
-		}
-	}
-}
-
 var actionNameMap = map[string]string{
 	"PUNCH":                    "Attack",
 	"KICK":                     "Attack",
@@ -97,21 +81,6 @@ var actionNameMap = map[string]string{
 	"BURNING_DANCE":            "BurningDance",
 	"CLIMB":                    "Climb",
 	"ELECTRIC_BURNED_TO_ASHES": "Burned",
-}
-
-func getCritterAndActionNameFromDir(name string) (string, string) {
-	// find the index of the first upper case char
-	splitIndex := -1
-	for i, r := range name {
-		if r >= 'A' && r <= 'Z' {
-			splitIndex = i
-		}
-	}
-	if splitIndex == -1 {
-		return "ERROR", "ERROR"
-	}
-	critterName := name[:splitIndex-1]
-	actionName := name[splitIndex:]
 }
 
 func mustLoadImage(filename string) image.Image {
