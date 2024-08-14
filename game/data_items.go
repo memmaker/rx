@@ -7,7 +7,6 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
-	"github.com/memmaker/go/textiles"
 	"strings"
 )
 
@@ -39,7 +38,8 @@ type ItemDef struct {
 	SkillBonus dice_curve.Dice
 	Tags       foundation.ItemTags
 	Position   geometry.Point
-	icon       textiles.TextIcon
+	TextFile   string
+	LockFlag   string
 }
 
 func (i ItemDef) IsValidArmor() bool {
@@ -54,33 +54,21 @@ func (i ItemDef) IsValidAmmo() bool {
 	return i.AmmoDef.IsValid()
 }
 
-func (i ItemDef) WithIcon(icon textiles.TextIcon) ItemDef {
-	i.icon = icon
-	return i
-}
-
-func ItemDefsFromRecords(otherRecords []recfile.Record, palette textiles.ColorPalette) []ItemDef {
+func ItemDefsFromRecords(otherRecords []recfile.Record) []ItemDef {
 	var items []ItemDef
 	for _, record := range otherRecords {
-		itemDef := NewItemDefFromRecord(record, palette)
+		itemDef := NewItemDefFromRecord(record)
 		items = append(items, itemDef)
 	}
 	return items
 }
 
-func NewItemDefFromRecord(record recfile.Record, palette textiles.ColorPalette) ItemDef {
+func NewItemDefFromRecord(record recfile.Record) ItemDef {
 	itemDef := ItemDef{}
-	var icon textiles.TextIcon
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		case "name":
 			itemDef.Name = field.Value
-		case "icon":
-			icon.Char = field.AsRune()
-		case "foreground":
-			icon.Fg = palette.Get(field.Value)
-		case "background":
-			icon.Bg = palette.Get(field.Value)
 		case "position":
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
 			itemDef.Position = spawnPos
@@ -168,8 +156,12 @@ func NewItemDefFromRecord(record recfile.Record, palette textiles.ColorPalette) 
 			itemDef.SkillBonus = dice_curve.ParseDice(field.Value)
 		case "equip_flag":
 			itemDef.EquipFlag = foundation.ActorFlagFromString(field.Value)
+		case "textfile":
+			itemDef.TextFile = field.Value
+		case "lockflag":
+			itemDef.LockFlag = field.Value
 		}
 	}
 
-	return itemDef.WithIcon(icon)
+	return itemDef
 }

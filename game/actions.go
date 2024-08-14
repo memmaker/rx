@@ -4,7 +4,9 @@ import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"fmt"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
+	"path"
 )
 
 var NoModifiers []dice_curve.Modifier
@@ -183,10 +185,21 @@ func (g *GameState) PlayerApplyItem(uiItem foundation.ItemForUI) {
 }
 
 func (g *GameState) playerUseOrZapItem(item *Item) {
-	if item.IsUsable() {
+	if item.IsReadable() {
+		g.playerReadItem(item)
+	} else if item.IsUsable() {
 		g.actorUseItem(g.Player, item)
 	} else if item.IsZappable() {
 		g.startZapItem(item)
+	}
+}
+
+func (g *GameState) playerReadItem(item *Item) {
+	file := path.Join(g.config.DataRootDir, "text", item.GetTextFile()+".txt")
+	lines := fxtools.ReadFileAsLines(file)
+	if len(lines) > 0 {
+		g.ui.OpenTextWindow(g.fillTemplatedTexts(lines))
+		return
 	}
 }
 
@@ -269,7 +282,7 @@ func (g *GameState) actorDropItem(holder *Actor, item *Item) {
 
 func (g *GameState) inspectItem(item *Item) func() {
 	return func() {
-		g.ui.OpenTextWindow([]string{"Item", item.name})
+		g.ui.OpenTextWindow([]string{"Item", item.description})
 	}
 }
 

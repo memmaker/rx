@@ -2,15 +2,19 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
+	"path"
 	"strings"
+	"text/template"
 )
 
 type BaseObject struct {
 	position        geometry.Point
 	category        foundation.ObjectCategory
+	customIcon      textiles.TextIcon
 	onDamage        func(actor *Actor) []foundation.Animation
 	onWalkOver      func(actor *Actor) []foundation.Animation
 	isAlive         bool
@@ -19,22 +23,20 @@ type BaseObject struct {
 	isHidden        bool
 	triggerOnDamage bool
 	onBump          func(actor *Actor)
+	iconForObject   func(string) textiles.TextIcon
 	internalName    string
 	displayName     string
 	isTransparent   bool
-	icon            textiles.TextIcon
-}
-
-func (b *BaseObject) GetIcon() textiles.TextIcon {
-	return b.icon
+	useCustomIcon   bool
+	contextActions  []foundation.MenuItem
 }
 
 func (b *BaseObject) GetCategory() foundation.ObjectCategory {
 	return b.category
 }
 
-func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *BaseObject {
-	trap := NewObject(trapType)
+func (g *GameState) NewTrap(trapType foundation.ObjectCategory, iconForObject func(objectType string) textiles.TextIcon) *BaseObject {
+	trap := NewObject(trapType, iconForObject)
 	triggerEffect := func(actor *Actor) []foundation.Animation {
 		if trap.isAlive {
 			trap.isAlive = false
@@ -52,45 +54,108 @@ func (g *GameState) NewTrap(trapType foundation.ObjectCategory) *BaseObject {
 	return trap
 }
 
-func (g *GameState) NewTerminal(rec recfile.Record, palette textiles.ColorPalette) *BaseObject {
-	terminal := NewObject(foundation.ObjectTerminal)
+func (g *GameState) NewTerminal(rec recfile.Record, iconForObject func(objectType string) textiles.TextIcon) *BaseObject {
+	terminal := NewObject(foundation.ObjectTerminal, iconForObject)
 	terminal.SetWalkable(false)
 	terminal.SetHidden(false)
 	terminal.SetTransparent(true)
 
 	var scriptName string
-	var icon textiles.TextIcon
 
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
+		case "description":
+			terminal.displayName = field.Value
 		case "dialogue":
 			scriptName = field.Value
-		case "icon":
-			icon.Char = field.AsRune()
-		case "foreground":
-			icon.Fg = palette.Get(field.Value)
-		case "background":
-			icon.Bg = palette.Get(field.Value)
 		case "position":
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
 			terminal.SetPosition(spawnPos)
 		}
 	}
 	terminal.internalName = scriptName
-	terminal.icon = icon
 
 	terminal.onBump = func(actor *Actor) {
 		if actor == g.Player {
-			g.StartDialogue(scriptName, true)
+			g.StartDialogue(scriptName, terminal.Name(), true)
 		}
 	}
 	return terminal
 }
-func NewObject(icon foundation.ObjectCategory) *BaseObject {
+
+func (g *GameState) NewReadable(rec recfile.Record, iconForObject func(objectType string) textiles.TextIcon) *BaseObject {
+	sign := NewObject(foundation.ObjectReadable, nil)
+	sign.SetWalkable(false)
+	sign.SetHidden(false)
+	sign.SetTransparent(true)
+
+	var text []string
+	var customIcon textiles.TextIcon
+	for _, field := range rec {
+		switch strings.ToLower(field.Name) {
+		case "name":
+			customIcon = iconForObject(field.Value)
+		case "description":
+			sign.displayName = field.Value
+		case "position":
+			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
+			sign.SetPosition(spawnPos)
+		case "text":
+			text = strings.Split(g.fillTemplatedText(strings.TrimSpace(field.Value)), "\n")
+		case "textfile":
+			text = fxtools.ReadFileAsLines(path.Join(g.config.DataRootDir, "text", field.Value+".txt"))
+		}
+	}
+
+	showText := func() {
+		g.ui.OpenTextWindow(g.fillTemplatedTexts(text))
+	}
+	sign.customIcon = customIcon
+	sign.useCustomIcon = true
+	sign.internalName = "readable"
+
+	sign.onBump = func(actor *Actor) {
+		if actor == g.Player {
+			showText()
+		}
+	}
+	sign.SetContextActions([]foundation.MenuItem{
+		{
+			Name:       "Read",
+			Action:     showText,
+			CloseMenus: true,
+		},
+	})
+	return sign
+}
+func (g *GameState) fillTemplatedTexts(text []string) []string {
+	for i, t := range text {
+		text[i] = g.fillTemplatedText(t)
+	}
+	return text
+}
+
+func (g *GameState) fillTemplatedText(text string) string {
+	parsedTemplate, err := template.New("text").Parse(text)
+	if err != nil {
+		panic(err)
+	}
+	replaceValues := map[string]string{"pcname": g.Player.Name()}
+
+	var filledText strings.Builder
+	err = parsedTemplate.Execute(&filledText, replaceValues)
+	if err != nil {
+		panic(err)
+	}
+	return filledText.String()
+}
+
+func NewObject(icon foundation.ObjectCategory, iconForObject func(objectType string) textiles.TextIcon) *BaseObject {
 	return &BaseObject{
-		category: icon,
-		isAlive:  true,
-		isDrawn:  true,
+		category:      icon,
+		isAlive:       true,
+		isDrawn:       true,
+		iconForObject: iconForObject,
 	}
 }
 
@@ -180,6 +245,21 @@ func (b *BaseObject) SetDisplayName(name string) {
 	b.displayName = name
 }
 
+func (b *BaseObject) GetIcon() textiles.TextIcon {
+	if b.useCustomIcon {
+		return b.customIcon
+	}
+	return b.iconForObject(b.GetCategory().LowerString())
+}
+
+func (b *BaseObject) AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem {
+	return append(items, b.contextActions...)
+}
+
+func (b *BaseObject) SetContextActions(items []foundation.MenuItem) {
+	b.contextActions = items
+}
+
 type Object interface {
 	Name() string
 	GetCategory() foundation.ObjectCategory
@@ -197,4 +277,5 @@ type Object interface {
 	OnWalkOver(actor *Actor) []foundation.Animation
 	OnBump(actor *Actor)
 	GetIcon() textiles.TextIcon
+	AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem
 }

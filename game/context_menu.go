@@ -2,6 +2,20 @@ package game
 
 import "RogueUI/foundation"
 
+func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, actor *Actor) []foundation.MenuItem {
+	buffer = append(buffer, foundation.MenuItem{
+		Name:       "Talk To",
+		Action:     func() { g.StartDialogue(actor.GetDialogueFile(), actor.Name(), false) },
+		CloseMenus: true,
+	})
+	buffer = append(buffer, foundation.MenuItem{
+		Name:       "Pickpocket",
+		Action:     func() { g.msg(foundation.Msg("Not implemented")) },
+		CloseMenus: true,
+	})
+	return buffer
+}
+
 // Currently not in use
 func (g *GameState) openContextMenuForItem(uiItem foundation.ItemForUI) {
 	itemStack := uiItem.(*InventoryStack)

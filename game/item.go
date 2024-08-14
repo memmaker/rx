@@ -14,7 +14,7 @@ import (
 )
 
 type Item struct {
-	name          string
+	description   string
 	internalName  string
 	position      geometry.Point
 	category      foundation.ItemCategory
@@ -34,7 +34,10 @@ type Item struct {
 	equipFlag    foundation.ActorFlag
 	thrownDamage dice_curve.Dice
 	tags         foundation.ItemTags
-	icon         textiles.TextIcon
+	textFile     string
+	lockFlag     string
+
+	icon textiles.TextIcon
 }
 
 func (g *GameState) NewItemFromName(itemName string) *Item {
@@ -44,54 +47,71 @@ func (g *GameState) NewItemFromName(itemName string) *Item {
 		name, args := fxtools.GetNameAndArgs(itemName)
 		switch name {
 		case "key":
-			item = NewKey(args.Get(0), args.Get(1))
+			item = NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
+		case "note":
+			item = NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
 		}
 	} else if strings.Contains(itemName, "|") {
 		parts := strings.Split(itemName, "|")
 		itemName = strings.TrimSpace(parts[0])
 		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
-		itemDef := g.dataDefinitions.GetItemDefByName(itemName, g.iconsForItems)
-		item = NewItem(itemDef)
+		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
+		item = NewItem(itemDef, g.iconForItem(itemDef.Category))
 		item.SetCharges(charges)
 	} else {
-		itemDef := g.dataDefinitions.GetItemDefByName(itemName, g.iconsForItems)
-		item = NewItem(itemDef)
+		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
+		item = NewItem(itemDef, g.iconForItem(itemDef.Category))
 		item.SetCharges(charges)
 	}
 
 	return item
 }
-
-func NewKey(keyID, displayName string) *Item {
+func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Item {
 	return &Item{
-		name:         displayName,
+		description:  description,
+		internalName: fileName,
+		category:     foundation.ItemCategoryReadables,
+		textFile:     fileName,
+		slot:         foundation.SlotNameNotEquippable,
+		icon:         icon,
+	}
+}
+func NewKey(keyID, description string, icon textiles.TextIcon) *Item {
+	return &Item{
+		description:  description,
 		internalName: keyID,
+		lockFlag:     keyID,
 		category:     foundation.ItemCategoryKeys,
 		charges:      -1,
 		slot:         foundation.SlotNameNotEquippable,
+		icon:         icon,
 	}
 }
 
-func NewItem(def ItemDef) *Item {
+func NewItem(def ItemDef, icon textiles.TextIcon) *Item {
 	charges := 1
 	if def.Charges.NotZero() {
 		charges = def.Charges.Roll()
 	}
 	item := &Item{
-		name:         def.Description,
-		tags:         def.Tags,
-		internalName: def.Name,
-		category:     def.Category,
-		charges:      charges,
-		slot:         def.Slot,
-		stat:         def.Stat,
-		statBonus:    def.StatBonus.Roll(),
-		skill:        def.Skill,
-		skillBonus:   def.SkillBonus.Roll(),
-		equipFlag:    def.EquipFlag,
-		thrownDamage: def.ThrowDamageDice,
-		position:     def.Position,
-		icon:         def.icon,
+		description:   def.Description,
+		tags:          def.Tags,
+		internalName:  def.Name,
+		category:      def.Category,
+		charges:       charges,
+		slot:          def.Slot,
+		stat:          def.Stat,
+		statBonus:     def.StatBonus.Roll(),
+		skill:         def.Skill,
+		skillBonus:    def.SkillBonus.Roll(),
+		equipFlag:     def.EquipFlag,
+		thrownDamage:  def.ThrowDamageDice,
+		position:      def.Position,
+		textFile:      def.TextFile,
+		lockFlag:      def.LockFlag,
+		zapEffectName: def.ZapEffect,
+		useEffectName: def.UseEffect,
+		icon:          icon,
 	}
 
 	if def.IsValidAmmo() {
@@ -126,9 +146,6 @@ func NewItem(def ItemDef) *Item {
 		}
 	}
 
-	item.zapEffectName = def.ZapEffect
-	item.useEffectName = def.UseEffect
-
 	return item
 
 }
@@ -146,7 +163,7 @@ func (i *Item) DisplayLength() int {
 }
 
 func (i *Item) GetListInfo() string {
-	return fmt.Sprintf("%s", i.name)
+	return fmt.Sprintf("%s", i.description)
 }
 
 func (i *Item) LongNameWithColors(colorCode string) string {
@@ -194,7 +211,7 @@ func (i *Item) Position() geometry.Point {
 }
 
 func (i *Item) Name() string {
-	name := i.name
+	name := i.description
 	if i.IsGold() {
 		name = fmt.Sprintf("%d gold", i.charges)
 	}
@@ -218,6 +235,10 @@ func (i *Item) IsUsableOrZappable() bool {
 	return i.useEffectName != "" || i.zapEffectName != ""
 }
 
+func (i *Item) IsReadable() bool {
+	return i.textFile != ""
+}
+
 func (i *Item) IsUsable() bool {
 	return i.useEffectName != ""
 }
@@ -239,7 +260,7 @@ func (i *Item) Color() color.RGBA {
 }
 
 func (i *Item) CanStackWith(other *Item) bool {
-	if i.name != other.name || i.category != other.category {
+	if i.description != other.description || i.category != other.category {
 		return false
 	}
 
@@ -426,17 +447,21 @@ func (i *Item) IsLockpick() bool {
 }
 
 func (i *Item) IsKey() bool {
-	return i.category == foundation.ItemCategoryKeys
+	return i.category == foundation.ItemCategoryKeys && i.lockFlag != ""
+}
+
+func (i *Item) GetLockFlag() string {
+	return i.lockFlag
 }
 
 func (i *Item) HasTag(tag foundation.ItemTags) bool {
 	return i.tags.Contains(tag)
 }
 
-func (i *Item) GetIcon() textiles.TextIcon {
-	return i.icon
+func (i *Item) GetTextFile() string {
+	return i.textFile
 }
 
-func (i *Item) SetIcon(icon textiles.TextIcon) {
-	i.icon = icon
+func (i *Item) GetIcon() textiles.TextIcon {
+	return i.icon
 }

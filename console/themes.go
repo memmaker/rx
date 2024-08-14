@@ -30,7 +30,7 @@ func NewUIThemeFromDataDir(dataDirectory string, palette textiles.ColorPalette, 
 	records := recfile.ReadMulti(file)
 
 	uiBorders := loadBorders(records["borders"][0])
-	uiColors := loadUIColors(records["ui"][0])
+	uiColors := loadUIColors(records["ui"][0], palette)
 
 	var defaultStyle tcell.Style
 	defaultStyle = defaultStyle.Foreground(toTcellColor(uiColors[UIColorUIForeground])).Background(toTcellColor(uiColors[UIColorUIBackground]))
@@ -52,11 +52,11 @@ func (t Theme) GetUIColorForTcell(foreground UIColor) tcell.Color {
 	return toTcellColor(t.uiColors[foreground])
 }
 
-func loadUIColors(record recfile.Record) map[UIColor]color.RGBA {
+func loadUIColors(record recfile.Record, palette textiles.ColorPalette) map[UIColor]color.RGBA {
 	uiColors := make(map[UIColor]color.RGBA)
 	for _, field := range record {
 		colorName := UIColorFromString(field.Name)
-		colorValue := field.AsRGB("|")
+		colorValue := palette.Get(field.Value)
 		uiColors[colorName] = colorValue
 	}
 	return uiColors

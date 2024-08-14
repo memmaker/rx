@@ -54,13 +54,13 @@ weapon_uses_ammo: 10mm_round
 Description: 10mm JHP
 Name: 10mm_jhp
 category: ammo
-ammo_damage: 2-3
+ammo_damage: 12-14
 ammo_type: 10mm_round
 
 Description: 10mm AP
 Name: 10mm_ap
 category: ammo
-ammo_damage: 2-3
+ammo_damage: 8-12
 ammo_type: 10mm_round
 
 Description: hunting rifle

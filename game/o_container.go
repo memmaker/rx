@@ -25,7 +25,9 @@ func (b *Container) GetCategory() foundation.ObjectCategory {
 	}
 	return foundation.ObjectUnknownContainer
 }
-
+func (b *Container) GetIcon() textiles.TextIcon {
+	return b.iconForObject(b.GetCategory().LowerString())
+}
 func (b *Container) OnBump(actor *Actor) {
 	if b.onBump != nil {
 		b.onBump(actor)
@@ -50,12 +52,13 @@ func (b *Container) AddItem(item *Item) {
 	b.containedItems = append(b.containedItems, item)
 }
 
-func (g *GameState) NewContainer(rec recfile.Record, palette textiles.ColorPalette) Object {
+func (g *GameState) NewContainer(rec recfile.Record, iconForObject func(objectType string) textiles.TextIcon) Object {
 	container := &Container{
 		BaseObject: &BaseObject{
-			category: foundation.ObjectUnknownContainer,
-			isAlive:  true,
-			isDrawn:  true,
+			category:      foundation.ObjectUnknownContainer,
+			isAlive:       true,
+			isDrawn:       true,
+			iconForObject: iconForObject,
 		},
 	}
 	container.SetWalkable(false)
@@ -71,17 +74,10 @@ func (g *GameState) NewContainer(rec recfile.Record, palette textiles.ColorPalet
 			g.openContainer(container)
 		}
 	}
-	var icon textiles.TextIcon
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
 		case "description":
 			container.displayName = field.Value
-		case "icon":
-			icon.Char = field.AsRune()
-		case "foreground":
-			icon.Fg = palette.Get(field.Value)
-		case "background":
-			icon.Bg = palette.Get(field.Value)
 		case "position":
 			container.position, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "item":
@@ -89,7 +85,6 @@ func (g *GameState) NewContainer(rec recfile.Record, palette textiles.ColorPalet
 			container.AddItem(item)
 		}
 	}
-	container.icon = icon
 	return container
 }
 

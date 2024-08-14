@@ -41,18 +41,18 @@ func (b *Elevator) GetIdentifier() string {
 func (b *Elevator) SetLockedByFlag(flag string) {
 	b.lockedFlag = flag
 }
-func (g *GameState) NewElevator(rec recfile.Record, pal textiles.ColorPalette) *Elevator {
-	identifier, description, pos, icon, levels := parseElevatorRecord(rec, pal)
+func (g *GameState) NewElevator(rec recfile.Record, iconForObject func(objectType string) textiles.TextIcon) *Elevator {
+	identifier, description, pos, levels := parseElevatorRecord(rec)
 
 	ele := &Elevator{
 		BaseObject: &BaseObject{
-			category:     foundation.ObjectElevator,
-			isAlive:      true,
-			isDrawn:      true,
-			position:     pos,
-			icon:         icon,
-			displayName:  description,
-			internalName: identifier,
+			category:      foundation.ObjectElevator,
+			isAlive:       true,
+			isDrawn:       true,
+			position:      pos,
+			iconForObject: iconForObject,
+			displayName:   description,
+			internalName:  identifier,
 		},
 	}
 	ele.SetWalkable(true)
@@ -79,21 +79,14 @@ func (g *GameState) NewElevator(rec recfile.Record, pal textiles.ColorPalette) *
 	return ele
 }
 
-func parseElevatorRecord(rec recfile.Record, pal textiles.ColorPalette) (string, string, geometry.Point, textiles.TextIcon, []ElevatorButton) {
+func parseElevatorRecord(rec recfile.Record) (string, string, geometry.Point, []ElevatorButton) {
 	var levels []ElevatorButton
 	var identifier string
 	var description string
 	var currentButton ElevatorButton
-	var icon textiles.TextIcon
 	var position geometry.Point
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
-		case "icon":
-			icon.Char = field.AsRune()
-		case "foreground":
-			icon.Fg = pal.Get(field.Value)
-		case "background":
-			icon.Bg = pal.Get(field.Value)
 		case "position":
 			position, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "description":
@@ -115,5 +108,5 @@ func parseElevatorRecord(rec recfile.Record, pal textiles.ColorPalette) (string,
 		}
 	}
 
-	return identifier, description, position, icon, levels
+	return identifier, description, position, levels
 }

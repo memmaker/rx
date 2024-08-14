@@ -30,6 +30,7 @@ const (
 	ObjectClosedDoor
 	ObjectOpenDoor
 	ObjectBrokenDoor
+	ObjectReadable
 	ObjectElevator
 )
 
@@ -81,6 +82,8 @@ func (o ObjectCategory) String() string {
 		return "Known Empty Container"
 	case ObjectUnknownContainer:
 		return "Unknown Container"
+	case ObjectReadable:
+		return "Readable"
 	case ObjectElevator:
 		return "Elevator"
 	default:
@@ -119,6 +122,8 @@ func ObjectCategoryFromString(s string) ObjectCategory {
 		return ObjectOpenDoor
 	case "brokendoor":
 		return ObjectBrokenDoor
+	case "readable":
+		return ObjectReadable
 	case "terminal":
 		return ObjectTerminal
 	case "elevator":
@@ -150,5 +155,47 @@ func (o ObjectCategory) ZapEffect() string {
 }
 
 func (o ObjectCategory) IsTrap() bool {
-	return true
+	return o >= ObjectExplodingTrap && o <= ObjectBearTrap
+}
+
+func (o ObjectCategory) LowerString() string {
+	// reversal of ObjectCategoryFromString
+	switch o {
+	case ObjectExplodingTrap:
+		return "explodingtrap"
+	case ObjectSlowTrap:
+		return "slowtrap"
+	case ObjectTeleportTrap:
+		return "teleporttrap"
+	case ObjectDartTrap:
+		return "darttrap"
+	case ObjectArrowTrap:
+		return "arrowtrap"
+	case ObjectDescendTrap:
+		return "descendtrap"
+	case ObjectBearTrap:
+		return "beartrap"
+	case ObjectKnownContainer:
+		return "knowncontainer"
+	case ObjectKnownEmptyContainer:
+		return "knownemptycontainer"
+	case ObjectUnknownContainer:
+		return "unknowncontainer"
+	case ObjectLockedDoor:
+		return "lockeddoor"
+	case ObjectClosedDoor:
+		return "closeddoor"
+	case ObjectOpenDoor:
+		return "opendoor"
+	case ObjectBrokenDoor:
+		return "brokendoor"
+	case ObjectReadable:
+		return "readable"
+	case ObjectTerminal:
+		return "terminal"
+	case ObjectElevator:
+		return "elevator"
+	default:
+		return ""
+	}
 }

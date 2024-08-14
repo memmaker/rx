@@ -139,7 +139,7 @@ func (u *UI) setupCommandTable() {
 	//u.commandTable["targeted_shot"] = u.game.TargetedShot
 
 	u.commandTable["pickup"] = u.game.PickupItem
-	u.commandTable["map_interaction"] = u.game.PlayerInteractWithMap
+	u.commandTable["map_interaction"] = u.GenericInteraction
 	u.commandTable["run_direction"] = u.ChooseDirectionForRun
 	u.commandTable["wait"] = u.game.Wait
 	u.commandTable["show_key_bindings"] = u.showKeyBindings

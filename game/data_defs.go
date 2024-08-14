@@ -7,8 +7,10 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
+	"image/color"
 	"math/rand"
 	"path"
+	"strings"
 )
 
 type DataDefinitions struct {
@@ -43,20 +45,20 @@ func GetDataDefinitions(rootDir string, palette textiles.ColorPalette) DataDefin
 	items := make(map[foundation.ItemCategory][]ItemDef)
 
 	if len(weaponRecords) > 0 {
-		items[foundation.ItemCategoryWeapons] = ItemDefsFromRecords(weaponRecords, palette)
+		items[foundation.ItemCategoryWeapons] = ItemDefsFromRecords(weaponRecords)
 	}
 	if len(armorRecords) > 0 {
-		items[foundation.ItemCategoryArmor] = ItemDefsFromRecords(armorRecords, palette)
+		items[foundation.ItemCategoryArmor] = ItemDefsFromRecords(armorRecords)
 	}
 	if len(miscRecords) > 0 {
-		miscItems := ItemDefsFromRecords(miscRecords, palette)
+		miscItems := ItemDefsFromRecords(miscRecords)
 		for _, i := range miscItems {
 			category := i.Category
 			items[category] = append(items[category], i)
 		}
 	}
 	if len(foodRecords) > 0 {
-		items[foundation.ItemCategoryFood] = ItemDefsFromRecords(foodRecords, palette)
+		items[foundation.ItemCategoryFood] = ItemDefsFromRecords(foodRecords)
 	}
 
 	readCloser = fxtools.MustOpen(path.Join(dataDir, "actors.rec"))
@@ -179,11 +181,11 @@ func (d DataDefinitions) AlwaysIDOnUseInternalNames() []string {
 	return names
 }
 
-func (d DataDefinitions) GetItemDefByName(name string, icons map[foundation.ItemCategory]textiles.TextIcon) ItemDef {
+func (d DataDefinitions) GetItemDefByName(name string) ItemDef {
 	for _, defs := range d.Items {
 		for _, def := range defs {
 			if def.Name == name {
-				return def.WithIcon(icons[def.Category])
+				return def
 			}
 		}
 	}
@@ -237,4 +239,48 @@ func getLevelForExperience(experience int) int {
 		i++
 	}
 	return i
+}
+
+func loadIconsForItems(dataDirectory string, colors textiles.ColorPalette) (map[foundation.ItemCategory]textiles.TextIcon, map[foundation.ItemCategory]color.RGBA) {
+	convertItemCategories := func(r map[string]textiles.IconRecord) map[foundation.ItemCategory]textiles.TextIcon {
+		convertMap := make(map[foundation.ItemCategory]textiles.TextIcon)
+		for name, rec := range r {
+			category := foundation.ItemCategoryFromString(name)
+			icon := textiles.NewTextIconFromNamedColorChar(rec.Icon, colors)
+			convertMap[category] = icon
+		}
+		return convertMap
+	}
+
+	itemCategoryFile := path.Join(dataDirectory, "iconsForItems.rec")
+	itemCatRecords := fxtools.MustOpen(itemCategoryFile)
+	iconsForItems := textiles.ReadIconRecordsIntoMap(itemCatRecords)
+
+	return convertItemCategories(iconsForItems), loadInventoryColors(iconsForItems, colors)
+}
+
+func loadIconsForObjects(dataDirectory string, colors textiles.ColorPalette) map[string]textiles.TextIcon {
+	convertObjectCategories := func(r map[string]textiles.IconRecord) map[string]textiles.TextIcon {
+		convertMap := make(map[string]textiles.TextIcon)
+		for name, rec := range r {
+			icon := textiles.NewTextIconFromNamedColorChar(rec.Icon, colors)
+			convertMap[strings.ToLower(name)] = icon
+		}
+		return convertMap
+	}
+
+	objectTypeFile := path.Join(dataDirectory, "iconsForObjects.rec")
+	iconsForObjects := textiles.ReadIconRecordsIntoMap(fxtools.MustOpen(objectTypeFile))
+
+	return convertObjectCategories(iconsForObjects)
+}
+
+func loadInventoryColors(records map[string]textiles.IconRecord, palette textiles.ColorPalette) map[foundation.ItemCategory]color.RGBA {
+	inventoryItemColors := make(map[foundation.ItemCategory]color.RGBA)
+	for name, rec := range records {
+		if field, exists := rec.Meta.FindFieldIgnoreCase("InventoryColor"); exists {
+			inventoryItemColors[foundation.ItemCategoryFromString(name)] = palette.Get(field.Value)
+		}
+	}
+	return inventoryItemColors
 }

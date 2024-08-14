@@ -7,12 +7,12 @@ Background: dark_gray_2
 
 Name: LockedDoor
 Icon: ∩
-Foreground: light_gray_1
+Foreground: red_5
 Background: dark_gray_2
 
 Name: ClosedDoor
 Icon: ∩
-Foreground: light_gray_1
+Foreground: green_1
 Background: dark_gray_2
 
 Name: BrokenDoor

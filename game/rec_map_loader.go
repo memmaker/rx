@@ -22,13 +22,15 @@ type RecMapLoader struct {
 func NewRecMapLoader(g *GameState, palette textiles.ColorPalette) *RecMapLoader {
 	return &RecMapLoader{gameState: g, random: rand.New(rand.NewSource(time.Now().UnixNano())), palette: palette}
 }
-
 func (t *RecMapLoader) LoadMap(levelName string) *gridmap.GridMap[*Actor, *Item, Object] {
 	g := t.gameState
 	mapDir := path.Join(g.config.DataRootDir, "maps", levelName)
 	if !fxtools.DirExists(mapDir) {
 		return nil
 	}
+
+	objTypes := loadIconsForObjects(mapDir, t.palette)
+	g.iconsForObjects = objTypes
 
 	tileSet := textiles.ReadTilesFile(fxtools.MustOpen(path.Join(mapDir, "tileSet.rec")), t.palette)
 	mapSize, tileMap := textiles.ReadTileMap16(path.Join(mapDir, "tiles.bin"))
@@ -72,8 +74,8 @@ func (t *RecMapLoader) LoadMap(levelName string) *gridmap.GridMap[*Actor, *Item,
 
 	// Set Items
 	for _, record := range itemRecords {
-		itemDef := NewItemDefFromRecord(record, t.palette)
-		newItem := NewItem(itemDef)
+		itemDef := NewItemDefFromRecord(record)
+		newItem := NewItem(itemDef, g.iconForItem(itemDef.Category))
 		if newItem != nil {
 			itemPos := newItem.Position()
 			newMap.AddItem(newItem, itemPos)
@@ -82,8 +84,8 @@ func (t *RecMapLoader) LoadMap(levelName string) *gridmap.GridMap[*Actor, *Item,
 
 	// Set Objects
 	for _, record := range objectRecords {
-		objName := record.FindValueForKeyIgnoreCase("name")
-		if tryHandleAsPseudoObject(objName, record, newMap) {
+		objCategory := record.FindValueForKeyIgnoreCase("category")
+		if tryHandleAsPseudoObject(objCategory, record, newMap) {
 			continue
 		}
 		object := g.NewObjectFromRecord(record, t.palette, newMap)

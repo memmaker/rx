@@ -1,0 +1,51 @@
+%rec: default
+
+Category: OpenDoor
+Description: a door
+
+Category: ClosedDoor
+Description: a closed door
+
+Category: LockedDoor
+Description: a locked door
+LockFlag: CHANGEME
+
+Category: BrokenDoor
+Description: a broken door
+
+Category: UnknownContainer
+Description: CHANGEME
+item: CHANGEME
+
+Category: Terminal
+Description: a terminal
+Dialogue: CHANGEME
+
+Category: Elevator
+Description: an elevator
+Identifier: CHANGEME
+FloorDescription: CHANGEME
+FloorTarget: CHANGEME
+FloorDescription: CHANGEME
+FloorTarget: CHANGEME
+
+Category: Transition
+Description: CHANGEME
+Location: CHANGEME
+TargetMap: CHANGEME
+TargetLocation: CHANGEME
+
+Category: NamedLocation
+Identifier: CHANGEME
+
+Name: MetalSign
+Category: Readable
+Description: a sign
+Text: CHANGEME
+TextFile: CHANGEME
+
+Name: WoodenSign
+Category: Readable
+Description: a sign
+Text: CHANGEME
+TextFile: CHANGEME

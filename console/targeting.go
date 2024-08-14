@@ -12,8 +12,7 @@ import (
 
 func (u *UI) SelectDirection(onSelected func(direction geometry.CompassDirection)) {
 	u.pages.SetCurrentPanel("main")
-	message := "Direction?"
-	u.Print(foundation.Msg(message))
+	u.Print(foundation.Msg("Direction?"))
 	u.mapWindow.SetInputCapture(u.handleDirectionalTargetingInput(onSelected))
 }
 
@@ -53,7 +52,7 @@ func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point, hitZone int)
 			if labelBelow {
 				yPos = 1
 			}
-			hitChance := u.game.GetRangedHitChance(actorAt)
+			hitChance := u.game.GetRangedChanceToHitForUI(actorAt)
 			labelPos := targetPos.Add(geometry.Point{X: -1, Y: yPos})
 			u.mapOverlay.Print(labelPos.X, labelPos.Y, fmt.Sprintf("%d%%", hitChance))
 		}
@@ -130,6 +129,7 @@ func (u *UI) handleDirectionalTargetingInput(onSelected func(targetDir geometry.
 
 		if handled {
 			u.mapWindow.SetInputCapture(u.handleMainInput)
+			u.UpdateLogWindow()
 		}
 		return nil
 	}
@@ -185,7 +185,7 @@ func (u *UI) handleAdvancedTargetingInput(listOfVisibleEnemies []foundation.Acto
 
 func (u *UI) cancelTargeting() {
 	u.mapWindow.SetInputCapture(u.handleMainInput)
-	u.application.SetMouseCapture(nil)
+	u.application.SetMouseCapture(u.handleMainMouse)
 	u.state = StateNormal
 	u.mapOverlay.ClearAll()
 	clear(u.targetingTiles)

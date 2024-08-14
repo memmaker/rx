@@ -1,0 +1,118 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: Yes, I am Dr. Winters. Also pretty busy. What do you want?
+#
+o_text: I have this referral from my doctor.
+o_goto: GiveReferral
+o_cond: HasItem('doctors_referral')
+#
+o_text: Nothing. I'm leaving.
+o_goto: End
+
+name: End
+npc: Goodbye.
+effect: EndConversation
+
+name: GiveReferral
+npc:
++ Let me see that. Hmm, another one of these?
++ I'll take it. Have you been told what to expect?
+effect: RemoveItem('doctors_referral')
+#
+o_text: No, not really.
+o_goto: NoExpectations
+#
+o_text: Yes, I have.
+o_goto: Expectations
+#
+o_text: I'd rather leave.
+o_goto: End
+
+name: NoExpectations
+npc:
++ Well, let me tell you. You're in for a lot of tests. And a lot of waiting.
++ But don't worry, we'll get to the bottom of it.
+#
+o_text: Hmm, I've read a few studies on the subject.
+o_cond: GetSkill('Doctor') > 50
+o_goto: PlayerIsExpert
+#
+o_text: I'm kind of an expert on the subject myself.
+o_cond: GetSkill('Doctor') <= 50
+o_test: RollSkill('Speech', 20)
+o_fail: PlayerIsAFraud
+o_succ: PlayerIsExpert
+#
+o_text: I have no idea what to expect. Please tell me.
+o_goto: Explanation
+#
+o_text: That's all I need to know.
+o_goto: End
+
+name: PlayerIsExpert
+npc:
++ Ah, a fellow practitioner. We can skip the basics then.
++ I'm sure you'll find our facilities up to your standards.
++ But the options are limited, as I'm sure you know.
+#
+o_text: Go on.
+o_goto: Explanation
+#
+o_text: Let's skip the pleasantries and get to the point.
+o_goto: Explanation
+
+name: PlayerIsAFraud
+npc:
++ You're a doctor, huh? Not likely.
++ Where did you get your degree?
+#
+o_text: Back in the day, I was a doctor.
+o_cond: GetSkill('Doctor') > 30
+o_test: RollSkill('Speech', 0)
+o_fail: UnfriendlyGoodbye
+o_succ: PlayerIsExpert
+#
+o_text: I'm not a doctor, but I know a lot about the subject.
+o_cond: GetSkill('Speech') > 25
+o_test: RollSkill('Speech', -20)
+o_fail: UnfriendlyGoodbye
+o_succ: PlayerIsExpert
+#
+o_text: You wouldn't know the place. It's in the city.
+o_cond: GetSkill('Speech') > 45
+o_test: RollSkill('Speech', -40)
+o_succ: PlayerIsExpert
+o_fail: UnfriendlyGoodbye
+#
+o_text: You're right. I'm not a doctor.
+o_goto: UnfriendlyGoodbye
+
+name: UnfriendlyGoodbye
+npc:
++ I thought so. Goodbye.
+effect: EndConversation
+
+name: Explanation
+npc:
++ The breakdown is simple. You are running out of blood.
++ You could undergo a series of transfusions, but that's just a temporary fix.
++ There is a permanent solution, but it's not for everyone, and it's not cheap.
++ Depending on your 'insurance', I might also be able to offer you some more experimental treatments.
+#
+o_text: What's the permanent solution?
+o_goto: PermanentSolution
+#
+o_text: What kind of experimental treatments?
+o_goto: ExperimentalTreatments
+#
+o_text: Tell me about the transfusions.
+o_goto: Transfusions
+#
+o_text: I'm not interested in any of that.
+o_goto: End

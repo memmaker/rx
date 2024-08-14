@@ -297,11 +297,36 @@ func (i *Inventory) RemoveLockpick() {
 
 func (i *Inventory) HasKey(identifier string) bool {
 	for _, invItem := range i.items {
-		if invItem.IsKey() && invItem.GetInternalName() == identifier {
+		if invItem.IsKey() && invItem.GetLockFlag() == identifier {
 			return true
 		}
 	}
 	return false
+}
+
+func (i *Inventory) RemoveItemByName(itemName string) *Item {
+	for _, invItem := range i.items {
+		if invItem.GetInternalName() == itemName {
+			i.Remove(invItem)
+			return invItem
+		}
+	}
+	return nil
+}
+
+func (i *Inventory) GetBestWeapon() *Item {
+	maxDamage := 0
+	var bestWeapon *Item
+	for _, invItem := range i.items {
+		if invItem.IsWeapon() {
+			damage := invItem.GetWeapon().GetDamage().ExpectedValue()
+			if damage > maxDamage {
+				maxDamage = damage
+				bestWeapon = invItem
+			}
+		}
+	}
+	return bestWeapon
 }
 
 func SortInventory(stacks []*InventoryStack) {

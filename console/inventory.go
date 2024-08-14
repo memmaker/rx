@@ -40,7 +40,7 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 	startY := y
 	fg, _, _ := i.style.Decompose()
 	//cview.Borders.Cross
-	runes := []rune{cview.Borders.Horizontal, cview.Borders.Vertical, cview.Borders.TopLeft, cview.Borders.TopRight, cview.Borders.BottomRight, cview.Borders.BottomLeft}
+	runes := []rune{cview.Borders.HorizontalFocus, cview.Borders.VerticalFocus, cview.Borders.TopLeftFocus, cview.Borders.TopRightFocus, cview.Borders.BottomRightFocus, cview.Borders.BottomLeftFocus}
 	drawBackgroundAndBorderWithTitleForInventory(screen, startX, startY, i.listWidth+2, i.listHeight+2, i.ourTitle, i.style, runes)
 
 	listOffset := geometry.Point{X: 2, Y: 1}

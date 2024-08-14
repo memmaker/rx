@@ -1,0 +1,27 @@
+Referral Note
+
+Patient Name: {{ .pcname }}
+Date: 01/01/20XX
+Referring Physician: Dr. Richard Adams, General Practitioner
+Referred to: Dr. Elizabeth Winters, Hematology Specialist
+
+Clinical Summary:
+
+The patient, {{ .pcname }}, presents with an unusual and persistent symptoms, unresponsive to conventional treatments.
+
+The patient reports an insatiable craving that extends beyond typical nutritional needs.
+
+Despite an adequate and varied diet, the patient continues to experience debilitating hunger pangs, accompanied by significant fatigue and pallor.
+
+Laboratory results indicate a profound hemoglobin deficiency (Hb: 2.3 gm/dL), with a marked reduction in red blood cell count and hematocrit.
+
+Additionally, there is evidence of aberrant cellular activity within the blood samples, including irregular erythrocyte morphology and a possible increase in reticulocyte production, suggesting an underlying hematologic anomaly.
+
+Given the severity and atypical nature of these symptoms, and the potential implications for the patient's overall health, I am referring {{ .pcname }} to your care for further evaluation and specialized management. I suspect a complex hematologic disorder that may require advanced diagnostic techniques and tailored therapeutic interventions.
+
+Please see {{ .pcname }} at your earliest convenience and provide a detailed assessment, including any additional investigations or consultations you deem necessary.
+
+Thank you for your attention to this matter.
+
+Sincerely,
+Dr. Richard Adams

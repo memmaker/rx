@@ -1,6 +1,7 @@
 package game
 
 import (
+	"RogueUI/special"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/recfile"
 	"os"
@@ -60,6 +61,9 @@ func (o *ConversationOption) CanDisplay() bool {
 		return true
 	}
 	evaluateResult, err := o.displayCondition.Evaluate(nil)
+	if err != nil {
+		panic(err)
+	}
 	asBool := evaluateResult.(bool)
 	return err == nil && asBool
 }
@@ -85,10 +89,26 @@ func (g *GameState) ParseConversation(filename string) (*Conversation, error) {
 
 	flags := g.gameFlags
 
+	// NO INTEGERS..ONLY FLOATS
 	conditionFuncs := map[string]govaluate.ExpressionFunction{
 		"HasFlag": func(args ...interface{}) (interface{}, error) {
 			flagName := args[0].(string)
 			return flags.HasFlag(flagName), nil
+		},
+		"HasItem": func(args ...interface{}) (interface{}, error) {
+			itemName := args[0].(string)
+			return g.Player.GetInventory().HasItemWithName(itemName), nil
+		},
+		"GetSkill": func(args ...interface{}) (interface{}, error) {
+			skillName := args[0].(string)
+			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromName(skillName))
+			return (float64)(skillValue), nil
+		},
+		"RollSkill": func(args ...interface{}) (interface{}, error) {
+			skillName := args[0].(string)
+			modifier := args[1].(float64)
+			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromName(skillName), int(modifier))
+			return (bool)(result.Success), nil
 		},
 	}
 
@@ -115,7 +135,7 @@ func (g *GameState) ParseConversation(filename string) (*Conversation, error) {
 			if field.Name == "name" {
 				conversationNode.Name = field.Value
 			} else if field.Name == "npc" {
-				conversationNode.NpcText = field.Value
+				conversationNode.NpcText = strings.TrimSpace(field.Value)
 			} else if field.Name == "effect" {
 				conversationNode.Effects = append(conversationNode.Effects, field.Value)
 			} else if strings.HasPrefix(field.Name, "o_") {
@@ -123,7 +143,7 @@ func (g *GameState) ParseConversation(filename string) (*Conversation, error) {
 					if currentOption.playerText != "" {
 						conversationNode.Options = append(conversationNode.Options, currentOption)
 					}
-					currentOption.playerText = field.Value
+					currentOption.playerText = strings.TrimSpace(field.Value)
 					currentOption.branchCondition = nil
 					currentOption.successBranch = ""
 					currentOption.failureBranch = ""

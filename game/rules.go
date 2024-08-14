@@ -1,10 +1,5 @@
 package game
 
-import (
-	"RogueUI/foundation"
-	"RogueUI/special"
-)
-
 func CanPerceive(observer *Actor, observed *Actor) bool {
 	return true
 	/*
@@ -17,16 +12,4 @@ func CanPerceive(observer *Actor, observed *Actor) bool {
 
 	*/
 
-}
-
-func CheckStrength(actor *Actor) foundation.CheckResult {
-	critChance := actor.GetCharSheet().GetStat(special.Luck)
-	strengthSkill := actor.GetCharSheet().GetStat(special.Strength)
-	return special.SuccessRoll(special.Percentage(strengthSkill*10), special.Percentage(critChance))
-}
-
-func CheckPerception(actor *Actor) foundation.CheckResult {
-	critChance := actor.GetCharSheet().GetStat(special.Luck)
-	perceptionSkill := actor.GetCharSheet().GetStat(special.Perception)
-	return special.SuccessRoll(special.Percentage(perceptionSkill*10), special.Percentage(critChance))
 }

@@ -208,7 +208,6 @@ func (cs *CharSheet) LevelUp() {
 func (cs *CharSheet) getHitPointIncrease() int {
 	return int(math.Floor(float64(cs.getStatBaseValue(Endurance))/2.0)) + 2
 }
-
 func (cs *CharSheet) GetStat(stat Stat) int {
 	baseValue := cs.getStatBaseValue(stat)
 	statValue := cs.onRetrieveStatHook(stat, baseValue)
@@ -243,7 +242,7 @@ func (cs *CharSheet) getDerivedStatAdjustment(ds DerivedStat) int {
 	return 0
 }
 
-func (cs *CharSheet) SetSkill(skill Skill, value int) {
+func (cs *CharSheet) SetSkillAdjustment(skill Skill, value int) {
 	cs.skillAdjustments[skill] = value
 }
 
@@ -481,4 +480,21 @@ func (cs *CharSheet) SetSkillAbsoluteValue(skill Skill, value int) {
 func (cs *CharSheet) Kill() {
 	cs.hitPointsCurrent = 0
 	cs.onDerivedStatChanged(HitPoints)
+}
+
+func (cs *CharSheet) IsSkillHigherOrEqual(skill Skill, difficulty int) bool {
+	return cs.GetSkill(skill) >= difficulty
+}
+func (cs *CharSheet) SkillRoll(skill Skill, modifiers int) foundation.CheckResult {
+	critChance := cs.GetStat(Luck)
+	return SuccessRoll(Percentage(cs.GetSkill(skill)+modifiers), Percentage(critChance))
+}
+
+func (cs *CharSheet) StatRoll(stat Stat, modifiers int) foundation.CheckResult {
+	critChance := cs.GetStat(Luck)
+	statSkill := (cs.GetStat(stat) * 10) + modifiers
+	return SuccessRoll(Percentage(statSkill), Percentage(critChance))
+}
+func (cs *CharSheet) IsStatHigherOrEqual(stat Stat, difficulty int) bool {
+	return cs.GetStat(stat) >= difficulty
 }

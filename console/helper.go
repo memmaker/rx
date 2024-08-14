@@ -39,19 +39,6 @@ func wrapPrimitivesTopToBottom(p, q cview.Primitive) cview.Primitive {
 
 	return container
 }
-func wrapPrimitiveForModalCentered(p cview.Primitive, width, height int) cview.Primitive {
-	container := cview.NewFlex()
-	container.SetDirection(cview.FlexRow)
-	container.AddItem(nil, 0, 1, false)
-	container.AddItem(p, height, 1, true)
-	container.AddItem(nil, 0, 1, false)
-
-	flex := cview.NewFlex()
-	flex.AddItem(nil, 0, 1, false)
-	flex.AddItem(container, width, 1, true)
-	flex.AddItem(nil, 0, 1, false)
-	return flex
-}
 
 func longestLineWithoutColorCodes(description []string) int {
 	longest := 0

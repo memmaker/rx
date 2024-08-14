@@ -7,24 +7,22 @@ import (
 )
 
 func (g *GameState) GotoNamedLevel(levelName string, location string) {
-	newMap := g.mapLoader.LoadMap(levelName)
+	loadedMap := g.mapLoader.LoadMap(levelName)
 
-	if newMap == nil {
+	if loadedMap == nil {
 		g.msg(foundation.Msg("It's impossible to move there.."))
 		return
 	}
 
-	if g.gridMap != nil {
+	if g.gridMap != nil && g.Player != nil { // Remove Player from Old Map
 		g.gridMap.RemoveActor(g.Player)
 		g.Player.RemoveLevelStatusEffects()
 	}
 
-	g.dungeonLayout = nil
+	namedLocation := loadedMap.GetNamedLocation(location)
+	loadedMap.AddActor(g.Player, namedLocation)
 
-	namedLocation := newMap.GetNamedLocation(location)
-	newMap.AddActor(g.Player, namedLocation)
-
-	g.gridMap = newMap
+	g.gridMap = loadedMap
 
 	g.afterPlayerMoved()
 

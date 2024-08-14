@@ -1,0 +1,170 @@
+%rec: default
+
+Char: ·
+Fg: dark_gray_3
+Bg: dark_gray_5
+
+Char: █
+Fg: light_gray_5
+Bg: dark_gray_5
+
+Char: ∩
+Fg: light_gray_1
+Bg: dark_gray_2
+
+Char: ∩
+Fg: green_1
+Bg: dark_gray_2
+
+Char: ∩
+Fg: red_5
+Bg: dark_gray_2
+
+Char: ■
+Fg: green_1
+Bg: light_gray_5
+
+Char: ■
+Fg: green_2
+Bg: light_gray_5
+
+Char: ■
+Fg: red_3
+Bg: light_gray_5
+
+Char: ■
+Fg: blue_1
+Bg: light_gray_5
+
+Char: ─
+Fg: light_gray_1
+Bg: dark_gray_2
+
+Char: *
+Fg: light_gray_1
+Bg: dark_gray_2
+
+Char: ?
+Fg: orange_red_1
+Bg: 
+
+Char: !
+Fg: yellow_5
+Bg: 
+
+Char: !
+Fg: light_blue
+Bg: 
+
+Char: ≡
+Fg: gray_3
+Bg: light_blue_2
+
+Char: ¿
+Fg: yellow_3
+Bg: 
+
+Char: ◙
+Fg: tan_5
+Bg: dark_gray_4
+
+Char: ◙
+Fg: tan_5
+Bg: green_1
+
+Char: ⌂
+Fg: yellow_2
+Bg: 
+
+Char: ▲
+Fg: tan_12
+Bg: tan_10
+
+Char: ^
+Fg: tan_12
+Bg: tan_10
+
+Char: Θ
+Fg: steel_blue_3
+Bg: light_gray_6
+
+Char: Θ
+Fg: light_blue
+Bg: light_gray_6
+
+Char: ≈
+Fg: green_2
+Bg: green_5
+
+Char: Θ
+Fg: red_8
+Bg: magenta_5
+
+Char: #
+Fg: brown_1
+Bg: orange_6
+
+Char: ⌐
+Fg: light_gray_6
+Bg: tan_7
+
+Char: ▒
+Fg: white
+Bg: light_blue_3
+
+Char: ·
+Fg: tan_12
+Bg: tan_10
+
+Char: !
+Fg: magenta_5
+Bg: light_blue
+
+Char: ¥
+Fg: dark_gray_4
+Bg: light_gray_7
+
+Char: ¥
+Fg: tan_12
+Bg: tan_7
+
+Char: ■
+Fg: light_gray_3
+Bg: tan_10
+
+Char: ∙
+Fg: light_gray_3
+Bg: tan_10
+
+Char: ≡
+Fg: orange_5
+Bg: 
+
+Char: ⌐
+Fg: red_6
+Bg: tan_7
+
+Char: ⌐
+Fg: neon_green_3
+Bg: tan_7
+
+Char: &
+Fg: light_gray_3
+Bg: dark_gray_1
+
+Char: ≡
+Fg: dark_gray_6
+Bg: 
+
+Char:  
+Fg: dark_gray_7
+Bg: yellow_3
+
+Char: ⌂
+Fg: dark_gray_7
+Bg: yellow_3
+
+Char: •
+Fg: green_2
+Bg: tan_10
+

@@ -600,3 +600,17 @@ func (a *Actor) SetDisplayName(name string) {
 func (a *Actor) GetDialogueFile() string {
 	return a.dialogueFile
 }
+
+func (a *Actor) SetHostile() {
+	a.relation = Hostile
+	a.tryEquipWeapon()
+}
+
+func (a *Actor) tryEquipWeapon() {
+	if !a.GetEquipment().HasWeaponEquipped() {
+		weapon := a.GetInventory().GetBestWeapon()
+		if weapon != nil {
+			a.GetEquipment().Equip(weapon)
+		}
+	}
+}

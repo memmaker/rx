@@ -38,6 +38,7 @@ type GameForUI interface {
 	PlayerApplySkill()
 
 	PlayerInteractWithMap() // up/down stairs..
+	PlayerInteractInDirection(direction geometry.CompassDirection)
 
 	OpenTacticsMenu()
 
@@ -46,7 +47,7 @@ type GameForUI interface {
 	GetCharacterSheet() []string
 
 	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple[string, int]
-	GetRangedHitChance(target ActorForUI) int
+	GetRangedChanceToHitForUI(target ActorForUI) int
 
 	GetHudStats() map[HudValue]int
 	GetHudFlags() map[ActorFlag]int
@@ -82,6 +83,7 @@ type GameForUI interface {
 	IsExplored(loc geometry.Point) bool
 	IsLit(pos geometry.Point) bool
 	IsVisibleToPlayer(loc geometry.Point) bool
+	IsInteractionAt(position geometry.Point) bool
 
 	TopEntityAt(loc geometry.Point) EntityType
 
@@ -97,6 +99,7 @@ type GameForUI interface {
 	OpenWizardMenu()
 	GetRandomEnemyName() string
 	GetItemInMainHand() (ItemForUI, bool)
+	OpenContextMenuFor(pos geometry.Point)
 }
 
 type PlayerMoveMode int
@@ -118,7 +121,7 @@ type GameUI interface {
 	// init
 	SetGame(game GameForUI)
 	StartGameLoop()
-	InitDungeonUI()
+	InitDungeonUI(palette textiles.ColorPalette, inventoryColors map[ItemCategory]color.RGBA)
 
 	// Notification of state changes
 	UpdateStats()
@@ -137,6 +140,7 @@ type GameUI interface {
 	OpenTextWindow(description []string)
 	ShowTextFileFullscreen(filename string, onClose func())
 	OpenMenu(actions []MenuItem)
+	OpenKeypad(correctSequence []rune, onCompletion func(success bool))
 	OpenVendorMenu(itemsForSale []fxtools.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
 	ShowContainer(name string, containedItems []ItemForUI, transfer func(ui ItemForUI))
@@ -177,7 +181,7 @@ type GameUI interface {
 	GetAnimEvade(defender ActorForUI, done func()) Animation
 
 	PlayMusic(fileName string)
-	SetConversationState(text string, options []MenuItem, isTerminal bool)
+	SetConversationState(text string, options []MenuItem, conversationPartnerName string, isTerminal bool)
 	CloseConversation()
 	StartHackingGame(identifier uint64, difficulty Difficulty, previousGuesses []string, onCompletion func(previousGuesses []string, success InteractionResult))
 	StartLockpickGame(difficulty Difficulty, getLockpickCount func() int, removeLockpick func(), onCompletion func(result InteractionResult))

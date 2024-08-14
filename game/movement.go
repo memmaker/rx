@@ -21,9 +21,20 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 
 	newPos := oldPos.Add(direction.ToPoint())
 
-	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists && !objectAt.IsWalkable(g.Player) {
-		objectAt.OnBump(g.Player)
-		return
+	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists {
+
+		if door, isDoor := objectAt.(*Door); isDoor { // THIS IS STILL HACKY; DOOR OBJECT ALSO IMPLEMENTS THIS
+			if door.IsLocked() && player.HasKey(door.GetLockFlag()) {
+				door.Unlock()
+				g.msg(foundation.Msg("You unlocked the door"))
+				return
+			}
+		}
+
+		if !objectAt.IsWalkable(g.Player) {
+			objectAt.OnBump(g.Player)
+			return
+		}
 	}
 
 	if !g.gridMap.Contains(newPos) || !g.gridMap.IsTileWalkable(newPos) {
@@ -68,7 +79,7 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 		if actorAt.IsHostile() {
 			g.playerMeleeAttack(actorAt)
 		} else {
-			g.StartDialogue(actorAt.GetDialogueFile(), false)
+			g.StartDialogue(actorAt.GetDialogueFile(), actorAt.Name(), false)
 		}
 		return
 	}

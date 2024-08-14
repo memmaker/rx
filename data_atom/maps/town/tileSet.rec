@@ -1,0 +1,90 @@
+%rec: default
+
+Name: Low Hills
+Char: ^
+Foreground: tan_12
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: High Hills
+Char: ▲
+Foreground: tan_12
+Background: tan_10
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: Wasteland
+Char: ·
+Foreground: tan_12
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: Wooden Wall
+Char: #
+Foreground: brown_1
+Background: orange_6
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: Table
+Char: ■
+Foreground: light_gray_3
+Background: tan_10
+IsWalkable: false
+IsTransparent: true
+IsDamaging: false
+
+Name: Chair
+Char: ∙
+Foreground: light_gray_3
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: Stairs
+Char: ≡
+Foreground: orange_5
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: a puddle of water
+Char: •
+Foreground: green_2
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: Radiated Water
+Char: ≈
+Foreground: green_2
+Background: green_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+

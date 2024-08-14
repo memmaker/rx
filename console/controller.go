@@ -1,13 +1,13 @@
 package console
 
 import (
-	"RogueUI/audio"
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"cmp"
 	"fmt"
 	"github.com/0xcafed00d/joystick"
 	"github.com/gdamore/tcell/v2"
+	"github.com/memmaker/go/audio"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 type UIState int
@@ -83,25 +84,42 @@ type UI struct {
 	dialogueIsTerminal bool
 }
 
+func (u *UI) OpenKeypad(correctSequence []rune, onCompletion func(success bool)) {
+	width, height := u.application.GetScreen().Size()
+	keyPad := NewKeyPad(geometry.Point{X: width, Y: height})
+	keyPad.SetCorrectSequence(correctSequence)
+	keyPad.SetOnCompletion(func(success bool) {
+		u.closeModal()
+		onCompletion(success)
+	})
+	keyPad.SetVisible(true)
+	origCapt := keyPad.GetInputCapture()
+	keyPad.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		command := u.getAdvancedTargetingCommandForKey(toUIKey(event))
+		if command == "target_cancel" {
+			u.closeModal()
+		}
+		return origCapt(event)
+	})
+	u.pages.AddPanel("modal", keyPad, false, true)
+	u.lockFocusToPrimitive(keyPad)
+}
+
 func (u *UI) SetColors(palette textiles.ColorPalette, colors map[foundation.ItemCategory]color.RGBA) {
 	u.uiTheme = NewUIThemeFromDataDir(u.settings.DataRootDir, palette, colors)
+	u.setTheme()
 }
 
 func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
 	var menuItems []foundation.MenuItem
-	closeContainer := func() {
-		u.pages.HidePanel("contextMenu")
-		u.UpdateLogWindow()
-	}
 	for _, i := range containedItems {
 		item := i
 		menuItems = append(menuItems, foundation.MenuItem{
 			Name: item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory())),
 			Action: func() {
-				closeContainer()
 				transfer(item)
 			},
-			CloseMenus: false,
+			CloseMenus: true,
 		})
 	}
 
@@ -109,23 +127,23 @@ func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, t
 	menu.SetTitle(name)
 	keyForTakeAll := u.GetKeysForCommandAsString(KeyLayerMain, "use")
 	u.Print(foundation.HiLite("Press %s to take all items", keyForTakeAll))
+	originalCapture := menu.GetInputCapture() // will manage pressing escape
 	menu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEscape {
-			closeContainer()
-			return nil
-		}
 		uiKey := toUIKey(event)
 		command := u.getCommandForKey(uiKey)
-
 		if command == "use" {
 			for _, item := range containedItems {
 				transfer(item)
 			}
-			closeContainer()
+			originalCapture(EscapeKeyEvent())
 			return nil
 		}
-		return event
+		return originalCapture(event)
 	})
+}
+
+func EscapeKeyEvent() *tcell.EventKey {
+	return tcell.NewEventKey(tcell.KeyEscape, 0, tcell.ModNone)
 }
 
 func (u *UI) PlayMusic(fileName string) {
@@ -164,7 +182,7 @@ func (u *UI) HighlightStatChange(stat dice_curve.Stat) {
 func (u *UI) ShowGameOver(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
 	u.animator.CancelAll()
 	u.gameIsOver = true
-	u.FadeToBlack()
+	cview.FadeToBlack(u.application, u.settings.AnimationDelay)
 
 	if scoreInfo.Escaped {
 		u.showWinScreen(scoreInfo, highScores)
@@ -205,14 +223,15 @@ func (u *UI) showWinScreen(scoreInfo foundation.ScoreInfo, highScores []foundati
 	gameOverMessage = append(gameOverMessage, pressSpace...)
 	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
 
-	panelName := "blocker"
+	panelName := "modal"
 
 	textView.SetInputCapture(u.popOnSpaceWithNotification(panelName, func() {
+		u.resetFocusToMain()
 		u.showHighscoresAndRestart(highScores)
 	}))
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(textView)
+	u.lockFocusToPrimitive(textView)
 }
 func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
 	textView := cview.NewTextView()
@@ -244,17 +263,18 @@ func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []founda
 
 	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
 
-	panelName := "blocker"
+	panelName := "modal"
 
 	reset := func() {
-		u.pages.HidePanel(panelName)
+		u.pages.RemovePanel(panelName)
+		u.resetFocusToMain()
 		u.gameIsOver = false
 		u.game.Reset()
 	}
-	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(textView)
+	u.lockFocusToPrimitive(textView)
+	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
 }
 
 func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
@@ -277,14 +297,15 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 	panelName := "blocker"
 
 	reset := func() {
-		u.pages.HidePanel(panelName)
+		u.pages.RemovePanel(panelName)
+		u.resetFocusToMain()
 		u.gameIsOver = false
 		u.game.Reset()
 	}
-	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
 	u.application.SetFocus(textView)
+	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
 }
 
 func toLinesOfText(highScores []foundation.ScoreInfo) []string {
@@ -817,6 +838,10 @@ func (u *UI) GetAnimProjectileWithTrail(leadIcon rune, colorNames []string, path
 
 func (u *UI) updateUntilDone() bool {
 	screen := u.application.GetScreen()
+
+	u.application.Lock()
+	defer u.application.Unlock()
+
 	u.isAnimationFrame = true
 	var breakingKey *tcell.EventKey
 outerLoop:
@@ -852,67 +877,12 @@ outerLoop:
 
 	u.mapWindow.Draw(screen)
 	screen.Show()
+	/*
+		u.mapWindow.Draw(screen)
+		screen.Show()
+	*/
 
 	return false
-}
-
-func (u *UI) FadeToBlack() {
-	screen := u.application.GetScreen()
-	var breakingKey *tcell.EventKey
-outerLoop:
-	for i := 0; i < 100; i++ {
-		if !darkenScreen(screen) {
-			break outerLoop
-		}
-		screen.Show()
-		var waited time.Duration
-		for waited < u.settings.AnimationDelay {
-			if screen.HasPendingEvent() {
-				ev := screen.PollEvent()
-				if keyEvent, ok := ev.(*tcell.EventKey); ok {
-					breakingKey = keyEvent
-					u.animator.CancelAll()
-					break outerLoop
-				}
-			}
-			time.Sleep(10 * time.Millisecond)
-			waited += 10 * time.Millisecond
-		}
-	}
-	if breakingKey != nil {
-		u.application.QueueEvent(breakingKey)
-	}
-}
-
-func darkenScreen(screen tcell.Screen) bool {
-	darkenAmount := int32(10)
-	w, h := screen.Size()
-	centerPos := geometry.Point{X: w / 2, Y: h / 2}
-	maxDist := geometry.Distance(centerPos, geometry.Point{X: 0, Y: 0})
-	workLeft := false
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			dist := geometry.Distance(centerPos, geometry.Point{X: x, Y: y})
-			percent := fxtools.Clamp(0.2, 1.0, (float64(dist)/float64(maxDist))+0.5)
-			workDone := darkenScreenLocation(screen, x, y, int32(float64(darkenAmount)*percent))
-			if workDone {
-				workLeft = true
-			}
-		}
-	}
-	return workLeft
-}
-
-func darkenScreenLocation(screen tcell.Screen, x int, y int, darkenAmount int32) bool {
-	icon, _, style, _ := screen.GetContent(x, y)
-	fg, bg, _ := style.Decompose()
-	fR, fG, fB := fg.RGB()
-	bR, bG, bB := bg.RGB()
-	hadWorkLeft := fR > 0 || fG > 0 || fB > 0 || bR > 0 || bG > 0 || bB > 0
-	newFG := tcell.NewRGBColor(max(0, fR-darkenAmount), max(0, fG-darkenAmount), max(0, fB-darkenAmount))
-	newBG := tcell.NewRGBColor(max(0, bR-darkenAmount), max(0, bG-darkenAmount), max(0, bB-darkenAmount))
-	screen.SetContent(x, y, icon, nil, style.Background(newBG).Foreground(newFG))
-	return hadWorkLeft
 }
 
 func (u *UI) ShowTextFile(fileName string) {
@@ -942,21 +912,24 @@ func (u *UI) ShowTextFileFullscreen(filename string, onClose func()) {
 
 func (u *UI) openTextModal(description []string) *cview.TextView {
 	textView := u.newTextModal(description)
-	textView.SetMouseCapture(u.closeOnAnyClickInside)
-	u.makeCenteredModal("textModal", textView, len(description), longestLineWithoutColorCodes(description))
+	u.makeCenteredModal(textView, longestLineWithoutColorCodes(description), len(description))
+	originalInputCapture := textView.GetInputCapture()
+	textView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		command := u.getCommandForKey(toUIKey(event))
+		if command == "map_interaction" {
+			u.closeModal()
+			return nil
+		}
+		return originalInputCapture(event)
+	})
 	return textView
-}
-
-func (u *UI) closeOnAnyClickInside(action cview.MouseAction, event *tcell.EventMouse) (outAction cview.MouseAction, outEvent *tcell.EventMouse) {
-	if action == cview.MouseLeftClick || action == cview.MouseRightClick {
-		u.pages.SetCurrentPanel("main")
-		return action, nil
-	}
-	return action, event
 }
 
 func (u *UI) newTextModal(description []string) *cview.TextView {
 	textView := cview.NewTextView()
+	textView.SetWrap(true)
+	textView.SetWrapWidth(60)
+	textView.SetWordWrap(true)
 	textView.SetBorder(true)
 
 	textView.SetTextColor(u.uiTheme.GetUIColorForTcell(UIColorUIForeground))
@@ -1017,7 +990,6 @@ func (u *UI) ToColoredText(h foundation.HiLiteString, intensity float64) string 
 
 func (u *UI) SetGame(game foundation.GameForUI) {
 	u.game = game
-
 }
 
 // Print prints a message to the screen.
@@ -1058,13 +1030,9 @@ func (u *UI) initCoreUI() {
 
 	u.application.SetRoot(u.pages, true)
 }
-func (u *UI) InitDungeonUI() {
+func (u *UI) InitDungeonUI(palette textiles.ColorPalette, invColors map[foundation.ItemCategory]color.RGBA) {
 	if u.mainGrid != nil {
 		return
-	}
-	disableMouseFocus := func(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
-		u.application.SetFocus(u.mapWindow) // Don't switch input focus here by clicking
-		return action, nil
 	}
 
 	u.setupCommandTable()
@@ -1075,30 +1043,26 @@ func (u *UI) InitDungeonUI() {
 	u.application.EnableMouse(true)
 
 	u.application.SetMouseCapture(u.handleMainMouse)
+	u.application.SetBeforeFocusFunc(u.defaultFocusHandler)
 
 	u.mapWindow = cview.NewBox()
 	u.mapWindow.SetDrawFunc(u.drawMap)
 	u.mapWindow.SetInputCapture(u.handleMainInput)
 
 	u.messageLabel = cview.NewTextView()
-	u.messageLabel.SetMouseCapture(disableMouseFocus)
 
 	u.statusBar = cview.NewTextView()
 	u.statusBar.SetDynamicColors(true)
 	u.statusBar.SetScrollable(false)
-	u.statusBar.SetMouseCapture(disableMouseFocus)
 	u.statusBar.SetScrollBarVisibility(cview.ScrollBarNever)
 
 	u.rightPanel = cview.NewTextView()
 	u.rightPanel.SetScrollable(false)
 	u.rightPanel.SetDynamicColors(true)
 	u.rightPanel.SetWrap(false)
-	u.rightPanel.SetMouseCapture(disableMouseFocus)
-
 	u.lowerRightPanel = cview.NewTextView()
 	u.lowerRightPanel.SetScrollable(false)
 	u.lowerRightPanel.SetDynamicColors(true)
-	u.lowerRightPanel.SetMouseCapture(disableMouseFocus)
 	u.lowerRightPanel.SetWordWrap(true)
 
 	grid := cview.NewGrid()
@@ -1128,7 +1092,7 @@ func (u *UI) InitDungeonUI() {
 
 	u.mapOverlay = NewOverlay(u.settings.MapWidth, u.settings.MapHeight)
 
-	u.setTheme()
+	u.SetColors(palette, invColors)
 }
 func (u *UI) handleMainInput(ev *tcell.EventKey) *tcell.EventKey {
 	mod, _, ch := ev.Modifiers(), ev.Key(), ev.Rune()
@@ -1159,6 +1123,16 @@ func (u *UI) ChooseDirectionForRun() {
 	u.SelectDirection(func(direction geometry.CompassDirection) {
 		u.startAutoRun(direction)
 	})
+}
+
+func (u *UI) GenericInteraction() {
+	if u.game.IsInteractionAt(u.game.GetPlayerPosition()) {
+		u.game.PlayerInteractWithMap()
+	} else {
+		u.SelectDirection(func(direction geometry.CompassDirection) {
+			u.game.PlayerInteractInDirection(direction)
+		})
+	}
 }
 
 func (u *UI) startAutoRun(direction geometry.CompassDirection) {
@@ -1409,6 +1383,11 @@ func (u *UI) FullColorBarFromPercent(currentVal, maxVal, width int) string {
 	suffix := strings.Repeat(" ", width-len(valString)-xForCenter)
 	barString := fmt.Sprintf("%s%s%s", prefix, valString, suffix)
 
+	if colorChangeIndex > len(barString) {
+		colorChangeIndex = len(barString) - 1
+	} else if colorChangeIndex < 0 {
+		colorChangeIndex = 0
+	}
 	barString = colorCode + barString[:colorChangeIndex] + darkGrayCode + barString[colorChangeIndex:] + "[-:-]"
 	return barString
 }
@@ -1591,15 +1570,10 @@ func (u *UI) openInventory(items []foundation.ItemForUI) *TextInventory {
 
 	list.SetItems(items)
 
-	//u.setupListForUI("inventory", list)
-	panelName := "inventory"
-
-	list.SetCloseHandler(func() {
-		u.pages.HidePanel(panelName)
-	})
-	u.pages.AddPanel(panelName, list, true, true)
-	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(list)
+	list.SetCloseHandler(u.closeModal)
+	u.pages.AddPanel("modal", list, true, true)
+	u.pages.ShowPanel("modal")
+	u.lockFocusToPrimitive(list)
 
 	//u.makeTopRightModal(panelName, list, len(inventoryItems), longestItem)
 	return list
@@ -1622,28 +1596,50 @@ func (u *UI) OpenInventoryForSelection(itemStacks []foundation.ItemForUI, prompt
 	inv.SetDefaultSelection(onSelected)
 	inv.SetCloseOnSelection(true)
 }
-func (u *UI) makeCenteredModal(panelName string, primitive cview.Primitive, contentHeight, contentWidth int) {
-	u.makeModal(wrapPrimitiveForModalCentered, panelName, primitive, contentHeight, contentWidth)
-}
-func (u *UI) makeModal(wrapperFunc func(p cview.Primitive, contentHeight int, contentWidth int) cview.Primitive, panelName string, primitive cview.Primitive, contentHeight int, contentWidth int) {
-	w, h := u.application.GetScreenSize()
-	height := contentHeight + 2
-	horizontalSpaceForBorder := 2
-	if height > h-4 { // needs scrolling
-		height = h - 4
-		horizontalSpaceForBorder += 1
-	}
-	width := min(contentWidth+horizontalSpaceForBorder, w-4)
-	modalContainer := wrapperFunc(primitive, width, height)
 
-	if inputCapturer, ok := primitive.(InputCapturer); ok {
-		inputCapturer.SetInputCapture(u.popOnEscape)
-	}
-	u.pages.AddPanel(panelName, modalContainer, true, true)
-	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(primitive)
+type InputPrimitive interface {
+	cview.Primitive
+	SetInputCapture(f func(event *tcell.EventKey) *tcell.EventKey)
 }
-func (u *UI) makeSideBySideModal(panelName string, primitive, qPrimitive cview.Primitive, contentHeight int, contentWidth int) {
+
+func (u *UI) closeModal() {
+	u.pages.RemovePanel("modal")
+	u.pages.SetCurrentPanel("main")
+	u.resetFocusToMain()
+}
+
+func (u *UI) defaultFocusHandler(p cview.Primitive) bool {
+	if p == u.mainGrid || p == u.mapWindow {
+		return true
+	}
+	return false
+}
+
+func (u *UI) makeCenteredModal(modal InputPrimitive, w, h int) {
+	w = w + 2
+	h = h + 2
+	screenW, screenH := u.application.GetScreen().Size()
+	if h > screenH-3 {
+		h = screenH - 3
+		w = w + 1 // scrollbar
+	}
+	if w > 60 {
+		w = 60
+	}
+	x, y := (screenW-w)/2, (screenH-h)/2
+	modal.SetRect(x, y, w, h)
+
+	modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		command := u.getAdvancedTargetingCommandForKey(toUIKey(event))
+		if command == "target_cancel" {
+			u.closeModal()
+		}
+		return event
+	})
+	u.pages.AddPanel("modal", modal, false, true)
+	u.lockFocusToPrimitive(modal)
+}
+func (u *UI) makeSideBySideModal(primitive, qPrimitive cview.Primitive, contentHeight int, contentWidth int) {
 	w, h := u.application.GetScreenSize()
 	height := contentHeight + 2
 	horizontalSpaceForBorder := 2
@@ -1661,12 +1657,12 @@ func (u *UI) makeSideBySideModal(panelName string, primitive, qPrimitive cview.P
 	if inputCapturer, ok := qPrimitive.(InputCapturer); ok {
 		inputCapturer.SetInputCapture(u.popOnEscape)
 	}
-	u.pages.AddPanel(panelName, modalContainer, true, true)
-	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(qPrimitive)
+	u.pages.AddPanel("modal", modalContainer, true, true)
+	u.pages.ShowPanel("modal")
+	u.lockFocusToPrimitive(qPrimitive)
 }
 
-func (u *UI) makeTopAndBottomModal(panelName string, primitive, qPrimitive cview.Primitive) {
+func (u *UI) makeTopAndBottomModal(primitive, qPrimitive cview.Primitive) {
 	modalContainer := wrapPrimitivesTopToBottom(primitive, qPrimitive)
 
 	if inputCapturer, ok := primitive.(InputCapturer); ok {
@@ -1676,43 +1672,67 @@ func (u *UI) makeTopAndBottomModal(panelName string, primitive, qPrimitive cview
 	if inputCapturer, ok := qPrimitive.(InputCapturer); ok {
 		inputCapturer.SetInputCapture(u.popOnEscape)
 	}
-	u.pages.AddPanel(panelName, modalContainer, true, true)
-	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(qPrimitive)
+	u.pages.AddPanel("modal", modalContainer, true, true)
+	u.pages.ShowPanel("modal")
+	u.lockFocusToPrimitive(qPrimitive)
 }
 func (u *UI) StartLockpickGame(difficulty foundation.Difficulty, getLockpickCount func() int, removeLockpick func(), onCompletion func(result foundation.InteractionResult)) {
-
-	panelName := "lockpickGame"
 	lockpickGame := NewLockpickGame(rand.Int63(), difficulty, getLockpickCount, removeLockpick, func(result foundation.InteractionResult) {
-		u.pages.RemovePanel(panelName)
-		u.pages.SetCurrentPanel("main")
+		u.closeModal()
 		onCompletion(result)
 	})
+	origCapt := lockpickGame.GetInputCapture()
+	lockpickGame.SetInputCapture(u.directionalWrapper(origCapt))
 	lockpickGame.SetAudioPlayer(u.audioPlayer)
-	u.pages.AddPanel(panelName, lockpickGame, true, true)
-	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(lockpickGame)
+	u.pages.AddPanel("modal", lockpickGame, true, true)
+	u.pages.ShowPanel("modal")
+	u.lockFocusToPrimitive(lockpickGame)
+}
+func (u *UI) resetFocusToMain() {
+	u.application.SetBeforeFocusFunc(nil)
+	u.application.SetFocus(u.mainGrid)
+	u.application.SetBeforeFocusFunc(u.defaultFocusHandler)
+}
+func (u *UI) lockFocusToPrimitive(p cview.Primitive) {
+	u.application.SetBeforeFocusFunc(nil)
+	u.application.SetFocus(p)
+	u.application.SetBeforeFocusFunc(func(p cview.Primitive) bool { return false })
+}
+func hammingDistance(a, b string) int {
+	if utf8.RuneCountInString(a) != utf8.RuneCountInString(b) {
+		panic("strings must be same length")
+	}
+	aRunes := []rune(a)
+	bRunes := []rune(b)
+	distance := 0
+	for i := 0; i < len(aRunes); i++ {
+		if aRunes[i] != bRunes[i] {
+			distance++
+		}
+	}
+	return distance
 }
 func (u *UI) StartHackingGame(identifier uint64, difficulty foundation.Difficulty, previousGuesses []string, onCompletion func(previousGuesses []string, success foundation.InteractionResult)) {
-	passwordFile := "4-letter-words.txt"
+	letterCount := 4
 	fakeCount := 4
 	switch difficulty {
 	case foundation.VeryEasy:
-		passwordFile = "4-letter-words.txt"
+		letterCount = 4
 		fakeCount = 4
 	case foundation.Easy:
-		passwordFile = "5-letter-words.txt"
+		letterCount = 5
 		fakeCount = 4
 	case foundation.Medium:
-		passwordFile = "6-letter-words.txt"
+		letterCount = 6
 		fakeCount = 5
 	case foundation.Hard:
-		passwordFile = "7-letter-words.txt"
+		letterCount = 7
 		fakeCount = 5
 	case foundation.VeryHard:
-		passwordFile = "8-letter-words.txt"
+		letterCount = 8
 		fakeCount = 6
 	}
+	passwordFile := fmt.Sprintf("%d-letter-words.txt", letterCount)
 	passFile := path.Join(u.settings.DataRootDir, "wordlists", passwordFile)
 	passwords := fxtools.ReadFileAsLines(passFile)
 	rnd := rand.New(rand.NewSource(int64(identifier)))
@@ -1720,13 +1740,20 @@ func (u *UI) StartHackingGame(identifier uint64, difficulty foundation.Difficult
 	// shuffle the passwords
 	permutedIndexes := rnd.Perm(len(passwords))
 
-	var fakes []string
-	var correct string
+	correct := passwords[0]
 
-	for i := 0; i < fakeCount; i++ {
-		fakes = append(fakes, passwords[permutedIndexes[i]])
+	var fakes []string
+	for i := 0; i < len(passwords)-1; i++ {
+		nextPossiblePassword := passwords[permutedIndexes[i+1]]
+		distance := hammingDistance(correct, nextPossiblePassword)
+		if distance >= letterCount-1 {
+			continue
+		}
+		fakes = append(fakes, nextPossiblePassword)
+		if len(fakes) >= fakeCount {
+			break
+		}
 	}
-	correct = passwords[permutedIndexes[fakeCount]]
 
 	hackingGame := NewHackingGame(correct, fakes, func(previousGuesses []string, result foundation.InteractionResult) {
 		u.pages.HidePanel("hackingGame")
@@ -1740,7 +1767,7 @@ func (u *UI) StartHackingGame(identifier uint64, difficulty foundation.Difficult
 	u.application.SetFocus(hackingGame)
 }
 
-func (u *UI) SetConversationState(starterText string, starterOptions []foundation.MenuItem, isTerminal bool) {
+func (u *UI) SetConversationState(starterText string, starterOptions []foundation.MenuItem, conversationPartnerName string, isTerminal bool) {
 	u.dialogueIsTerminal = isTerminal
 	if !u.pages.HasPanel("conversation") && isTerminal {
 		u.audioPlayer.PlayCue("ui/terminal_poweron")
@@ -1748,7 +1775,7 @@ func (u *UI) SetConversationState(starterText string, starterOptions []foundatio
 	// text field
 	if u.dialogueText == nil {
 		textField := cview.NewTextView()
-
+		textField.SetTitle(conversationPartnerName)
 		textField.SetBorder(true)
 		textField.SetScrollable(true)
 		textField.SetDynamicColors(true)
@@ -1763,15 +1790,40 @@ func (u *UI) SetConversationState(starterText string, starterOptions []foundatio
 		u.applyListStyle(choicesMenu)
 		u.dialogueOptions = choicesMenu
 	}
+
 	u.dialogueOptions.SetSelectedFunc(func(index int, listItem *cview.ListItem) {
 		action := starterOptions[index]
 		if action.CloseMenus {
-			u.pages.SetCurrentPanel("main")
+			u.closeModal()
 		}
 		action.Action()
 	})
 	setListItemsFromMenuItems(u.dialogueOptions, starterOptions)
-	u.makeTopAndBottomModal("conversation", u.dialogueText, u.dialogueOptions)
+	u.makeTopAndBottomModal(u.dialogueText, u.dialogueOptions)
+	u.lockFocusToPrimitive(u.dialogueOptions)
+	originalCapture := u.dialogueOptions.GetInputCapture()
+	u.dialogueOptions.SetInputCapture(u.directionalWrapper(originalCapture))
+}
+
+func (u *UI) directionalWrapper(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		command := u.getCommandForKey(toUIKey(event))
+		direction, possible := directionFromCommand(command)
+		if !possible {
+			return originalCapture(event)
+		}
+		if direction == geometry.North {
+			event = tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone)
+		} else if direction == geometry.South {
+			event = tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone)
+		} else if direction == geometry.West {
+			event = tcell.NewEventKey(tcell.KeyLeft, ' ', tcell.ModNone)
+		} else if direction == geometry.East {
+			event = tcell.NewEventKey(tcell.KeyRight, ' ', tcell.ModNone)
+		}
+
+		return originalCapture(event)
+	}
 }
 
 func (u *UI) CloseConversation() {
@@ -1792,17 +1844,19 @@ func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 	list := cview.NewList()
 	u.applyListStyle(list)
-
 	list.SetSelectedFunc(func(index int, listItem *cview.ListItem) {
 		action := menuItems[index]
 		if action.CloseMenus {
-			u.pages.SetCurrentPanel("main")
+			u.closeModal()
 		}
 		action.Action()
 	})
 
 	longestItem := setListItemsFromMenuItems(list, menuItems)
-	u.makeCenteredModal("contextMenu", list, len(menuItems), longestItem)
+	u.makeCenteredModal(list, longestItem, len(menuItems))
+
+	originalCapture := list.GetInputCapture()
+	list.SetInputCapture(u.directionalWrapper(originalCapture))
 	return list
 }
 
@@ -1865,7 +1919,7 @@ func (u *UI) getListForPanel(panelName string) (*cview.List, bool) {
 
 func (u *UI) popOnEscape(event *tcell.EventKey) *tcell.EventKey {
 	if event.Key() == tcell.KeyEscape {
-		u.pages.SetCurrentPanel("main")
+		u.closeModal()
 	}
 	return event
 }
@@ -1916,43 +1970,33 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 		return nil, action
 	}
 	newX, newY := event.Position()
+	mousePos := geometry.Point{X: newX, Y: newY}
 	if newX != u.currentMouseX || newY != u.currentMouseY {
 		u.currentMouseX = newX
 		u.currentMouseY = newY
-	}
-
-	if action == cview.MouseLeftDown || action == cview.MouseRightDown {
-		panelName, prim := u.pages.GetFrontPanel()
-		if panelName != "main" && panelName != "blocker" {
-			x, y, w, h := prim.GetRect()
-			if newX < x || newY < y || newX >= x+w || newY >= y+h || action == cview.MouseRightDown {
-				u.pages.SetCurrentPanel("main")
-				return nil, action
-			}
+		mapPos := u.ScreenToMap(mousePos)
+		mapInfo := u.game.GetMapInfo(mapPos)
+		if !mapInfo.IsEmpty() {
+			u.Print(mapInfo)
 		}
 	}
-
+	mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})
 	if action == cview.MouseLeftDown {
-		mousePos := geometry.Point{X: newX, Y: newY}
+
+		actorAt := u.game.ActorAt(mapPos)
+		if actorAt != nil {
+			u.ShowMonsterInfo(actorAt)
+		}
+
 		if u.currentMouseX >= u.settings.MapWidth {
 			// clicked on right panel
 			u.onRightPanelClicked(mousePos)
 			return nil, action
 		}
 
-		mapPos := u.ScreenToMap(mousePos)
-		mapInfo := u.game.GetMapInfo(mapPos)
-		if !mapInfo.IsEmpty() {
-			u.Print(mapInfo)
-		}
-
 		return nil, action
 	} else if action == cview.MouseRightDown {
-		mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})
-		actorAt := u.game.ActorAt(mapPos)
-		if actorAt != nil {
-			u.ShowMonsterInfo(actorAt)
-		}
+		u.game.OpenContextMenuFor(mapPos)
 		return nil, action
 	}
 	return event, action
@@ -2412,7 +2456,7 @@ func (u *UI) showCharacterActions(actions []foundation.MenuItem) {
 			u.application.SetFocus(primitive)
 		})
 		if action.CloseMenus {
-			u.pages.SetCurrentPanel("main")
+			u.closeModal()
 		}
 		action.Action()
 	})
@@ -2429,7 +2473,7 @@ func (u *UI) showCharacterActions(actions []foundation.MenuItem) {
 	}
 
 	textView, playerInfo := u.charSheetView()
-	u.makeSideBySideModal("textModal", textView, list, len(playerInfo), longestLineWithoutColorCodes(playerInfo))
+	u.makeSideBySideModal(textView, list, len(playerInfo), longestLineWithoutColorCodes(playerInfo))
 }
 
 func (u *UI) charSheetView() (*cview.TextView, []string) {
@@ -2693,30 +2737,5 @@ func (u *UI) getIconForMap(loc geometry.Point) textiles.TextIcon {
 		Char: colored.Char,
 		Fg:   colored.Fg,
 		Bg:   colored.Bg,
-	}
-}
-
-type EventJoy struct {
-	AxisData   []int8
-	Buttons    uint32
-	OccurredAt time.Time
-}
-
-func (e EventJoy) IsButtonReleased(index int) bool {
-	return e.Buttons&(1<<uint(index)) == 0
-}
-func (e EventJoy) IsButtonDown(index int) bool {
-	return e.Buttons&(1<<uint(index)) > 0
-}
-
-func (e EventJoy) When() time.Time {
-	return e.OccurredAt
-}
-
-func NewJoyStickEvent(data []int8, buttons uint32) tcell.Event {
-	return &EventJoy{
-		AxisData:   data,
-		Buttons:    buttons,
-		OccurredAt: time.Now(),
 	}
 }

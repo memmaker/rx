@@ -84,7 +84,8 @@ d -> east
 Tab -> target_next
 BackTab -> target_previous
 Esc -> target_cancel
-Space -> target_switch_to_directional
+Space -> target_confirm
+Enter -> target_confirm
 
 w -> north
 s -> south

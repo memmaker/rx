@@ -1951,6 +1951,11 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetFirstWallCardinalInDirecti
 	return origin
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsTransitionAt(position geometry.Point) bool {
+	_, exists := m.GetTransitionAt(position)
+	return exists
+}
+
 type JumpOverInfo struct {
 	Sprint     []geometry.Point
 	Jump       []geometry.Point

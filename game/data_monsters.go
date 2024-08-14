@@ -31,17 +31,16 @@ type IntrinsicAttack struct {
 	AttackName string
 }
 type ActorDef struct {
-	Description  string
-	Name         string
-	Icon         textiles.TextIcon
-	SpecialStats map[special.Stat]int
-	DerivedStat  map[special.DerivedStat]int
-	Skills       map[special.Skill]int
-	SizeModifier int
-	ZapEffects   []string
-	UseEffects   []string
-	DungeonLevel int
-	Flags        *foundation.MapFlags
+	Description      string
+	Name             string
+	Icon             textiles.TextIcon
+	SpecialStats     map[special.Stat]int
+	DerivedStat      map[special.DerivedStat]int
+	SkillAdjustments map[special.Skill]int
+	SizeModifier     int
+	ZapEffects       []string
+	UseEffects       []string
+	Flags            *foundation.MapFlags
 
 	Equipment       []string
 	XP              int
@@ -67,10 +66,10 @@ func ActorDefsFromRecords(records []recfile.Record, palette textiles.ColorPalett
 
 func NewActorDefFromRecord(record recfile.Record, palette textiles.ColorPalette) ActorDef {
 	monsterDef := ActorDef{
-		Flags:        foundation.NewMapFlags(),
-		SpecialStats: make(map[special.Stat]int),
-		DerivedStat:  make(map[special.DerivedStat]int),
-		Skills:       make(map[special.Skill]int),
+		Flags:            foundation.NewMapFlags(),
+		SpecialStats:     make(map[special.Stat]int),
+		DerivedStat:      make(map[special.DerivedStat]int),
+		SkillAdjustments: make(map[special.Skill]int),
 	}
 	monsterDef = fillDefinitionFromRecord(monsterDef, record, palette)
 	return monsterDef
@@ -80,18 +79,16 @@ func fillDefinitionFromRecord(monsterDef ActorDef, record recfile.Record, palett
 	var icon textiles.TextIcon
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
-		case "description":
-			monsterDef.Description = field.Value
-		case "dlvl":
-			monsterDef.DungeonLevel = field.AsInt()
-		case "xp":
-			monsterDef.XP = field.AsInt()
 		case "name":
 			monsterDef.Name = field.Value
+		case "description":
+			monsterDef.Description = field.Value
 		case "icon":
 			icon.Char = field.AsRune()
 		case "foreground":
 			icon.Fg = palette.Get(field.Value)
+		case "expvalue":
+			monsterDef.XP = field.AsInt()
 		case "zap_effect":
 			monsterDef.ZapEffects = append(monsterDef.ZapEffects, field.Value)
 		case "use_effect":
@@ -110,24 +107,24 @@ func fillDefinitionFromRecord(monsterDef ActorDef, record recfile.Record, palett
 			monsterDef.SpecialStats[special.Agility] = field.AsInt()
 		case "luck":
 			monsterDef.SpecialStats[special.Luck] = field.AsInt()
-		case "hp":
+		case "hitpoints":
 			monsterDef.DerivedStat[special.HitPoints] = field.AsInt()
-		case "ap":
+		case "actionpoints":
 			monsterDef.DerivedStat[special.ActionPoints] = field.AsInt()
 		case "speed":
 			monsterDef.DerivedStat[special.Speed] = field.AsInt()
-		case "unarmed":
-			monsterDef.Skills[special.Unarmed] = field.AsInt()
-		case "melee_weapons":
-			monsterDef.Skills[special.MeleeWeapons] = field.AsInt()
-		case "small_guns":
-			monsterDef.Skills[special.SmallGuns] = field.AsInt()
-		case "big_guns":
-			monsterDef.Skills[special.BigGuns] = field.AsInt()
-		case "energy_weapons":
-			monsterDef.Skills[special.EnergyWeapons] = field.AsInt()
-		case "throwing":
-			monsterDef.Skills[special.Throwing] = field.AsInt()
+		case "skillbonusunarmed":
+			monsterDef.SkillAdjustments[special.Unarmed] = field.AsInt()
+		case "skillbonusmeleeweapons":
+			monsterDef.SkillAdjustments[special.MeleeWeapons] = field.AsInt()
+		case "skillbonussmallguns":
+			monsterDef.SkillAdjustments[special.SmallGuns] = field.AsInt()
+		case "skillbonusbigguns":
+			monsterDef.SkillAdjustments[special.BigGuns] = field.AsInt()
+		case "skillbonusenergyweapons":
+			monsterDef.SkillAdjustments[special.EnergyWeapons] = field.AsInt()
+		case "skillbonusthrowing":
+			monsterDef.SkillAdjustments[special.Throwing] = field.AsInt()
 		case "size_modifier":
 			monsterDef.SizeModifier = field.AsInt()
 		case "dodge":

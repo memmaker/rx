@@ -1,9 +1,9 @@
 Description: a note
 Name: note
 Category: Notes
-TextFile: note.txt
+TextFile: CHANGEME
 
 Description: a key
 Name: key
 Category: Keys
-LockFlag: v84_storage_room
+LockFlag: CHANGEME
