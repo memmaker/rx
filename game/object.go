@@ -15,7 +15,7 @@ type BaseObject struct {
 	position        geometry.Point
 	category        foundation.ObjectCategory
 	customIcon      textiles.TextIcon
-	onDamage        func(actor *Actor) []foundation.Animation
+	onDamage        func(actor SourcedDamage) []foundation.Animation
 	onWalkOver      func(actor *Actor) []foundation.Animation
 	isAlive         bool
 	isDrawn         bool
@@ -37,7 +37,7 @@ func (b *BaseObject) GetCategory() foundation.ObjectCategory {
 
 func (g *GameState) NewTrap(trapType foundation.ObjectCategory, iconForObject func(objectType string) textiles.TextIcon) *BaseObject {
 	trap := NewObject(trapType, iconForObject)
-	triggerEffect := func(actor *Actor) []foundation.Animation {
+	walkOverEffect := func(actor *Actor) []foundation.Animation {
 		if trap.isAlive {
 			trap.isAlive = false
 			zapEffect := ZapEffectFromName(trapType.ZapEffect())
@@ -46,10 +46,13 @@ func (g *GameState) NewTrap(trapType foundation.ObjectCategory, iconForObject fu
 		}
 		return nil
 	}
+	damageEffect := func(dmg SourcedDamage) []foundation.Animation {
+		return walkOverEffect(dmg.Attacker)
+	}
 
 	trap.SetHidden(true)
-	trap.SetOnDamage(triggerEffect)
-	trap.SetOnWalkOver(triggerEffect)
+	trap.SetOnDamage(damageEffect)
+	trap.SetOnWalkOver(walkOverEffect)
 	trap.SetWalkable(true)
 	return trap
 }
@@ -61,9 +64,12 @@ func (g *GameState) NewTerminal(rec recfile.Record, iconForObject func(objectTyp
 	terminal.SetTransparent(true)
 
 	var scriptName string
-
+	declareAsTerminal := true
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
+		case "name":
+			terminal.customIcon = iconForObject(field.Value)
+			terminal.useCustomIcon = true
 		case "description":
 			terminal.displayName = field.Value
 		case "dialogue":
@@ -71,13 +77,17 @@ func (g *GameState) NewTerminal(rec recfile.Record, iconForObject func(objectTyp
 		case "position":
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
 			terminal.SetPosition(spawnPos)
+		case "tags":
+			if strings.ToLower(field.Value) == "no_sound" {
+				declareAsTerminal = false
+			}
 		}
 	}
 	terminal.internalName = scriptName
 
 	terminal.onBump = func(actor *Actor) {
 		if actor == g.Player {
-			g.StartDialogue(scriptName, terminal.Name(), true)
+			g.StartDialogue(scriptName, terminal, declareAsTerminal)
 		}
 	}
 	return terminal
@@ -89,7 +99,7 @@ func (g *GameState) NewReadable(rec recfile.Record, iconForObject func(objectTyp
 	sign.SetHidden(false)
 	sign.SetTransparent(true)
 
-	var text []string
+	var text string
 	var customIcon textiles.TextIcon
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
@@ -101,14 +111,14 @@ func (g *GameState) NewReadable(rec recfile.Record, iconForObject func(objectTyp
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
 			sign.SetPosition(spawnPos)
 		case "text":
-			text = strings.Split(g.fillTemplatedText(strings.TrimSpace(field.Value)), "\n")
+			text = g.fillTemplatedText(strings.TrimSpace(field.Value))
 		case "textfile":
-			text = fxtools.ReadFileAsLines(path.Join(g.config.DataRootDir, "text", field.Value+".txt"))
+			text = fxtools.ReadFile(path.Join(g.config.DataRootDir, "text", field.Value+".txt"))
 		}
 	}
 
 	showText := func() {
-		g.ui.OpenTextWindow(g.fillTemplatedTexts(text))
+		g.ui.OpenTextWindow(g.fillTemplatedText(text))
 	}
 	sign.customIcon = customIcon
 	sign.useCustomIcon = true
@@ -127,12 +137,6 @@ func (g *GameState) NewReadable(rec recfile.Record, iconForObject func(objectTyp
 		},
 	})
 	return sign
-}
-func (g *GameState) fillTemplatedTexts(text []string) []string {
-	for i, t := range text {
-		text[i] = g.fillTemplatedText(t)
-	}
-	return text
 }
 
 func (g *GameState) fillTemplatedText(text string) string {
@@ -159,7 +163,7 @@ func NewObject(icon foundation.ObjectCategory, iconForObject func(objectType str
 	}
 }
 
-func (b *BaseObject) SetOnDamage(onDamage func(actor *Actor) []foundation.Animation) {
+func (b *BaseObject) SetOnDamage(onDamage func(damage SourcedDamage) []foundation.Animation) {
 	b.onDamage = onDamage
 }
 func (b *BaseObject) Position() geometry.Point {
@@ -169,9 +173,9 @@ func (b *BaseObject) Position() geometry.Point {
 func (b *BaseObject) SetPosition(pos geometry.Point) {
 	b.position = pos
 }
-func (b *BaseObject) OnDamage(actor *Actor) []foundation.Animation {
+func (b *BaseObject) OnDamage(damage SourcedDamage) []foundation.Animation {
 	if b.onDamage != nil && b.triggerOnDamage {
-		return b.onDamage(actor)
+		return b.onDamage(damage)
 	}
 	return nil
 }
@@ -245,7 +249,7 @@ func (b *BaseObject) SetDisplayName(name string) {
 	b.displayName = name
 }
 
-func (b *BaseObject) GetIcon() textiles.TextIcon {
+func (b *BaseObject) Icon() textiles.TextIcon {
 	if b.useCustomIcon {
 		return b.customIcon
 	}
@@ -273,9 +277,9 @@ type Object interface {
 	IsAlive() bool
 	IsDrawn() bool
 	IsTrap() bool
-	OnDamage(actor *Actor) []foundation.Animation
+	OnDamage(dmg SourcedDamage) []foundation.Animation
 	OnWalkOver(actor *Actor) []foundation.Animation
 	OnBump(actor *Actor)
-	GetIcon() textiles.TextIcon
+	Icon() textiles.TextIcon
 	AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem
 }

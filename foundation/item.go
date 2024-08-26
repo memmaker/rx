@@ -34,16 +34,6 @@ func (c ItemCategory) String() string {
 		return "Weapons"
 	case ItemCategoryArmor:
 		return "Armor"
-	case ItemCategoryRings:
-		return "Rings"
-	case ItemCategoryScrolls:
-		return "Scrolls"
-	case ItemCategoryPotions:
-		return "Potions"
-	case ItemCategoryWands:
-		return "Wands"
-	case ItemCategoryAmulets:
-		return "Amulets"
 	case ItemCategoryAmmo:
 		return "Ammo"
 	case ItemCategoryReadables:
@@ -60,16 +50,27 @@ func (c ItemCategory) String() string {
 	panic("Unknown item category")
 }
 
+func (c ItemCategory) IsEasySteal() bool {
+	switch c {
+	case ItemCategoryGold, ItemCategoryFood, ItemCategoryAmmo, ItemCategoryReadables, ItemCategoryLockpicks, ItemCategoryKeys:
+		return true
+	}
+	return false
+}
+
+func (c ItemCategory) IsHardSteal() bool {
+	switch c {
+	case ItemCategoryWeapons, ItemCategoryArmor:
+		return true
+	}
+	return false
+}
+
 const (
 	ItemCategoryGold ItemCategory = iota
 	ItemCategoryFood
 	ItemCategoryWeapons
 	ItemCategoryArmor
-	ItemCategoryRings
-	ItemCategoryScrolls
-	ItemCategoryPotions
-	ItemCategoryWands
-	ItemCategoryAmulets
 	ItemCategoryAmmo
 	ItemCategoryReadables
 	ItemCategoryConsumables
@@ -92,16 +93,6 @@ func ItemCategoryFromString(s string) ItemCategory {
 		return ItemCategoryWeapons
 	case "armor":
 		return ItemCategoryArmor
-	case "rings":
-		return ItemCategoryRings
-	case "scrolls":
-		return ItemCategoryScrolls
-	case "potions":
-		return ItemCategoryPotions
-	case "wands":
-		return ItemCategoryWands
-	case "amulets":
-		return ItemCategoryAmulets
 	case "ammo":
 		return ItemCategoryAmmo
 	case "lockpicks":

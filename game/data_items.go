@@ -14,8 +14,6 @@ type ItemDef struct {
 	Description string
 	Name        string
 
-	Slot foundation.EquipSlot
-
 	WeaponDef WeaponDef
 	ArmorDef  ArmorDef
 	AmmoDef   AmmoDef
@@ -34,19 +32,22 @@ type ItemDef struct {
 	AlwaysIDOnUse bool
 	EquipFlag     foundation.ActorFlag
 
-	Skill      dice_curve.SkillName
-	SkillBonus dice_curve.Dice
-	Tags       foundation.ItemTags
-	Position   geometry.Point
-	TextFile   string
-	LockFlag   string
-	Size       int
-	Cost       int
-	Weight     int
+	Skill                dice_curve.SkillName
+	SkillBonus           dice_curve.Dice
+	Tags                 foundation.ItemTags
+	Position             geometry.Point
+	TextFile             string
+	Text                 string
+	LockFlag             string
+	Size                 int
+	Cost                 int
+	Weight               int
+	ChanceToBreakOnThrow int
+	SetFlagOnPickup      string
 }
 
 func (i ItemDef) IsValidArmor() bool {
-	return i.Slot.IsArmorSlot()
+	return i.ArmorDef.IsValid()
 }
 
 func (i ItemDef) IsValidWeapon() bool {
@@ -55,6 +56,44 @@ func (i ItemDef) IsValidWeapon() bool {
 
 func (i ItemDef) IsValidAmmo() bool {
 	return i.AmmoDef.IsValid()
+}
+
+func (i ItemDef) GetAttackModes() []AttackMode {
+	noAim := i.Tags.Contains(foundation.TagNoAim)
+	var modes []AttackMode
+	if i.WeaponDef.TargetingModeOne != special.TargetingModeNone {
+		modes = append(modes, AttackMode{
+			Mode:     i.WeaponDef.TargetingModeOne,
+			TUCost:   i.WeaponDef.TUCostOne,
+			MaxRange: i.WeaponDef.MaxRangeOne,
+			IsAimed:  false,
+		})
+		if !noAim && i.WeaponDef.TargetingModeOne.IsAimable() {
+			modes = append(modes, AttackMode{
+				Mode:     i.WeaponDef.TargetingModeOne,
+				TUCost:   i.WeaponDef.TUCostOne + 2,
+				MaxRange: i.WeaponDef.MaxRangeOne,
+				IsAimed:  true,
+			})
+		}
+	}
+	if i.WeaponDef.TargetingModeTwo != special.TargetingModeNone {
+		modes = append(modes, AttackMode{
+			Mode:     i.WeaponDef.TargetingModeTwo,
+			TUCost:   i.WeaponDef.TUCostTwo,
+			MaxRange: i.WeaponDef.MaxRangeTwo,
+			IsAimed:  false,
+		})
+		if !noAim && i.WeaponDef.TargetingModeTwo.IsAimable() {
+			modes = append(modes, AttackMode{
+				Mode:     i.WeaponDef.TargetingModeTwo,
+				TUCost:   i.WeaponDef.TUCostTwo + 2,
+				MaxRange: i.WeaponDef.MaxRangeTwo,
+				IsAimed:  true,
+			})
+		}
+	}
+	return modes
 }
 
 func ItemDefsFromRecords(otherRecords []recfile.Record) []ItemDef {
@@ -89,10 +128,10 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 			itemDef.Cost = field.AsInt()
 		case "weight":
 			itemDef.Weight = field.AsInt()
+		case "chance_to_break_on_throw":
+			itemDef.ChanceToBreakOnThrow = field.AsInt()
 		case "tags":
 			itemDef.Tags |= foundation.ItemTagFromString(field.Value)
-		case "slot":
-			itemDef.Slot = foundation.ItemSlotFromString(field.Value)
 		case "ammo_dmg_multiplier":
 			itemDef.AmmoDef.DamageMultiplier = field.AsInt()
 		case "ammo_dmg_divisor":
@@ -107,8 +146,12 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 			itemDef.AmmoDef.CaliberIndex = field.AsInt()
 		case "weapon_type":
 			itemDef.WeaponDef.Type = WeaponTypeFromString(field.Value)
+		case "weapon_damage_type":
+			itemDef.WeaponDef.DamageType = special.DamageTypeFromString(field.Value)
 		case "weapon_caliber_index":
 			itemDef.WeaponDef.CaliberIndex = field.AsInt()
+		case "weapon_sound_id":
+			itemDef.WeaponDef.SoundID = field.AsInt32()
 		case "weapon_skill_used":
 			itemDef.WeaponDef.SkillUsed = special.SkillFromName(field.Value)
 		case "weapon_damage":
@@ -118,9 +161,17 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 		case "weapon_burst_rounds":
 			itemDef.WeaponDef.BurstRounds = field.AsInt()
 		case "weapon_attack_mode_one":
-			itemDef.WeaponDef.TargetingModeOne = TargetingModeFromString(field.Value)
+			itemDef.WeaponDef.TargetingModeOne = special.TargetingModeFromString(field.Value)
 		case "weapon_attack_mode_two":
-			itemDef.WeaponDef.TargetingModeTwo = TargetingModeFromString(field.Value)
+			itemDef.WeaponDef.TargetingModeTwo = special.TargetingModeFromString(field.Value)
+		case "weapon_ap_cost_one":
+			itemDef.WeaponDef.TUCostOne = field.AsInt() * 2
+		case "weapon_ap_cost_two":
+			itemDef.WeaponDef.TUCostTwo = field.AsInt() * 2
+		case "weapon_max_range_one":
+			itemDef.WeaponDef.MaxRangeOne = field.AsInt()
+		case "weapon_max_range_two":
+			itemDef.WeaponDef.MaxRangeTwo = field.AsInt()
 		case "thrown_damage":
 			itemDef.ThrowDamageDice = dice_curve.ParseDice(field.Value)
 		case "shot_max_range":
@@ -156,18 +207,18 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 				itemDef.ArmorDef.Protection = make(map[special.DamageType]Protection)
 			}
 			values := field.AsList(",")
-			itemDef.ArmorDef.Protection[special.Physical] = Protection{
-				damageThreshold: values[0].AsInt(),
-				damageReduction: values[1].AsInt(),
+			itemDef.ArmorDef.Protection[special.DamageTypeNormal] = Protection{
+				DamageThreshold: values[0].AsInt(),
+				DamageReduction: values[1].AsInt(),
 			}
 		case "armor_energy":
 			if itemDef.ArmorDef.Protection == nil {
 				itemDef.ArmorDef.Protection = make(map[special.DamageType]Protection)
 			}
 			values := field.AsList(",")
-			itemDef.ArmorDef.Protection[special.Energy] = Protection{
-				damageThreshold: values[0].AsInt(),
-				damageReduction: values[1].AsInt(),
+			itemDef.ArmorDef.Protection[special.DamageTypeLaser] = Protection{
+				DamageThreshold: values[0].AsInt(),
+				DamageReduction: values[1].AsInt(),
 			}
 		case "stat":
 			itemDef.Stat = dice_curve.StatFromString(field.Value)
@@ -181,8 +232,12 @@ func NewItemDefFromRecord(record recfile.Record) ItemDef {
 			itemDef.EquipFlag = foundation.ActorFlagFromString(field.Value)
 		case "textfile":
 			itemDef.TextFile = field.Value
+		case "text":
+			itemDef.Text = field.Value
 		case "lockflag":
 			itemDef.LockFlag = field.Value
+		case "pickupflag":
+			itemDef.SetFlagOnPickup = field.Value
 		}
 	}
 

@@ -69,6 +69,8 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["tactics"] = u.game.OpenTacticsMenu
 	u.commandTable["character"] = u.ShowCharacterSheet
 	u.commandTable["wizard"] = u.game.OpenWizardMenu
+	u.commandTable["rest"] = u.game.OpenRestMenu
+	u.commandTable["journal"] = u.game.OpenJournal
 	u.commandTable["log"] = u.ShowLog
 	u.commandTable["monsters"] = u.ShowVisibleEnemies
 	u.commandTable["items"] = u.ShowVisibleItems
@@ -138,12 +140,14 @@ func (u *UI) setupCommandTable() {
 
 	//u.commandTable["targeted_shot"] = u.game.TargetedShot
 
-	u.commandTable["pickup"] = u.game.PickupItem
+	u.commandTable["pickup"] = u.game.PlayerPickupItem
 	u.commandTable["map_interaction"] = u.GenericInteraction
 	u.commandTable["run_direction"] = u.ChooseDirectionForRun
 	u.commandTable["wait"] = u.game.Wait
 	u.commandTable["show_key_bindings"] = u.showKeyBindings
 	u.commandTable["open_pip_boy"] = u.openPipBoy
+
+	u.commandTable["wiz_advance_time"] = u.game.WizardAdvanceTime
 }
 
 func (u *UI) showKeyBindings() {
@@ -151,6 +155,7 @@ func (u *UI) showKeyBindings() {
 		"quit":              "Quit",
 		"inventory":         "Inventory",
 		"tactics":           "Tactics Menu",
+		"rest":              "Rest Menu",
 		"character":         "Character",
 		"wizard":            "Wizard",
 		"themes":            "Themes",
@@ -200,6 +205,7 @@ func (u *UI) showKeyBindings() {
 		"descend":           "Descend",
 		"ascend":            "Ascend",
 		"wait":              "Wait",
+		"cycle_target_mode": "Cycle Weapon Mode",
 	}
 
 	leftColCommands := []string{
@@ -241,12 +247,14 @@ func (u *UI) showKeyBindings() {
 		"take_off",
 		"drop",
 		"pickup",
+		"cycle_target_mode",
 		"attack",
 		"quick_attack",
 		"aim",
 		"look",
 		"overlay_monsters",
 		"overlay_items",
+		"rest",
 		"monsters",
 		"items",
 		"gamma_up",
@@ -284,7 +292,7 @@ func (u *UI) showKeyBindings() {
 		fxtools.AlignLeft,
 	})
 
-	u.OpenTextWindow(commandTableRender)
+	u.OpenTextWindow(strings.Join(commandTableRender, "\n"))
 }
 
 func (u *UI) getPressedKey() UIKey {

@@ -22,6 +22,8 @@ type Configuration struct {
 	WallSlide                  bool
 	DataRootDir                string
 	DefaultToAdvancedTargeting bool
+	PlayerChar                 rune
+	PlayerColor                string
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -57,12 +59,16 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.AutoPickup = field.AsBool()
 		case "WallSlide":
 			configuration.WallSlide = field.AsBool()
-		case "PlayerName":
-			configuration.PlayerName = field.Value
 		case "DataRootDir":
 			configuration.DataRootDir = field.Value
 		case "DefaultToAdvancedTargeting":
 			configuration.DefaultToAdvancedTargeting = field.AsBool()
+		case "PlayerName":
+			configuration.PlayerName = field.Value
+		case "PlayerChar":
+			configuration.PlayerChar = field.AsRune()
+		case "PlayerColor":
+			configuration.PlayerColor = field.Value
 		}
 	}
 	return configuration
@@ -81,9 +87,11 @@ func NewDefaultConfiguration() *Configuration {
 		AnimateProjectiles:         true,
 		AutoPickup:                 true,
 		WallSlide:                  true,
-		PlayerName:                 "Rogue",
 		DataRootDir:                "data",
 		DefaultToAdvancedTargeting: false,
+		PlayerName:                 "Rogue",
+		PlayerChar:                 '@',
+		PlayerColor:                "white",
 	}
 }
 
@@ -106,7 +114,10 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "AutoPickup", Value: recfile.BoolStr(c.AutoPickup)},
 			recfile.Field{Name: "WallSlide", Value: recfile.BoolStr(c.WallSlide)},
 			recfile.Field{Name: "PlayerName", Value: c.PlayerName},
+			recfile.Field{Name: "PlayerChar", Value: string(c.PlayerChar)},
+			recfile.Field{Name: "PlayerColor", Value: c.PlayerColor},
 			recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
+			recfile.Field{Name: "DefaultToAdvancedTargeting", Value: recfile.BoolStr(c.DefaultToAdvancedTargeting)},
 		},
 	}
 	file, _ := os.Create(filename)

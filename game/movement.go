@@ -22,11 +22,11 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	newPos := oldPos.Add(direction.ToPoint())
 
 	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists {
-
 		if door, isDoor := objectAt.(*Door); isDoor { // THIS IS STILL HACKY; DOOR OBJECT ALSO IMPLEMENTS THIS
 			if door.IsLocked() && player.HasKey(door.GetLockFlag()) {
 				door.Unlock()
 				g.msg(foundation.Msg("You unlocked the door"))
+				g.ui.PlayCue("world/PICKKEYS")
 				return
 			}
 		}
@@ -35,6 +35,11 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 			objectAt.OnBump(g.Player)
 			return
 		}
+	}
+
+	if _, exists := g.gridMap.TryGetItemAt(newPos); exists && !g.gridMap.IsCurrentlyPassable(newPos) {
+		g.PlayerPickupItemAt(newPos)
+		return
 	}
 
 	if !g.gridMap.Contains(newPos) || !g.gridMap.IsTileWalkable(newPos) {
@@ -79,7 +84,7 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 		if actorAt.IsHostile() {
 			g.playerMeleeAttack(actorAt)
 		} else {
-			g.StartDialogue(actorAt.GetDialogueFile(), actorAt.Name(), false)
+			g.StartDialogue(actorAt.GetDialogueFile(), actorAt, false)
 		}
 		return
 	}
@@ -116,6 +121,8 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 			g.Player.GetInventory().Add(item)
 		}
 
+		g.ui.PlayCue("world/pickup")
+
 		if !inventory.IsEmpty() {
 			g.openInventoryOf(actor)
 		}
@@ -127,9 +134,10 @@ func (g *GameState) afterPlayerMoved() {
 	// explore the map
 	// print "You see.." message
 	if g.gridMap.IsItemAt(g.Player.Position()) && g.config.AutoPickup {
-		g.PickupItem()
+		g.PlayerPickupItem()
 	}
 
+	g.gridMap.MoveLightSource(g.playerLightSource, g.Player.Position())
 	g.msg(g.GetMapInfoForMovement(g.Player.Position()))
 	g.exploreMap()
 	g.updateDijkstraMap()

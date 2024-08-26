@@ -10,7 +10,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/fxtools"
 	"golang.org/x/term"
-	"image"
 	"math/rand"
 	"os"
 	"path"
@@ -69,29 +68,6 @@ func main() {
 	}
 
 	gameUI.StartGameLoop()
-}
-
-var actionNameMap = map[string]string{
-	"PUNCH":                    "Attack",
-	"KICK":                     "Attack",
-	"GET_UP_FRONT":             "GetUp",
-	"GET_UP_BACK":              "GetUp",
-	"HIT_FRONT":                "Hit",
-	"HIT_BACK":                 "Hit",
-	"BURNING_DANCE":            "BurningDance",
-	"CLIMB":                    "Climb",
-	"ELECTRIC_BURNED_TO_ASHES": "Burned",
-}
-
-func mustLoadImage(filename string) image.Image {
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
-	return img
 }
 
 func showBanner(filename string, width int) {

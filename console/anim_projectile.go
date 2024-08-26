@@ -114,7 +114,7 @@ func (p *ProjectileAnimation) NextFrame() {
 			if trailIcon.Char < 0 && p.lookup != nil {
 				icon, exists := p.lookup(pathPos)
 				if exists {
-					trailIcon = icon.WithBg(trailIcon.Bg)
+					trailIcon = icon.WithFg(trailIcon.Fg)
 				}
 			}
 			p.drawables[pathPos] = trailIcon

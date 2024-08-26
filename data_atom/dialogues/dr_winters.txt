@@ -116,3 +116,29 @@ o_goto: Transfusions
 #
 o_text: I'm not interested in any of that.
 o_goto: End
+
+name: PermanentSolution
+npc:
++ Well, BioPharma has developed a new treatment, called the "Replacement Therapy".
++ It's very promising, but it does have two drawbacks.
++ First, it's expensive. Second, it's not yet approved by the FDA.
++ However, I do know a guy who can get you in. I could pull some strings.
++ For a price, of course. Let's say, 10,000 caps.
+#
+o_text: All right, sign me up.
+o_cond: HasItem('caps', 10000)
+o_goto: SignUpReplacementTherapy
+#
+o_text: That's pretty arbitrary. How about I give you 5000 caps right now?
+o_cond: HasItem('caps', 5000) && !HasFlag('ReplacementTherapyHaggleFailed')
+o_test: RollSkill('Speech', 0)
+o_succ: SignUpReplacementTherapyHalfPrice
+o_fail: ReplacementTherapyHaggleFailed
+#
+o_text: Maybe we can work something out?
+#
+o_text: I don't have that kind of money. What are my options again?
+o_goto: Explanation
+#
+o_text: I'll think about it. I'll be back.
+o_goto: End

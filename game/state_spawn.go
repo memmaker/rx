@@ -39,7 +39,7 @@ func (g *GameState) spawnEntities(random *rand.Rand, level int, newMap *gridmap.
 				break
 			}
 			monsterDef := g.dataDefinitions.PickMonsterForLevel(random, level)
-			monster := g.NewEnemyFromDef(monsterDef)
+			monster := g.NewActorFromDef(monsterDef)
 			if random.Intn(26) >= level {
 				monster.GetFlags().Set(foundation.FlagSleep)
 			}
@@ -104,23 +104,36 @@ func (g *GameState) spawnCrawlerInWall(monsterDef ActorDef) {
 	}
 	walls := playerRoom.GetWalls()
 	spawnPos := walls[rand.Intn(len(walls))]
-	newActor := g.NewEnemyFromDef(monsterDef)
+	newActor := g.NewActorFromDef(monsterDef)
 	g.gridMap.ForceSpawnActorInWall(newActor, spawnPos)
 }
 
-func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, newMap *gridmap.GridMap[*Actor, *Item, Object]) Object {
+func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, icons map[string]textiles.TextIcon, newMap *gridmap.GridMap[*Actor, *Item, Object]) Object {
+	iconResolver := func(objectType string) textiles.TextIcon {
+		if icon, exists := icons[strings.ToLower(objectType)]; exists {
+			return icon
+		}
+		return textiles.TextIcon{}
+	}
 	objectType := record.FindValueForKeyIgnoreCase("category")
+
 	switch strings.ToLower(objectType) {
+	case "explodingpushbox":
+		box := g.NewPushBox(record, iconResolver)
+		box.SetExploding()
+		return box
+	case "pushbox":
+		return g.NewPushBox(record, iconResolver)
 	case "elevator":
-		elevator := g.NewElevator(record, g.iconForObject)
+		elevator := g.NewElevator(record, iconResolver)
 		newMap.AddNamedLocation(elevator.GetIdentifier(), elevator.Position())
 		return elevator
 	case "unknowncontainer":
-		return g.NewContainer(record, g.iconForObject)
+		return g.NewContainer(record, iconResolver)
 	case "terminal":
-		return g.NewTerminal(record, g.iconForObject)
+		return g.NewTerminal(record, iconResolver)
 	case "readable":
-		return g.NewReadable(record, g.iconForObject)
+		return g.NewReadable(record, iconResolver)
 	case "lockeddoor":
 		fallthrough
 	case "closeddoor":
@@ -128,7 +141,7 @@ func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.
 	case "brokendoor":
 		fallthrough
 	case "opendoor":
-		return g.NewDoor(record, g.iconForObject)
+		return g.NewDoor(record, iconResolver)
 	}
 	return nil
 }
@@ -150,7 +163,7 @@ func (g *GameState) addItemToMap(item *Item, mapPos geometry.Point) {
 	g.gridMap.AddItemWithDisplacement(item, mapPos)
 }
 
-func (g *GameState) NewEnemyFromDef(def ActorDef) *Actor {
+func (g *GameState) NewActorFromDef(def ActorDef) *Actor {
 	charSheet := special.NewCharSheet()
 
 	for stat, statValue := range def.SpecialStats {

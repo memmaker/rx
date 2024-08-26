@@ -87,30 +87,7 @@ func (g *GameState) ParseConversation(filename string) (*Conversation, error) {
 	}
 	defer file.Close()
 
-	flags := g.gameFlags
-
-	// NO INTEGERS..ONLY FLOATS
-	conditionFuncs := map[string]govaluate.ExpressionFunction{
-		"HasFlag": func(args ...interface{}) (interface{}, error) {
-			flagName := args[0].(string)
-			return flags.HasFlag(flagName), nil
-		},
-		"HasItem": func(args ...interface{}) (interface{}, error) {
-			itemName := args[0].(string)
-			return g.Player.GetInventory().HasItemWithName(itemName), nil
-		},
-		"GetSkill": func(args ...interface{}) (interface{}, error) {
-			skillName := args[0].(string)
-			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromName(skillName))
-			return (float64)(skillValue), nil
-		},
-		"RollSkill": func(args ...interface{}) (interface{}, error) {
-			skillName := args[0].(string)
-			modifier := args[1].(float64)
-			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromName(skillName), int(modifier))
-			return (bool)(result.Success), nil
-		},
-	}
+	conditionFuncs := g.getConditionFuncs()
 
 	records := recfile.ReadMulti(file)
 	conversation := NewConversation()
@@ -171,4 +148,34 @@ func (g *GameState) ParseConversation(filename string) (*Conversation, error) {
 	}
 	conversation.nodes = allNodes
 	return conversation, nil
+}
+
+func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction {
+	// NO INTEGERS..ONLY FLOATS
+	conditionFuncs := map[string]govaluate.ExpressionFunction{
+		"HasFlag": func(args ...interface{}) (interface{}, error) {
+			flagName := args[0].(string)
+			return g.gameFlags.HasFlag(flagName), nil
+		},
+		"HasItem": func(args ...interface{}) (interface{}, error) {
+			itemName := args[0].(string)
+			return g.Player.GetInventory().HasItemWithName(itemName), nil
+		},
+		"GetSkill": func(args ...interface{}) (interface{}, error) {
+			skillName := args[0].(string)
+			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromName(skillName))
+			return (float64)(skillValue), nil
+		},
+		"RollSkill": func(args ...interface{}) (interface{}, error) {
+			skillName := args[0].(string)
+			modifier := args[1].(float64)
+			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromName(skillName), int(modifier))
+			return (bool)(result.Success), nil
+		},
+		"IsMap": func(args ...interface{}) (interface{}, error) {
+			mapName := args[0].(string)
+			return g.gridMap.GetName() == mapName, nil
+		},
+	}
+	return conditionFuncs
 }

@@ -7,11 +7,17 @@ import (
 )
 
 func (g *GameState) GotoNamedLevel(levelName string, location string) {
-	loadedMap := g.mapLoader.LoadMap(levelName)
+	result := g.mapLoader.LoadMap(levelName)
+	loadedMap := result.Map
+	flags := result.FlagsOfMap
 
 	if loadedMap == nil {
 		g.msg(foundation.Msg("It's impossible to move there.."))
 		return
+	}
+
+	for flagName, flagValue := range flags {
+		g.gameFlags.Set(flagName, flagValue)
 	}
 
 	if g.gridMap != nil && g.Player != nil { // Remove Player from Old Map
@@ -23,6 +29,7 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 	loadedMap.AddActor(g.Player, namedLocation)
 
 	g.gridMap = loadedMap
+	g.iconsForObjects = result.IconsForObjects
 
 	g.afterPlayerMoved()
 

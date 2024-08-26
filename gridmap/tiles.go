@@ -3,6 +3,7 @@ package gridmap
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/textiles"
 	"io"
 )
@@ -62,13 +63,14 @@ type MapCell[ActorType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
 }] struct {
-	TileType    Tile
-	IsExplored  bool
-	IsLit       bool // IsLit is true if this tile receives light from a light source and is thus permanently lit if it's explored.
-	Actor       *ActorType
-	DownedActor *ActorType
-	Item        *ItemType
-	Object      *ObjectType
+	TileType      Tile
+	IsExplored    bool
+	IsLit         bool // IsLit is true if this tile receives light from a light source and is thus permanently lit if it's explored.
+	Actor         *ActorType
+	DownedActor   *ActorType
+	Item          *ItemType
+	Object        *ObjectType
+	BakedLighting fxtools.HDRColor
 }
 
 func (c MapCell[ActorType, ItemType, ObjectType]) WithItemHereRemoved(itemHere ItemType) MapCell[ActorType, ItemType, ObjectType] {

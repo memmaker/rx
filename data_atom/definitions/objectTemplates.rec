@@ -13,6 +13,12 @@ LockFlag: CHANGEME
 Category: BrokenDoor
 Description: a broken door
 
+Category: PushBox
+Description: a box
+
+Category: ExplodingPushBox
+Description: a box
+
 Category: UnknownContainer
 Description: CHANGEME
 item: CHANGEME
@@ -20,6 +26,12 @@ item: CHANGEME
 Category: Terminal
 Description: a terminal
 Dialogue: CHANGEME
+
+Name: Taxi
+Category: Terminal
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
 
 Category: Elevator
 Description: an elevator
@@ -37,6 +49,11 @@ TargetLocation: CHANGEME
 
 Category: NamedLocation
 Identifier: CHANGEME
+
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 1.0
 
 Name: MetalSign
 Category: Readable

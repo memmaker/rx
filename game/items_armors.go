@@ -6,18 +6,18 @@ import (
 )
 
 type Protection struct {
-	damageReduction int
-	damageThreshold int
+	DamageReduction int
+	DamageThreshold int
 }
 
 func (p Protection) String() string {
-	return fmt.Sprintf("%d|%d%%", p.damageThreshold, p.damageReduction)
+	return fmt.Sprintf("%d|%d%%", p.DamageThreshold, p.DamageReduction)
 }
 
 func (p Protection) Scaled(float float64) Protection {
 	return Protection{
-		damageReduction: int(float * float64(p.damageReduction)),
-		damageThreshold: int(float * float64(p.damageThreshold)),
+		DamageReduction: int(float * float64(p.DamageReduction)),
+		DamageThreshold: int(float * float64(p.DamageThreshold)),
 	}
 }
 
@@ -35,8 +35,8 @@ func (i *ArmorInfo) GetProtection(dType special.DamageType) Protection {
 }
 
 func (i *ArmorInfo) GetProtectionValueAsString() string {
-	physical := i.GetProtection(special.Physical)
-	energy := i.GetProtection(special.Energy)
+	physical := i.GetProtection(special.DamageTypeNormal)
+	energy := i.GetProtection(special.DamageTypeLaser)
 	return fmt.Sprintf("%s %s", physical.String(), energy.String())
 
 }
@@ -46,14 +46,18 @@ func (i *ArmorInfo) GetEncumbrance() int {
 }
 
 func (i *ArmorInfo) GetProtectionRating() int {
-	physical := i.GetProtection(special.Physical)
-	energy := i.GetProtection(special.Energy)
+	physical := i.GetProtection(special.DamageTypeNormal)
+	energy := i.GetProtection(special.DamageTypeLaser)
 
-	return (physical.damageReduction + energy.damageReduction) + (physical.damageThreshold + energy.damageThreshold)
+	return (physical.DamageReduction + energy.DamageReduction) + (physical.DamageThreshold + energy.DamageThreshold)
 }
 
 type ArmorDef struct {
 	Protection         map[special.DamageType]Protection
 	Encumbrance        int
 	RadiationReduction int
+}
+
+func (d ArmorDef) IsValid() bool {
+	return len(d.Protection) != 0
 }

@@ -1,0 +1,70 @@
+%rec: OpeningBranch
+
+cond: !HasFlag('Killed(taxi_driver)')
+goto: NoTaxi
+
+cond: HasFlag('Killed(taxi_driver)') && !HasFlag('searched_taxi')
+goto: SearchTaxi
+
+cond: HasFlag('Killed(taxi_driver)') && HasFlag('searched_taxi')
+goto: UseTaxi
+
+%rec: Nodes
+
+name: NoTaxi
+npc: (This is a taxi, but the driver is standing right outside.)
+effect: EndConversation
+
+name: SearchTaxi
+npc: (Since the driver is dead, you proceed to search the taxi.)
+effect: SetFlag('searched_taxi')
+#effect: GiveItem('taxi_key')
+#
+o_text: Drive to a location.
+o_goto: UseTaxi
+#
+o_text: Leave the taxi.
+o_goto: Bye
+
+name: UseTaxi
+npc: (Where do you want to go?)
+#
+o_text: Cryo Facility
+o_cond: HasFlag('LocationKnown(cryolab)') && !IsMap('cryolab')
+o_goto: CryoFacility
+#
+o_text: The mansion outside Kelso
+o_cond: HasFlag('LocationKnown(mansion)') && !IsMap('mansion')
+o_goto: Mansion
+#
+o_text: Kelso
+o_cond: !IsMap('town')
+o_goto: Kelso
+#
+o_text: Leave
+o_goto: Bye
+
+name: Bye
+npc: (You decide to leave the taxi.)
+effect: EndConversation
+
+name: Drive
+npc: Sure thing.
+#
+o_text: (Wait)
+o_goto: DefaultIntroduction
+
+name: Kelso
+npc: Alright, let's go.
+effect: Transition('town', 'taxi_stand')
+effect: EndConversation
+
+name: CryoFacility
+npc: You got it.
+effect: Transition('cryolab', 'taxi_stand')
+effect: EndConversation
+
+name: Mansion
+npc: You got it.
+effect: Transition('mansion', 'taxi_stand')
+effect: EndConversation

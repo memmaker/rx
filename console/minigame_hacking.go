@@ -327,8 +327,11 @@ func (hg *HackingGame) handleMouse(action cview.MouseAction, event *tcell.EventM
 		indexInWordMatrix := mouseY*hg.wordMatrixDim.X + mouseX
 		for i, index := range hg.wordIndices {
 			if indexInWordMatrix >= index && indexInWordMatrix < index+wordLength {
-				hg.currentlyHoveredWordIndex = i
-				hg.playCue("ui/hacking_updown")
+				newIndex := i
+				if newIndex != hg.currentlyHoveredWordIndex {
+					hg.currentlyHoveredWordIndex = newIndex
+					hg.playCue("ui/hacking_updown")
+				}
 				break
 			}
 		}

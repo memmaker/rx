@@ -41,15 +41,25 @@ func (e *Equipment) IsEquipped(item *Item) bool {
 	return false
 }
 
+func (e *Equipment) SwapHands() {
+	defer e.changed()
+	mainHand := e.slots[foundation.SlotNameMainHand]
+	offHand := e.slots[foundation.SlotNameOffHand]
+	e.slots[foundation.SlotNameMainHand] = offHand
+	e.slots[foundation.SlotNameOffHand] = mainHand
+}
+
 func (e *Equipment) Equip(item *Item) {
 	defer e.changed()
 	slotName := item.SlotName()
 	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
-		_, hasOffHandItem := e.slots[foundation.SlotNameOffHand]
-		if !hasOffHandItem {
-			e.slots[foundation.SlotNameOffHand] = item
-		} else {
-			e.slots[foundation.SlotNameMainHand] = item
+		prevMainHand, hasMainHandItem := e.slots[foundation.SlotNameMainHand]
+		e.slots[foundation.SlotNameMainHand] = item
+		if hasMainHandItem {
+			if _, hasOffHandWeapon := e.slots[foundation.SlotNameOffHand]; hasOffHandWeapon {
+				e.unEquipBySlot(foundation.SlotNameOffHand)
+			}
+			e.slots[foundation.SlotNameOffHand] = prevMainHand
 		}
 		return
 	}
@@ -74,6 +84,10 @@ func (e *Equipment) UnEquip(item *Item) {
 	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
 		if slotItem, exists := e.slots[foundation.SlotNameMainHand]; exists && slotItem == item {
 			e.unEquipBySlot(foundation.SlotNameMainHand)
+			if offHand, hasOffHandWeapon := e.slots[foundation.SlotNameOffHand]; hasOffHandWeapon {
+				e.slots[foundation.SlotNameMainHand] = offHand
+				delete(e.slots, foundation.SlotNameOffHand)
+			}
 			return
 		}
 		if slotItem, exists := e.slots[foundation.SlotNameOffHand]; exists && slotItem == item {
@@ -104,15 +118,8 @@ func (e *Equipment) GetBySlot(hand foundation.EquipSlot) *Item {
 	return e.slots[hand]
 }
 
-func (e *Equipment) GetArmor() []*Item {
-	var armor []*Item
-	for _, item := range e.slots {
-		if item.IsArmor() {
-			armor = append(armor, item)
-		}
-	}
-	return armor
-
+func (e *Equipment) GetArmor() *Item {
+	return e.GetBySlot(foundation.SlotNameArmorTorso)
 }
 
 func (e *Equipment) CanEquip(item *Item) bool {
@@ -212,11 +219,6 @@ func (e *Equipment) changed() {
 	}
 }
 
-func (e *Equipment) HasShieldEquipped() bool {
-	slot := e.GetBySlot(foundation.SlotNameOffHand)
-	return slot != nil && slot.IsShield()
-}
-
 func (e *Equipment) GetShield() *Item {
 	return e.GetBySlot(foundation.SlotNameOffHand)
 }
@@ -300,6 +302,19 @@ func (e *Equipment) GetMeleeWeapon() (*Item, bool) {
 	}
 	offHand, exists := e.slots[foundation.SlotNameOffHand]
 	if exists && offHand.IsMeleeWeapon() {
+		return offHand, true
+	}
+	return nil, false
+
+}
+
+func (e *Equipment) GetRangedWeapon() (*Item, bool) {
+	item, exists := e.slots[foundation.SlotNameMainHand]
+	if exists && item.IsRangedWeapon() {
+		return item, true
+	}
+	offHand, exists := e.slots[foundation.SlotNameOffHand]
+	if exists && offHand.IsRangedWeapon() {
 		return offHand, true
 	}
 	return nil, false

@@ -73,7 +73,7 @@ func (g *GameState) DownedActorAt(loc geometry.Point) foundation.ActorForUI {
 	}
 	return nil
 }
-func (g *GameState) GetCharacterSheet() []string {
+func (g *GameState) GetCharacterSheet() string {
 
 	actor := g.Player
 	basicActorInfo := actor.GetDetailInfo()
@@ -109,11 +109,6 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 
 	canSeeMonsters := g.Player.HasFlag(foundation.FlagSeeMonsters)
 	if g.gridMap.IsActorAt(loc) && canSeeMonsters {
-		return true
-	}
-
-	canSeeMagic := g.Player.HasFlag(foundation.FlagSeeMagic)
-	if g.gridMap.IsItemAt(loc) && canSeeMagic && g.gridMap.ItemAt(loc).IsMagic() {
 		return true
 	}
 
@@ -212,11 +207,11 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	}
 	if g.gridMap.IsActorAt(pos) && g.Player.Position() != pos {
 		actor := g.gridMap.ActorAt(pos)
-		return foundation.HiLite("You see %s here", actor.Name())
+		return foundation.HiLite("You see %s here", actor.LookInfo())
 	}
 	if g.gridMap.IsDownedActorAt(pos) && g.Player.Position() != pos {
 		actor := g.gridMap.DownedActorAt(pos)
-		return foundation.HiLite("You see %s here", actor.Name())
+		return foundation.HiLite("You see %s here", actor.LookInfo())
 	}
 	if g.gridMap.IsItemAt(pos) {
 		item := g.gridMap.ItemAt(pos)

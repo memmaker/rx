@@ -125,7 +125,7 @@ func (a AttackOutcome) String(attackerName, defenderName string) []string {
 		return []string{attackRoll, a.HitTypeMessage()}
 	}
 
-	damageInfo := fmt.Sprintf("Damage rolled on %s: %d - %d DR => %d effective damage", a.DamageDice.ShortString(), a.DamageBeforeDR, a.DefenseDR, a.DamageDone)
+	damageInfo := fmt.Sprintf("GetDamage rolled on %s: %d - %d DR => %d effective damage", a.DamageDice.ShortString(), a.DamageBeforeDR, a.DefenseDR, a.DamageDone)
 
 	if !a.WasActiveDefenseRolled {
 		return []string{attackRoll, damageInfo, a.HitTypeMessage()}

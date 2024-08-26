@@ -2,11 +2,13 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -96,6 +98,129 @@ func (g *GameState) OpenHitLocationMenu() {
 	g.ui.OpenMenu(menuItems)
 }
 
+func (g *GameState) PlayerRest(duration time.Duration) {
+	g.ui.FadeToBlack()
+	g.gameTime = g.gameTime.Add(duration)
+	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Format("15:04"))))
+	g.ui.FadeFromBlack()
+}
+
+func (g *GameState) OpenRestMenu() {
+	g.ui.OpenMenu([]foundation.MenuItem{
+		{
+			Name: "Rest for ten minutes",
+			Action: func() {
+				g.PlayerRest(10 * time.Minute)
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest for thirty minutes",
+			Action: func() {
+				g.PlayerRest(30 * time.Minute)
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest for an hour",
+			Action: func() {
+				g.PlayerRest(time.Hour)
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest for two hours",
+			Action: func() {
+				g.PlayerRest(2 * time.Hour)
+			},
+
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest for three hours",
+			Action: func() {
+				g.PlayerRest(3 * time.Hour)
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest for four hours",
+			Action: func() {
+				g.PlayerRest(4 * time.Hour)
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest for five hours",
+			Action: func() {
+				g.PlayerRest(5 * time.Hour)
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest for six hours",
+			Action: func() {
+				g.PlayerRest(6 * time.Hour)
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest until morning (0600)",
+			Action: func() {
+				now := g.gameTime
+				morning := time.Date(now.Year(), now.Month(), now.Day(), 6, 0, 0, 0, now.Location())
+				if now.After(morning) {
+					morning = morning.AddDate(0, 0, 1)
+				}
+				g.PlayerRest(morning.Sub(now))
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest until noon (1200)",
+			Action: func() {
+				now := g.gameTime
+				noon := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, now.Location())
+				if now.After(noon) {
+					noon = noon.AddDate(0, 0, 1)
+				}
+				g.PlayerRest(noon.Sub(now))
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest until evening (1800)",
+			Action: func() {
+				now := g.gameTime
+				evening := time.Date(now.Year(), now.Month(), now.Day(), 18, 0, 0, 0, now.Location())
+				if now.After(evening) {
+					evening = evening.AddDate(0, 0, 1)
+				}
+				g.PlayerRest(evening.Sub(now))
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest until midnight (0000)",
+			Action: func() {
+				now := g.gameTime
+				midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+				if now.After(midnight) {
+					midnight = midnight.AddDate(0, 0, 1)
+				}
+				g.PlayerRest(midnight.Sub(now))
+			},
+			CloseMenus: true,
+		},
+		{
+			Name: "Rest until healed",
+			Action: func() {
+				g.PlayerRest(time.Hour * 48) // TODO: change this?
+			},
+			CloseMenus: true,
+		},
+	})
+}
 func (g *GameState) OpenWizardMenu() {
 	g.ui.OpenMenu([]foundation.MenuItem{
 		{
@@ -152,7 +277,7 @@ func (g *GameState) OpenWizardMenu() {
 		{
 			Name: "Show Flags",
 			Action: func() {
-				g.ui.OpenTextWindow(g.gameFlags.ToStringArray())
+				g.ui.OpenTextWindow(g.gameFlags.String())
 			},
 		},
 		{
@@ -170,7 +295,7 @@ func (g *GameState) OpenWizardMenu() {
 	})
 }
 
-func (g *GameState) StartDialogue(name string, conversationPartnerName string, isTerminal bool) {
+func (g *GameState) StartDialogue(name string, conversationPartnerName foundation.ChatterSource, isTerminal bool) {
 	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", name+".txt")
 	if !fxtools.FileExists(conversationFilename) {
 		return
@@ -184,8 +309,9 @@ func (g *GameState) StartDialogue(name string, conversationPartnerName string, i
 	g.OpenDialogueNode(conversation, rootNode, conversationPartnerName, isTerminal)
 }
 
-func (g *GameState) OpenDialogueNode(conversation *Conversation, node ConversationNode, conversationPartnerName string, isTerminal bool) {
+func (g *GameState) OpenDialogueNode(conversation *Conversation, node ConversationNode, conversationPartnerName foundation.ChatterSource, isTerminal bool) {
 	endConversation := false
+	instantEndWithChatter := false
 	var effectCalls []func()
 	for _, effect := range node.Effects {
 		if effect == "EndConversation" {
@@ -194,6 +320,13 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 			if fxtools.LooksLikeAFunction(effect) {
 				name, args := fxtools.GetNameAndArgs(effect)
 				switch name {
+				case "Transition":
+					mapName := args.Get(0)
+					locationName := args.Get(1)
+					g.ui.FadeToBlack()
+					g.GotoNamedLevel(mapName, locationName)
+					g.ui.FadeFromBlack()
+					instantEndWithChatter = true
 				case "RemoveItem":
 					itemName := args.Get(0)
 					removedItem := g.Player.GetInventory().RemoveItemByName(itemName)
@@ -226,10 +359,17 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 	}
 
 	nodeText := node.NpcText
+
+	if instantEndWithChatter {
+		g.ui.CloseConversation()
+		g.ui.TryAddChatter(conversationPartnerName, nodeText)
+		return
+	}
+
 	var nodeOptions []foundation.MenuItem
 	if endConversation {
 		nodeOptions = append(nodeOptions, foundation.MenuItem{
-			Name:       "<End Conversation>",
+			Name:       "<Leave>",
 			Action:     g.ui.CloseConversation,
 			CloseMenus: true,
 		})
@@ -260,11 +400,6 @@ func (g *GameState) openWizardCreateItemMenu() {
 		foundation.ItemCategoryFood,
 		foundation.ItemCategoryWeapons,
 		foundation.ItemCategoryArmor,
-		foundation.ItemCategoryAmulets,
-		foundation.ItemCategoryPotions,
-		foundation.ItemCategoryScrolls,
-		foundation.ItemCategoryRings,
-		foundation.ItemCategoryWands,
 	}
 	var menuActions []foundation.MenuItem
 
@@ -313,7 +448,7 @@ func (g *GameState) openWizardCreateMonsterMenu() {
 				if monsterDef.Flags.IsSet(foundation.FlagWallCrawl) {
 					g.spawnCrawlerInWall(monsterDef)
 				} else {
-					newActor := g.NewEnemyFromDef(monsterDef)
+					newActor := g.NewActorFromDef(monsterDef)
 					g.gridMap.AddActorWithDisplacement(newActor, g.Player.Position())
 				}
 			},
@@ -341,4 +476,9 @@ func (g *GameState) openWizardCreateTrapMenu() {
 		})
 	}
 	g.ui.OpenMenu(menuActions)
+}
+
+func (g *GameState) OpenJournal() {
+	entries := g.journal.GetEntriesForViewing("")
+	g.ui.OpenTextWindow(strings.Join(entries, "\n\n"))
 }

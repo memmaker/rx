@@ -47,14 +47,14 @@ func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point, hitZone int)
 	u.onTargetUpdated = func(targetPos geometry.Point) {
 		actorAt := u.game.ActorAt(targetPos)
 		if actorAt != nil {
-			labelBelow := u.game.GetPlayerPosition().Y < targetPos.Y
-			yPos := -1
-			if labelBelow {
-				yPos = 1
-			}
 			hitChance := u.game.GetRangedChanceToHitForUI(actorAt)
-			labelPos := targetPos.Add(geometry.Point{X: -1, Y: yPos})
-			u.mapOverlay.Print(labelPos.X, labelPos.Y, fmt.Sprintf("%d%%", hitChance))
+			cthString := fmt.Sprintf("%d%%", hitChance)
+			placeBelow := u.game.GetPlayerPosition().Y < targetPos.Y
+			if placeBelow {
+				u.mapOverlay.AddBelow(actorAt.Position(), cthString)
+			} else {
+				u.mapOverlay.AddAbove(actorAt.Position(), cthString)
+			}
 		}
 	}
 	u.beginTargeting(onSelected)
@@ -195,7 +195,9 @@ func (u *UI) cancelTargeting() {
 func (u *UI) updateTarget(targetPos geometry.Point) {
 	origin := u.game.GetPlayerPosition()
 	clear(u.targetingTiles)
+
 	if origin == targetPos {
+		u.targetPos = targetPos
 		return
 	}
 	line := geometry.BresenhamLine(origin, targetPos, func(x, y int) bool {

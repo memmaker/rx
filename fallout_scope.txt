@@ -1,39 +1,37 @@
 Fallout Core Features
- - SPECIAL System
-   - Skill Applications
- - Worldmap
-   - Random Encounters
-   - Travel
  - Items & Actors
-   - Weapons
-   - Armor
-   - Consumables
- - Containers
+   - Weapons - Missing: Animations & Effects for more Weapon Types
+   - Armor - Missing: Real Armor Values and Computations
+   - Consumables - Missing: Currently only very basic consumables
+ - Containers - DONE
  - Doors
-   - Lockable
-   - Pickable
-   - Breakable
-   - Openable
+   - Lockable - DONE
+   - Pickable - DONE
+   - Breakable - DONE
+   - Openable - DONE
  - Skill applications
-   - Sneaking (toggle button)
-   - First Aid / Doctor (apply at resting?)
-   - Steal / Plant (context action on actors)
-   - Lockpick (context action on doors)
-   - Science (context action on terminals)
-   - Repair (context action on items/objects)
-   - Barter (apply at trading)
-   - Speech (apply at dialogue)
+   - Sneaking (toggle button) - missing
+   - First Aid / Doctor (apply at resting?) - missing
+   - Steal / Plant (context action on actors) - missing
+   - Lockpick (context action on doors) - Skill not applied
+   - Science (context action on terminals) - Skill not applied
+   - Repair (context action on items/objects) - missing
+   - Barter (apply at trading) - missing
+   - Speech (apply at dialogue) - missing
    - Traps (context action on traps)
  - Dialogue
-   - Reactions
-   - Terminals
-   - Checks / Triggers
- - Quests
+   - Reactions?
+   - Terminals - DONE
+   - Checks / Triggers - DONE
+ - Quests - missing
  - Tactical Combat
-   - Melee
-   - Ranged (Aimed/Burst)
-   - Thrown
-   - Explosives
-   - Traps
-   - Critical Hits / Fails
-   - Enemy AI
+   - Melee - melee weapons missing
+   - Ranged (Aimed/Burst) - targeting mode cycle missing
+   - Thrown - currently not working?
+   - Explosives - missing
+   - Traps - missing
+   - Critical Hits / Fails - missing
+   - Enemy AI - missing
+
+See:
+https://mikesrpgcenter.com/fallout/index.html

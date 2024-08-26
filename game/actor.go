@@ -19,16 +19,16 @@ import (
 // Level: 1
 // Armor Class: 10
 // Hit Points: 12/12
-// Damage: 1d4
-type PlayerRelation uint8
+// GetDamage: 1d4
+type CharacterMood uint8
 
 const (
-	Neutral PlayerRelation = iota
+	Neutral CharacterMood = iota
 	Hostile
-	Ally
+	Panic
 )
 
-func PlayerRelationFromString(str string) PlayerRelation {
+func PlayerRelationFromString(str string) CharacterMood {
 	str = strings.ToLower(str)
 	switch str {
 	case "neutral":
@@ -36,7 +36,7 @@ func PlayerRelationFromString(str string) PlayerRelation {
 	case "hostile":
 		return Hostile
 	case "ally":
-		return Ally
+		return Panic
 	}
 	return Neutral
 }
@@ -62,12 +62,16 @@ type Actor struct {
 	timeEnergy             int
 	body                   []*foundation.BodyPart
 
-	relation     PlayerRelation
+	mood         CharacterMood
 	dialogueFile string
+	teamName     string
+	enemyActors  map[string]bool
+	enemyTeams   map[string]bool
 }
 
 func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet) *Actor {
 	player := NewActor(name, icon, character)
+	player.SetInternalName("player")
 	return player
 }
 
@@ -82,8 +86,10 @@ func NewActor(name string, icon textiles.TextIcon, character *special.CharSheet)
 		equipment:   NewEquipment(),
 		charSheet:   character,
 		body:        body,
-		relation:    Neutral,
+		mood:        Neutral,
 		statusFlags: foundation.NewMapFlags(),
+		enemyActors: make(map[string]bool),
+		enemyTeams:  make(map[string]bool),
 	}
 
 	// add persistent modifiers, that always apply when a condition is met here
@@ -392,7 +398,7 @@ func (a *Actor) TextIcon(bg color.RGBA) textiles.TextIcon {
 	return a.icon.WithBg(bg)
 }
 
-func (a *Actor) GetDetailInfo() []string {
+func (a *Actor) GetDetailInfo() string {
 
 	var result []string
 	result = append(result, fmt.Sprintf("Name: %s", a.Name()))
@@ -453,7 +459,7 @@ func (a *Actor) GetDetailInfo() []string {
 	result = append(result, resistanceLines...)
 	result = append(result, "", "> Skills:")
 	result = append(result, skillLines...)
-	return result
+	return strings.Join(result, "\n")
 }
 
 func (a *Actor) SetIntrinsicAttacks(attacks []IntrinsicAttack) {
@@ -586,11 +592,11 @@ func (a *Actor) HasKey(identifier string) bool {
 }
 
 func (a *Actor) IsHostile() bool {
-	return a.relation == Hostile
+	return a.mood == Hostile
 }
 
-func (a *Actor) SetRelationToPlayer(relation PlayerRelation) {
-	a.relation = relation
+func (a *Actor) SetRelationToPlayer(relation CharacterMood) {
+	a.mood = relation
 }
 
 func (a *Actor) SetDisplayName(name string) {
@@ -602,7 +608,7 @@ func (a *Actor) GetDialogueFile() string {
 }
 
 func (a *Actor) SetHostile() {
-	a.relation = Hostile
+	a.mood = Hostile
 	a.tryEquipWeapon()
 }
 
@@ -613,4 +619,147 @@ func (a *Actor) tryEquipWeapon() {
 			a.GetEquipment().Equip(weapon)
 		}
 	}
+}
+
+func (a *Actor) GetHitAudioCue(isMelee bool) string {
+	audioName := a.getAudioName()
+	hitType := "HIT"
+	if isMelee {
+		hitType = "MELEE_HIT"
+	}
+	return fmt.Sprintf("critters/%s/%s", audioName, hitType)
+}
+
+func (a *Actor) GetDeathAudioCue() string {
+	audioName := a.getAudioName()
+	return fmt.Sprintf("critters/%s/FALLING", audioName)
+}
+func (a *Actor) GetDeathCriticalAudioCue(mode special.TargetingMode, damageType special.DamageType) string {
+	audioName := a.getAudioName()
+	actionName := "FALLING"
+	switch damageType {
+	case special.DamageTypeNormal:
+		switch mode {
+		case special.TargetingModeFireBurst:
+			actionName = "PERFORATED_DEATH"
+		default:
+			if rand.Intn(2) == 0 {
+				actionName = "HOLE_IN_BODY"
+			} else {
+				actionName = "RIPPING_APART"
+			}
+		}
+	case special.DamageTypeLaser:
+		actionName = "SLICE_IN_TWO"
+	case special.DamageTypeFire:
+		if rand.Intn(2) == 0 { // TODO: not both always available, fallbacks or tests needed..
+			actionName = "BURNED"
+		} else {
+			actionName = "BURNING_DANCE"
+		}
+	case special.DamageTypeExplosive:
+		actionName = "BLOW_EXPLOSION"
+	case special.DamageTypeElectrical:
+		if rand.Intn(2) == 0 {
+			actionName = "ELECTRIC_BURNED"
+		} else {
+			actionName = "ELECTRIC_BURNED_TO_ASHES"
+		}
+	case special.DamageTypePlasma:
+		actionName = "MELTDOWN"
+	default:
+		actionName = "FALLING"
+	}
+	return fmt.Sprintf("critters/%s/%s", audioName, actionName)
+}
+func (a *Actor) GetDodgedAudioCue() string {
+	audioName := a.getAudioName()
+	return fmt.Sprintf("critters/%s/DODGE", audioName)
+}
+
+func (a *Actor) GetMeleeAudioCue(isKick bool) string {
+	audioName := a.getAudioName()
+	hitType := "PUNCH"
+	if isKick {
+		hitType = "KICK"
+	}
+	return fmt.Sprintf("critters/%s/%s", audioName, hitType)
+}
+func (a *Actor) getAudioName() string {
+	return "human_male"
+}
+
+func (a *Actor) GetTeam() string {
+	return a.teamName
+}
+
+func (a *Actor) AddToEnemyActors(name string) {
+	if a.internalName == name {
+		return
+	}
+	a.enemyActors[name] = true
+}
+
+func (a *Actor) AddToEnemyTeams(name string) {
+	if a.teamName == name {
+		return
+	}
+	a.enemyTeams[name] = true
+}
+
+func (a *Actor) IsHostileTowards(attacker *Actor) bool {
+	if a.mood != Hostile {
+		return false
+	}
+	if _, exists := a.enemyActors[attacker.GetInternalName()]; exists {
+		return true
+	}
+	if _, exists := a.enemyTeams[attacker.GetTeam()]; exists {
+		return true
+	}
+	return false
+}
+
+func (a *Actor) IsPanicking() bool {
+	return a.mood == Panic
+}
+
+func (a *Actor) LookInfo() string {
+	if !a.IsAlive() {
+		return fmt.Sprintf("%s (dead)", a.Name())
+	}
+	return a.Name()
+}
+
+func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, bodyPart int) SourcedDamage {
+	if !a.GetEquipment().HasArmorEquipped() {
+		return damage
+	}
+
+	armor := a.GetEquipment().GetArmor()
+	armoInfo := armor.GetArmor()
+
+	var reduction int
+	var threshold int
+
+	if damage.DamageType.IsEnergy() {
+		protection := armoInfo.GetProtection(special.DamageTypeLaser)
+		threshold = protection.DamageThreshold
+		reduction = protection.DamageReduction
+	} else {
+		protection := armoInfo.GetProtection(special.DamageTypeNormal)
+		threshold = protection.DamageThreshold
+		reduction = protection.DamageReduction
+	}
+	originalDamageAmount := damage.DamageAmount
+
+	newDamageAmount := max(0, originalDamageAmount-threshold)
+
+	if newDamageAmount > 0 {
+		cappedReduction := min(reduction, 90)
+		reductionFactor := (100 - cappedReduction) / 100.0
+		newDamageAmount = max(1, newDamageAmount*reductionFactor)
+	}
+	damage.DamageAmount = newDamageAmount
+	return damage
 }

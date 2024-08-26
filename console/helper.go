@@ -4,6 +4,7 @@ import (
 	"RogueUI/foundation"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
+	"strings"
 )
 
 type InputCapturer interface {
@@ -40,13 +41,15 @@ func wrapPrimitivesTopToBottom(p, q cview.Primitive) cview.Primitive {
 	return container
 }
 
-func longestLineWithoutColorCodes(description []string) int {
+func widthAndHeightFromString(description string) (int, int) {
 	longest := 0
-	for _, line := range description {
+	height := 0
+	for _, line := range strings.Split(description, "\n") {
 		withoutColors := cview.TaggedStringWidth(line)
 		longest = max(longest, withoutColors)
+		height++
 	}
-	return longest
+	return longest, height
 }
 
 func longestInventoryLineWithoutColorCodes(items []foundation.ItemForUI) int {

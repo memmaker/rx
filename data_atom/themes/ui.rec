@@ -1,11 +1,11 @@
 %rec: ui
-UIForeground: light_gray_2
+UIForeground: light_gray_4
 UIBackground: black
 #
 UIForegroundHighlighted: white
 #
 BorderBackground: black
-BorderForeground: light_gray_2
+BorderForeground: light_gray_4
 
 %rec: borders
 

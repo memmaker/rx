@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
@@ -100,6 +101,17 @@ func (g *GameState) defaultBehaviour(enemy *Actor) {
 	distanceToPlayer := g.gridMap.MoveDistance(enemy.Position(), g.Player.Position())
 
 	sameRoom := g.isInPlayerRoom(enemy.Position()) || distanceToPlayer <= 1
+
+	rangedWeapon, hasRangedWeapon := enemy.GetEquipment().GetRangedWeapon()
+	if hasRangedWeapon {
+		weaponRange := 5 //rangedWeapon.GetWeapon().Range()
+		if distanceToPlayer <= weaponRange {
+			consequencesOfMonsterRangedAttack := g.actorRangedAttack(enemy, rangedWeapon, special.TargetingModeFireSingle, g.Player, 0)
+			g.ui.AddAnimations(consequencesOfMonsterRangedAttack)
+			return
+		}
+
+	}
 
 	if distanceToPlayer <= 1 {
 		consequencesOfMonsterAttack := g.actorMeleeAttack(enemy, g.Player)

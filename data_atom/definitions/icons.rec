@@ -168,3 +168,7 @@ Char: •
 Fg: green_2
 Bg: tan_10
 
+Char: ☼
+Fg: yellow_2
+Bg: black
+

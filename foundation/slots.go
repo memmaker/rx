@@ -99,6 +99,8 @@ func (t ItemTags) Contains(tag ItemTags) bool {
 const (
 	TagNone   ItemTags = 0
 	TagNoLoot ItemTags = 1 << iota
+	TagNoAim
+	TagNoSound
 )
 
 func ItemTagFromString(s string) ItemTags {
@@ -106,6 +108,10 @@ func ItemTagFromString(s string) ItemTags {
 	switch s {
 	case "no_loot":
 		return TagNoLoot
+	case "no_aim":
+		return TagNoAim
+	case "no_sound":
+		return TagNoSound
 	}
 	panic("Unknown item tag: " + s)
 	return TagNone

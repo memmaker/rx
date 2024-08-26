@@ -3,7 +3,7 @@ package game
 import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
-	"fmt"
+	"RogueUI/special"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
@@ -112,7 +112,15 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 					g.msg(foundation.HiLite("%s is frozen", actor.Name()))
 					actor.GetFlags().Set(foundation.FlagHeld)
 				}
-				damageAnim := g.damageActorWithFollowUp(zapper.Name(), actor, damage, freeze, nil)
+				damageWithSource := SourcedDamage{
+					NameOfThing:     "ice ray",
+					Attacker:        zapper,
+					IsObviousAttack: true,
+					AttackMode:      special.TargetingModeFireSingle,
+					DamageType:      special.DamageTypePoison,
+					DamageAmount:    damage,
+				}
+				damageAnim := g.damageActorWithFollowUp(damageWithSource, actor, freeze, nil)
 				return damageAnim
 			}
 		}
@@ -128,7 +136,6 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 
 }
 func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Animation {
-	damage := 5
 	radius := 3
 	affected := g.gridMap.GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
 		return g.gridMap.IsTileWalkable(p)
@@ -137,19 +144,27 @@ func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Ani
 	var animationsForThisFrame []foundation.Animation
 	var deferredAnimations []foundation.Animation
 	var affectedPoints []geometry.Point
+	damage := SourcedDamage{
+		NameOfThing:     "explosion",
+		Attacker:        zapper,
+		IsObviousAttack: false,
+		AttackMode:      special.TargetingModeFireSingle,
+		DamageType:      special.DamageTypeExplosive,
+		DamageAmount:    rand.Intn(5) + 10,
+	}
 	for point, _ := range affected {
-		damageAnims := g.damageLocation("explosion", point, damage)
+		damageAnims := g.damageLocation(damage, point)
 		deferredAnimations = append(deferredAnimations, damageAnims...)
 		affectedPoints = append(affectedPoints, point)
 	}
 
-	projectileAnim := g.ui.GetAnimExplosion(affectedPoints, nil)
-
-	if len(deferredAnimations) > 0 && projectileAnim != nil {
-		projectileAnim.SetFollowUp(deferredAnimations)
+	explosionAnim := g.ui.GetAnimExplosion(affectedPoints, nil)
+	explosionAnim.SetAudioCue("world/explosion")
+	if len(deferredAnimations) > 0 && explosionAnim != nil {
+		explosionAnim.SetFollowUp(deferredAnimations)
 	}
 
-	animationsForThisFrame = append(animationsForThisFrame, projectileAnim)
+	animationsForThisFrame = append(animationsForThisFrame, explosionAnim)
 
 	return animationsForThisFrame
 }
@@ -181,12 +196,20 @@ func (g *GameState) singleRay(origin, target geometry.Point, leadIcon rune, trai
 
 func fireRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
 
-	damage := max(1, dice_curve.Spread(10, 0.8))
+	damageRolled := max(1, dice_curve.Spread(10, 0.8))
 
 	trailColors := []string{"White", "Yellow", "LightRed", "Red"}
 
 	hitEntityHandler := func(hitPos geometry.Point) []foundation.Animation {
-		return g.damageLocation(zapper.Name(), hitPos, damage)
+		damage := SourcedDamage{
+			NameOfThing:     "fire ray",
+			Attacker:        zapper,
+			IsObviousAttack: true,
+			AttackMode:      special.TargetingModeFireSingle,
+			DamageType:      special.DamageTypeFire,
+			DamageAmount:    damageRolled,
+		}
+		return g.damageLocation(damage, hitPos)
 	}
 	if rand.Intn(20) == 0 { // 1 in 20 chance to just bounce off
 		bounceCount := rand.Intn(30) + 3
@@ -196,19 +219,27 @@ func fireRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 }
 
 func lightningRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
-	damage := max(1, dice_curve.Spread(7, 0.5))
+	damageRolled := max(1, dice_curve.Spread(7, 0.5))
 
 	trailColors := []string{
 		"White",
-		"Yellow",
-		"Yellow",
-		"Yellow",
+		"Yellow_3",
+		"Yellow_3",
+		"Yellow_3",
 	}
 	dontHitThese := make(map[*Actor]bool)
 	dontHitThese[zapper] = true
 
 	hitEntityHandler := func(hitPos geometry.Point) []foundation.Animation {
-		damageAnims := g.damageLocation(zapper.Name(), hitPos, damage)
+		damage := SourcedDamage{
+			NameOfThing:     "lightning ray",
+			Attacker:        zapper,
+			IsObviousAttack: true,
+			AttackMode:      special.TargetingModeFireSingle,
+			DamageType:      special.DamageTypeElectrical,
+			DamageAmount:    damageRolled,
+		}
+		damageAnims := g.damageLocation(damage, hitPos)
 		if g.gridMap.IsActorAt(hitPos) {
 			dontHitThese[g.gridMap.ActorAt(hitPos)] = true
 		}
@@ -445,7 +476,7 @@ func polymorph(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.
 		//animations = append(animations, coverAnim)
 
 		monsterDef := g.dataDefinitions.RandomMonsterDef()
-		newMonster := g.NewEnemyFromDef(monsterDef)
+		newMonster := g.NewActorFromDef(monsterDef)
 
 		oldName := defender.Name()
 		g.gridMap.RemoveActor(defender)
@@ -468,8 +499,15 @@ func magicMissile(g *GameState, zapper *Actor, targetPos geometry.Point) []found
 	var onHitAnimations []foundation.Animation
 
 	projAnim, _ := g.ui.GetAnimProjectile('°', "LightGreen", zapper.Position(), targetPos, nil)
-
-	damageConsequences := g.damageLocation(zapper.Name(), targetPos, 0)
+	damage := SourcedDamage{
+		NameOfThing:     "magic missile",
+		Attacker:        zapper,
+		IsObviousAttack: false,
+		AttackMode:      special.TargetingModeFireSingle,
+		DamageType:      special.DamageTypeRadiation,
+		DamageAmount:    5,
+	}
+	damageConsequences := g.damageLocation(damage, targetPos)
 	onHitAnimations = append(onHitAnimations, damageConsequences...)
 
 	if projAnim != nil {
@@ -496,8 +534,15 @@ func magicItemProjectile(g *GameState, zapper *Actor, targetPos geometry.Point, 
 	g.addItemToMap(dart, targetPos)
 
 	projAnim, _ := g.ui.GetAnimThrow(dart, origin, targetPos)
-
-	damageConsequences := g.damageLocation(sourceName, targetPos, dart.GetThrowDamageDice().Roll())
+	damage := SourcedDamage{
+		NameOfThing:     sourceName,
+		Attacker:        zapper,
+		IsObviousAttack: true,
+		AttackMode:      special.TargetingModeFireSingle,
+		DamageType:      special.DamageTypePlasma,
+		DamageAmount:    dart.GetThrowDamageDice().Roll(),
+	}
+	damageConsequences := g.damageLocation(damage, targetPos)
 
 	onHitAnimations = append(onHitAnimations, damageConsequences...)
 
@@ -515,45 +560,88 @@ func nameOfDamageSource(zapper *Actor, otherName string) string {
 	return zapper.Name()
 }
 
-func (g *GameState) damageLocation(damageSource string, targetPos geometry.Point, damage int) []foundation.Animation {
+func (g *GameState) damageLocation(damage SourcedDamage, targetPos geometry.Point) []foundation.Animation {
 	if g.gridMap.IsActorAt(targetPos) {
 		defender := g.gridMap.ActorAt(targetPos)
-		return g.damageActor(damageSource, defender, damage)
-
+		return g.damageActor(damage, defender)
 	} else if g.gridMap.IsObjectAt(targetPos) {
 		object := g.gridMap.ObjectAt(targetPos)
-		return object.OnDamage(nil)
+		return object.OnDamage(damage)
 	}
 	return nil
 }
 
-func (g *GameState) damageActorWithFollowUp(damageSource string, victim *Actor, damage int, done func(), followUps []foundation.Animation) []foundation.Animation {
-	victim.TakeDamage(damage)
+type SourcedDamage struct {
+	NameOfThing     string
+	Attacker        *Actor
+	IsObviousAttack bool
+	AttackMode      special.TargetingMode
+	DamageType      special.DamageType
+	DamageAmount    int
+}
 
-	damageAudioCue := ""
+func (d SourcedDamage) IsActor() bool {
+	return d.Attacker != nil
+}
+func (d SourcedDamage) String() string {
+	if d.Attacker != nil {
+		return d.Attacker.Name()
+	}
+	return d.NameOfThing
+}
 
-	if !victim.IsHuman() {
-		damageAudioCue = fmt.Sprintf("enemies/%s/Hit", victim.GetInternalName())
+func (g *GameState) damageActorWithFollowUp(
+	damage SourcedDamage,
+	victim *Actor,
+	done func(),
+	followUps []foundation.Animation,
+) []foundation.Animation {
+
+	victim.TakeDamage(damage.DamageAmount)
+
+	g.trySetHostile(damage, victim)
+
+	isKill := victim.GetHitPoints() <= 0
+	isOverKill := victim.GetHitPoints() <= (-victim.GetHitPointsMax() / 2)
+	var damageAnim foundation.Animation
+	var damageAudioCue string
+
+	if isKill {
+		g.actorKilled(damage, victim)
+		if isOverKill {
+			damageAudioCue = victim.GetDeathCriticalAudioCue(damage.AttackMode, damage.DamageType)
+		} else {
+			damageAudioCue = victim.GetDeathAudioCue()
+		}
+		// TODO: replace this with cool matching death animations
+		g.makeMapBloody(victim.Position())
+		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, done)
+	} else { // only a flesh wound
+		damageAudioCue = victim.GetHitAudioCue(damage.AttackMode.IsMelee())
+		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, done)
+		if victim != g.Player {
+			g.tryAddChatter(victim, "Ouch!")
+		}
 	}
 
-	damageAnim := g.ui.GetAnimDamage(victim.Position(), damage, done)
-
-	if victim.HasFlag(foundation.FlagSleep) && rand.Intn(10) != 0 {
-		victim.GetFlags().Unset(foundation.FlagSleep)
-	}
-
-	if victim.GetHitPoints() <= 0 {
-		g.actorKilled(damageSource, victim)
-		damageAudioCue = fmt.Sprintf("enemies/%s/Death", victim.GetInternalName())
-		//damageAnim.SetFollowUp(consequencesOfKill.Animations)
-	}
 	damageAnim.SetAudioCue(damageAudioCue)
 	damageAnim.SetFollowUp(followUps)
 	return []foundation.Animation{damageAnim}
 }
 
-func (g *GameState) damageActor(damageSource string, victim *Actor, damage int) []foundation.Animation {
-	return g.damageActorWithFollowUp(damageSource, victim, damage, nil, nil)
+func (g *GameState) trySetHostile(damage SourcedDamage, victim *Actor) {
+	if damage.IsActor() && !victim.IsPanicking() && !victim.IsHostileTowards(damage.Attacker) && damage.IsObviousAttack && g.canActorSee(victim, damage.Attacker.Position()) {
+		if victim.GetTeam() == damage.Attacker.GetTeam() {
+			victim.AddToEnemyActors(damage.Attacker.GetInternalName())
+		} else {
+			victim.AddToEnemyTeams(damage.Attacker.GetTeam())
+		}
+		victim.SetHostile()
+	}
+}
+
+func (g *GameState) damageActor(damage SourcedDamage, victim *Actor) []foundation.Animation {
+	return g.damageActorWithFollowUp(damage, victim, nil, nil)
 }
 
 func (g *GameState) getLineOfSight(origin geometry.Point, targetPos geometry.Point) []geometry.Point {
@@ -610,11 +698,17 @@ func fireBreath(g *GameState, zapper *Actor, pos geometry.Point) []foundation.An
 
 	breathAnim := g.ui.GetAnimBreath(pathOfFlight, nil)
 
-	damage := 5
-
 	var onHitAnimations []foundation.Animation
 	for _, hitPos := range pathOfFlight {
-		damageAnims := g.damageLocation(zapper.Name(), hitPos, damage)
+		damage := SourcedDamage{
+			NameOfThing:     "",
+			Attacker:        zapper,
+			IsObviousAttack: true,
+			AttackMode:      special.TargetingModeFireSingle,
+			DamageType:      special.DamageTypeFire,
+			DamageAmount:    5,
+		}
+		damageAnims := g.damageLocation(damage, hitPos)
 		onHitAnimations = append(onHitAnimations, damageAnims...)
 	}
 

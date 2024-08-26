@@ -9,6 +9,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"image/color"
+	"math/rand"
 	"strconv"
 	"strings"
 )
@@ -24,7 +25,6 @@ type Item struct {
 	useEffectName string
 	zapEffectName string
 	charges       int
-	slot          foundation.EquipSlot
 
 	stat       dice_curve.Stat
 	statBonus  int
@@ -35,9 +35,13 @@ type Item struct {
 	thrownDamage dice_curve.Dice
 	tags         foundation.ItemTags
 	textFile     string
+	text         string
 	lockFlag     string
 
-	icon textiles.TextIcon
+	icon                   textiles.TextIcon
+	chanceToBreakOnThrow   int
+	currentAttackModeIndex int
+	setFlagOnPickup        string
 }
 
 func (g *GameState) NewItemFromName(itemName string) *Item {
@@ -72,7 +76,6 @@ func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Item
 		internalName: fileName,
 		category:     foundation.ItemCategoryReadables,
 		textFile:     fileName,
-		slot:         foundation.SlotNameNotEquippable,
 		icon:         icon,
 	}
 }
@@ -83,7 +86,6 @@ func NewKey(keyID, description string, icon textiles.TextIcon) *Item {
 		lockFlag:     keyID,
 		category:     foundation.ItemCategoryKeys,
 		charges:      -1,
-		slot:         foundation.SlotNameNotEquippable,
 		icon:         icon,
 	}
 }
@@ -94,24 +96,26 @@ func NewItem(def ItemDef, icon textiles.TextIcon) *Item {
 		charges = def.Charges.Roll()
 	}
 	item := &Item{
-		description:   def.Description,
-		tags:          def.Tags,
-		internalName:  def.Name,
-		category:      def.Category,
-		charges:       charges,
-		slot:          def.Slot,
-		stat:          def.Stat,
-		statBonus:     def.StatBonus.Roll(),
-		skill:         def.Skill,
-		skillBonus:    def.SkillBonus.Roll(),
-		equipFlag:     def.EquipFlag,
-		thrownDamage:  def.ThrowDamageDice,
-		position:      def.Position,
-		textFile:      def.TextFile,
-		lockFlag:      def.LockFlag,
-		zapEffectName: def.ZapEffect,
-		useEffectName: def.UseEffect,
-		icon:          icon,
+		description:          def.Description,
+		tags:                 def.Tags,
+		internalName:         def.Name,
+		category:             def.Category,
+		charges:              charges,
+		stat:                 def.Stat,
+		statBonus:            def.StatBonus.Roll(),
+		skill:                def.Skill,
+		skillBonus:           def.SkillBonus.Roll(),
+		equipFlag:            def.EquipFlag,
+		thrownDamage:         def.ThrowDamageDice,
+		position:             def.Position,
+		textFile:             def.TextFile,
+		text:                 def.Text,
+		lockFlag:             def.LockFlag,
+		zapEffectName:        def.ZapEffect,
+		useEffectName:        def.UseEffect,
+		chanceToBreakOnThrow: def.ChanceToBreakOnThrow,
+		setFlagOnPickup:      def.SetFlagOnPickup,
+		icon:                 icon,
 	}
 
 	if def.IsValidAmmo() {
@@ -123,6 +127,7 @@ func NewItem(def ItemDef, icon textiles.TextIcon) *Item {
 			RoundsInMagazine: def.AmmoDef.RoundsInMagazine,
 			CaliberIndex:     def.AmmoDef.CaliberIndex,
 		}
+		item.charges = item.ammo.RoundsInMagazine
 	}
 
 	if def.IsValidWeapon() {
@@ -133,13 +138,12 @@ func NewItem(def ItemDef, icon textiles.TextIcon) *Item {
 			magazineSize:     def.WeaponDef.MagazineSize,
 			burstRounds:      def.WeaponDef.BurstRounds,
 			caliberIndex:     def.WeaponDef.CaliberIndex,
+			soundID:          def.WeaponDef.SoundID,
+			damageType:       def.WeaponDef.DamageType,
 			loadedInMagazine: nil,
 			qualityInPercent: 100,
-			targetingModeOne: def.WeaponDef.TargetingModeOne,
-			targetingModeTwo: def.WeaponDef.TargetingModeTwo,
+			attackModes:      def.GetAttackModes(),
 		}
-		item.weapon.CycleTargetMode()
-		item.slot = foundation.SlotNameMainHand
 	}
 
 	if def.IsValidArmor() {
@@ -175,16 +179,14 @@ func (i *Item) LongNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 	if i.IsWeapon() {
 		weapon := i.weapon
-		targetMode := weapon.GetCurrentTargetingMode().ToString()
-		timeNeeded := weapon.GetTimeNeeded()
+		attackMode := weapon.GetAttackMode(i.currentAttackModeIndex)
+		targetMode := attackMode.String()
+		timeNeeded := attackMode.TUCost
 		bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
 		line = cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, weapon.GetDamage().ShortString(), bullets))
 	}
 	if i.IsArmor() {
 		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
-	}
-	if i.IsRing() && i.charges > 1 {
-		line = cview.Escape(fmt.Sprintf("%s (%d turns)", i.Name(), i.charges))
 	}
 	return colorCode + line + "[-]"
 }
@@ -197,9 +199,6 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 	}
 	if i.IsArmor() {
 		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
-	}
-	if i.IsRing() && i.charges > 1 {
-		line = cview.Escape(fmt.Sprintf("%s (%d turns)", i.Name(), i.charges))
 	}
 	if i.IsAmmo() {
 		line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetCharges()))
@@ -241,7 +240,7 @@ func (i *Item) IsUsableOrZappable() bool {
 }
 
 func (i *Item) IsReadable() bool {
-	return i.textFile != ""
+	return i.textFile != "" || i.text != ""
 }
 
 func (i *Item) IsUsable() bool {
@@ -272,7 +271,7 @@ func (i *Item) CanStackWith(other *Item) bool {
 	if i.internalName != other.internalName {
 		return false
 	}
-	if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || i.IsRing() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() || other.IsRing() {
+	if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() {
 		return false
 	}
 
@@ -280,11 +279,11 @@ func (i *Item) CanStackWith(other *Item) bool {
 		return false
 	}
 
-	if i.charges != other.charges {
-		return false
+	if i.IsAmmo() && other.IsAmmo() && i.GetAmmo().Equals(other.GetAmmo()) {
+		return true
 	}
 
-	if i.IsAmmo() && other.IsAmmo() && !i.GetAmmo().Equals(other.GetAmmo()) {
+	if i.charges != other.charges {
 		return false
 	}
 
@@ -292,11 +291,17 @@ func (i *Item) CanStackWith(other *Item) bool {
 }
 
 func (i *Item) SlotName() foundation.EquipSlot {
-	return i.slot
+	switch {
+	case i.IsArmor():
+		return foundation.SlotNameArmorTorso
+	case i.IsWeapon():
+		return foundation.SlotNameMainHand
+	}
+	return foundation.SlotNameNotEquippable
 }
 
 func (i *Item) IsEquippable() bool {
-	return i.IsWeapon() || i.IsArmor() || i.IsShield() || i.IsRing()
+	return i.IsWeapon() || i.IsArmor()
 }
 
 func (i *Item) IsMeleeWeapon() bool {
@@ -315,10 +320,6 @@ func (i *Item) IsWeapon() bool {
 	return i.weapon != nil
 }
 
-func (i *Item) IsShield() bool {
-	return i.IsArmor() && i.slot == foundation.SlotNameShield
-}
-
 func (i *Item) GetCategory() foundation.ItemCategory {
 	return i.category
 }
@@ -331,10 +332,6 @@ func (i *Item) GetArmor() *ArmorInfo {
 	return i.armor
 }
 
-func (i *Item) IsPotion() bool {
-	return i.category == foundation.ItemCategoryPotions
-}
-
 func (i *Item) IsGold() bool {
 	return i.category == foundation.ItemCategoryGold
 }
@@ -345,27 +342,6 @@ func (i *Item) GetCharges() int {
 
 func (i *Item) IsFood() bool {
 	return i.category == foundation.ItemCategoryFood
-}
-
-func (i *Item) IsMagic() bool { // potions, scrolls, wands & weapons/armor with plusses
-
-	isConsumableMagic := i.IsPotion() || i.IsWand() || i.IsScroll()
-
-	isMagicRing := i.IsRing()
-
-	return isConsumableMagic || isMagicRing
-}
-
-func (i *Item) IsWand() bool {
-	return i.category == foundation.ItemCategoryWands
-}
-
-func (i *Item) IsScroll() bool {
-	return i.category == foundation.ItemCategoryScrolls
-}
-
-func (i *Item) IsRing() bool {
-	return i.category == foundation.ItemCategoryRings
 }
 
 func (i *Item) GetInternalName() string {
@@ -386,9 +362,6 @@ func (i *Item) GetSkillBonus(skill dice_curve.SkillName) int {
 	return 0
 }
 func (i *Item) GetEquipFlag() foundation.ActorFlag {
-	if i.IsRing() && i.charges == 0 {
-		return foundation.FlagNone
-	}
 	return i.equipFlag
 }
 
@@ -409,9 +382,7 @@ func (i *Item) SetCharges(amount int) {
 }
 
 func (i *Item) AfterEquippedTurn() {
-	if (i.IsRing()) && i.charges > 0 {
-		i.charges--
-	}
+
 }
 
 func (i *Item) IsAmmo() bool {
@@ -469,4 +440,30 @@ func (i *Item) GetTextFile() string {
 
 func (i *Item) GetIcon() textiles.TextIcon {
 	return i.icon
+}
+
+func (i *Item) IsBreakingNow() bool {
+	return rand.Intn(100) < i.chanceToBreakOnThrow
+}
+
+func (i *Item) GetCurrentAttackMode() AttackMode {
+	return i.weapon.GetAttackMode(i.currentAttackModeIndex)
+}
+
+func (i *Item) CycleTargetMode() {
+	if !i.IsWeapon() {
+		return
+	}
+	i.currentAttackModeIndex++
+	if i.currentAttackModeIndex >= len(i.weapon.attackModes) {
+		i.currentAttackModeIndex = 0
+	}
+}
+
+func (i *Item) PickupFlag() string {
+	return i.setFlagOnPickup
+}
+
+func (i *Item) GetText() string {
+	return i.text
 }

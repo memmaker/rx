@@ -487,12 +487,12 @@ func (cs *CharSheet) IsSkillHigherOrEqual(skill Skill, difficulty int) bool {
 }
 func (cs *CharSheet) SkillRoll(skill Skill, modifiers int) foundation.CheckResult {
 	critChance := cs.GetStat(Luck)
-	return SuccessRoll(Percentage(cs.GetSkill(skill)+modifiers), Percentage(critChance))
+	return SuccessRoll(Percentage(max(0, cs.GetSkill(skill)+modifiers)), Percentage(critChance))
 }
 
 func (cs *CharSheet) StatRoll(stat Stat, modifiers int) foundation.CheckResult {
 	critChance := cs.GetStat(Luck)
-	statSkill := (cs.GetStat(stat) * 10) + modifiers
+	statSkill := max(0, (cs.GetStat(stat)*10)+modifiers)
 	return SuccessRoll(Percentage(statSkill), Percentage(critChance))
 }
 func (cs *CharSheet) IsStatHigherOrEqual(stat Stat, difficulty int) bool {

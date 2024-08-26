@@ -10,7 +10,7 @@ import (
 type ObjectForUI interface {
 	GetCategory() ObjectCategory
 	Position() geometry.Point
-	GetIcon() textiles.TextIcon
+	Icon() textiles.TextIcon
 }
 type ObjectCategory int
 
@@ -32,6 +32,8 @@ const (
 	ObjectBrokenDoor
 	ObjectReadable
 	ObjectElevator
+	ObjectPushBox
+	ObjectExplodingPushBox
 )
 
 func RandomObjectCategory() ObjectCategory {
@@ -86,6 +88,10 @@ func (o ObjectCategory) String() string {
 		return "Readable"
 	case ObjectElevator:
 		return "Elevator"
+	case ObjectPushBox:
+		return "Push Box"
+	case ObjectExplodingPushBox:
+		return "Exploding Push Box"
 	default:
 		return "Unknown"
 	}
@@ -128,6 +134,10 @@ func ObjectCategoryFromString(s string) ObjectCategory {
 		return ObjectTerminal
 	case "elevator":
 		return ObjectElevator
+	case "pushbox":
+		return ObjectPushBox
+	case "explodingpushbox":
+		return ObjectExplodingPushBox
 	default:
 		return -1
 	}
@@ -195,6 +205,10 @@ func (o ObjectCategory) LowerString() string {
 		return "terminal"
 	case ObjectElevator:
 		return "elevator"
+	case ObjectPushBox:
+		return "pushbox"
+	case ObjectExplodingPushBox:
+		return "explodingpushbox"
 	default:
 		return ""
 	}

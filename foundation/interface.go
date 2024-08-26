@@ -23,7 +23,7 @@ type GameForUI interface {
 
 	// Do stuff
 
-	PickupItem()
+	PlayerPickupItem()
 	EquipToggle(item ItemForUI)
 	DropItem(item ItemForUI)
 	PlayerApplyItem(item ItemForUI)
@@ -41,10 +41,12 @@ type GameForUI interface {
 	PlayerInteractInDirection(direction geometry.CompassDirection)
 
 	OpenTacticsMenu()
+	OpenJournal()
+	OpenRestMenu()
 
 	// State Queries
 	GetPlayerPosition() geometry.Point
-	GetCharacterSheet() []string
+	GetCharacterSheet() string
 
 	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple[string, int]
 	GetRangedChanceToHitForUI(target ActorForUI) int
@@ -52,6 +54,7 @@ type GameForUI interface {
 	GetHudStats() map[HudValue]int
 	GetHudFlags() map[ActorFlag]int
 	GetMapInfo(pos geometry.Point) HiLiteString
+	LightAt(p geometry.Point) fxtools.HDRColor
 
 	GetInventory() []ItemForUI
 
@@ -100,6 +103,8 @@ type GameForUI interface {
 	GetRandomEnemyName() string
 	GetItemInMainHand() (ItemForUI, bool)
 	OpenContextMenuFor(pos geometry.Point)
+
+	WizardAdvanceTime()
 }
 
 type PlayerMoveMode int
@@ -137,7 +142,7 @@ type GameUI interface {
 	// Menus / Modals / Windows
 	OpenInventoryForManagement(stack []ItemForUI)
 	OpenInventoryForSelection(stack []ItemForUI, prompt string, onSelected func(item ItemForUI))
-	OpenTextWindow(description []string)
+	OpenTextWindow(description string)
 	ShowTextFileFullscreen(filename string, onClose func())
 	OpenMenu(actions []MenuItem)
 	OpenKeypad(correctSequence []rune, onCompletion func(success bool))
@@ -157,10 +162,12 @@ type GameUI interface {
 	AnimatePending() (cancelled bool)
 	SkipAnimations()
 	GetAnimThrow(item ItemForUI, origin geometry.Point, target geometry.Point) (Animation, int)
-	GetAnimDamage(actorPos geometry.Point, damage int, done func()) Animation
+	GetAnimDamage(spreadBlood func(mapPos geometry.Point), actorPos geometry.Point, damage int, done func()) Animation
 	GetAnimMove(actor ActorForUI, old geometry.Point, new geometry.Point) Animation
 	GetAnimQuickMove(actor ActorForUI, path []geometry.Point) Animation
 	GetAnimAttack(attacker, defender ActorForUI) Animation
+	GetAnimMuzzleFlash(position geometry.Point, flashColor fxtools.HDRColor, radius int, bulletCount int, done func()) Animation
+
 	// GetAnimProjectile won't draw a rune for the projectile if the icon's rune is negative
 	GetAnimProjectile(icon rune, colorName string, origin geometry.Point, dest geometry.Point, done func()) (Animation, int)
 	GetAnimProjectileWithTrail(leadIcon rune, colorNames []string, path []geometry.Point, done func()) (Animation, int)
@@ -181,11 +188,15 @@ type GameUI interface {
 	GetAnimEvade(defender ActorForUI, done func()) Animation
 
 	PlayMusic(fileName string)
-	SetConversationState(text string, options []MenuItem, conversationPartnerName string, isTerminal bool)
+	PlayCue(cue string)
+	SetConversationState(text string, options []MenuItem, conversationPartner ChatterSource, isTerminal bool)
 	CloseConversation()
 	StartHackingGame(identifier uint64, difficulty Difficulty, previousGuesses []string, onCompletion func(previousGuesses []string, success InteractionResult))
 	StartLockpickGame(difficulty Difficulty, getLockpickCount func() int, removeLockpick func(), onCompletion func(result InteractionResult))
 	SetColors(palette textiles.ColorPalette, colors map[ItemCategory]color.RGBA)
+	TryAddChatter(victim ChatterSource, text string) bool
+	FadeToBlack()
+	FadeFromBlack()
 }
 
 type Animation interface {
@@ -277,4 +288,10 @@ func DifficultyFromString(difficulty string) Difficulty {
 	}
 	panic("Unknown difficulty: " + difficulty)
 	return Medium
+}
+
+type ChatterSource interface {
+	Name() string
+	Position() geometry.Point
+	Icon() textiles.TextIcon
 }

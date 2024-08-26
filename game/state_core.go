@@ -5,12 +5,14 @@ import (
 	"RogueUI/foundation"
 	"RogueUI/gridmap"
 	"RogueUI/special"
+	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"path"
+	"time"
 )
 
 type GameState struct {
@@ -38,14 +40,14 @@ type GameState struct {
 	afterAnimationActions []func()
 
 	playerFoV               *geometry.FOV
+	playerLightSource       *gridmap.LightSource
 	visionRange             int
 	genericWallIconIndex    textiles.TextIcon
 	playerIcon              textiles.TextIcon
-	playerColor             string
 	config                  *foundation.Configuration
 	ascensionsWithoutAmulet int
 	mapLoader               MapLoader
-	gameFlags               fxtools.StringFlags
+	gameFlags               *fxtools.StringFlags
 	terminalGuesses         map[string][]string
 	iconsForItems           map[foundation.ItemCategory]textiles.TextIcon
 	iconsForObjects         map[string]textiles.TextIcon
@@ -53,6 +55,19 @@ type GameState struct {
 	spawnLocation           string
 	palette                 textiles.ColorPalette
 	inventoryColors         map[foundation.ItemCategory]color.RGBA
+
+	journal *Journal
+
+	gameTime time.Time
+}
+
+func (g *GameState) WizardAdvanceTime() {
+	g.gameTime = g.gameTime.Add(time.Minute * 30)
+	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Format("15:04"))))
+}
+
+func (g *GameState) LightAt(p geometry.Point) fxtools.HDRColor {
+	return g.gridMap.LightAt(p, g.gameTime)
 }
 
 func (g *GameState) PlayerInteractInDirection(direction geometry.CompassDirection) {
@@ -68,21 +83,24 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
 	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
 	g := &GameState{
-		config:      config,
-		playerName:  config.PlayerName,
-		playerColor: "White",
+		config:     config,
+		playerName: config.PlayerName,
 		playerIcon: textiles.TextIcon{
-			Char: '@',
-			Fg:   color.RGBA{R: 255, G: 255, B: 255, A: 255},
+			Char: config.PlayerChar,
+			Fg:   palette.Get(config.PlayerColor),
 		},
 		ui:              ui,
 		tileStyle:       0,
-		gameFlags:       make(fxtools.StringFlags),
 		dataDefinitions: GetDataDefinitions(config.DataRootDir, palette),
 		playerFoV:       geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
-		visionRange:     14,
-		palette:         palette,
-		terminalGuesses: make(map[string][]string),
+		playerLightSource: &gridmap.LightSource{
+			Pos:          geometry.Point{},
+			Radius:       5,
+			Color:        fxtools.HDRColor{R: 1, G: 1, B: 1, A: 1},
+			MaxIntensity: 1,
+		},
+		visionRange: 80,
+		palette:     palette,
 	}
 
 	g.init()
@@ -90,15 +108,65 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 
 	return g
 }
+func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
+	actorDef := NewActorDefFromRecord(rec, g.palette)
+	newActor := g.NewActorFromDef(actorDef)
+	if newActor != nil {
+		actorPos := newActor.Position()
+		return newActor, actorPos
+	}
+	panic(fmt.Sprintf("Could not create actor from record: %v", rec))
+	return nil, geometry.Point{}
+}
+func (g *GameState) NewItem(rec recfile.Record) (*Item, geometry.Point) {
+	itemDef := NewItemDefFromRecord(rec)
+	newItem := NewItem(itemDef, g.iconForItem(itemDef.Category))
+	if newItem != nil {
+		itemPos := newItem.Position()
+		return newItem, itemPos
+	}
+	panic(fmt.Sprintf("Could not create item from record: %v", rec))
+	return nil, geometry.Point{}
+}
+
+func (g *GameState) NewObject(rec recfile.Record, iconsForObjects map[string]textiles.TextIcon, newMap *gridmap.GridMap[*Actor, *Item, Object]) (Object, geometry.Point) {
+	object := g.NewObjectFromRecord(rec, g.palette, iconsForObjects, newMap)
+	if object != nil {
+		objectPos := object.Position()
+		return object, objectPos
+	}
+	panic(fmt.Sprintf("Could not create object from record: %v", rec))
+	return nil, geometry.Point{}
+}
 
 func (g *GameState) init() {
-	g.mapLoader = NewRecMapLoader(g, g.palette)
+	g.mapLoader = gridmap.NewRecMapLoader(
+		path.Join(g.config.DataRootDir, "maps"),
+		g.palette,
+		g.NewActor,
+		g.NewItem,
+		g.NewObject,
+	)
 
 	g.iconsForItems, g.inventoryColors = loadIconsForItems(path.Join(g.config.DataRootDir, "definitions"), g.palette)
 
 	g.TurnsTaken = 0
 	g.logBuffer = []foundation.HiLiteString{}
 	g.showEverything = false
+
+	g.gameFlags = fxtools.NewStringFlags()
+
+	g.terminalGuesses = make(map[string][]string)
+
+	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getConditionFuncs())
+	g.journal.OnFlagsChanged()
+	g.journal.SetChangeHandler(func() {
+		g.ui.PlayCue("ui/journal")
+		g.msg(foundation.HiLite(">>> %s <<<", "Journal updated"))
+	})
+	g.gameFlags.SetChangeHandler(func(flagName string, value int) {
+		g.journal.OnFlagsChanged()
+	})
 }
 
 func (g *GameState) initPlayerAndSpawnMap() {
@@ -126,16 +194,24 @@ func (g *GameState) initPlayerAndSpawnMap() {
 		}
 	}
 
-	loadedMap := g.mapLoader.LoadMap(g.spawnMap)
+	loadedMapResult := g.mapLoader.LoadMap(g.spawnMap)
 
+	loadedMap := loadedMapResult.Map
 	if loadedMap == nil {
 		g.msg(foundation.Msg("It's impossible to move there.."))
 		return
 	}
 	namedLocation := loadedMap.GetNamedLocation(g.spawnLocation)
 	loadedMap.AddActor(g.Player, namedLocation)
+	loadedMap.AddDynamicLightSource(namedLocation, g.playerLightSource)
+	loadedMap.UpdateDynamicLights()
 
 	g.gridMap = loadedMap
+	g.iconsForObjects = loadedMapResult.IconsForObjects
+
+	for flagName, flagValue := range loadedMapResult.FlagsOfMap {
+		g.gameFlags.Set(flagName, flagValue)
+	}
 
 	equipment := g.Player.GetEquipment()
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
@@ -199,6 +275,8 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 
 	g.enemyMovement(playerTimeTakenForTurn)
 
+	g.gameTime = g.gameTime.Add(time.Second * time.Duration(float64(playerTimeTakenForTurn)/10))
+
 	if didCancel {
 		g.ui.SkipAnimations()
 	} else {
@@ -241,4 +319,60 @@ func (g *GameState) gameOver(death string) {
 	}
 	highScores := g.writePlayerScore(scoreInfo)
 	g.ui.ShowGameOver(scoreInfo, highScores)
+}
+
+func (g *GameState) canActorSee(victim *Actor, position geometry.Point) bool {
+	return g.gridMap.IsLineOfSightClear(victim.Position(), position)
+}
+
+func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
+	if g.canPlayerSee(actor.Position()) {
+		if g.ui.TryAddChatter(actor, text) {
+			g.msg(foundation.HiLite("%s: \"%s\"", actor.Name(), text))
+			return true
+		}
+	}
+	return false
+}
+
+func (g *GameState) StartPickpocket(actor *Actor) {
+	actorEquipment := actor.GetEquipment()
+	stealableItems := actor.GetInventory().StackedItemsWithFilter(func(item *Item) bool {
+		return !actorEquipment.IsEquipped(item)
+	})
+	var menuItems []foundation.MenuItem
+
+	for _, i := range stealableItems {
+		item := i
+		itemStealModifier := 0
+		if item.GetCategory().IsEasySteal() {
+			itemStealModifier = 10
+		} else if item.GetCategory().IsHardSteal() {
+			itemStealModifier = -10
+		}
+		chance := g.Player.GetCharSheet().GetSkill(special.Steal) + itemStealModifier
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: fmt.Sprintf("Steal %s (%d%%)", item.Name(), chance),
+			Action: func() {
+				g.tryStealItem(actor, item.First(), itemStealModifier)
+			},
+			CloseMenus: true,
+		})
+	}
+
+	g.ui.OpenMenu(menuItems)
+}
+
+func (g *GameState) tryStealItem(actor *Actor, item *Item, itemStealModifier int) {
+	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Steal, itemStealModifier)
+	if skillRoll.Success {
+		actor.GetInventory().Remove(item)
+		g.Player.GetInventory().Add(item)
+		g.msg(foundation.HiLite("You steal %s", item.Name()))
+		g.ui.PlayCue("world/pickup")
+	} else {
+		g.msg(foundation.HiLite("%s notices you trying to steal %s", actor.Name(), item.Name()))
+		actor.AddToEnemyActors(g.Player.Name()) // this is dumb.. this is a user defined strings we are putting in this dict..
+		actor.SetHostile()
+	}
 }

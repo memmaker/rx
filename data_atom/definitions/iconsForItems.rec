@@ -11,16 +11,16 @@ Foreground: neon_green_1
 InventoryColor: neon_green_1
 
 Name: Weapons
-Icon: ↑
-Foreground: light_gray_5
+Icon: ↨
+Foreground: dark_gray_5
 InventoryColor: orange_6
-Background: yellow_9
+Background: light_gray_3
 
 Name: Armor
-Icon: ❖
-Foreground: light_blue_12
+Icon: ¥
+Foreground: dark_gray_4
 InventoryColor: light_blue
-Background: blue_1
+Background: light_gray_7
 
 Name: Notes
 Icon: ≡
@@ -39,8 +39,8 @@ Foreground: light_gray_2
 InventoryColor: light_gray_2
 
 Name: Ammo
-Icon: ○
-Foreground: yellow_2
+Icon: ▬
+Foreground: dark_gray_1
 InventoryColor: yellow_2
 
 Name: Keys

@@ -25,7 +25,7 @@ func (b *Door) IsTransparent() bool {
 	return false
 }
 
-func (b *Door) GetIcon() textiles.TextIcon {
+func (b *Door) Icon() textiles.TextIcon {
 	return b.iconForObject(b.GetCategory().LowerString())
 }
 func (b *Door) IsWalkable(actor *Actor) bool {
@@ -57,6 +57,9 @@ func (b *Door) AppendContextActions(items []foundation.MenuItem, g *GameState) [
 }
 
 func (b *Door) Close() {
+	if b.IsBroken() {
+		return
+	}
 	b.category = foundation.ObjectClosedDoor
 }
 func (b *Door) SetLockedByFlag(flag string) {
@@ -75,13 +78,21 @@ func (b *Door) GetLockFlag() string {
 }
 
 func (b *Door) Unlock() {
+	if b.IsBroken() {
+		return
+	}
 	b.category = foundation.ObjectClosedDoor
 }
 
 func (b *Door) Open() {
+	if b.IsBroken() {
+		return
+	}
 	b.category = foundation.ObjectOpenDoor
 }
-
+func (b *Door) IsBroken() bool {
+	return b.GetCategory() == foundation.ObjectBrokenDoor
+}
 func (g *GameState) NewDoor(rec recfile.Record, iconForObject func(category string) textiles.TextIcon) *Door {
 	door := &Door{
 		BaseObject: &BaseObject{
@@ -103,6 +114,7 @@ func (g *GameState) NewDoor(rec recfile.Record, iconForObject func(category stri
 			if door.lockedFlag != "" && actor.HasKey(door.lockedFlag) {
 				door.category = foundation.ObjectClosedDoor
 				g.msg(foundation.Msg("You unlocked the door"))
+				g.ui.PlayCue("world/PICKKEYS")
 				return
 			}
 
@@ -118,6 +130,7 @@ func (g *GameState) NewDoor(rec recfile.Record, iconForObject func(category stri
 					if result == foundation.Success {
 						door.category = foundation.ObjectClosedDoor
 						g.msg(foundation.Msg("You picked the lock deftly"))
+						g.ui.PlayCue("world/PICKKEYS")
 					}
 				})
 			}
@@ -149,4 +162,11 @@ func (g *GameState) NewDoor(rec recfile.Record, iconForObject func(category stri
 		}
 	}
 	return door
+}
+
+func (b *Door) OnDamage(dmg SourcedDamage) []foundation.Animation {
+	if dmg.DamageAmount > 10 {
+		b.category = foundation.ObjectBrokenDoor
+	}
+	return nil
 }

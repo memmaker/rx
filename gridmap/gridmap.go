@@ -136,22 +136,6 @@ func NewPublicZone(name string) *ZoneInfo {
 	}
 }
 
-type GlobalMapDataOnDisk struct {
-	MissionTitle      string
-	Width             int
-	Height            int
-	PlayerSpawn       geometry.Point
-	MaxLightIntensity float64
-	MaxVisionRange    int
-	TimeOfDay         time.Time
-	AmbienceSoundCue  string
-}
-
-func (d GlobalMapDataOnDisk) ToString() string {
-	return fmt.Sprintf("Mission Title: %s\nWidth: %d\nHeight: %d\nPlayer Spawn: %s\nMax Light Intensity: %f\nMax Vision Range: %d\nTime of Day: %s\nAmbience Sound Cue: %s",
-		d.MissionTitle, d.Width, d.Height, d.PlayerSpawn.String(), d.MaxLightIntensity, d.MaxVisionRange, d.TimeOfDay.String(), d.AmbienceSoundCue)
-}
-
 type GridMap[ActorType interface {
 	comparable
 	MapActor
@@ -182,8 +166,6 @@ type GridMap[ActorType interface {
 	zoneMap     []*ZoneInfo
 	player      ActorType
 
-	timeOfDay time.Time
-
 	namedLocations   map[string]geometry.Point
 	ambienceSoundCue string
 	noClip           bool
@@ -199,6 +181,18 @@ type GridMap[ActorType interface {
 	metaInfoString []string
 
 	cardinalMovementOnly bool
+
+	// LIGHTING
+
+	DynamicLights        map[geometry.Point]*LightSource
+	BakedLights          map[geometry.Point]*LightSource
+	lightfov             *geometry.FOV
+	AmbientLight         fxtools.HDRColor
+	MaxLightIntensity    float64
+	dynamicallyLitCells  map[geometry.Point]fxtools.HDRColor
+	DynamicLightsChanged bool
+	isIndoor             bool
+	meta                 MapMeta
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetCardinalMovementOnly(cardinalMovementOnly bool) {
@@ -593,24 +587,27 @@ func NewEmptyMap[ActorType interface {
 	pathRange := geometry.NewPathRange(geometry.NewRect(0, 0, width, height))
 	publicSpaceZone := NewPublicZone(PublicZoneName)
 	m := &GridMap[ActorType, ItemType, ObjectType]{
-		cells:           make([]MapCell[ActorType, ItemType, ObjectType], width*height),
-		allActors:       make([]ActorType, 0),
-		allDownedActors: make([]ActorType, 0),
-		allItems:        make([]ItemType, 0),
-		allObjects:      make([]ObjectType, 0),
-		namedLocations:  map[string]geometry.Point{},
-		listOfZones:     []*ZoneInfo{publicSpaceZone},
-		zoneMap:         NewZoneMap(publicSpaceZone, width, height),
-		mapWidth:        width,
-		mapHeight:       height,
-		timeOfDay:       time.Now(),
-		pathfinder:      pathRange,
-		secretDoors:     make(map[geometry.Point]bool),
-		transitionMap:   make(map[geometry.Point]Transition),
-		namedRects:      make(map[string]geometry.Rect),
-		namedTrigger:    make(map[string]Trigger),
-		namedPaths:      make(map[string][]geometry.Point),
-		decals:          make(map[geometry.Point]int32),
+		cells:               make([]MapCell[ActorType, ItemType, ObjectType], width*height),
+		allActors:           make([]ActorType, 0),
+		allDownedActors:     make([]ActorType, 0),
+		allItems:            make([]ItemType, 0),
+		allObjects:          make([]ObjectType, 0),
+		namedLocations:      map[string]geometry.Point{},
+		listOfZones:         []*ZoneInfo{publicSpaceZone},
+		zoneMap:             NewZoneMap(publicSpaceZone, width, height),
+		mapWidth:            width,
+		mapHeight:           height,
+		pathfinder:          pathRange,
+		secretDoors:         make(map[geometry.Point]bool),
+		transitionMap:       make(map[geometry.Point]Transition),
+		namedRects:          make(map[string]geometry.Rect),
+		namedTrigger:        make(map[string]Trigger),
+		namedPaths:          make(map[string][]geometry.Point),
+		decals:              make(map[geometry.Point]int32),
+		DynamicLights:       make(map[geometry.Point]*LightSource),
+		BakedLights:         make(map[geometry.Point]*LightSource),
+		lightfov:            geometry.NewFOV(geometry.NewRect(0, 0, width, height)),
+		dynamicallyLitCells: make(map[geometry.Point]fxtools.HDRColor),
 	}
 	return m
 }
@@ -721,6 +718,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) DownedActorAt(location geomet
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsObjectAt(location geometry.Point) bool {
+	if !m.Contains(location) {
+		return false
+	}
 	return m.cells[location.X+location.Y*m.mapWidth].Object != nil
 }
 
@@ -1328,6 +1328,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) TryGetItemAt(pos geometry.Poi
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) AddActor(actor ActorType, spawnPos geometry.Point) {
+	var nilActor ActorType
+	if actor == nilActor {
+		return
+	}
 	if m.IsActorAt(spawnPos) {
 		return
 	}
@@ -1336,6 +1340,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddActor(actor ActorType, spa
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) AddDownedActor(actor ActorType, spawnPos geometry.Point) {
+	var nilActor ActorType
+	if actor == nilActor {
+		return
+	}
 	if m.IsDownedActorAt(spawnPos) {
 		return
 	}
@@ -1344,6 +1352,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddDownedActor(actor ActorTyp
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) AddObject(object ObjectType, spawnPos geometry.Point) {
+	var nilObject ObjectType
+	if object == nilObject {
+		return
+	}
 	if m.IsObjectAt(spawnPos) {
 		return
 	}
@@ -1352,6 +1364,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddObject(object ObjectType, 
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) AddItem(item ItemType, spawnPos geometry.Point) {
+	var nilItem ItemType
+	if item == nilItem {
+		return
+	}
 	if m.IsItemAt(spawnPos) {
 		return
 	}
@@ -1675,7 +1691,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) JumpOverPositions(origin geom
 	}
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) SprintToPosition(origin geometry.Point, target geometry.Point, maxSprint int) SprintTooInfo {
+func (m *GridMap[ActorType, ItemType, ObjectType]) SprintToPosition(origin geometry.Point, target geometry.Point, maxSprint int) SprintToInfo {
 	lineOfSprint := m.BresenhamLine(origin, target, func(pos geometry.Point) bool { return !m.Contains(pos) })
 
 	var sprint []geometry.Point
@@ -1698,7 +1714,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SprintToPosition(origin geome
 		sprintEndPos = sprint[len(sprint)-1]
 	}
 
-	return SprintTooInfo{
+	return SprintToInfo{
 		Sprint:         sprint,
 		SprintEndPos:   sprintEndPos,
 		EmptyTileFound: emptyTileFound,
@@ -1956,6 +1972,21 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsTransitionAt(position geome
 	return exists
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) LightAt(p geometry.Point, timeOfDay time.Time) fxtools.HDRColor {
+	if m.isIndoor {
+		return m.IndoorLightAt(p)
+	}
+	return m.OutdoorLightAt(p, timeOfDay)
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) SetMeta(data MapMeta) {
+	m.meta = data
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetMeta() MapMeta {
+	return m.meta
+}
+
 type JumpOverInfo struct {
 	Sprint     []geometry.Point
 	Jump       []geometry.Point
@@ -1963,7 +1994,7 @@ type JumpOverInfo struct {
 	ActorFound bool
 }
 
-type SprintTooInfo struct {
+type SprintToInfo struct {
 	Sprint         []geometry.Point
 	SprintEndPos   geometry.Point
 	EmptyTileFound bool

@@ -44,7 +44,7 @@ type ActorDef struct {
 
 	Equipment       []string
 	XP              int
-	DefaultRelation PlayerRelation
+	DefaultRelation CharacterMood
 
 	Position     geometry.Point
 	DialogueFile string
@@ -143,7 +143,7 @@ func fillDefinitionFromRecord(monsterDef ActorDef, record recfile.Record, palett
 				monsterDef.Flags.Set(foundation.ActorFlagFromString(mFlag.Value))
 			}
 		default:
-			println("WARNING: Unknown field: " + field.Name)
+			//println("WARNING: Unknown field: " + field.Name)
 		}
 	}
 

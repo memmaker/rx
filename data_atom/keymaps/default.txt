@@ -41,10 +41,12 @@ Q -> quit
 i -> inventory
 c -> character
 l -> log
+j -> journal
 m -> monsters
 I -> items
 ? -> help
 t -> tactics
+b -> rest
 
 U -> overlay_monsters
 O -> overlay_items
@@ -52,8 +54,7 @@ O -> overlay_items
 F2 -> gamma_down
 F3 -> gamma_up
 
-F4 -> wiz_ascend
-F5 -> wiz_descend
+F4 -> wiz_advance_time
 
 Ctrl+T -> themes
 F10 -> wizard

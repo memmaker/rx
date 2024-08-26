@@ -59,3 +59,23 @@ Icon: ■
 Foreground: blue_1
 Background: light_gray_5
 
+Name: BakedLight
+Icon: ☼
+Foreground: yellow_2
+Background: black
+
+Name: PushBox
+Icon: Θ
+Foreground: red_8
+Background: magenta_5
+
+Name: ExplodingPushBox
+Icon: Θ
+Foreground: red_8
+Background: magenta_5
+
+Name: Taxi
+Icon: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+

@@ -6,6 +6,7 @@ import (
 	"RogueUI/special"
 	"fmt"
 	"github.com/memmaker/go/geometry"
+	"math/rand"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ import (
 // map window size in a console : 23x80
 
 type MapLoader interface {
-	LoadMap(mapName string) *gridmap.GridMap[*Actor, *Item, Object]
+	LoadMap(mapName string) gridmap.MapLoadResult[*Actor, *Item, Object]
 }
 
 func (g *GameState) ApplyEffect(name string, args []string) {
@@ -100,14 +101,23 @@ func (g *GameState) hasPaidWithCharge(user *Actor, item *Item) bool {
 	return true
 }
 
-func (g *GameState) actorKilled(causeOfDeath string, victim *Actor) {
+func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 	if victim == g.Player {
 		g.QueueActionAfterAnimation(func() {
-			g.gameOver(causeOfDeath)
+			g.gameOver(causeOfDeath.String())
 		})
 		return
 	}
-	g.msg(foundation.HiLite("%s killed %s", causeOfDeath, victim.Name()))
+
+	killedFlag := fmt.Sprintf("Killed(%s)", victim.GetInternalName())
+	g.gameFlags.SetFlag(killedFlag)
+
+	if causeOfDeath.IsActor() && causeOfDeath.Attacker == g.Player {
+		killedByPlayerFlag := fmt.Sprintf("KilledByPlayer(%s)", victim.GetInternalName())
+		g.gameFlags.SetFlag(killedByPlayerFlag)
+	}
+
+	g.msg(foundation.HiLite("%s killed %s", causeOfDeath.String(), victim.Name()))
 
 	//g.dropInventory(victim)
 	g.gridMap.SetActorToDowned(victim)
@@ -117,7 +127,27 @@ func (g *GameState) revealAll() {
 	g.gridMap.SetAllExplored()
 	g.showEverything = true
 }
+func (g *GameState) makeMapBloody(mapPos geometry.Point) {
+	// we need a random integer between 5 and 15
+	bloodColorFgInt := rand.Intn(11) + 5
+	bloodColorBgInt := rand.Intn(11) + 5
 
+	currentTileIcon := g.gridMap.GetTileIconAt(mapPos)
+	g.gridMap.SetTileIcon(mapPos, currentTileIcon.WithBg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorBgInt))).WithFg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorFgInt))))
+	return
+}
+func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
+	spreadArea := g.gridMap.GetDijkstraMap(mapPos, 2, g.gridMap.IsCurrentlyPassable)
+	randomIndex := rand.Intn(len(spreadArea))
+	currIndex := 0
+	for pos, _ := range spreadArea {
+		if currIndex == randomIndex {
+			g.makeMapBloody(pos)
+			return
+		}
+		currIndex++
+	}
+}
 func (g *GameState) updatePlayerFoVAndApplyExploration() {
 	g.gridMap.UpdateFieldOfView(g.playerFoV, g.Player.Position(), g.visionRange)
 	for _, pos := range g.playerFoV.Visibles {

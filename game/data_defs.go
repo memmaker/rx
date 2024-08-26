@@ -10,7 +10,6 @@ import (
 	"image/color"
 	"math/rand"
 	"path"
-	"strings"
 )
 
 type DataDefinitions struct {
@@ -133,30 +132,6 @@ func (d DataDefinitions) RandomMonsterDef() ActorDef {
 	return d.Monsters[rand.Intn(len(d.Monsters))]
 }
 
-func (d DataDefinitions) GetScrollInternalNames() []string {
-	return mapItemDefs(d.Items[foundation.ItemCategoryScrolls], func(def ItemDef) string {
-		return def.Name
-	})
-}
-
-func (d DataDefinitions) GetPotionInternalNames() []string {
-	return mapItemDefs(d.Items[foundation.ItemCategoryPotions], func(def ItemDef) string {
-		return def.Name
-	})
-}
-
-func (d DataDefinitions) GetWandInternalNames() []string {
-	return mapItemDefs(d.Items[foundation.ItemCategoryWands], func(def ItemDef) string {
-		return def.Name
-	})
-}
-
-func (d DataDefinitions) GetRingInternalNames() []string {
-	return mapItemDefs(d.Items[foundation.ItemCategoryRings], func(def ItemDef) string {
-		return def.Name
-	})
-}
-
 func (d DataDefinitions) GetItemDefByName(name string) ItemDef {
 	for _, defs := range d.Items {
 		for _, def := range defs {
@@ -233,22 +208,6 @@ func loadIconsForItems(dataDirectory string, colors textiles.ColorPalette) (map[
 	iconsForItems := textiles.ReadIconRecordsIntoMap(itemCatRecords)
 
 	return convertItemCategories(iconsForItems), loadInventoryColors(iconsForItems, colors)
-}
-
-func loadIconsForObjects(dataDirectory string, colors textiles.ColorPalette) map[string]textiles.TextIcon {
-	convertObjectCategories := func(r map[string]textiles.IconRecord) map[string]textiles.TextIcon {
-		convertMap := make(map[string]textiles.TextIcon)
-		for name, rec := range r {
-			icon := textiles.NewTextIconFromNamedColorChar(rec.Icon, colors)
-			convertMap[strings.ToLower(name)] = icon
-		}
-		return convertMap
-	}
-
-	objectTypeFile := path.Join(dataDirectory, "iconsForObjects.rec")
-	iconsForObjects := textiles.ReadIconRecordsIntoMap(fxtools.MustOpen(objectTypeFile))
-
-	return convertObjectCategories(iconsForObjects)
 }
 
 func loadInventoryColors(records map[string]textiles.IconRecord, palette textiles.ColorPalette) map[foundation.ItemCategory]color.RGBA {

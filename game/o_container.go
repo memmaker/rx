@@ -25,7 +25,7 @@ func (b *Container) GetCategory() foundation.ObjectCategory {
 	}
 	return foundation.ObjectUnknownContainer
 }
-func (b *Container) GetIcon() textiles.TextIcon {
+func (b *Container) Icon() textiles.TextIcon {
 	return b.iconForObject(b.GetCategory().LowerString())
 }
 func (b *Container) OnBump(actor *Actor) {
@@ -94,6 +94,9 @@ func (g *GameState) openContainer(container *Container) {
 		item := itemTaken.(*Item)
 		container.RemoveItem(item)
 		g.Player.GetInventory().Add(item)
+
+		g.ui.PlayCue("world/pickup")
+
 		if container.ContainsItems() {
 			g.openContainer(container)
 		}

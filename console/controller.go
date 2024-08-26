@@ -15,6 +15,7 @@ import (
 	"image/color"
 	"math"
 	"math/rand"
+	"os"
 	"path"
 	"slices"
 	"strings"
@@ -84,6 +85,14 @@ type UI struct {
 	dialogueIsTerminal bool
 }
 
+func (u *UI) FadeToBlack() {
+	cview.FadeToBlack(u.application, u.settings.AnimationDelay/2)
+}
+
+func (u *UI) FadeFromBlack() {
+	cview.FadeFromBlack(u.application, u.settings.AnimationDelay/2)
+}
+
 func (u *UI) OpenKeypad(correctSequence []rune, onCompletion func(success bool)) {
 	width, height := u.application.GetScreen().Size()
 	keyPad := NewKeyPad(geometry.Point{X: width, Y: height})
@@ -118,6 +127,7 @@ func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, t
 			Name: item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory())),
 			Action: func() {
 				transfer(item)
+				u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			},
 			CloseMenus: true,
 		})
@@ -136,6 +146,7 @@ func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, t
 				transfer(item)
 			}
 			originalCapture(EscapeKeyEvent())
+			u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			return nil
 		}
 		return originalCapture(event)
@@ -149,6 +160,9 @@ func EscapeKeyEvent() *tcell.EventKey {
 func (u *UI) PlayMusic(fileName string) {
 	u.audioPlayer.StopAll()
 	u.audioPlayer.Stream(fileName)
+}
+func (u *UI) PlayCue(cueName string) {
+	u.audioPlayer.PlayCue(cueName)
 }
 
 func (u *UI) OpenVendorMenu(itemsForSale []fxtools.Tuple[foundation.ItemForUI, int], buyItem func(ui foundation.ItemForUI, price int)) {
@@ -265,18 +279,19 @@ func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []founda
 
 	panelName := "modal"
 
-	reset := func() {
-		u.pages.RemovePanel(panelName)
-		u.resetFocusToMain()
-		u.gameIsOver = false
-		u.game.Reset()
-	}
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
 	u.lockFocusToPrimitive(textView)
-	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
+	textView.SetInputCapture(u.yesNoReceiver(u.reset, u.application.Stop))
 }
 
+func (u *UI) reset() {
+	u.mapOverlay.ClearAll()
+	u.pages.RemovePanel("modal")
+	u.resetFocusToMain()
+	u.gameIsOver = false
+	u.game.Reset()
+}
 func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 	textView := cview.NewTextView()
 	textView.SetBorder(false)
@@ -294,18 +309,12 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 
 	u.setColoredText(textView, strings.Join(gameOverMessage, "\n"))
 
-	panelName := "blocker"
+	panelName := "modal"
 
-	reset := func() {
-		u.pages.RemovePanel(panelName)
-		u.resetFocusToMain()
-		u.gameIsOver = false
-		u.game.Reset()
-	}
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
 	u.application.SetFocus(textView)
-	textView.SetInputCapture(u.yesNoReceiver(reset, u.application.Stop))
+	textView.SetInputCapture(u.yesNoReceiver(u.reset, u.application.Stop))
 }
 
 func toLinesOfText(highScores []foundation.ScoreInfo) []string {
@@ -378,9 +387,9 @@ func (u *UI) SetShowCursor(show bool) {
 	}
 }
 
-func (u *UI) GetMapWindowGridSize() (int, int) {
+func (u *UI) GetMapWindowGridSize() geometry.Point {
 	_, _, w, h := u.mapWindow.GetInnerRect()
-	return w, h
+	return geometry.Point{X: w, Y: h}
 }
 func (u *UI) AfterPlayerMoved(moveInfo foundation.MoveInfo) {
 	if moveInfo.Mode == foundation.PlayerMoveModeRun && u.autoRun {
@@ -423,7 +432,7 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
 		backGroundColor = mapIconHere.Bg
 	}
 	if !actor.IsAlive() {
-		return actor.TextIcon(backGroundColor).WithRune('%').WithFg(u.uiTheme.GetColorByName("Red_1"))
+		return actor.TextIcon(backGroundColor).WithRune('%')
 	}
 	return actor.TextIcon(backGroundColor)
 }
@@ -453,11 +462,24 @@ func (u *UI) GetAnimAttack(attacker, defender foundation.ActorForUI) foundation.
 	return nil
 }
 
-func (u *UI) GetAnimDamage(defenderPos geometry.Point, damage int, done func()) foundation.Animation {
+func (u *UI) GetAnimDamage(spreadBlood func(mapPos geometry.Point), defenderPos geometry.Point, damage int, done func()) foundation.Animation {
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateDamage {
 		return nil
 	}
-	animation := NewDamageAnimation(defenderPos, u.game.GetPlayerPosition(), damage)
+	bloodColors := []color.RGBA{
+		u.uiTheme.palette.Get("red_5"),
+		u.uiTheme.palette.Get("red_6"),
+		u.uiTheme.palette.Get("red_7"),
+		u.uiTheme.palette.Get("red_8"),
+		u.uiTheme.palette.Get("red_9"),
+		u.uiTheme.palette.Get("red_10"),
+		u.uiTheme.palette.Get("red_11"),
+		u.uiTheme.palette.Get("red_12"),
+		u.uiTheme.palette.Get("red_13"),
+		u.uiTheme.palette.Get("red_14"),
+		u.uiTheme.palette.Get("red_15"),
+	}
+	animation := NewDamageAnimation(spreadBlood, defenderPos, u.game.GetPlayerPosition(), damage, bloodColors)
 	animation.SetDoneCallback(done)
 	return animation
 }
@@ -785,7 +807,6 @@ func (u *UI) GetAnimProjectile(icon rune, fgColor string, origin geometry.Point,
 	textIcon := textiles.TextIcon{
 		Char: icon,
 		Fg:   u.uiTheme.GetColorByName(fgColor),
-		Bg:   u.getMapTileBackgroundColor(origin), // TODO: this won't work when there is a transition
 	}
 	return u.GetAnimProjectileWithIcon(textIcon, origin, target, done)
 }
@@ -820,13 +841,11 @@ func (u *UI) GetAnimProjectileWithTrail(leadIcon rune, colorNames []string, path
 			trailIcons = append(trailIcons, textiles.TextIcon{
 				Char: leadIcon,
 				Fg:   u.uiTheme.GetColorByName(cName),
-				Bg:   u.uiTheme.GetColorByName("Black"),
 			})
 		} else {
 			trailIcons = append(trailIcons, textiles.TextIcon{
-				Char: ' ',
-				Fg:   u.uiTheme.GetColorByName("Black"),
-				Bg:   u.uiTheme.GetColorByName(cName),
+				Char: '█',
+				Fg:   u.uiTheme.GetColorByName(cName),
 			})
 		}
 	}
@@ -886,10 +905,10 @@ outerLoop:
 }
 
 func (u *UI) ShowTextFile(fileName string) {
-	lines := fxtools.ReadFileAsLines(fileName)
+	lines := fxtools.ReadFile(fileName)
 	u.OpenTextWindow(lines)
 }
-func (u *UI) OpenTextWindow(description []string) {
+func (u *UI) OpenTextWindow(description string) {
 	u.openTextModal(description)
 }
 
@@ -910,9 +929,11 @@ func (u *UI) ShowTextFileFullscreen(filename string, onClose func()) {
 	u.application.SetFocus(textView)
 }
 
-func (u *UI) openTextModal(description []string) *cview.TextView {
+func (u *UI) openTextModal(description string) *cview.TextView {
 	textView := u.newTextModal(description)
-	u.makeCenteredModal(textView, longestLineWithoutColorCodes(description), len(description))
+	w, h := widthAndHeightFromString(description)
+	u.makeCenteredModal(textView, w, h)
+
 	originalInputCapture := textView.GetInputCapture()
 	textView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		command := u.getCommandForKey(toUIKey(event))
@@ -925,10 +946,10 @@ func (u *UI) openTextModal(description []string) *cview.TextView {
 	return textView
 }
 
-func (u *UI) newTextModal(description []string) *cview.TextView {
+func (u *UI) newTextModal(description string) *cview.TextView {
 	textView := cview.NewTextView()
 	textView.SetWrap(true)
-	textView.SetWrapWidth(60)
+	textView.SetWrapWidth(0)
 	textView.SetWordWrap(true)
 	textView.SetBorder(true)
 
@@ -937,7 +958,7 @@ func (u *UI) newTextModal(description []string) *cview.TextView {
 
 	textView.SetBorderColor(u.uiTheme.GetUIColorForTcell(UIColorBorderForeground))
 
-	u.setColoredText(textView, strings.Join(description, "\n"))
+	u.setColoredText(textView, description)
 	return textView
 }
 
@@ -1218,9 +1239,14 @@ func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool, sty
 	foundIcon := false
 
 	if animIcon, exists := u.animator.animationState[mapPos]; isAnimationFrame && exists {
-		textIcon = animIcon
 		foundIcon = true
 		isPositionAnimated = true
+		if animIcon.HasBackground() {
+			textIcon = animIcon
+		} else {
+			mapIcon, _ := u.mapLookup(mapPos)
+			textIcon = animIcon.WithBg(mapIcon.Bg)
+		}
 	} else if u.mapOverlay.IsSet(mapPos.X, mapPos.Y) {
 		textIcon = u.mapOverlay.Get(mapPos.X, mapPos.Y)
 		foundIcon = true
@@ -1239,10 +1265,8 @@ func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool, sty
 		bg = u.uiTheme.GetUIColor(UIColorUIBackground)
 	}
 
-	if true { // apply gamma
-		style = style.Foreground(tcell.NewRGBColor(int32(applyGamma(fg.R, u.gamma)), int32(applyGamma(fg.G, u.gamma)), int32(applyGamma(fg.B, u.gamma))))
-		style = style.Background(tcell.NewRGBColor(int32(applyGamma(bg.R, u.gamma)), int32(applyGamma(bg.G, u.gamma)), int32(applyGamma(bg.B, u.gamma))))
-	}
+	style = style.Foreground(tcell.NewRGBColor(int32(applyGamma(fg.R, u.gamma)), int32(applyGamma(fg.G, u.gamma)), int32(applyGamma(fg.B, u.gamma))))
+	style = style.Background(tcell.NewRGBColor(int32(applyGamma(bg.R, u.gamma)), int32(applyGamma(bg.G, u.gamma)), int32(applyGamma(bg.B, u.gamma))))
 
 	if isAnimationFrame && !isPositionAnimated {
 		ch = u.lastFrameIcons[mapPos]
@@ -1624,8 +1648,8 @@ func (u *UI) makeCenteredModal(modal InputPrimitive, w, h int) {
 		h = screenH - 3
 		w = w + 1 // scrollbar
 	}
-	if w > 60 {
-		w = 60
+	if w > screenW-3 {
+		w = screenW - 3
 	}
 	x, y := (screenW-w)/2, (screenH-h)/2
 	modal.SetRect(x, y, w, h)
@@ -1757,18 +1781,21 @@ func (u *UI) StartHackingGame(identifier uint64, difficulty foundation.Difficult
 	}
 
 	hackingGame := NewHackingGame(correct, fakes, func(previousGuesses []string, result foundation.InteractionResult) {
-		u.pages.HidePanel("hackingGame")
+		u.closeModal()
 		onCompletion(previousGuesses, result)
 	})
+	originalCapture := hackingGame.GetInputCapture()
+	hackingGame.SetInputCapture(u.directionalWrapper(originalCapture))
+
 	hackingGame.SetAudioPlayer(u.audioPlayer)
 	hackingGame.SetGuesses(previousGuesses)
-	panelName := "hackingGame"
+	panelName := "modal"
+
 	u.pages.AddPanel(panelName, hackingGame, true, true)
-	u.pages.ShowPanel(panelName)
-	u.application.SetFocus(hackingGame)
+	u.lockFocusToPrimitive(hackingGame)
 }
 
-func (u *UI) SetConversationState(starterText string, starterOptions []foundation.MenuItem, conversationPartnerName string, isTerminal bool) {
+func (u *UI) SetConversationState(starterText string, starterOptions []foundation.MenuItem, chatterSource foundation.ChatterSource, isTerminal bool) {
 	u.dialogueIsTerminal = isTerminal
 	if !u.pages.HasPanel("conversation") && isTerminal {
 		u.audioPlayer.PlayCue("ui/terminal_poweron")
@@ -1776,7 +1803,7 @@ func (u *UI) SetConversationState(starterText string, starterOptions []foundatio
 	// text field
 	if u.dialogueText == nil {
 		textField := cview.NewTextView()
-		textField.SetTitle(conversationPartnerName)
+		textField.SetTitle(chatterSource.Name())
 		textField.SetBorder(true)
 		textField.SetScrollable(true)
 		textField.SetDynamicColors(true)
@@ -1883,7 +1910,7 @@ func (u *UI) ShowMonsterInfo(monster foundation.ActorForUI) {
 	panels.SetFullScreen(true)
 	panels.SetTabSwitcherDivider("|", "|", "|")
 	monsterInfo := monster.GetDetailInfo()
-	monsterLore := fxtools.ReadFileAsLines(lorePath)
+	monsterLore := fxtools.ReadFile(lorePath)
 	if len(monsterLore) == 0 {
 		u.openTextModal(monsterInfo)
 		return
@@ -1979,6 +2006,8 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 		mapInfo := u.game.GetMapInfo(mapPos)
 		if !mapInfo.IsEmpty() {
 			u.Print(mapInfo)
+		} else {
+			u.application.QueueUpdateDraw(u.UpdateLogWindow)
 		}
 	}
 	mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})
@@ -2038,11 +2067,12 @@ func (u *UI) applyListStyle(list *cview.List) {
 
 func (u *UI) ShowLog() {
 	logLines := u.game.GetLog()
-	logTexts := make([]string, len(logLines))
-	for i, line := range logLines {
-		logTexts[i] = u.ToColoredText(line, 1)
+	var sb strings.Builder
+	for _, line := range logLines {
+		text := u.ToColoredText(line, 1)
+		sb.WriteString(text + "\n")
 	}
-	textView := u.openTextModal(logTexts)
+	textView := u.openTextModal(sb.String())
 	textView.ScrollToEnd()
 }
 
@@ -2063,15 +2093,15 @@ func (u *UI) ShowEnemyOverlay() {
 	u.mapOverlay.ClearAll()
 
 	for _, enemy := range listOfEnemies {
-		name := enemy.Name()
-		pos, connectors := u.calculateOverlayPos(enemy.Position(), len(enemy.Name()))
-		if pos == enemy.Position() {
-			continue
-		}
-		u.mapOverlay.Print(pos.X, pos.Y, name)
-		u.mapOverlay.AsciiLine(enemy.Position(), pos, connectors)
+		u.mapOverlay.TryAddOverlay(enemy.Position(), enemy.Name(), u.GetMapWindowGridSize(), u.game.IsSomethingInterestingAtLoc)
 	}
+}
 
+func (u *UI) TryAddChatter(source foundation.ChatterSource, text string) bool {
+	if u.mapOverlay.TryAddOverlayColored(source.Position(), text, source.Icon().Fg, u.GetMapWindowGridSize(), u.game.IsSomethingInterestingAtLoc) {
+		return true
+	}
+	return false
 }
 
 func (u *UI) ShowItemOverlay() {
@@ -2084,13 +2114,7 @@ func (u *UI) ShowItemOverlay() {
 	u.mapOverlay.ClearAll()
 
 	for _, items := range listOfItems {
-		name := items.Name()
-		pos, connectors := u.calculateOverlayPos(items.Position(), len(items.Name()))
-		if pos == items.Position() {
-			continue
-		}
-		u.mapOverlay.Print(pos.X, pos.Y, name)
-		u.mapOverlay.AsciiLine(items.Position(), pos, connectors)
+		u.mapOverlay.TryAddOverlay(items.Position(), items.Name(), u.GetMapWindowGridSize(), u.game.IsSomethingInterestingAtLoc)
 	}
 }
 
@@ -2101,13 +2125,13 @@ func (u *UI) ShowVisibleEnemies() {
 		return
 
 	}
-	var infoTexts []string
+	var infoTexts strings.Builder
 	for _, enemy := range listOfEnemies {
 		info := enemy.GetListInfo()
 		info = fmt.Sprintf("%c - %s", u.getIconForActor(enemy).Char, info)
-		infoTexts = append(infoTexts, info)
+		infoTexts.WriteString(info)
 	}
-	u.OpenTextWindow(infoTexts)
+	u.OpenTextWindow(infoTexts.String())
 }
 
 func (u *UI) ShowVisibleItems() {
@@ -2117,92 +2141,13 @@ func (u *UI) ShowVisibleItems() {
 		return
 
 	}
-	var infoTexts []string
+	var infoTexts strings.Builder
 	for _, item := range listOfItems {
 		info := item.GetListInfo()
 		info = fmt.Sprintf("%c - %s", item.GetIcon().Char, info)
-		infoTexts = append(infoTexts, info)
+		infoTexts.WriteString(info)
 	}
-	u.OpenTextWindow(infoTexts)
-}
-
-func (u *UI) calculateOverlayPos(position geometry.Point, widthNeeded int) (labelPos geometry.Point, connectors []geometry.Point) {
-	sW, sH := u.GetMapWindowGridSize()
-	locIsBlocked := func(pos geometry.Point) bool {
-		return u.game.IsSomethingInterestingAtLoc(pos) || u.mapOverlay.IsSet(pos.X, pos.Y)
-	}
-	isPosForLabelValid := func(pos geometry.Point) bool {
-		if pos.X < 0 || pos.Y < 0 || pos.X+widthNeeded >= sW || pos.Y >= sH {
-			return false
-		}
-		for x := 0; x < widthNeeded; x++ {
-			curPos := geometry.Point{X: pos.X + x, Y: pos.Y}
-			if locIsBlocked(curPos) {
-				return false
-			}
-		}
-		return true
-	}
-
-	simpleRightConnector := position.Add(geometry.Point{X: 1, Y: 0})
-	simpleRightLabelPos := position.Add(geometry.Point{X: 2, Y: 0})
-	if isPosForLabelValid(simpleRightLabelPos) && !locIsBlocked(simpleRightConnector) {
-		return simpleRightLabelPos, []geometry.Point{simpleRightConnector}
-	}
-
-	simpleLeftConnector := position.Add(geometry.Point{X: -1, Y: 0})
-	simpleLeftLabelPos := position.Add(geometry.Point{X: -widthNeeded - 1, Y: 0})
-	if isPosForLabelValid(simpleLeftLabelPos) && !locIsBlocked(simpleLeftConnector) {
-		return simpleLeftLabelPos, []geometry.Point{simpleLeftConnector}
-	}
-
-	topRightConnector := position.Add(geometry.Point{X: 1, Y: -1})
-	topRightLabelPos := position.Add(geometry.Point{X: 2, Y: -1})
-	if isPosForLabelValid(topRightLabelPos) && !locIsBlocked(topRightConnector) {
-		return topRightLabelPos, []geometry.Point{topRightConnector}
-	}
-
-	topLeftConnector := position.Add(geometry.Point{X: -1, Y: -1})
-	topLeftLabelPos := position.Add(geometry.Point{X: -widthNeeded - 1, Y: -1})
-	if isPosForLabelValid(topLeftLabelPos) && !locIsBlocked(topLeftConnector) {
-		return topLeftLabelPos, []geometry.Point{topLeftConnector}
-	}
-
-	bottomRightConnector := position.Add(geometry.Point{X: 1, Y: 1})
-	bottomRightLabelPos := position.Add(geometry.Point{X: 2, Y: 1})
-	if isPosForLabelValid(bottomRightLabelPos) && !locIsBlocked(bottomRightConnector) {
-		return bottomRightLabelPos, []geometry.Point{bottomRightConnector}
-	}
-
-	bottomLeftConnector := position.Add(geometry.Point{X: -1, Y: 1})
-	bottomLeftLabelPos := position.Add(geometry.Point{X: -widthNeeded - 1, Y: 1})
-	if isPosForLabelValid(bottomLeftLabelPos) && !locIsBlocked(bottomLeftConnector) {
-		return bottomLeftLabelPos, []geometry.Point{bottomLeftConnector}
-	}
-
-	twoDownConnector := position.Add(geometry.Point{X: 0, Y: 2})
-	twoDownLabelRightPos := position.Add(geometry.Point{X: 1, Y: 2})
-	if isPosForLabelValid(twoDownLabelRightPos) && !locIsBlocked(twoDownConnector) {
-		return twoDownLabelRightPos, []geometry.Point{twoDownConnector}
-	}
-
-	twoDownLabelLeftPos := position.Add(geometry.Point{X: -widthNeeded - 1, Y: 2})
-	if isPosForLabelValid(twoDownLabelLeftPos) && !locIsBlocked(twoDownConnector) {
-		return twoDownLabelLeftPos, []geometry.Point{twoDownConnector}
-	}
-
-	twoUpConnector := position.Add(geometry.Point{X: 0, Y: -2})
-	twoUpLabelRightPos := position.Add(geometry.Point{X: 1, Y: -2})
-	if isPosForLabelValid(twoUpLabelRightPos) && !locIsBlocked(twoUpConnector) {
-		return twoUpLabelRightPos, []geometry.Point{twoUpConnector}
-	}
-
-	twoUpLabelLeftPos := position.Add(geometry.Point{X: -widthNeeded - 1, Y: -2})
-	if isPosForLabelValid(twoUpLabelLeftPos) && !locIsBlocked(twoUpConnector) {
-		return twoUpLabelLeftPos, []geometry.Point{twoUpConnector}
-	}
-
-	return position, nil
+	u.OpenTextWindow(infoTexts.String())
 }
 
 func (u *UI) onTerminalResized(width int, height int) {
@@ -2336,16 +2281,25 @@ func directionToRune(dir geometry.CompassDirection) rune {
 
 func (u *UI) mapLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 	if u.game.IsVisibleToPlayer(loc) {
-		return u.visibleLookup(loc)
-	} else if u.game.IsExplored(loc) && u.game.IsLit(loc) {
-		icon := u.getIconForMap(loc)
-		return icon, true
+		mapIcon, found := u.visibleLookup(loc)
+		return mapIcon, found
+	} else if u.game.IsExplored(loc) {
+		iconForMap := u.getIconForMap(loc)
+		iconFg, iconBg := u.ApplyLighting(loc, iconForMap.Fg, iconForMap.Bg)
+		iconForMap.Fg = desaturate(iconFg)
+		iconForMap.Bg = desaturate(iconBg)
+		return iconForMap, true
 	}
 	return textiles.TextIcon{}, false
 }
+
+func desaturate(fg color.RGBA) color.RGBA {
+	gray := uint8((uint16(fg.R) + uint16(fg.G) + uint16(fg.B)) / 3)
+	return color.RGBA{R: gray, G: gray, B: gray, A: fg.A}
+}
 func (u *UI) getMapTileBackgroundColor(loc geometry.Point) color.RGBA {
 	icon := u.getIconForMap(loc)
-	return icon.Bg
+	return applyLightToMaterial(u.game.LightAt(loc), icon.Bg).ToRGBA()
 }
 func (u *UI) visibleLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 	conditionalBackgroundWrapper := func(i textiles.TextIcon) textiles.TextIcon {
@@ -2355,23 +2309,38 @@ func (u *UI) visibleLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 		mapIcon := u.getIconForMap(loc)
 		return i.WithBg(mapIcon.Bg)
 	}
+	var icon textiles.TextIcon
 	entityType := u.game.TopEntityAt(loc)
 	switch entityType {
 	case foundation.EntityTypeActor:
 		actor := u.game.ActorAt(loc)
-		return u.getIconForActor(actor), true
+		icon = u.getIconForActor(actor)
 	case foundation.EntityTypeDownedActor:
 		actor := u.game.DownedActorAt(loc)
-		return u.getIconForActor(actor), true
+		icon = u.getIconForActor(actor)
 	case foundation.EntityTypeItem:
 		item := u.game.ItemAt(loc)
-		return conditionalBackgroundWrapper(item.GetIcon()), true
+		icon = conditionalBackgroundWrapper(item.GetIcon())
 	case foundation.EntityTypeObject:
 		object := u.game.ObjectAt(loc)
-		return conditionalBackgroundWrapper(object.GetIcon()), true
+		icon = conditionalBackgroundWrapper(object.Icon())
+	default:
+		icon = u.getIconForMap(loc)
 	}
-	icon := u.getIconForMap(loc)
+	fgWithLight, bgWithLight := u.ApplyLighting(loc, icon.Fg, icon.Bg)
+	icon.Fg = fgWithLight
+	icon.Bg = bgWithLight
 	return icon, true
+}
+func (u *UI) ApplyLighting(p geometry.Point, fg, bg color.RGBA) (color.RGBA, color.RGBA) {
+	lightAtCell := u.game.LightAt(p)
+	fgWithLight := applyLightToMaterial(lightAtCell, fg)
+	bgWithLight := applyLightToMaterial(lightAtCell, bg)
+	return fgWithLight.ToRGBA(), bgWithLight.ToRGBA()
+}
+
+func applyLightToMaterial(lightAtCell fxtools.HDRColor, material color.RGBA) fxtools.HDRColor {
+	return lightAtCell.Multiply(fxtools.NewRGBColorFromBytes(material.R, material.G, material.B))
 }
 
 func (u *UI) ShowCharacterSheet() {
@@ -2474,10 +2443,11 @@ func (u *UI) showCharacterActions(actions []foundation.MenuItem) {
 	}
 
 	textView, playerInfo := u.charSheetView()
-	u.makeSideBySideModal(textView, list, len(playerInfo), longestLineWithoutColorCodes(playerInfo))
+	w, h := widthAndHeightFromString(playerInfo)
+	u.makeSideBySideModal(textView, list, h, w)
 }
 
-func (u *UI) charSheetView() (*cview.TextView, []string) {
+func (u *UI) charSheetView() (*cview.TextView, string) {
 	playerInfo := u.game.GetCharacterSheet()
 	textView := cview.NewTextView()
 	textView.SetBorder(true)
@@ -2490,7 +2460,7 @@ func (u *UI) charSheetView() (*cview.TextView, []string) {
 	textView.SetBackgroundColor(bg)
 	textView.SetBorderColorFocused(fg)
 	textView.SetBorderColor(fg) // TODO: darker style here..
-	u.setColoredText(textView, strings.Join(playerInfo, "\n"))
+	u.setColoredText(textView, playerInfo)
 	return textView, playerInfo
 }
 
@@ -2517,20 +2487,19 @@ func RightPadColored(s string, pLen int) string {
 }
 
 func (u *UI) GetAnimExplosion(hitPositions []geometry.Point, done func()) foundation.Animation {
-	white := u.uiTheme.GetColorByName("White")
-	background := u.uiTheme.GetUIColor(UIColorUIBackground)
-	yellow := u.uiTheme.GetColorByName("Yellow")
-	red := u.uiTheme.GetColorByName("Red")
+	white := u.uiTheme.GetColorByName("white")
+	yellow := u.uiTheme.GetColorByName("yellow_3")
+	red := u.uiTheme.GetColorByName("red_8")
 	lightGray := u.uiTheme.GetColorByName("light_gray_5")
 	darkGray := u.uiTheme.GetColorByName("dark_gray_3")
 	frames := []textiles.TextIcon{
-		{Char: '.', Fg: white, Bg: background},
-		{Char: '∙', Fg: white, Bg: background},
-		{Char: '*', Fg: white, Bg: background},
-		{Char: '*', Fg: yellow, Bg: background},
-		{Char: '*', Fg: red, Bg: background},
-		{Char: '*', Fg: lightGray, Bg: background},
-		{Char: '*', Fg: darkGray, Bg: background},
+		{Char: '.', Fg: white},
+		{Char: '∙', Fg: white},
+		{Char: '*', Fg: white},
+		{Char: '*', Fg: yellow},
+		{Char: '*', Fg: red},
+		{Char: '☼', Fg: lightGray},
+		{Char: '☼', Fg: darkGray},
 	}
 	return u.GetAnimTiles(hitPositions, frames, done)
 }
@@ -2725,7 +2694,15 @@ func (u *UI) initAudio() {
 	go func() {
 		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "weapons"), "")
 		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "ui"), "")
-		u.audioPlayer.LoadEnemyCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "enemies"))
+		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "world"), "")
+		enemySfxDir := path.Join(u.settings.DataRootDir, "audio", "critters")
+		entries, _ := os.ReadDir(enemySfxDir)
+		for _, entry := range entries {
+			if entry.IsDir() {
+				enemyName := entry.Name()
+				u.audioPlayer.LoadCuesFromDir(path.Join(enemySfxDir, enemyName), "critters")
+			}
+		}
 		u.audioPlayer.SoundsLoaded()
 	}()
 

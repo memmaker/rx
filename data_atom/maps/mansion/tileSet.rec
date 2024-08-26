@@ -1,0 +1,34 @@
+%rec: default
+
+Name: Floor
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: Wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+

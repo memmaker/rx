@@ -15,7 +15,7 @@ type ActorForUI interface {
 	GetHitPoints() int
 	GetHitPointsMax() int
 	HasFlag(held ActorFlag) bool
-	GetDetailInfo() []string
+	GetDetailInfo() string
 	GetInternalName() string
 	GetBodyPartByIndex(part int) string
 	IsAlive() bool

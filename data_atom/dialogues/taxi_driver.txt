@@ -1,0 +1,52 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: Where to, stranger?
+#
+o_text: Just drive.
+o_goto: Drive
+#
+o_text: Get me to this location here (Cryo Facility).
+o_cond: HasFlag('LocationKnown(cryolab)') && !IsMap('cryolab')
+o_goto: CryoFacility
+#
+o_text: The old mansion, right outside Kelso.
+o_cond: HasFlag('LocationKnown(mansion)') && !IsMap('mansion')
+o_goto: Mansion
+#
+o_text: Just take me back to Kelso.
+o_cond: !IsMap('town')
+o_goto: Kelso
+#
+o_text: Nevermind.
+o_goto: Bye
+
+name: Bye
+npc: Alright, see you around.
+effect: EndConversation
+
+name: Drive
+npc: Sure thing.
+#
+o_text: (Wait)
+o_goto: DefaultIntroduction
+
+name: Kelso
+npc: Alright, let's go.
+effect: Transition('town', 'taxi_stand')
+effect: EndConversation
+
+name: CryoFacility
+npc: You got it.
+effect: Transition('cryolab', 'taxi_stand')
+effect: EndConversation
+
+name: Mansion
+npc: You got it.
+effect: Transition('mansion', 'taxi_stand')
+effect: EndConversation

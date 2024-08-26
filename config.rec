@@ -1,5 +1,11 @@
 %rec: default
 
+PlayerName: Rogue
+PlayerChar: @
+PlayerColor: white
+DiagonalMovementEnabled: true
+AutoPickup: true
+WallSlide: true
 AnimationDelay: 55
 AnimationsEnabled: true
 AnimateMovement: true
@@ -8,11 +14,5 @@ AnimateDamage: true
 AnimateEffects: true
 MapWidth: 80
 MapHeight: 23
-DiagonalMovementEnabled: true
-AutoPickup: true
-WallSlide: true
-PlayerName: Rogue
 DataRootDir: data_atom
 #DataRootDir: data_rx1
-KeyMapFile: keymaps/default.txt
-Theme: themes/fancy.rec

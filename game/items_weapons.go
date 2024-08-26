@@ -2,9 +2,24 @@ package game
 
 import (
 	"RogueUI/special"
+	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"strings"
 )
+
+type AttackMode struct {
+	Mode     special.TargetingMode
+	TUCost   int
+	MaxRange int
+	IsAimed  bool
+}
+
+func (m AttackMode) String() string {
+	if m.IsAimed {
+		return fmt.Sprintf("%s (Aimed)", m.Mode.ToString())
+	}
+	return m.Mode.ToString()
+}
 
 type AmmoInfo struct {
 	DamageMultiplier int
@@ -22,104 +37,6 @@ func (i AmmoInfo) Equals(other *AmmoInfo) bool {
 		i.DRModifier == other.DRModifier &&
 		i.RoundsInMagazine == other.RoundsInMagazine &&
 		i.CaliberIndex == other.CaliberIndex
-
-}
-
-type TargetingMode int
-
-/*
-	case AttackModeNone:
-		return "None"
-	case AttackModePunch:
-		return "Punch"
-	case AttackModeKick:
-		return "Kick"
-	case AttackModeSwing:
-		return "Swing"
-	case AttackModeThrust:
-		return "Thrust"
-	case AttackModeThrow:
-		return "Throw"
-	case AttackModeFireSingle:
-		return "Fire_Single"
-	case AttackModeFireBurst:
-		return "Fire_Burst"
-	case AttackModeFlame:
-		return "Flame"
-*/
-// as bitmask
-const (
-	TargetingModeNone         TargetingMode = 0
-	TargetingModePunch        TargetingMode = 1
-	TargetingModeKick         TargetingMode = 2
-	TargetingModeSwing        TargetingMode = 4
-	TargetingModeThrust       TargetingMode = 8
-	TargetingModeThrow        TargetingMode = 16
-	TargetingModeFireSingle   TargetingMode = 32
-	TargetingModeFireAimed    TargetingMode = 64
-	TargetingModeFireBurst    TargetingMode = 128
-	TargetingModeFireFullAuto TargetingMode = 256
-	TargetingModeFlame        TargetingMode = 512
-)
-
-func TargetingModeFromString(value string) TargetingMode {
-	value = strings.ToLower(strings.TrimSpace(value))
-	switch value {
-	case "none":
-		return TargetingModeNone
-	case "punch":
-		return TargetingModePunch
-	case "kick":
-		return TargetingModeKick
-	case "swing":
-		return TargetingModeSwing
-	case "thrust":
-		return TargetingModeThrust
-	case "throw":
-		return TargetingModeThrow
-	case "fire_single":
-		return TargetingModeFireSingle
-	case "fire_burst":
-		return TargetingModeFireBurst
-	case "flame":
-		return TargetingModeFlame
-	}
-	panic("Invalid targeting mode: " + value)
-	return TargetingModeNone
-}
-func (t TargetingMode) Next() TargetingMode {
-	if t == TargetingModeNone {
-		return TargetingModePunch
-	}
-	nextVal := t << 1
-	if nextVal > TargetingModeFlame {
-		nextVal = TargetingModePunch
-	}
-	return nextVal
-}
-
-func (t TargetingMode) ToString() string {
-	switch t {
-	case TargetingModeNone:
-		return "None"
-	case TargetingModePunch:
-		return "Punch"
-	case TargetingModeKick:
-		return "Kick"
-	case TargetingModeSwing:
-		return "Swing"
-	case TargetingModeThrust:
-		return "Thrust"
-	case TargetingModeThrow:
-		return "Throw"
-	case TargetingModeFireSingle:
-		return "Fire_Single"
-	case TargetingModeFireBurst:
-		return "Fire_Burst"
-	case TargetingModeFlame:
-		return "Flame"
-	}
-	return "Unknown"
 }
 
 /*
@@ -157,31 +74,37 @@ type WeaponDef struct {
 	ShotMinRange        int
 	ShotHalfDamageRange int
 	ShotAccuracy        int
-	TargetingModeOne    TargetingMode
-	TargetingModeTwo    TargetingMode
 	// linking to another weapon type
-	MagazineSize int
-	BurstRounds  int
-	CaliberIndex int
+	MagazineSize     int
+	BurstRounds      int
+	CaliberIndex     int
+	SoundID          int32
+	DamageType       special.DamageType
+	TargetingModeOne special.TargetingMode
+	TargetingModeTwo special.TargetingMode
+	TUCostOne        int
+	TUCostTwo        int
+	MaxRangeOne      int
+	MaxRangeTwo      int
 }
 
 func (w WeaponDef) IsValid() bool {
-	return w.Type != WeaponTypeUnknown && w.Damage.NotZero() && w.TargetingModeOne != TargetingModeNone
+	return w.Type != WeaponTypeUnknown && w.Damage.NotZero() && w.TargetingModeOne != special.TargetingModeNone
 }
 
 type WeaponInfo struct {
-	damageDice           fxtools.Interval
-	weaponType           WeaponType
-	vorpalEnemy          string
-	skillUsed            special.Skill
-	magazineSize         int
-	loadedInMagazine     *Item
-	qualityInPercent     int
-	currentTargetingMode TargetingMode
-	burstRounds          int
-	caliberIndex         int
-	targetingModeOne     TargetingMode
-	targetingModeTwo     TargetingMode
+	damageDice       fxtools.Interval
+	weaponType       WeaponType
+	vorpalEnemy      string
+	skillUsed        special.Skill
+	magazineSize     int
+	loadedInMagazine *Item
+	qualityInPercent int
+	burstRounds      int
+	caliberIndex     int
+	attackModes      []AttackMode
+	soundID          int32
+	damageType       special.DamageType
 }
 
 func (i *WeaponInfo) GetVorpalEnemy() string {
@@ -259,24 +182,8 @@ func (i *WeaponInfo) IsMelee() bool {
 	return i.weaponType.IsMelee()
 }
 
-func (i *WeaponInfo) CycleTargetMode() {
-	var nextMode TargetingMode
-	for nextMode = i.currentTargetingMode.Next(); !i.IsTargetModeSupported(nextMode); nextMode = nextMode.Next() {
-	}
-	i.currentTargetingMode = nextMode
-}
-
-func (i *WeaponInfo) IsTargetModeSupported(mode TargetingMode) bool {
-	// does the bitmask in targetingMode contain the mode?
-	return i.targetingModeOne == mode || i.targetingModeTwo == mode
-}
-
 func (i *WeaponInfo) HasAmmo() bool {
 	return i.GetLoadedBullets() > 0 || !i.NeedsAmmo()
-}
-
-func (i *WeaponInfo) GetCurrentTargetingMode() TargetingMode {
-	return i.currentTargetingMode
 }
 
 func (i *WeaponInfo) GetTimeNeeded() int {
@@ -310,6 +217,32 @@ func (i *WeaponInfo) NeedsAmmo() bool {
 	return i.caliberIndex > 0
 }
 
+func (i *WeaponInfo) GetFireAudioCue(mode special.TargetingMode) string {
+	strMode := "single"
+	if mode == special.TargetingModeFireBurst || mode == special.TargetingModeFireFullAuto {
+		strMode = "burst"
+	}
+	return fmt.Sprintf("weapons/%d_%s", i.soundID, strMode)
+}
+
+func (i *WeaponInfo) GetReloadAudioCue() string {
+	return fmt.Sprintf("weapons/%d_reload", i.soundID)
+}
+func (i *WeaponInfo) GetOutOfAmmoAudioCue() string {
+	return fmt.Sprintf("weapons/%d_out_of_ammo", i.soundID)
+}
+func (i *WeaponInfo) GetMissAudioCue() string {
+	return fmt.Sprintf("weapons/%d_hit_surface", i.soundID)
+}
+
+func (i *WeaponInfo) GetDamageType() special.DamageType {
+	return i.damageType
+}
+
+func (i *WeaponInfo) GetAttackMode(index int) AttackMode {
+	return i.attackModes[index]
+}
+
 type WeaponType int
 
 func (t WeaponType) IsMissile() bool {
@@ -317,7 +250,7 @@ func (t WeaponType) IsMissile() bool {
 }
 
 func (t WeaponType) IsRanged() bool {
-	return t.IsMissile() || t == WeaponTypeBow || t == WeaponTypeCrossbow || t == WeaponTypePistol || t == WeaponTypeRifle || t == WeaponTypeShotgun || t == WeaponTypeSMG || t == WeaponTypeMinigun || t == WeaponTypeRocketLauncher || t == WeaponTypeBigGun
+	return t.IsMissile() || t == WeaponTypeBow || t == WeaponTypeCrossbow || t == WeaponTypePistol || t == WeaponTypeRifle || t == WeaponTypeShotgun || t == WeaponTypeSMG || t == WeaponTypeMinigun || t == WeaponTypeRocketLauncher || t == WeaponTypeBigGun || t == WeaponTypeEnergy
 }
 
 func (t WeaponType) IsMelee() bool {

@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
@@ -98,13 +99,29 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 
 	flyFromUserAnim, _ := g.ui.GetAnimProjectile('☼', "LightRed", user.Position(), ballPos, nil)
 
-	userDamageAnim := g.damageActorWithFollowUp("drain life", user, damageDone, nil, []foundation.Animation{flyFromUserAnim})
+	damage := SourcedDamage{
+		NameOfThing:     "drain life",
+		Attacker:        user,
+		IsObviousAttack: true,
+		AttackMode:      special.TargetingModeFireSingle,
+		DamageType:      special.DamageTypeNormal,
+		DamageAmount:    damageDone,
+	}
+	userDamageAnim := g.damageActorWithFollowUp(damage, user, nil, []foundation.Animation{flyFromUserAnim})
 
 	var enemyAnims []foundation.Animation
-	damagePerEnemy := max(1, damageDone/len(affectedActors))
+
+	damage = SourcedDamage{
+		NameOfThing:     "drain life",
+		Attacker:        user,
+		IsObviousAttack: true,
+		AttackMode:      special.TargetingModeFireSingle,
+		DamageType:      special.DamageTypeRadiation,
+		DamageAmount:    max(1, damageDone/len(affectedActors)),
+	}
 	for _, actor := range affectedActors {
 		flyToEnemyAnim, _ := g.ui.GetAnimProjectile('☼', "LightRed", ballPos, actor.Position(), nil)
-		damageAnims := g.damageActor(user.Name(), actor, damagePerEnemy)
+		damageAnims := g.damageActor(damage, actor)
 		flyToEnemyAnim.SetFollowUp(damageAnims)
 		enemyAnims = append(enemyAnims, flyToEnemyAnim)
 	}
@@ -149,7 +166,7 @@ func createMonster(g *GameState, user *Actor) {
 		return
 	}
 
-	monster := g.NewEnemyFromDef(g.dataDefinitions.RandomMonsterDef())
+	monster := g.NewActorFromDef(g.dataDefinitions.RandomMonsterDef())
 	g.msg(foundation.Msg("A monster appears!"))
 
 	randomPos := freePositions[rand.Intn(len(freePositions))]
