@@ -30,122 +30,103 @@ type IntrinsicAttack struct {
 	DamageDice dice_curve.Dice
 	AttackName string
 }
-type ActorDef struct {
-	Description      string
-	Name             string
-	Icon             textiles.TextIcon
-	SpecialStats     map[special.Stat]int
-	DerivedStat      map[special.DerivedStat]int
-	SkillAdjustments map[special.Skill]int
-	SizeModifier     int
-	ZapEffects       []string
-	UseEffects       []string
-	Flags            *foundation.MapFlags
 
-	Equipment       []string
-	XP              int
-	DefaultRelation CharacterMood
+func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, newItemFromString func(string) *Item) *Actor {
+	actor := NewActor()
 
-	Position     geometry.Point
-	DialogueFile string
-}
-
-func (d ActorDef) WithIcon(icon textiles.TextIcon) ActorDef {
-	d.Icon = icon
-	return d
-}
-
-func ActorDefsFromRecords(records []recfile.Record, palette textiles.ColorPalette) []ActorDef {
-	var monsters []ActorDef
-	for _, record := range records {
-		monsterDef := NewActorDefFromRecord(record, palette)
-		monsters = append(monsters, monsterDef)
-	}
-	return monsters
-}
-
-func NewActorDefFromRecord(record recfile.Record, palette textiles.ColorPalette) ActorDef {
-	monsterDef := ActorDef{
-		Flags:            foundation.NewMapFlags(),
-		SpecialStats:     make(map[special.Stat]int),
-		DerivedStat:      make(map[special.DerivedStat]int),
-		SkillAdjustments: make(map[special.Skill]int),
-	}
-	monsterDef = fillDefinitionFromRecord(monsterDef, record, palette)
-	return monsterDef
-}
-
-func fillDefinitionFromRecord(monsterDef ActorDef, record recfile.Record, palette textiles.ColorPalette) ActorDef {
 	var icon textiles.TextIcon
+	var zapEffects []string
+	var useEffects []string
+	var equipment []string
+
+	flags := foundation.NewActorFlags()
+
+	charSheet := special.NewCharSheet()
+
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		case "name":
-			monsterDef.Name = field.Value
+			actor.SetInternalName(field.Value)
 		case "description":
-			monsterDef.Description = field.Value
+			actor.SetDisplayName(field.Value)
 		case "icon":
 			icon.Char = field.AsRune()
 		case "foreground":
 			icon.Fg = palette.Get(field.Value)
-		case "expvalue":
-			monsterDef.XP = field.AsInt()
+		case "xp":
+			actor.SetXP(field.AsInt())
 		case "zap_effect":
-			monsterDef.ZapEffects = append(monsterDef.ZapEffects, field.Value)
+			zapEffects = append(zapEffects, field.Value)
 		case "use_effect":
-			monsterDef.UseEffects = append(monsterDef.UseEffects, field.Value)
+			useEffects = append(useEffects, field.Value)
 		case "strength":
-			monsterDef.SpecialStats[special.Strength] = field.AsInt()
+			charSheet.SetStat(special.Strength, field.AsInt())
 		case "perception":
-			monsterDef.SpecialStats[special.Perception] = field.AsInt()
+			charSheet.SetStat(special.Perception, field.AsInt())
 		case "endurance":
-			monsterDef.SpecialStats[special.Endurance] = field.AsInt()
+			charSheet.SetStat(special.Endurance, field.AsInt())
 		case "charisma":
-			monsterDef.SpecialStats[special.Charisma] = field.AsInt()
+			charSheet.SetStat(special.Charisma, field.AsInt())
 		case "intelligence":
-			monsterDef.SpecialStats[special.Intelligence] = field.AsInt()
+			charSheet.SetStat(special.Intelligence, field.AsInt())
 		case "agility":
-			monsterDef.SpecialStats[special.Agility] = field.AsInt()
+			charSheet.SetStat(special.Agility, field.AsInt())
 		case "luck":
-			monsterDef.SpecialStats[special.Luck] = field.AsInt()
+			charSheet.SetStat(special.Luck, field.AsInt())
 		case "hitpoints":
-			monsterDef.DerivedStat[special.HitPoints] = field.AsInt()
+			charSheet.SetDerivedStatAbsoluteValue(special.HitPoints, field.AsInt())
 		case "actionpoints":
-			monsterDef.DerivedStat[special.ActionPoints] = field.AsInt()
+			charSheet.SetDerivedStatAbsoluteValue(special.ActionPoints, field.AsInt())
 		case "speed":
-			monsterDef.DerivedStat[special.Speed] = field.AsInt()
+			charSheet.SetDerivedStatAbsoluteValue(special.Speed, field.AsInt())
 		case "skillbonusunarmed":
-			monsterDef.SkillAdjustments[special.Unarmed] = field.AsInt()
+			charSheet.SetSkillAdjustment(special.Unarmed, field.AsInt())
 		case "skillbonusmeleeweapons":
-			monsterDef.SkillAdjustments[special.MeleeWeapons] = field.AsInt()
+			charSheet.SetSkillAdjustment(special.MeleeWeapons, field.AsInt())
 		case "skillbonussmallguns":
-			monsterDef.SkillAdjustments[special.SmallGuns] = field.AsInt()
+			charSheet.SetSkillAdjustment(special.SmallGuns, field.AsInt())
 		case "skillbonusbigguns":
-			monsterDef.SkillAdjustments[special.BigGuns] = field.AsInt()
+			charSheet.SetSkillAdjustment(special.BigGuns, field.AsInt())
 		case "skillbonusenergyweapons":
-			monsterDef.SkillAdjustments[special.EnergyWeapons] = field.AsInt()
+			charSheet.SetSkillAdjustment(special.EnergyWeapons, field.AsInt())
 		case "skillbonusthrowing":
-			monsterDef.SkillAdjustments[special.Throwing] = field.AsInt()
+			charSheet.SetSkillAdjustment(special.Throwing, field.AsInt())
 		case "size_modifier":
-			monsterDef.SizeModifier = field.AsInt()
+			actor.SetSizeModifier(field.AsInt())
 		case "dodge":
-			monsterDef.DerivedStat[special.Dodge] = field.AsInt()
+			charSheet.SetDerivedStatAbsoluteValue(special.Dodge, field.AsInt())
 		case "equipment":
-			monsterDef.Equipment = append(monsterDef.Equipment, field.Value)
+			equipment = append(equipment, field.Value)
 		case "default_relation":
-			monsterDef.DefaultRelation = PlayerRelationFromString(field.Value)
+			actor.SetRelationToPlayer(PlayerRelationFromString(field.Value))
 		case "position":
 			pos, _ := geometry.NewPointFromEncodedString(field.Value)
-			monsterDef.Position = pos
+			actor.SetPosition(pos)
 		case "dialogue":
-			monsterDef.DialogueFile = field.Value
+			actor.SetDialogueFile(field.Value)
 		case "flags":
 			for _, mFlag := range field.AsList("|") {
-				monsterDef.Flags.Set(foundation.ActorFlagFromString(mFlag.Value))
+				flags.Set(foundation.ActorFlagFromString(mFlag.Value))
 			}
 		default:
 			//println("WARNING: Unknown field: " + field.Name)
 		}
 	}
 
-	return monsterDef.WithIcon(icon)
+	actor.GetFlags().Init(flags.UnderlyingCopy())
+
+	charSheet.HealCompletely()
+
+	actor.SetCharSheet(charSheet)
+	actor.SetIcon(icon)
+	actor.SetIntrinsicZapEffects(zapEffects)
+	actor.SetIntrinsicUseEffects(useEffects)
+
+	for _, itemName := range equipment {
+		item := newItemFromString(itemName)
+		if item != nil {
+			actor.GetInventory().Add(item)
+		}
+	}
+	return actor
 }

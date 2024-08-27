@@ -81,7 +81,7 @@ func (g *GameState) NewContainer(rec recfile.Record, iconForObject func(objectTy
 		case "position":
 			container.position, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "item":
-			item := g.NewItemFromName(field.Value)
+			item := g.NewItemFromString(field.Value)
 			container.AddItem(item)
 		}
 	}

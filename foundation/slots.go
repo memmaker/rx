@@ -12,31 +12,17 @@ func (n EquipSlot) ToString() string {
 		return "Off Hand"
 	case SlotNameLightSource:
 		return "Light source"
-	case SlotNameAmulet:
-		return "Around neck"
-	case SlotNameRing:
-		return "Ring"
-	case SlotNameRingRight:
-		return "On right hand"
-	case SlotNameRingLeft:
-		return "On left hand"
 	case SlotNameArmorTorso:
 		return "On body"
 	case SlotNameArmorHead:
 		return "On head"
-	case SlotNameArmorFeet:
-		return "On feet"
-	case SlotNameArmorHands:
-		return "On hands"
-	case SlotNameArmorBack:
-		return "On back"
 	}
 	return "Unknown"
 }
 
 func (n EquipSlot) IsArmorSlot() bool {
 	switch n {
-	case SlotNameArmorTorso, SlotNameArmorHead, SlotNameArmorFeet, SlotNameArmorHands, SlotNameArmorBack, SlotNameShield:
+	case SlotNameArmorTorso, SlotNameArmorHead:
 		return true
 	}
 	return false
@@ -49,21 +35,11 @@ const (
 
 	SlotNameArmorTorso
 	SlotNameArmorHead
-	SlotNameArmorHands
-	SlotNameArmorFeet
-	SlotNameArmorBack
-	SlotNameAmulet
 	SlotNameLightSource
-
-	// On Items only
-	SlotNameShield
-	SlotNameRing
 
 	// On Body only
 	SlotNameMainHand
 	SlotNameOffHand
-	SlotNameRingRight
-	SlotNameRingLeft
 )
 
 func ItemSlotFromString(s string) EquipSlot {
@@ -71,20 +47,10 @@ func ItemSlotFromString(s string) EquipSlot {
 	switch s {
 	case "light_source":
 		return SlotNameLightSource
-	case "amulet":
-		return SlotNameAmulet
-	case "ring":
-		return SlotNameRing
 	case "torso":
 		return SlotNameArmorTorso
 	case "helmet":
 		return SlotNameArmorHead
-	case "boots":
-		return SlotNameArmorFeet
-	case "gloves":
-		return SlotNameArmorHands
-	case "cape":
-		return SlotNameArmorBack
 	}
 	panic("Invalid slot: " + s)
 	return SlotNameNotEquippable

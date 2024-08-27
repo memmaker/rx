@@ -9,12 +9,12 @@ BorderForeground: light_gray_4
 
 %rec: borders
 
-UIBorder_Horizontal: -
-UIBorder_Vertical: |
-UIBorder_TopLeft: ┌
-UIBorder_TopRight: ┐
-UIBorder_BottomLeft: └
-UIBorder_BottomRight: ┘
+UIBorder_Horizontal: ─
+UIBorder_Vertical: │
+UIBorder_TopLeft: ╭
+UIBorder_TopRight: ╮
+UIBorder_BottomLeft: ╰
+UIBorder_BottomRight: ╯
 UIBorder_LeftT: -
 UIBorder_RightT: -
 UIBorder_TopT: |

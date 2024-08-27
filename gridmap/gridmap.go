@@ -1926,6 +1926,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsLineOfSightClear(source geo
 		if point == source {
 			return true
 		}
+		if point == dest {
+			return true
+		}
 		return !m.IsCurrentlyPassable(point)
 	})
 	return int(hitInfo.ColliderGridPosition[0]) == dest.X && int(hitInfo.ColliderGridPosition[1]) == dest.Y

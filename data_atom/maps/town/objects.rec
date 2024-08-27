@@ -1,7 +1,8 @@
 %rec: default
 
+AudioCue: wood_door
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (27,16)
 
 Category: Transition
@@ -14,8 +15,9 @@ Category: ExplodingPushBox
 Description: a box
 Position: (73,18)
 
+AudioCue: wood_door
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (63,11)
 
 Category: BakedLight
@@ -30,8 +32,9 @@ Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
 Position: (11,15)
 
+AudioCue: wood_door
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (45,16)
 
 Category: BakedLight
@@ -40,14 +43,16 @@ Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
 Position: (39,8)
 
+AudioCue: wood_door
 Category: LockedDoor
-Description: a locked door
+Description: a door
 LockFlag: bar_door_security
 NumberLock: 1996
 Position: (77,11)
 
+AudioCue: wood_door
 Category: LockedDoor
-Description: a locked door
+Description: a door
 LockFlag: bar_door_security
 NumberLock: 1996
 Position: (78,10)
@@ -58,14 +63,16 @@ Description: a metal sign
 Text: Dr. Winters
 Position: (38,7)
 
+AudioCue: wood_door
 Category: LockedDoor
 Description: a door
 LockFlag: doc_offices
 NumberLock: 0451
 Position: (35,5)
 
+AudioCue: wood_door
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (26,5)
 
 Category: ExplodingPushBox
@@ -133,15 +140,18 @@ Text: Lucy & Jeff Burton
 + Home Sweet Home
 Position: (47,16)
 
+AudioCue: wood_door
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (13,16)
 
+AudioCue: wood_door
 Category: LockedDoor
-Description: a locked door
+Description: a door
 LockFlag: doc_offices
 Position: (47,5)
 
+AudioCue: wood_door
 Category: OpenDoor
 Description: a door
 Position: (7,6)

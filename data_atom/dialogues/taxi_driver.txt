@@ -1,9 +1,37 @@
 %rec: OpeningBranch
 
+cond: IsInCombatWithPlayer(NPC_NAME)
+goto: PlayerCombatBranch
+
+cond: IsInCombat(NPC_NAME)
+goto: CombatBranch
+
 cond: true
 goto: DefaultIntroduction
 
 %rec: Nodes
+
+name: PlayerCombatBranch
+npc: Alright, speak up. Why the hell are you attacking me?
+#
+o_text: I'm sorry, I didn't mean to attack you.
+o_goto: Apology
+#
+o_text: Because I can.
+o_goto: BecauseICan
+
+name: Apology
+npc: Fine, just don't do it again.
+effect: EndHostility
+effect: EndConversation
+
+name: BecauseICan
+npc: You're a real piece of work, you know that?
+effect: EndConversation
+
+name: CombatBranch
+npc: I'm kind of busy right now.
+effect: EndConversation
 
 name: DefaultIntroduction
 npc: Where to, stranger?

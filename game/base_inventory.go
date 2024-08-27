@@ -329,6 +329,15 @@ func (i *Inventory) GetBestWeapon() *Item {
 	return bestWeapon
 }
 
+func (i *Inventory) HasStealableItems(isStealable func(item *Item) bool) bool {
+	for _, invItem := range i.items {
+		if isStealable(invItem) {
+			return true
+		}
+	}
+	return false
+}
+
 func SortInventory(stacks []*InventoryStack) {
 	slices.SortStableFunc(stacks, func(i, j *InventoryStack) int {
 		itemI := i.items[0]

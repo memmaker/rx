@@ -30,7 +30,7 @@ type HackingGame struct {
 	doneGuessing              bool
 	closeFunc                 func(previousGuesses []string, result foundation.InteractionResult)
 	borders                   cview.BorderDef
-	audioPlayer               AudioCuePlayer
+	audioPlayer               foundation.AudioCuePlayer
 }
 
 func NewHackingGame(correctPassword string, fakePasswords []string, close func(previousGuesses []string, result foundation.InteractionResult)) *HackingGame {
@@ -298,7 +298,7 @@ func (hg *HackingGame) confirmSelection() {
 		hg.playCue("ui/hacking_confirm")
 	}
 }
-func (hg *HackingGame) SetAudioPlayer(player AudioCuePlayer) {
+func (hg *HackingGame) SetAudioPlayer(player foundation.AudioCuePlayer) {
 	hg.audioPlayer = player
 }
 func (hg *HackingGame) wasLastGuessCorrect() bool {

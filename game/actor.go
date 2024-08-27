@@ -50,7 +50,7 @@ type Actor struct {
 	inventory *Inventory
 	equipment *Equipment
 
-	statusFlags *foundation.MapFlags
+	statusFlags *foundation.ActorFlags
 
 	intrinsicAttacks    []IntrinsicAttack
 	intrinsicZapEffects []string
@@ -67,35 +67,38 @@ type Actor struct {
 	teamName     string
 	enemyActors  map[string]bool
 	enemyTeams   map[string]bool
+	xp           int
 }
 
 func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet) *Actor {
-	player := NewActor(name, icon, character)
+	player := NewActor()
+	player.SetCharSheet(character)
+	player.SetDisplayName(name)
+	player.SetIcon(icon)
 	player.SetInternalName("player")
 	return player
 }
 
-func NewActor(name string, icon textiles.TextIcon, character *special.CharSheet) *Actor {
-
-	body := foundation.BodyByName("human", character.GetHitPointsMax())
+func NewActor() *Actor {
+	sheet := special.NewCharSheet()
+	body := foundation.BodyByName("human", sheet.GetHitPointsMax())
 
 	a := &Actor{
-		name:        name,
-		icon:        icon,
+		name: "Unknown",
+		icon: textiles.TextIcon{
+			Char: '0',
+			Fg:   color.RGBA{255, 255, 255, 255},
+			Bg:   color.RGBA{0, 0, 0, 255},
+		},
 		inventory:   NewInventory(23),
 		equipment:   NewEquipment(),
-		charSheet:   character,
+		charSheet:   sheet,
 		body:        body,
 		mood:        Neutral,
-		statusFlags: foundation.NewMapFlags(),
+		statusFlags: foundation.NewActorFlags(),
 		enemyActors: make(map[string]bool),
 		enemyTeams:  make(map[string]bool),
 	}
-
-	// add persistent modifiers, that always apply when a condition is met here
-
-	// injured -> 1/2 dodge
-
 	return a
 }
 
@@ -121,10 +124,6 @@ func (a *Actor) GetBodyPartByIndex(part int) string {
 		return "None"
 	}
 	return a.body[part].Name
-}
-
-func (a *Actor) GetIcon() textiles.TextIcon {
-	return a.icon
 }
 
 type CapModifier struct {
@@ -255,6 +254,11 @@ func ModHalveWhen(reason string, isInjured func() bool) PercentageModifier {
 }
 
 func (a *Actor) Icon() textiles.TextIcon {
+	if a.IsSleeping() || a.IsKnockedDown() {
+		originalRune := a.icon.Char
+		asLower := strings.ToLower(string(originalRune))
+		return a.icon.WithRune([]rune(asLower)[0])
+	}
 	return a.icon
 }
 func (a *Actor) GetListInfo() string {
@@ -297,7 +301,7 @@ func (a *Actor) GetDamageResistance() int {
 	return 0
 }
 
-func (a *Actor) GetFlags() *foundation.MapFlags {
+func (a *Actor) GetFlags() *foundation.ActorFlags {
 	return a.statusFlags
 }
 
@@ -395,7 +399,7 @@ func (a *Actor) IsFatigued() bool {
 }
 
 func (a *Actor) TextIcon(bg color.RGBA) textiles.TextIcon {
-	return a.icon.WithBg(bg)
+	return a.Icon().WithBg(bg)
 }
 
 func (a *Actor) GetDetailInfo() string {
@@ -466,7 +470,7 @@ func (a *Actor) SetIntrinsicAttacks(attacks []IntrinsicAttack) {
 	a.intrinsicAttacks = attacks
 }
 
-func (a *Actor) GetStatModifier(stat dice_curve.Stat) int {
+func (a *Actor) GetStatModifier(stat special.Stat) int {
 	equipMod := a.GetEquipment().GetStatModifier(stat)
 	//rulesMod := dice_curve.GetStatModifier(stat, a.charSheet, a.GetEncumbrance())
 	return equipMod
@@ -521,12 +525,6 @@ func (a *Actor) SetSleeping() {
 	flags.Set(foundation.FlagSleep)
 	flags.Unset(foundation.FlagAwareOfPlayer)
 	flags.Unset(foundation.FlagScared)
-}
-
-func (a *Actor) SetUnwary() {
-	flags := a.GetFlags()
-	flags.Unset(foundation.FlagSleep)
-	flags.Unset(foundation.FlagAwareOfPlayer)
 }
 
 func (a *Actor) SetAware() {
@@ -728,6 +726,15 @@ func (a *Actor) LookInfo() string {
 	if !a.IsAlive() {
 		return fmt.Sprintf("%s (dead)", a.Name())
 	}
+	if a.IsSleeping() {
+		return fmt.Sprintf("%s (sleeping)", a.Name())
+	}
+	if a.IsKnockedDown() {
+		return fmt.Sprintf("%s (knocked down)", a.Name())
+	}
+	if a.NeedsHealing() {
+		return fmt.Sprintf("%s (%s)", a.Name(), a.injuredString())
+	}
 	return a.Name()
 }
 
@@ -762,4 +769,53 @@ func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, bodyPart int) SourcedD
 	}
 	damage.DamageAmount = newDamageAmount
 	return damage
+}
+
+func (a *Actor) HasDialogue() bool {
+	return a.dialogueFile != ""
+}
+
+func (a *Actor) HasStealableItems() bool {
+	return a.GetInventory().HasStealableItems(a.GetEquipment().IsNotEquipped)
+}
+
+func (a *Actor) IsKnockedDown() bool {
+	return a.HasFlag(foundation.FlagKnockedDown)
+}
+
+func (a *Actor) injuredString() string {
+	percent := a.GetHitPoints() * 100 / a.GetHitPointsMax()
+	if percent < 10 {
+		return "near death"
+	}
+	if percent < 25 {
+		return "severely wounded"
+	}
+	if percent < 50 {
+		return "badly injured"
+	}
+	if percent < 75 {
+		return "injured"
+	}
+	return "scratched"
+}
+
+func (a *Actor) RemoveEnemy(other *Actor) {
+	delete(a.enemyActors, other.GetInternalName())
+}
+
+func (a *Actor) SetNeutral() {
+	a.mood = Neutral
+}
+
+func (a *Actor) SetIcon(icon textiles.TextIcon) {
+	a.icon = icon
+}
+
+func (a *Actor) SetCharSheet(character *special.CharSheet) {
+	a.charSheet = character
+}
+
+func (a *Actor) SetXP(xp int) {
+	a.xp = xp
 }

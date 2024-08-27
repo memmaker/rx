@@ -6,6 +6,14 @@ import (
 	"math/rand"
 )
 
+func (g *GameState) TryGetDoorAt(mapPos geometry.Point) (*Door, bool) {
+	if obj, exists := g.gridMap.TryGetObjectAt(mapPos); exists {
+		if door, isDoor := obj.(*Door); isDoor {
+			return door, true
+		}
+	}
+	return nil, false
+}
 func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	if !g.config.DiagonalMovementEnabled && direction.IsDiagonal() {
 		return
@@ -23,11 +31,13 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 
 	if objectAt, exists := g.gridMap.TryGetObjectAt(newPos); exists {
 		if door, isDoor := objectAt.(*Door); isDoor { // THIS IS STILL HACKY; DOOR OBJECT ALSO IMPLEMENTS THIS
-			if door.IsLocked() && player.HasKey(door.GetLockFlag()) {
-				door.Unlock()
-				g.msg(foundation.Msg("You unlocked the door"))
-				g.ui.PlayCue("world/PICKKEYS")
-				return
+			if door.IsLocked() {
+				if player.HasKey(door.GetLockFlag()) {
+					door.Unlock()
+					g.msg(foundation.Msg("You unlocked the door"))
+					g.ui.PlayCue("world/PICKKEYS")
+					return
+				}
 			}
 		}
 
@@ -81,10 +91,14 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	}
 
 	if actorAt, exists := g.gridMap.TryGetActorAt(newPos); exists {
-		if actorAt.IsHostile() {
+		if actorAt.IsHostileTowards(g.Player) {
 			g.playerMeleeAttack(actorAt)
-		} else {
+		} else if !actorAt.IsSleeping() && actorAt.HasDialogue() {
 			g.StartDialogue(actorAt.GetDialogueFile(), actorAt, false)
+		} else if actorAt.IsSleeping() && actorAt.HasStealableItems() {
+			g.StartPickpocket(actorAt)
+		} else {
+			g.OpenContextMenuFor(actorAt.Position())
 		}
 		return
 	}
@@ -93,7 +107,7 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 		g.openInventoryOf(downedActorAt)
 	}
 	direction = newPos.Sub(oldPos).ToDirection()
-	g.playerMove(newPos)
+	g.playerMove(oldPos, newPos)
 	g.ui.AfterPlayerMoved(foundation.MoveInfo{
 		Direction: direction,
 		OldPos:    oldPos,
@@ -130,7 +144,7 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 	g.ui.ShowContainer(actor.Name(), stackRef, transfer)
 
 }
-func (g *GameState) afterPlayerMoved() {
+func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition bool) {
 	// explore the map
 	// print "You see.." message
 	if g.gridMap.IsItemAt(g.Player.Position()) && g.config.AutoPickup {
@@ -144,6 +158,20 @@ func (g *GameState) afterPlayerMoved() {
 
 	if g.Player.HasFlag(foundation.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
 		g.ui.AddAnimations(OneAnimation(teleportWithAnimation(g, g.Player, g.gridMap.RandomSpawnPosition())))
+	}
+
+	// automatic door opening/closing sfx handling
+	if !wasMapTransition {
+		if door, exists := g.TryGetDoorAt(g.Player.Position()); exists {
+			if door.IsClosedButNotLocked() {
+				door.PlayOpenSfx()
+			}
+		}
+		if door, exists := g.TryGetDoorAt(oldPos); exists {
+			if door.IsClosedButNotLocked() {
+				door.PlayCloseSfx()
+			}
+		}
 	}
 }
 

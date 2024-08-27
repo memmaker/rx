@@ -281,21 +281,13 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
-			Name:   "Create Item",
-			Action: g.openWizardCreateItemMenu,
-		},
-		{
-			Name:   "Create Monster",
-			Action: g.openWizardCreateMonsterMenu,
-		},
-		{
 			Name:   "Create Trap",
 			Action: g.openWizardCreateTrapMenu,
 		},
 	})
 }
 
-func (g *GameState) StartDialogue(name string, conversationPartnerName foundation.ChatterSource, isTerminal bool) {
+func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource, isTerminal bool) {
 	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", name+".txt")
 	if !fxtools.FileExists(conversationFilename) {
 		return
@@ -305,8 +297,19 @@ func (g *GameState) StartDialogue(name string, conversationPartnerName foundatio
 		panic(err)
 		return
 	}
-	rootNode := conversation.GetRootNode()
-	g.OpenDialogueNode(conversation, rootNode, conversationPartnerName, isTerminal)
+
+	var npcName string
+	if actor, isActor := partner.(*Actor); isActor {
+		npcName = actor.GetInternalName()
+	} else {
+		npcName = partner.Name()
+	}
+
+	params := map[string]interface{}{
+		"NPC_NAME": npcName,
+	}
+	rootNode := conversation.GetRootNode(params)
+	g.OpenDialogueNode(conversation, rootNode, partner, isTerminal)
 }
 
 func (g *GameState) OpenDialogueNode(conversation *Conversation, node ConversationNode, conversationPartnerName foundation.ChatterSource, isTerminal bool) {
@@ -314,7 +317,12 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 	instantEndWithChatter := false
 	var effectCalls []func()
 	for _, effect := range node.Effects {
-		if effect == "EndConversation" {
+		if effect == "EndHostility" {
+			if actor, isActor := conversationPartnerName.(*Actor); isActor {
+				actor.RemoveEnemy(g.Player)
+				actor.SetNeutral()
+			}
+		} else if effect == "EndConversation" {
 			endConversation = true
 		} else {
 			if fxtools.LooksLikeAFunction(effect) {
@@ -393,69 +401,6 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 	for _, effectCall := range effectCalls {
 		effectCall()
 	}
-}
-
-func (g *GameState) openWizardCreateItemMenu() {
-	allCategories := []foundation.ItemCategory{
-		foundation.ItemCategoryFood,
-		foundation.ItemCategoryWeapons,
-		foundation.ItemCategoryArmor,
-	}
-	var menuActions []foundation.MenuItem
-
-	for _, c := range allCategories {
-		category := c
-		menuActions = append(menuActions, foundation.MenuItem{
-			Name: category.String(),
-			Action: func() {
-				g.openWizardCreateItemSelectionMenu(g.dataDefinitions.Items[category])
-			},
-			CloseMenus: true,
-		})
-	}
-
-	g.ui.OpenMenu(menuActions)
-}
-
-func (g *GameState) openWizardCreateItemSelectionMenu(defs []ItemDef) {
-	var menuActions []foundation.MenuItem
-	for _, def := range defs {
-		itemDef := def
-		menuActions = append(menuActions, foundation.MenuItem{
-			Name: itemDef.Description,
-			Action: func() {
-				newItem := NewItem(itemDef, g.iconForItem(itemDef.Category))
-				inv := g.Player.GetInventory()
-				if inv.IsFull() {
-					g.gridMap.AddItemWithDisplacement(newItem, g.Player.Position())
-				} else {
-					inv.Add(newItem)
-				}
-			},
-			CloseMenus: true,
-		})
-	}
-	g.ui.OpenMenu(menuActions)
-}
-func (g *GameState) openWizardCreateMonsterMenu() {
-	defs := g.dataDefinitions.Monsters
-	var menuActions []foundation.MenuItem
-	for _, def := range defs {
-		monsterDef := def
-		menuActions = append(menuActions, foundation.MenuItem{
-			Name: monsterDef.Description,
-			Action: func() {
-				if monsterDef.Flags.IsSet(foundation.FlagWallCrawl) {
-					g.spawnCrawlerInWall(monsterDef)
-				} else {
-					newActor := g.NewActorFromDef(monsterDef)
-					g.gridMap.AddActorWithDisplacement(newActor, g.Player.Position())
-				}
-			},
-			CloseMenus: true,
-		})
-	}
-	g.ui.OpenMenu(menuActions)
 }
 
 func (g *GameState) openWizardCreateTrapMenu() {

@@ -100,7 +100,6 @@ type GameForUI interface {
 
 	// Wizard
 	OpenWizardMenu()
-	GetRandomEnemyName() string
 	GetItemInMainHand() (ItemForUI, bool)
 	OpenContextMenuFor(pos geometry.Point)
 
@@ -264,6 +263,22 @@ const (
 
 type Difficulty uint8
 
+func (d Difficulty) String() string {
+	switch d {
+	case VeryEasy:
+		return "quite simple"
+	case Easy:
+		return "simplistic"
+	case Medium:
+		return "average"
+	case Hard:
+		return "challenging"
+	case VeryHard:
+		return "very complex"
+	}
+	return "Unknown"
+}
+
 const (
 	VeryEasy Difficulty = iota
 	Easy
@@ -294,4 +309,7 @@ type ChatterSource interface {
 	Name() string
 	Position() geometry.Point
 	Icon() textiles.TextIcon
+}
+type AudioCuePlayer interface {
+	PlayCue(cueName string)
 }

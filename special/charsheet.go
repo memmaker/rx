@@ -38,6 +38,26 @@ func CostForOnePercentSkill(skillValue int) int {
 
 type Stat int
 
+func (s Stat) ToShortString() string {
+	switch s {
+	case Strength:
+		return "STR"
+	case Perception:
+		return "PER"
+	case Endurance:
+		return "END"
+	case Charisma:
+		return "CHA"
+	case Intelligence:
+		return "INT"
+	case Agility:
+		return "AGI"
+	case Luck:
+		return "LCK"
+	}
+	return ""
+}
+
 const (
 	Strength Stat = iota
 	Perception
@@ -47,6 +67,28 @@ const (
 	Agility
 	Luck
 )
+
+func StatFromString(name string) Stat {
+	name = strings.ToLower(name)
+	switch name {
+	case "strength":
+		return Strength
+	case "perception":
+		return Perception
+	case "endurance":
+		return Endurance
+	case "charisma":
+		return Charisma
+	case "intelligence":
+		return Intelligence
+	case "agility":
+		return Agility
+	case "luck":
+		return Luck
+	}
+	panic("invalid stat name")
+	return 0
+}
 
 type DerivedStat int
 
@@ -78,6 +120,46 @@ func (s Skill) IsMeleeAttackSkill() bool {
 	return s == Unarmed || s == MeleeWeapons
 }
 
+func (s Skill) ToShortString() string {
+	switch s {
+	case SmallGuns:
+		return "SG"
+	case BigGuns:
+		return "BG"
+	case EnergyWeapons:
+		return "EW"
+	case Unarmed:
+		return "UN"
+	case MeleeWeapons:
+		return "MW"
+	case Throwing:
+		return "TH"
+	case Doctor:
+		return "DR"
+	case Sneak:
+		return "SK"
+	case Lockpick:
+		return "LP"
+	case Steal:
+		return "ST"
+	case Traps:
+		return "TR"
+	case Science:
+		return "SC"
+	case Repair:
+		return "RP"
+	case Speech:
+		return "SP"
+	case Barter:
+		return "BA"
+	case Gambling:
+		return "GA"
+	case Outdoorsman:
+		return "OU"
+	}
+	return ""
+}
+
 const (
 	SmallGuns Skill = iota
 	BigGuns
@@ -98,7 +180,7 @@ const (
 	Outdoorsman
 )
 
-func SkillFromName(name string) Skill {
+func SkillFromString(name string) Skill {
 	name = strings.ToLower(name)
 	switch name {
 	case "small_guns":
@@ -487,12 +569,12 @@ func (cs *CharSheet) IsSkillHigherOrEqual(skill Skill, difficulty int) bool {
 }
 func (cs *CharSheet) SkillRoll(skill Skill, modifiers int) foundation.CheckResult {
 	critChance := cs.GetStat(Luck)
-	return SuccessRoll(Percentage(max(0, cs.GetSkill(skill)+modifiers)), Percentage(critChance))
+	return SuccessRoll(Percentage(max(0, min(95, cs.GetSkill(skill)+modifiers))), Percentage(critChance))
 }
 
 func (cs *CharSheet) StatRoll(stat Stat, modifiers int) foundation.CheckResult {
 	critChance := cs.GetStat(Luck)
-	statSkill := max(0, (cs.GetStat(stat)*10)+modifiers)
+	statSkill := max(0, min(95, (cs.GetStat(stat)*10)+modifiers))
 	return SuccessRoll(Percentage(statSkill), Percentage(critChance))
 }
 func (cs *CharSheet) IsStatHigherOrEqual(stat Stat, difficulty int) bool {

@@ -67,6 +67,7 @@ func (g *GameState) NewElevator(rec recfile.Record, iconForObject func(objectTyp
 				elevatorActions[i] = foundation.MenuItem{
 					Name: level.Label,
 					Action: func() {
+						g.ui.PlayCue("world/elevator")
 						g.GotoNamedLevel(level.LevelName, ele.internalName)
 					},
 					CloseMenus: true,

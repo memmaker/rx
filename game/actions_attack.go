@@ -100,6 +100,52 @@ func (g *GameState) QuickThrow() {
 	g.actorThrowItem(g.Player, weapon, g.Player.Position(), preselectedTarget)
 }
 
+func (g *GameState) playerBackstab(defender *Actor) {
+	attackerLuckChance := special.Percentage(g.Player.GetCharSheet().GetStat(special.Luck))
+	defenderLuckChance := special.Percentage(defender.GetCharSheet().GetStat(special.Luck))
+
+	attackerStealth := special.Percentage(g.Player.GetCharSheet().GetSkill(special.Sneak))
+	defenderAwareness := special.Percentage(defender.GetCharSheet().GetStat(special.Perception) * 10)
+
+	contestResult := special.SkillContest(attackerStealth, attackerLuckChance, defenderAwareness, defenderLuckChance)
+
+	if defender.IsSleeping() || contestResult == 0 {
+		sourcedDamage := SourcedDamage{
+			NameOfThing:     "backstab",
+			Attacker:        g.Player,
+			IsObviousAttack: true,
+			AttackMode:      special.TargetingModeFireSingle,
+			DamageType:      special.DamageTypeNormal,
+			DamageAmount:    defender.GetHitPointsMax(),
+		}
+		g.msg(foundation.HiLite("You stab %s in the back", defender.Name()))
+		g.ui.AddAnimations(g.damageActor(sourcedDamage, defender))
+		g.endPlayerTurn(10)
+	} else {
+		g.msg(foundation.HiLite("You fail to sneak up on %s", defender.Name()))
+		g.playerMeleeAttack(defender)
+	}
+}
+
+func (g *GameState) playerNonLethalTakedown(victim *Actor) {
+	attackerLuckChance := special.Percentage(g.Player.GetCharSheet().GetStat(special.Luck))
+	defenderLuckChance := special.Percentage(victim.GetCharSheet().GetStat(special.Luck))
+
+	attackerStealth := special.Percentage(g.Player.GetCharSheet().GetStat(special.Strength) * 10)
+	defenderAwareness := special.Percentage(victim.GetCharSheet().GetStat(special.Strength) * 10)
+
+	contestResult := special.SkillContest(attackerStealth, attackerLuckChance, defenderAwareness, defenderLuckChance)
+
+	if contestResult == 0 {
+		victim.SetSleeping()
+		g.msg(foundation.HiLite("You knock out %s", victim.Name()))
+		g.endPlayerTurn(10)
+	} else {
+		g.msg(foundation.HiLite("%s is able to resist your attempt", victim.Name()))
+		g.playerMeleeAttack(victim)
+	}
+}
+
 func (g *GameState) playerMeleeAttack(defender *Actor) {
 	consequences := g.actorMeleeAttack(g.Player, defender)
 	if !g.Player.HasFlag(foundation.FlagInvisible) {
@@ -269,12 +315,8 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item,
 // Validation for Player Commands
 func (g *GameState) Throw() {
 	equipment := g.Player.GetEquipment()
-	if !equipment.HasRangedWeaponEquipped() {
-		g.msg(foundation.Msg("You have no quivered missile"))
-		return
-	}
 	weapon, hasWeapon := equipment.GetMainHandItem()
-	if hasWeapon || !weapon.IsRangedWeapon() {
+	if !hasWeapon || !weapon.IsMissile() {
 		g.msg(foundation.Msg("You have no suitable weapon equipped"))
 		return
 	}
@@ -327,7 +369,7 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 			IsObviousAttack: true,
 			AttackMode:      special.TargetingModeThrow,
 			DamageType:      special.DamageTypeNormal,
-			DamageAmount:    missile.GetThrowDamageDice().Roll(),
+			DamageAmount:    missile.GetThrowDamage().Roll(),
 		})
 		onHitAnimations = append(onHitAnimations, consequenceOfObjectHit...)
 	}

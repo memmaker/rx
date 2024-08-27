@@ -13,7 +13,6 @@ func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geom
 	var zapEffects = map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation{
 		"magic_missile":        magicMissile,
 		"fire_breath":          fireBreath,
-		"polymorph":            polymorph,
 		"haste_target":         hasteTarget,
 		"slow_target":          slowTarget,
 		"teleport_target_away": teleportTargetAway,
@@ -150,7 +149,7 @@ func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Ani
 		IsObviousAttack: false,
 		AttackMode:      special.TargetingModeFireSingle,
 		DamageType:      special.DamageTypeExplosive,
-		DamageAmount:    rand.Intn(5) + 10,
+		DamageAmount:    rand.Intn(26) + 25,
 	}
 	for point, _ := range affected {
 		damageAnims := g.damageLocation(damage, point)
@@ -456,37 +455,6 @@ func hasteTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []founda
 	return animations
 }
 
-func polymorph(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
-	var animations []foundation.Animation
-
-	origin := zapper.Position()
-	pathOfFlight := g.getLineOfSight(origin, aimPos)
-
-	targetPos := pathOfFlight[len(pathOfFlight)-1]
-
-	projAnim, _ := g.ui.GetAnimProjectile('*', "light_gray_5", zapper.Position(), targetPos, nil)
-	animations = append(animations, projAnim)
-
-	if g.gridMap.IsActorAt(targetPos) {
-
-		defender := g.gridMap.ActorAt(targetPos)
-		//originalActorIcon := defender.Icon()
-
-		//coverAnim := g.ui.GetAnimCover(targetPos, originalActorIcon, dist, nil)
-		//animations = append(animations, coverAnim)
-
-		monsterDef := g.dataDefinitions.RandomMonsterDef()
-		newMonster := g.NewActorFromDef(monsterDef)
-
-		oldName := defender.Name()
-		g.gridMap.RemoveActor(defender)
-		g.gridMap.AddActor(newMonster, targetPos)
-		newName := newMonster.Name()
-		g.msg(foundation.HiLite("%s turns into %s", oldName, newName))
-	}
-	return animations
-}
-
 func magicMissile(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
 	origin := zapper.Position()
 	pathOfFlight := g.getLineOfSight(origin, targetPos)
@@ -529,7 +497,7 @@ func magicItemProjectile(g *GameState, zapper *Actor, targetPos geometry.Point, 
 
 	var onHitAnimations []foundation.Animation
 
-	dart := g.NewItemFromName(itemName)
+	dart := g.NewItemFromString(itemName)
 
 	g.addItemToMap(dart, targetPos)
 
@@ -540,7 +508,7 @@ func magicItemProjectile(g *GameState, zapper *Actor, targetPos geometry.Point, 
 		IsObviousAttack: true,
 		AttackMode:      special.TargetingModeFireSingle,
 		DamageType:      special.DamageTypePlasma,
-		DamageAmount:    dart.GetThrowDamageDice().Roll(),
+		DamageAmount:    dart.GetThrowDamage().Roll(),
 	}
 	damageConsequences := g.damageLocation(damage, targetPos)
 
@@ -631,7 +599,7 @@ func (g *GameState) damageActorWithFollowUp(
 
 func (g *GameState) trySetHostile(damage SourcedDamage, victim *Actor) {
 	if damage.IsActor() && !victim.IsPanicking() && !victim.IsHostileTowards(damage.Attacker) && damage.IsObviousAttack && g.canActorSee(victim, damage.Attacker.Position()) {
-		if victim.GetTeam() == damage.Attacker.GetTeam() {
+		if victim.GetTeam() == damage.Attacker.GetTeam() || damage.Attacker == g.Player {
 			victim.AddToEnemyActors(damage.Attacker.GetInternalName())
 		} else {
 			victim.AddToEnemyTeams(damage.Attacker.GetTeam())

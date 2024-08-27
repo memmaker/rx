@@ -44,7 +44,7 @@ type LockpickGame struct {
 	style                 tcell.Style
 	closeFunc             func(result foundation.InteractionResult)
 	borders               cview.BorderDef
-	audioPlayer           AudioCuePlayer
+	audioPlayer           foundation.AudioCuePlayer
 	currentlySelectedPick int
 	mouseX                int
 
@@ -287,7 +287,7 @@ func (lg *LockpickGame) handleInput(event *tcell.EventKey) *tcell.EventKey {
 	}
 	return event
 }
-func (lg *LockpickGame) SetAudioPlayer(player AudioCuePlayer) {
+func (lg *LockpickGame) SetAudioPlayer(player foundation.AudioCuePlayer) {
 	lg.audioPlayer = player
 }
 

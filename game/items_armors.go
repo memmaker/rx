@@ -52,6 +52,10 @@ func (i *ArmorInfo) GetProtectionRating() int {
 	return (physical.DamageReduction + energy.DamageReduction) + (physical.DamageThreshold + energy.DamageThreshold)
 }
 
+func (i *ArmorInfo) IsValid() bool {
+	return len(i.protection) != 0
+}
+
 type ArmorDef struct {
 	Protection         map[special.DamageType]Protection
 	Encumbrance        int

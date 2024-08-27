@@ -28,14 +28,12 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"detect_magic":                   endTurn(true, noAnim(playerDetectMagic)),
 		"detect_monsters":                endTurn(true, noAnim(playerDetectMonsters)),
 		"detect_traps":                   endTurn(true, noAnim(playerDetectTraps)),
-		"create_monster":                 endTurn(true, noAnim(createMonster)),
 		"light":                          endTurn(true, noAnim(light)),
 		"drain_life":                     endTurn(true, drainLife),
 		"heal":                           endTurn(true, heal),
 		"extra_heal":                     endTurn(true, extraHeal),
 		"raise_level":                    endTurn(true, noAnim(raiseLevel)),
 		"uncloak":                        endTurn(true, uncloak),
-		"vorpalize":                      endTurn(false, playerVorpalizeWeapon),
 		"satiate_fully":                  endTurn(true, satiateFully),
 	}
 }
@@ -154,28 +152,6 @@ func light(g *GameState, user *Actor) {
 	room.SetLit(true)
 	g.gridMap.SetLitMulti(roomTiles)
 	g.gridMap.SetListExplored(roomTiles, true)
-}
-
-func createMonster(g *GameState, user *Actor) {
-	freePositions := g.gridMap.GetFilteredNeighbors(user.Position(), func(point geometry.Point) bool {
-		return g.gridMap.CanPlaceActorHere(point)
-	})
-
-	if len(freePositions) == 0 {
-		g.msg(foundation.Msg("You hear a distant roar."))
-		return
-	}
-
-	monster := g.NewActorFromDef(g.dataDefinitions.RandomMonsterDef())
-	g.msg(foundation.Msg("A monster appears!"))
-
-	randomPos := freePositions[rand.Intn(len(freePositions))]
-
-	g.gridMap.AddActor(monster, randomPos)
-
-	appearAnim := g.ui.GetAnimAppearance(monster, randomPos, nil)
-
-	g.ui.AddAnimations([]foundation.Animation{appearAnim})
 }
 
 func playerDetectFood(g *GameState, user *Actor) {
@@ -349,49 +325,6 @@ func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
 
 	return nil
 }
-func playerVorpalizeWeapon(g *GameState, actor *Actor) []foundation.Animation {
-	inventory := g.GetFilteredInventory(func(item *Item) bool {
-		return item.IsWeapon() && !item.GetWeapon().IsVorpal()
-	})
-	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying any suitable weapons."))
-		return nil
-	}
-
-	onWeaponSelected := func(item foundation.ItemForUI) {
-		weaponItem := item.(*InventoryStack).First()
-
-		// select monster
-		defs := g.dataDefinitions.Monsters
-		var menuActions []foundation.MenuItem
-		for _, def := range defs {
-			monsterDef := def
-			menuActions = append(menuActions, foundation.MenuItem{
-				Name: monsterDef.Description,
-				Action: func() {
-					weaponItem.GetWeapon().Vorpalize(monsterDef.Name)
-					//playerInventory.Add(armorItem)
-					//if wasEquipped {playerEquipment.Equip(armorItem)}
-					g.msg(foundation.HiLite("Your %s gives off a flash of intense white light", weaponItem.Name()))
-
-					g.ui.UpdateInventory()
-
-					origin := g.Player.Position()
-					animations := g.ui.GetAnimVorpalizeWeapon(origin, nil)
-
-					g.ui.AddAnimations(animations)
-					g.endPlayerTurn(g.Player.timeNeededForActions())
-				},
-				CloseMenus: true,
-			})
-		}
-		g.ui.OpenMenu(menuActions)
-	}
-
-	g.ui.OpenInventoryForSelection(inventory, "Vorpalize which weapon?", onWeaponSelected)
-
-	return nil
-}
 
 func playerEnchantWeapon(g *GameState, actor *Actor) []foundation.Animation {
 	inventory := g.GetFilteredInventory(func(item *Item) bool {
@@ -450,7 +383,7 @@ func teleportWithAnimation(g *GameState, actor *Actor, targetPos geometry.Point)
 	}
 	g.actorMove(actor, targetPos)
 
-	g.afterPlayerMoved()
+	g.afterPlayerMoved(origin, false)
 
 	vanishAnim, _ := g.ui.GetAnimTeleport(actor, origin, targetPos, nil)
 

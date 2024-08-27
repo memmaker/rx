@@ -12,7 +12,7 @@ goto: UseTaxi
 %rec: Nodes
 
 name: NoTaxi
-npc: (This is a taxi, but the driver is standing right outside.)
+npc: (This is a taxi, but the owner might not want you to use it.)
 effect: EndConversation
 
 name: SearchTaxi

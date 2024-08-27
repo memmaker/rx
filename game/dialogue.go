@@ -17,9 +17,9 @@ func NewConversation() *Conversation {
 	return &Conversation{nodes: make(map[string]ConversationNode)}
 }
 
-func (c *Conversation) GetRootNode() ConversationNode {
+func (c *Conversation) GetRootNode(params map[string]interface{}) ConversationNode {
 	for _, branch := range c.openingBranches {
-		evaluateResult, err := branch.branchCondition.Evaluate(nil)
+		evaluateResult, err := branch.branchCondition.Evaluate(params)
 		asBool := evaluateResult.(bool)
 		if err == nil && asBool {
 			return c.nodes[branch.branchName]
@@ -163,18 +163,42 @@ func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction 
 		},
 		"GetSkill": func(args ...interface{}) (interface{}, error) {
 			skillName := args[0].(string)
-			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromName(skillName))
+			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromString(skillName))
 			return (float64)(skillValue), nil
 		},
 		"RollSkill": func(args ...interface{}) (interface{}, error) {
 			skillName := args[0].(string)
 			modifier := args[1].(float64)
-			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromName(skillName), int(modifier))
+			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromString(skillName), int(modifier))
 			return (bool)(result.Success), nil
 		},
 		"IsMap": func(args ...interface{}) (interface{}, error) {
 			mapName := args[0].(string)
 			return g.gridMap.GetName() == mapName, nil
+		},
+		"IsInCombat": func(args ...interface{}) (interface{}, error) {
+			npcName := args[0].(string)
+			actors := g.gridMap.GetFilteredActors(func(actor *Actor) bool {
+				return actor.GetInternalName() == npcName
+			})
+			for _, actor := range actors {
+				if actor.IsHostile() {
+					return true, nil
+				}
+			}
+			return false, nil
+		},
+		"IsInCombatWithPlayer": func(args ...interface{}) (interface{}, error) {
+			npcName := args[0].(string)
+			actors := g.gridMap.GetFilteredActors(func(actor *Actor) bool {
+				return actor.GetInternalName() == npcName
+			})
+			for _, actor := range actors {
+				if actor.IsHostileTowards(g.Player) {
+					return true, nil
+				}
+			}
+			return false, nil
 		},
 	}
 	return conditionFuncs

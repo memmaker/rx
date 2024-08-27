@@ -7,10 +7,10 @@ import (
 
 // MOVEMENT
 
-func (g *GameState) playerMove(newPos geometry.Point) {
+func (g *GameState) playerMove(oldPos geometry.Point, newPos geometry.Point) {
 	directConsequencesOfMove := g.actorMove(g.Player, newPos)
 
-	g.afterPlayerMoved()
+	g.afterPlayerMoved(oldPos, false)
 
 	g.ui.AddAnimations(directConsequencesOfMove)
 

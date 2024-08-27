@@ -34,6 +34,14 @@ o_goto: Expectations
 o_text: I'd rather leave.
 o_goto: End
 
+name: Expectations
+npc:
++ Let's cut to the chase then.
+#
+o_text: Go on.
+o_goto: Explanation
+
+
 name: NoExpectations
 npc:
 + Well, let me tell you. You're in for a lot of tests. And a lot of waiting.

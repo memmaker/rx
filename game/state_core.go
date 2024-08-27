@@ -36,7 +36,6 @@ type GameState struct {
 	playerDijkstraMap     map[geometry.Point]int
 	showEverything        bool
 	playerName            string
-	dataDefinitions       DataDefinitions
 	afterAnimationActions []func()
 
 	playerFoV               *geometry.FOV
@@ -55,6 +54,9 @@ type GameState struct {
 	spawnLocation           string
 	palette                 textiles.ColorPalette
 	inventoryColors         map[foundation.ItemCategory]color.RGBA
+
+	globalItemTemplates map[string]recfile.Record
+	mapItemTemplates    map[string]recfile.Record
 
 	journal *Journal
 
@@ -79,6 +81,19 @@ func (g *GameState) IsInteractionAt(position geometry.Point) bool {
 	return g.gridMap.IsTransitionAt(position)
 }
 
+func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
+	itemTemplates := make(map[string]recfile.Record)
+	parts := []string{"weapons", "ammo", "armor", "food", "miscItems"}
+	for _, part := range parts {
+		itemTemplateFile := path.Join(dataRootDir, "definitions", part+".rec")
+		records := recfile.Read(fxtools.MustOpen(itemTemplateFile))
+		for _, record := range records {
+			itemTemplates[record.FindValueForKeyIgnoreCase("name")] = record
+		}
+	}
+	return itemTemplates
+}
+
 func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameState {
 	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
 	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
@@ -89,18 +104,18 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 			Char: config.PlayerChar,
 			Fg:   palette.Get(config.PlayerColor),
 		},
-		ui:              ui,
-		tileStyle:       0,
-		dataDefinitions: GetDataDefinitions(config.DataRootDir, palette),
-		playerFoV:       geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
+		ui:        ui,
+		tileStyle: 0,
+		playerFoV: geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
 		playerLightSource: &gridmap.LightSource{
 			Pos:          geometry.Point{},
 			Radius:       5,
 			Color:        fxtools.HDRColor{R: 1, G: 1, B: 1, A: 1},
 			MaxIntensity: 1,
 		},
-		visionRange: 80,
-		palette:     palette,
+		visionRange:         80,
+		palette:             palette,
+		globalItemTemplates: loadItemTemplates(config.DataRootDir),
 	}
 
 	g.init()
@@ -109,8 +124,7 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 	return g
 }
 func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
-	actorDef := NewActorDefFromRecord(rec, g.palette)
-	newActor := g.NewActorFromDef(actorDef)
+	newActor := NewActorFromRecord(rec, g.palette, g.NewItemFromString)
 	if newActor != nil {
 		actorPos := newActor.Position()
 		return newActor, actorPos
@@ -119,8 +133,7 @@ func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
 	return nil, geometry.Point{}
 }
 func (g *GameState) NewItem(rec recfile.Record) (*Item, geometry.Point) {
-	itemDef := NewItemDefFromRecord(rec)
-	newItem := NewItem(itemDef, g.iconForItem(itemDef.Category))
+	newItem := NewItemFromRecord(rec, g.iconForItem)
 	if newItem != nil {
 		itemPos := newItem.Position()
 		return newItem, itemPos
@@ -188,7 +201,7 @@ func (g *GameState) initPlayerAndSpawnMap() {
 				itemName := parts[1].Value
 				for i := 0; i < amount; i++ {
 					// these require icons to be loaded
-					g.giveAndTryEquipItem(g.Player, g.NewItemFromName(itemName))
+					g.giveAndTryEquipItem(g.Player, g.NewItemFromString(itemName))
 				}
 			}
 		}
@@ -242,7 +255,7 @@ func (g *GameState) moveIntoDungeon() {
 	// Since the player has equipment, we need the item
 	g.initPlayerAndSpawnMap()
 
-	g.afterPlayerMoved()
+	g.afterPlayerMoved(geometry.Point{}, true)
 
 	g.ui.InitDungeonUI(g.palette, g.inventoryColors)
 
@@ -337,9 +350,8 @@ func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
 
 func (g *GameState) StartPickpocket(actor *Actor) {
 	actorEquipment := actor.GetEquipment()
-	stealableItems := actor.GetInventory().StackedItemsWithFilter(func(item *Item) bool {
-		return !actorEquipment.IsEquipped(item)
-	})
+	stealableItems := actor.GetInventory().StackedItemsWithFilter(actorEquipment.IsNotEquipped)
+
 	var menuItems []foundation.MenuItem
 
 	for _, i := range stealableItems {
@@ -350,7 +362,10 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 		} else if item.GetCategory().IsHardSteal() {
 			itemStealModifier = -10
 		}
-		chance := g.Player.GetCharSheet().GetSkill(special.Steal) + itemStealModifier
+		if actor.IsSleeping() {
+			itemStealModifier += 75
+		}
+		chance := max(0, min(95, g.Player.GetCharSheet().GetSkill(special.Steal)+itemStealModifier))
 		menuItems = append(menuItems, foundation.MenuItem{
 			Name: fmt.Sprintf("Steal %s (%d%%)", item.Name(), chance),
 			Action: func() {
@@ -363,16 +378,29 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 	g.ui.OpenMenu(menuItems)
 }
 
-func (g *GameState) tryStealItem(actor *Actor, item *Item, itemStealModifier int) {
+func (g *GameState) tryStealItem(victim *Actor, item *Item, itemStealModifier int) {
 	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Steal, itemStealModifier)
 	if skillRoll.Success {
-		actor.GetInventory().Remove(item)
+		victim.GetInventory().Remove(item)
 		g.Player.GetInventory().Add(item)
 		g.msg(foundation.HiLite("You steal %s", item.Name()))
 		g.ui.PlayCue("world/pickup")
 	} else {
-		g.msg(foundation.HiLite("%s notices you trying to steal %s", actor.Name(), item.Name()))
-		actor.AddToEnemyActors(g.Player.Name()) // this is dumb.. this is a user defined strings we are putting in this dict..
-		actor.SetHostile()
+		g.msg(foundation.HiLite("%s notices you trying to steal %s", victim.Name(), item.Name()))
+		if victim.IsSleeping() {
+			victim.WakeUp()
+		}
+		victim.AddToEnemyActors(g.Player.GetInternalName())
+		victim.SetHostile()
 	}
+}
+
+func (g *GameState) getItemTemplateByName(shortString string) recfile.Record {
+	if record, ok := g.mapItemTemplates[shortString]; ok {
+		return record
+	}
+	if record, ok := g.globalItemTemplates[shortString]; ok {
+		return record
+	}
+	return nil
 }

@@ -26,7 +26,10 @@ func (g *GameState) getRangedChanceToHit(defender *Actor) int {
 		return 0
 	}
 	weaponSkill := equippedWeapon.GetWeapon().GetSkillUsed()
-	return special.RangedChanceToHit(posInfos, g.Player.GetCharSheet(), weaponSkill, defender.GetCharSheet(), special.Body)
+
+	defenderIsHelpless := defender.IsSleeping() || defender.IsStunned() || defender.IsKnockedDown()
+
+	return special.RangedChanceToHit(posInfos, g.Player.GetCharSheet(), weaponSkill, defender.GetCharSheet(), defenderIsHelpless, special.Body)
 }
 
 func (g *GameState) GetItemInMainHand() (foundation.ItemForUI, bool) {
@@ -37,10 +40,6 @@ func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []
 	victim := targeted.(*Actor)
 	attackerSkill, defenderSkill := 0, 0 // TODO
 	return victim.GetBodyPartsAndHitChances(attackerSkill, defenderSkill)
-}
-
-func (g *GameState) GetRandomEnemyName() string {
-	return g.dataDefinitions.RandomMonsterDef().Description
 }
 
 func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {

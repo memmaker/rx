@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/dice_curve"
 	"RogueUI/foundation"
+	"RogueUI/special"
 )
 
 type Equipment struct {
@@ -24,14 +24,6 @@ func (e *Equipment) IsEquipped(item *Item) bool {
 			return true
 		}
 		if slotItem, exists := e.slots[foundation.SlotNameOffHand]; exists && slotItem == item {
-			return true
-		}
-	}
-	if slotName == foundation.SlotNameRing {
-		if slotItem, exists := e.slots[foundation.SlotNameRingLeft]; exists && slotItem == item {
-			return true
-		}
-		if slotItem, exists := e.slots[foundation.SlotNameRingRight]; exists && slotItem == item {
 			return true
 		}
 	}
@@ -64,17 +56,6 @@ func (e *Equipment) Equip(item *Item) {
 		return
 	}
 
-	if slotName == foundation.SlotNameRing {
-		if _, exists := e.slots[foundation.SlotNameRingLeft]; !exists {
-			e.slots[foundation.SlotNameRingLeft] = item
-			return
-		}
-		if _, exists := e.slots[foundation.SlotNameRingRight]; !exists {
-			e.slots[foundation.SlotNameRingRight] = item
-			return
-		}
-	}
-
 	e.slots[slotName] = item
 }
 
@@ -92,17 +73,6 @@ func (e *Equipment) UnEquip(item *Item) {
 		}
 		if slotItem, exists := e.slots[foundation.SlotNameOffHand]; exists && slotItem == item {
 			e.unEquipBySlot(foundation.SlotNameOffHand)
-			return
-		}
-	}
-
-	if slotName == foundation.SlotNameRing {
-		if slotItem, exists := e.slots[foundation.SlotNameRingLeft]; exists && slotItem == item {
-			e.unEquipBySlot(foundation.SlotNameRingLeft)
-			return
-		}
-		if slotItem, exists := e.slots[foundation.SlotNameRingRight]; exists && slotItem == item {
-			e.unEquipBySlot(foundation.SlotNameRingRight)
 			return
 		}
 	}
@@ -147,14 +117,6 @@ func (e *Equipment) GetItemsToReplace(item *Item) []*Item {
 		return items
 	}
 
-	if item.SlotName() == foundation.SlotNameRing {
-		if e.isOneSlotAvailable(foundation.SlotNameRingLeft, foundation.SlotNameRingRight) {
-			return items
-		} else {
-			items = appendIfNotNil(items, e.slots[foundation.SlotNameRingLeft])
-			return items
-		}
-	}
 	items = appendIfNotNil(items, e.slots[item.SlotName()])
 	return items
 }
@@ -174,12 +136,20 @@ func appendIfNotNil(items []*Item, item *Item) []*Item {
 
 func (e *Equipment) HasRangedWeaponEquipped() bool {
 	slotMain := e.GetBySlot(foundation.SlotNameMainHand)
-	return slotMain != nil && slotMain.IsRangedWeapon()
+	if slotMain != nil && slotMain.IsRangedWeapon() {
+		return true
+	}
+	slotOff := e.GetBySlot(foundation.SlotNameOffHand)
+	return slotOff != nil && slotOff.IsRangedWeapon()
 }
 
 func (e *Equipment) HasMeleeWeaponEquipped() bool {
 	slotMain := e.GetBySlot(foundation.SlotNameMainHand)
-	return slotMain != nil && slotMain.IsMeleeWeapon()
+	if slotMain != nil && slotMain.IsMeleeWeapon() {
+		return true
+	}
+	slotOff := e.GetBySlot(foundation.SlotNameOffHand)
+	return slotOff != nil && slotOff.IsMeleeWeapon()
 }
 
 func (e *Equipment) AllItems() []*Item {
@@ -240,14 +210,14 @@ func (e *Equipment) ContainsFlag(flag foundation.ActorFlag) bool {
 	return false
 }
 
-func (e *Equipment) GetStatModifier(stat dice_curve.Stat) int {
+func (e *Equipment) GetStatModifier(stat special.Stat) int {
 	modifier := 0
 	for _, item := range e.slots {
 		modifier += item.GetStatBonus(stat)
 	}
 	return modifier
 }
-func (e *Equipment) GetSkillModifier(skill dice_curve.SkillName) int {
+func (e *Equipment) GetSkillModifier(skill special.Skill) int {
 	modifier := 0
 	for _, item := range e.slots {
 		modifier += item.GetSkillBonus(skill)
@@ -319,4 +289,8 @@ func (e *Equipment) GetRangedWeapon() (*Item, bool) {
 	}
 	return nil, false
 
+}
+
+func (e *Equipment) IsNotEquipped(item *Item) bool {
+	return !e.IsEquipped(item)
 }

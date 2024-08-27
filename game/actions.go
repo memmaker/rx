@@ -29,6 +29,7 @@ func (g *GameState) CycleTargetMode() {
 }
 
 func (g *GameState) Wait() {
+	g.msg(foundation.Msg("Time passes"))
 	g.endPlayerTurn(10)
 }
 

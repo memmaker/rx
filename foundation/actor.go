@@ -7,7 +7,7 @@ import (
 )
 
 type ActorForUI interface {
-	GetIcon() textiles.TextIcon
+	Icon() textiles.TextIcon
 	TextIcon(background color.RGBA) textiles.TextIcon
 	Name() string
 	Position() geometry.Point

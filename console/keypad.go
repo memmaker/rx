@@ -1,6 +1,7 @@
 package console
 
 import (
+	"RogueUI/foundation"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/geometry"
@@ -13,6 +14,7 @@ type KeyPad struct {
 	currentSequence []rune
 	correctSequence []rune
 	onCompletion    func(success bool)
+	audioPlayer     foundation.AudioCuePlayer
 }
 
 func NewKeyPad(screenSize geometry.Point) *KeyPad {
@@ -168,10 +170,17 @@ func (k *KeyPad) confirmSequence() {
 	}
 	for i := 0; i < len(k.currentSequence); i++ {
 		if k.currentSequence[i] != k.correctSequence[i] {
+			k.audioPlayer.PlayCue("world/denied")
 			return
 		}
 	}
 	if k.onCompletion != nil {
+		k.audioPlayer.PlayCue("world/confirmed")
 		k.onCompletion(true)
 	}
+}
+
+func (k *KeyPad) SetAudioPlayer(player foundation.AudioCuePlayer) {
+	// do nothing
+	k.audioPlayer = player
 }

@@ -29,6 +29,7 @@ type TextInventory struct {
 	ourTitle             string
 	selectionOnly        bool
 	lineColor            func(foundation.ItemCategory) color.RGBA
+	cursorAtIndex        int
 }
 
 func (i *TextInventory) SetLineColor(lineColor func(foundation.ItemCategory) color.RGBA) {
@@ -62,7 +63,12 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 		}
 		drawX := startX + listOffset.X
 		drawY := startY + listOffset.Y + lineIndex
-		cview.Print(screen, []byte(line), drawX, drawY, width, cview.AlignLeft, fg)
+		drawStyle := i.style.Foreground(fg)
+		if i.cursorAtIndex == lineIndex {
+			drawStyle = drawStyle.Reverse(true)
+		}
+		cview.PrintStyle(screen, []byte(line), drawX, drawY, width, cview.AlignLeft, drawStyle)
+
 		if item.IsEquippable() && i.isEquipped != nil {
 			if i.isEquipped(item) {
 				unequipRunes = append(unequipRunes, shortcut)
@@ -118,6 +124,7 @@ func NewTextInventory() *TextInventory {
 		lineColor: func(category foundation.ItemCategory) color.RGBA {
 			return color.RGBA{R: 170, G: 170, B: 170, A: 255}
 		},
+		cursorAtIndex: -1,
 	}
 	box.SetDrawFunc(t.drawInside)
 	box.SetBackgroundTransparent(true)
@@ -168,6 +175,32 @@ func (i *TextInventory) handleInput(event *tcell.EventKey) *tcell.EventKey {
 		i.closeHandler()
 		return nil
 	}
+
+	if event.Key() == tcell.KeyUp {
+		i.cursorAtIndex = i.cursorAtIndex - 1
+		if i.cursorAtIndex < 0 {
+			i.cursorAtIndex = len(i.items) - 1
+		}
+		return nil
+	} else if event.Key() == tcell.KeyDown {
+		i.cursorAtIndex = i.cursorAtIndex + 1
+		if i.cursorAtIndex >= len(i.items) {
+			i.cursorAtIndex = 0
+		}
+		return nil
+	}
+
+	if event.Key() == tcell.KeyEnter {
+		if i.defaultSelection != nil && i.cursorAtIndex >= 0 && i.cursorAtIndex < len(i.items) {
+			if i.closeOnSelect {
+				i.closeHandler()
+			}
+			i.defaultSelection(i.items[i.cursorAtIndex])
+			i.updateListBounds()
+			return nil
+		}
+	}
+
 	runeReceived := event.Rune()
 	// to upper
 	modCtrl := event.Modifiers() == tcell.ModAlt || event.Modifiers() == tcell.ModCtrl || event.Modifiers() == tcell.ModMeta
@@ -222,4 +255,8 @@ func (i *TextInventory) SetCloseOnControlSelection(value bool) {
 
 func (i *TextInventory) SetSelectionMode() {
 	i.selectionOnly = true
+}
+
+func (i *TextInventory) Close() {
+	i.closeHandler()
 }

@@ -156,25 +156,25 @@ func (u *UI) handleAdvancedTargetingInput(listOfVisibleEnemies []foundation.Acto
 		if ev.Key() == tcell.KeyCtrlC {
 			return ev
 		}
-
-		command := u.getAdvancedTargetingCommandForKey(toUIKey(ev))
+		uiKey := toUIKey(ev)
+		targetingCommand := u.getAdvancedTargetingCommandForKey(uiKey)
 		// Damn, this is a second layer of keymaps..or is it? probably is
-		if command == "target_cancel" {
+		if targetingCommand == "target_cancel" {
 			u.cancelTargeting()
 			u.UpdateLogWindow()
 			return nil
-		} else if command == "target_next" {
+		} else if targetingCommand == "target_next" {
 			chooseNextEnemy()
-		} else if command == "target_previous" {
+		} else if targetingCommand == "target_previous" {
 			choosePreviousEnemy()
-		} else if direction, isDirectionalCommand := directionFromCommand(command); isDirectionalCommand {
+		} else if direction, isDirectionalCommand := directionFromCommand(targetingCommand); isDirectionalCommand {
 			newTarget := u.targetPos.Add(direction.ToPoint())
 			u.updateTarget(newTarget)
-		} else if command == "target_confirm" {
+		} else if targetingCommand == "target_confirm" {
 			u.cancelTargeting()
 			onSelected(u.targetPos, 0)
-		} else if strings.HasPrefix(command, "target_confirm_body_part_") {
-			index, _ := strconv.Atoi(command[len("target_confirm_body_part_"):])
+		} else if strings.HasPrefix(targetingCommand, "target_confirm_body_part_") {
+			index, _ := strconv.Atoi(targetingCommand[len("target_confirm_body_part_"):])
 			u.cancelTargeting()
 			onSelected(u.targetPos, index)
 		}

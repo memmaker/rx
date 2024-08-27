@@ -25,7 +25,7 @@ equipment: key('doc_offices','Dr. Winters keys')
 Position: (45,5)
 
 Name: town_biopharma_bot
-Icon: b
+Icon: B
 Foreground: light_blue_4
 Description: a BioPharma medical assistance bot
 xp: 25

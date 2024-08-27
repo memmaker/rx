@@ -3,6 +3,7 @@ package game
 import (
 	"RogueUI/foundation"
 	"bufio"
+	"github.com/memmaker/go/geometry"
 	"os"
 )
 
@@ -31,7 +32,7 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 	g.gridMap = loadedMap
 	g.iconsForObjects = result.IconsForObjects
 
-	g.afterPlayerMoved()
+	g.afterPlayerMoved(geometry.Point{}, true)
 
 	g.updateUIStatus()
 }

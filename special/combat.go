@@ -77,7 +77,7 @@ func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSh
 
 	return hitChance
 }
-func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, defender *CharSheet, bodyPart BodyPart) int {
+func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, defender *CharSheet, defenderIsHelpless bool, bodyPart BodyPart) int {
 	s := attacker.GetSkill(attackerSkill)
 	p := attacker.GetStat(Perception)
 	str := attacker.GetStat(Strength)
@@ -91,7 +91,6 @@ func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill
 	wa := 0 // Set to 1 for Weapon Accuracy PERK
 	lr := 0 // Set to 1 for Long Range PERK
 	sr := 0 // Set to 1 for Scope Range PERK
-	defenderIsHelpless := false
 
 	h := positionInfos.Distance
 	obstacle := positionInfos.ObstacleCount

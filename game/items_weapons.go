@@ -39,6 +39,10 @@ func (i AmmoInfo) Equals(other *AmmoInfo) bool {
 		i.CaliberIndex == other.CaliberIndex
 }
 
+func (i AmmoInfo) IsValid() bool {
+	return i.DamageMultiplier != 0 && i.DamageDivisor != 0 && i.RoundsInMagazine > 0 && i.CaliberIndex > 0
+}
+
 /*
 Name: flamethrower_fuel
 Description: Flamethrower Fuel
@@ -66,36 +70,46 @@ func (d AmmoDef) IsValid() bool {
 	return d.DamageMultiplier != 0 && d.DamageDivisor != 0 && d.RoundsInMagazine > 0
 }
 
-type WeaponDef struct {
-	Damage              fxtools.Interval
-	Type                WeaponType
-	SkillUsed           special.Skill
-	ShotMaxRange        int
-	ShotMinRange        int
-	ShotHalfDamageRange int
-	ShotAccuracy        int
-	// linking to another weapon type
-	MagazineSize     int
-	BurstRounds      int
-	CaliberIndex     int
-	SoundID          int32
-	DamageType       special.DamageType
-	TargetingModeOne special.TargetingMode
-	TargetingModeTwo special.TargetingMode
-	TUCostOne        int
-	TUCostTwo        int
-	MaxRangeOne      int
-	MaxRangeTwo      int
-}
-
-func (w WeaponDef) IsValid() bool {
-	return w.Type != WeaponTypeUnknown && w.Damage.NotZero() && w.TargetingModeOne != special.TargetingModeNone
+func GetAttackModes(targetModes [2]special.TargetingMode, tuCost [2]int, maxRange [2]int, noAim bool) []AttackMode {
+	var modes []AttackMode
+	if targetModes[0] != special.TargetingModeNone {
+		modes = append(modes, AttackMode{
+			Mode:     targetModes[0],
+			TUCost:   tuCost[0],
+			MaxRange: maxRange[0],
+			IsAimed:  false,
+		})
+		if !noAim && targetModes[0].IsAimable() {
+			modes = append(modes, AttackMode{
+				Mode:     targetModes[0],
+				TUCost:   tuCost[0] + 2,
+				MaxRange: maxRange[0],
+				IsAimed:  true,
+			})
+		}
+	}
+	if targetModes[1] != special.TargetingModeNone {
+		modes = append(modes, AttackMode{
+			Mode:     targetModes[1],
+			TUCost:   tuCost[1],
+			MaxRange: maxRange[1],
+			IsAimed:  false,
+		})
+		if !noAim && targetModes[1].IsAimable() {
+			modes = append(modes, AttackMode{
+				Mode:     targetModes[1],
+				TUCost:   tuCost[1] + 2,
+				MaxRange: maxRange[1],
+				IsAimed:  true,
+			})
+		}
+	}
+	return modes
 }
 
 type WeaponInfo struct {
 	damageDice       fxtools.Interval
 	weaponType       WeaponType
-	vorpalEnemy      string
 	skillUsed        special.Skill
 	magazineSize     int
 	loadedInMagazine *Item
@@ -107,14 +121,6 @@ type WeaponInfo struct {
 	damageType       special.DamageType
 }
 
-func (i *WeaponInfo) GetVorpalEnemy() string {
-	return i.vorpalEnemy
-}
-
-func (i *WeaponInfo) Vorpalize(enemy string) {
-	i.vorpalEnemy = enemy
-}
-
 func (i *WeaponInfo) GetDamage() fxtools.Interval {
 	if i.loadedInMagazine != nil {
 		//ammo := i.loadedInMagazine.GetAmmo()
@@ -123,26 +129,12 @@ func (i *WeaponInfo) GetDamage() fxtools.Interval {
 	return i.damageDice
 }
 
-func (i *WeaponInfo) GetVorpalBonus(enemyName string) (int, int) {
-	if i.vorpalEnemy != "" {
-		if i.vorpalEnemy == enemyName {
-			return 4, 4
-		}
-		return 1, 1
-	}
-	return 0, 0
-}
-
 func (i *WeaponInfo) GetWeaponType() WeaponType {
 	return i.weaponType
 }
 
 func (i *WeaponInfo) GetSkillUsed() special.Skill {
 	return i.skillUsed
-}
-
-func (i *WeaponInfo) IsVorpal() bool {
-	return i.vorpalEnemy != ""
 }
 
 func (i *WeaponInfo) GetCaliber() int {
@@ -184,10 +176,6 @@ func (i *WeaponInfo) IsMelee() bool {
 
 func (i *WeaponInfo) HasAmmo() bool {
 	return i.GetLoadedBullets() > 0 || !i.NeedsAmmo()
-}
-
-func (i *WeaponInfo) GetTimeNeeded() int {
-	return 10
 }
 
 func (i *WeaponInfo) GetLoadedBullets() int {
@@ -241,6 +229,10 @@ func (i *WeaponInfo) GetDamageType() special.DamageType {
 
 func (i *WeaponInfo) GetAttackMode(index int) AttackMode {
 	return i.attackModes[index]
+}
+
+func (i *WeaponInfo) IsValid() bool {
+	return i.weaponType != WeaponTypeUnknown && i.caliberIndex > 0 && i.magazineSize > 0
 }
 
 type WeaponType int

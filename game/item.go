@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/dice_curve"
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -26,13 +26,13 @@ type Item struct {
 	zapEffectName string
 	charges       int
 
-	stat       dice_curve.Stat
+	stat       special.Stat
 	statBonus  int
-	skill      dice_curve.SkillName
+	skill      special.Skill
 	skillBonus int
 
 	equipFlag    foundation.ActorFlag
-	thrownDamage dice_curve.Dice
+	thrownDamage fxtools.Interval
 	tags         foundation.ItemTags
 	textFile     string
 	text         string
@@ -42,33 +42,38 @@ type Item struct {
 	chanceToBreakOnThrow   int
 	currentAttackModeIndex int
 	setFlagOnPickup        string
+	size                   int
+	weight                 int
+	cost                   int
 }
 
-func (g *GameState) NewItemFromName(itemName string) *Item {
-	var item *Item
+func (g *GameState) NewItemFromString(itemShortString string) *Item {
 	charges := 1
-	if fxtools.LooksLikeAFunction(itemName) {
-		name, args := fxtools.GetNameAndArgs(itemName)
+	if fxtools.LooksLikeAFunction(itemShortString) {
+		var item *Item
+		name, args := fxtools.GetNameAndArgs(itemShortString)
 		switch name {
 		case "key":
 			item = NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
 		case "note":
 			item = NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
 		}
-	} else if strings.Contains(itemName, "|") {
-		parts := strings.Split(itemName, "|")
-		itemName = strings.TrimSpace(parts[0])
+		return item
+	} else if strings.Contains(itemShortString, "|") {
+		parts := strings.Split(itemShortString, "|")
+		itemShortString = strings.TrimSpace(parts[0])
 		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
-		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
-		item = NewItem(itemDef, g.iconForItem(itemDef.Category))
-		item.SetCharges(charges)
-	} else {
-		itemDef := g.dataDefinitions.GetItemDefByName(itemName)
-		item = NewItem(itemDef, g.iconForItem(itemDef.Category))
-		item.SetCharges(charges)
 	}
 
-	return item
+	itemDef := g.getItemTemplateByName(itemShortString)
+	newItem := NewItemFromRecord(itemDef, g.iconForItem)
+
+	if newItem == nil {
+		panic(fmt.Sprintf("Item not found: %s", itemShortString))
+	}
+	newItem.SetCharges(charges)
+
+	return newItem
 }
 func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Item {
 	return &Item{
@@ -88,75 +93,6 @@ func NewKey(keyID, description string, icon textiles.TextIcon) *Item {
 		charges:      -1,
 		icon:         icon,
 	}
-}
-
-func NewItem(def ItemDef, icon textiles.TextIcon) *Item {
-	charges := 1
-	if def.Charges.NotZero() {
-		charges = def.Charges.Roll()
-	}
-	item := &Item{
-		description:          def.Description,
-		tags:                 def.Tags,
-		internalName:         def.Name,
-		category:             def.Category,
-		charges:              charges,
-		stat:                 def.Stat,
-		statBonus:            def.StatBonus.Roll(),
-		skill:                def.Skill,
-		skillBonus:           def.SkillBonus.Roll(),
-		equipFlag:            def.EquipFlag,
-		thrownDamage:         def.ThrowDamageDice,
-		position:             def.Position,
-		textFile:             def.TextFile,
-		text:                 def.Text,
-		lockFlag:             def.LockFlag,
-		zapEffectName:        def.ZapEffect,
-		useEffectName:        def.UseEffect,
-		chanceToBreakOnThrow: def.ChanceToBreakOnThrow,
-		setFlagOnPickup:      def.SetFlagOnPickup,
-		icon:                 icon,
-	}
-
-	if def.IsValidAmmo() {
-		item.ammo = &AmmoInfo{
-			DamageMultiplier: def.AmmoDef.DamageMultiplier,
-			DamageDivisor:    def.AmmoDef.DamageDivisor,
-			ACModifier:       def.AmmoDef.ACModifier,
-			DRModifier:       def.AmmoDef.DRModifier,
-			RoundsInMagazine: def.AmmoDef.RoundsInMagazine,
-			CaliberIndex:     def.AmmoDef.CaliberIndex,
-		}
-		item.charges = item.ammo.RoundsInMagazine
-	}
-
-	if def.IsValidWeapon() {
-		item.weapon = &WeaponInfo{
-			damageDice:       def.WeaponDef.Damage,
-			weaponType:       def.WeaponDef.Type,
-			skillUsed:        def.WeaponDef.SkillUsed,
-			magazineSize:     def.WeaponDef.MagazineSize,
-			burstRounds:      def.WeaponDef.BurstRounds,
-			caliberIndex:     def.WeaponDef.CaliberIndex,
-			soundID:          def.WeaponDef.SoundID,
-			damageType:       def.WeaponDef.DamageType,
-			loadedInMagazine: nil,
-			qualityInPercent: 100,
-			attackModes:      def.GetAttackModes(),
-		}
-	}
-
-	if def.IsValidArmor() {
-		item.armor = &ArmorInfo{
-			protection:         def.ArmorDef.Protection,
-			radiationReduction: def.ArmorDef.RadiationReduction,
-			encumbrance:        def.ArmorDef.Encumbrance,
-			durability:         100,
-		}
-	}
-
-	return item
-
 }
 
 func (i *Item) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
@@ -348,14 +284,14 @@ func (i *Item) GetInternalName() string {
 	return i.internalName
 }
 
-func (i *Item) GetStatBonus(stat dice_curve.Stat) int {
+func (i *Item) GetStatBonus(stat special.Stat) int {
 
 	if i.stat == stat {
 		return i.statBonus
 	}
 	return 0
 }
-func (i *Item) GetSkillBonus(skill dice_curve.SkillName) int {
+func (i *Item) GetSkillBonus(skill special.Skill) int {
 	if i.skill == skill {
 		return i.skillBonus
 	}
@@ -369,7 +305,7 @@ func (i *Item) IsMissile() bool {
 	return i.IsWeapon() && i.GetWeapon().GetWeaponType().IsMissile()
 }
 
-func (i *Item) GetThrowDamageDice() dice_curve.Dice {
+func (i *Item) GetThrowDamage() fxtools.Interval {
 	return i.thrownDamage
 }
 

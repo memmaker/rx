@@ -97,6 +97,7 @@ func (u *UI) OpenKeypad(correctSequence []rune, onCompletion func(success bool))
 	width, height := u.application.GetScreen().Size()
 	keyPad := NewKeyPad(geometry.Point{X: width, Y: height})
 	keyPad.SetCorrectSequence(correctSequence)
+	keyPad.SetAudioPlayer(u.audioPlayer)
 	keyPad.SetOnCompletion(func(success bool) {
 		u.closeModal()
 		onCompletion(success)
@@ -104,8 +105,8 @@ func (u *UI) OpenKeypad(correctSequence []rune, onCompletion func(success bool))
 	keyPad.SetVisible(true)
 	origCapt := keyPad.GetInputCapture()
 	keyPad.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		command := u.getAdvancedTargetingCommandForKey(toUIKey(event))
-		if command == "target_cancel" {
+		command := u.getCommandForKey(toUIKey(event))
+		if command == "pickup" || command == "map_interaction" {
 			u.closeModal()
 		}
 		return origCapt(event)
@@ -135,13 +136,13 @@ func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, t
 
 	menu := u.openSimpleMenu(menuItems)
 	menu.SetTitle(name)
-	keyForTakeAll := u.GetKeysForCommandAsString(KeyLayerMain, "use")
+	keyForTakeAll := u.GetKeysForCommandAsString(KeyLayerMain, "pickup")
 	u.Print(foundation.HiLite("Press %s to take all items", keyForTakeAll))
 	originalCapture := menu.GetInputCapture() // will manage pressing escape
 	menu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		uiKey := toUIKey(event)
 		command := u.getCommandForKey(uiKey)
-		if command == "use" {
+		if command == "pickup" {
 			for _, item := range containedItems {
 				transfer(item)
 			}
@@ -424,7 +425,7 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
 
 	if actor.HasFlag(foundation.FlagHeld) {
 		return textiles.TextIcon{
-			Char: actor.GetIcon().Char,
+			Char: actor.Icon().Char,
 			Fg:   u.uiTheme.GetColorByName("Blue_1"),
 			Bg:   u.uiTheme.GetColorByName("White"),
 		}
@@ -935,14 +936,13 @@ func (u *UI) openTextModal(description string) *cview.TextView {
 	u.makeCenteredModal(textView, w, h)
 
 	originalInputCapture := textView.GetInputCapture()
-	textView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		command := u.getCommandForKey(toUIKey(event))
-		if command == "map_interaction" {
+	textView.SetInputCapture(u.directionalWrapper(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyEnter {
 			u.closeModal()
 			return nil
 		}
 		return originalInputCapture(event)
-	})
+	}))
 	return textView
 }
 
@@ -998,7 +998,7 @@ func (u *UI) ToColoredText(h foundation.HiLiteString, intensity float64) string 
 	}
 	textColorCode := textiles.RGBAToFgColorCode(textColor)
 	if h.FormatString == "" {
-		return fmt.Sprintf("%s%s", textColorCode, h.Value[0])
+		return h.AppendRepetitions(fmt.Sprintf("%s%s", textColorCode, h.Value[0]))
 	}
 	hiLiteColorCode := textiles.RGBAToFgColorCode(hiLiteColor)
 	anyValues := make([]interface{}, len(h.Value)+1)
@@ -1381,9 +1381,7 @@ func (u *UI) UpdateVisibleEnemies() {
 		}
 		hpBarString := fmt.Sprintf("[%s]", u.RuneBarFromPercent(barIcon, asPercent, 5))
 		name := enemy.Name()
-		if hallucinating {
-			name = u.game.GetRandomEnemyName()
-		}
+
 		enemyLine := fmt.Sprintf(" %s %s %s", iconString, hpBarString, name)
 		asString = append(asString, enemyLine)
 	}
@@ -1588,26 +1586,36 @@ func expandToWidth(statusStr string, width int) string {
 }
 
 func (u *UI) openInventory(items []foundation.ItemForUI) *TextInventory {
-	list := NewTextInventory()
-	list.SetLineColor(u.uiTheme.GetInventoryItemColor)
-	list.SetEquippedTest(u.game.IsEquipped)
-	list.SetStyle(u.uiTheme.defaultStyle)
+	inventory := NewTextInventory()
+	inventory.SetLineColor(u.uiTheme.GetInventoryItemColor)
+	inventory.SetEquippedTest(u.game.IsEquipped)
+	inventory.SetStyle(u.uiTheme.defaultStyle)
 
-	list.SetItems(items)
+	inventory.SetItems(items)
 
-	list.SetCloseHandler(u.closeModal)
-	u.pages.AddPanel("modal", list, true, true)
+	inventory.SetCloseHandler(u.closeModal)
+	u.pages.AddPanel("modal", inventory, true, true)
 	u.pages.ShowPanel("modal")
-	u.lockFocusToPrimitive(list)
+	u.lockFocusToPrimitive(inventory)
+
+	originalInputCapture := inventory.GetInputCapture()
+	inventory.SetInputCapture(u.directionalWrapperWithoutAlphabet(originalInputCapture))
 
 	//u.makeTopRightModal(panelName, list, len(inventoryItems), longestItem)
-	return list
+	return inventory
 }
 
 func (u *UI) OpenInventoryForManagement(items []foundation.ItemForUI) {
 	inv := u.openInventory(items)
 	inv.SetTitle("Inventory")
-	inv.SetDefaultSelection(u.game.EquipToggle)
+	inv.SetDefaultSelection(func(item foundation.ItemForUI) {
+		if item.IsEquippable() {
+			u.game.EquipToggle(item)
+		} else {
+			inv.Close()
+			u.game.PlayerApplyItem(item)
+		}
+	})
 	inv.SetShiftSelection(u.game.DropItem)
 	inv.SetControlSelection(u.game.PlayerApplyItem)
 
@@ -1797,18 +1805,20 @@ func (u *UI) StartHackingGame(identifier uint64, difficulty foundation.Difficult
 
 func (u *UI) SetConversationState(starterText string, starterOptions []foundation.MenuItem, chatterSource foundation.ChatterSource, isTerminal bool) {
 	u.dialogueIsTerminal = isTerminal
-	if !u.pages.HasPanel("conversation") && isTerminal {
-		u.audioPlayer.PlayCue("ui/terminal_poweron")
-	}
+
 	// text field
 	if u.dialogueText == nil {
 		textField := cview.NewTextView()
 		textField.SetTitle(chatterSource.Name())
 		textField.SetBorder(true)
+		textField.SetBorderColor(toTcellColor(u.uiTheme.GetColorByName("neon_green_2")))
 		textField.SetScrollable(true)
 		textField.SetDynamicColors(true)
 		textField.SetWordWrap(true)
 		u.dialogueText = textField
+		if isTerminal {
+			u.audioPlayer.PlayCue("ui/terminal_poweron")
+		}
 	}
 	u.dialogueText.SetText(starterText)
 
@@ -1832,10 +1842,28 @@ func (u *UI) SetConversationState(starterText string, starterOptions []foundatio
 	originalCapture := u.dialogueOptions.GetInputCapture()
 	u.dialogueOptions.SetInputCapture(u.directionalWrapper(originalCapture))
 }
-
+func (u *UI) directionalWrapperWithoutAlphabet(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune && (event.Rune() >= 'a' && event.Rune() <= 'z') || (event.Rune() >= 'A' && event.Rune() <= 'Z') {
+			return originalCapture(event)
+		}
+		return u.directionalWrapper(originalCapture)(event)
+	}
+}
 func (u *UI) directionalWrapper(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		command := u.getCommandForKey(toUIKey(event))
+
+		if command == "wait" {
+			event = tcell.NewEventKey(tcell.KeyEscape, ' ', tcell.ModNone)
+			return originalCapture(event)
+		}
+
+		if command == "map_interaction" {
+			event = tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone)
+			return originalCapture(event)
+		}
+
 		direction, possible := directionFromCommand(command)
 		if !possible {
 			return originalCapture(event)
@@ -1884,7 +1912,13 @@ func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 	u.makeCenteredModal(list, longestItem, len(menuItems))
 
 	originalCapture := list.GetInputCapture()
-	list.SetInputCapture(u.directionalWrapper(originalCapture))
+	list.SetInputCapture(u.directionalWrapper(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEscape {
+			u.closeModal()
+			return nil
+		}
+		return originalCapture(event)
+	}))
 	return list
 }
 

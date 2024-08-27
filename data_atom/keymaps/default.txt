@@ -19,72 +19,55 @@ D -> run_east
 3 -> southeast
 5 -> run_direction
 
-= -> show_key_bindings
+Enter -> map_interaction
+0 -> wait
+, -> pickup
+
+= -> inventory
+i -> inventory
+
+g -> attack
+h -> quick_attack
 
 f -> cycle_target_mode
 r -> reload_weapon
 
-v -> throw
-e -> use
-g -> attack
-h -> quick_attack
 x -> look
+v -> throw
 
-, -> pickup
-. -> wait
-Enter -> map_interaction
- 
-F1 -> open_pip_boy
-
-
-Q -> quit
-i -> inventory
 c -> character
 l -> log
 j -> journal
+t -> tactics
+z -> rest
+
+? -> open_pip_boy
+
 m -> monsters
 I -> items
-? -> help
-t -> tactics
-b -> rest
 
 U -> overlay_monsters
 O -> overlay_items
 
-F2 -> gamma_down
-F3 -> gamma_up
+Q -> quit
 
-F4 -> wiz_advance_time
+F1 -> help
+F2 -> show_key_bindings
 
-Ctrl+T -> themes
+F9 -> wiz_advance_time
 F10 -> wizard
-
-% directional_targeting
-
-Esc -> target_cancel
-Escape -> target_cancel
-Space -> target_switch_to_advanced
-
-w -> north
-s -> south
-a -> west
-d -> east
-
-8 -> north
-2 -> south
-4 -> west
-6 -> east
-7 -> northwest
-9 -> northeast
-1 -> southwest
-3 -> southeast
+F11 -> gamma_down
+F12 -> gamma_up
 
 
 % advanced_targeting
 
 Tab -> target_next
++ -> target_next
 BackTab -> target_previous
+- -> target_previous
 Esc -> target_cancel
+0 -> target_cancel
 Space -> target_confirm
 Enter -> target_confirm
 
@@ -112,3 +95,24 @@ F7 -> target_confirm_body_part_6
 F8 -> target_confirm_body_part_7
 F9 -> target_confirm_body_part_8
 F10 -> target_confirm_body_part_9
+
+% directional_targeting
+
+Esc -> target_cancel
+Escape -> target_cancel
+Space -> target_switch_to_advanced
+
+w -> north
+s -> south
+a -> west
+d -> east
+
+8 -> north
+2 -> south
+4 -> west
+6 -> east
+7 -> northwest
+9 -> northeast
+1 -> southwest
+3 -> southeast
+

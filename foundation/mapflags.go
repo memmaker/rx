@@ -59,6 +59,8 @@ func (f ActorFlag) String() string { // Nice strings for display
 		return "Hallucinating"
 	case FlagSlowDigestion:
 		return "Slow Digestion"
+	case FlagKnockedDown:
+		return "Knocked Down"
 	}
 	return "Unknown"
 }
@@ -117,6 +119,8 @@ func (f ActorFlag) StringShort() string { // short abbreviated strings (2-3 lett
 		return "Hlc"
 	case FlagSlowDigestion:
 		return "SDg"
+	case FlagKnockedDown:
+		return "Knd"
 	}
 	return "Unk"
 
@@ -155,6 +159,7 @@ const (
 	FlagCurseTeleportitis
 	FlagHallucinating
 	FlagSlowDigestion
+	FlagKnockedDown
 )
 
 func AllFlagsExceptGoldOrdered() []ActorFlag {
@@ -184,6 +189,7 @@ func AllFlagsExceptGoldOrdered() []ActorFlag {
 		FlagCurseTeleportitis,
 		FlagHallucinating,
 		FlagSlowDigestion,
+		FlagKnockedDown,
 	}
 }
 
@@ -242,42 +248,44 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagHallucinating
 	case "slow_digestion":
 		return FlagSlowDigestion
+	case "knocked_down":
+		return FlagKnockedDown
 	}
 	panic("Invalid actor flag: " + flag)
 	return 0
 
 }
 
-type MapFlags struct {
+type ActorFlags struct {
 	values  map[ActorFlag]int
 	changed func(flag ActorFlag, value int)
 }
 
-func NewMapFlags() *MapFlags {
-	return &MapFlags{values: make(map[ActorFlag]int)}
+func NewActorFlags() *ActorFlags {
+	return &ActorFlags{values: make(map[ActorFlag]int)}
 }
 
-func (m *MapFlags) Set(flag ActorFlag) {
+func (m *ActorFlags) Set(flag ActorFlag) {
 	m.values[flag] = 1
 	m.onChange(flag, m.values[flag])
 }
 
-func (m *MapFlags) Unset(flag ActorFlag) {
+func (m *ActorFlags) Unset(flag ActorFlag) {
 	delete(m.values, flag)
 	m.onChange(flag, 0)
 }
 
-func (m *MapFlags) IsSet(flag ActorFlag) bool {
+func (m *ActorFlags) IsSet(flag ActorFlag) bool {
 	_, ok := m.values[flag]
 	return ok
 }
 
-func (m *MapFlags) Increment(flag ActorFlag) {
+func (m *ActorFlags) Increment(flag ActorFlag) {
 	m.values[flag]++
 	m.onChange(flag, m.values[flag])
 }
 
-func (m *MapFlags) Decrement(flag ActorFlag) {
+func (m *ActorFlags) Decrement(flag ActorFlag) {
 	if !m.IsSet(flag) {
 		return
 	}
@@ -290,17 +298,17 @@ func (m *MapFlags) Decrement(flag ActorFlag) {
 	}
 }
 
-func (m *MapFlags) SetOnChangeHandler(change func(flag ActorFlag, value int)) {
+func (m *ActorFlags) SetOnChangeHandler(change func(flag ActorFlag, value int)) {
 	m.changed = change
 }
 
-func (m *MapFlags) onChange(flag ActorFlag, value int) {
+func (m *ActorFlags) onChange(flag ActorFlag, value int) {
 	if m.changed != nil {
 		m.changed(flag, value)
 	}
 }
 
-func (m *MapFlags) Get(flag ActorFlag) int {
+func (m *ActorFlags) Get(flag ActorFlag) int {
 	val, ok := m.values[flag]
 	if !ok {
 		return 0
@@ -308,7 +316,7 @@ func (m *MapFlags) Get(flag ActorFlag) int {
 	return val
 }
 
-func (m *MapFlags) Decrease(flag ActorFlag, amount int) {
+func (m *ActorFlags) Decrease(flag ActorFlag, amount int) {
 	m.values[flag] = m.Get(flag) - amount
 	if m.values[flag] <= 0 {
 		delete(m.values, flag)
@@ -318,15 +326,15 @@ func (m *MapFlags) Decrease(flag ActorFlag, amount int) {
 	}
 }
 
-func (m *MapFlags) Increase(flag ActorFlag, amount int) {
+func (m *ActorFlags) Increase(flag ActorFlag, amount int) {
 	m.values[flag] = m.Get(flag) + amount
 	m.onChange(flag, m.values[flag])
 }
 
-func (m *MapFlags) UnderlyingCopy() map[ActorFlag]int {
+func (m *ActorFlags) UnderlyingCopy() map[ActorFlag]int {
 	return maps.Clone[map[ActorFlag]int](m.values)
 }
 
-func (m *MapFlags) Init(underlying map[ActorFlag]int) {
+func (m *ActorFlags) Init(underlying map[ActorFlag]int) {
 	m.values = underlying
 }

@@ -15,6 +15,7 @@ func SuccessRoll(chanceOfSuccess, critChance Percentage) foundation.CheckResult 
 	return result
 }
 
+// SkillContest returns 0 if the first actor wins, 1 if the second actor wins, or a random number if the contest is a tie.
 func SkillContest(firstActor, firstCritChance, secondActor, secondCritChance Percentage) int {
 	firstRoll := SuccessRoll(firstActor, firstCritChance)
 	secondRoll := SuccessRoll(secondActor, secondCritChance)
