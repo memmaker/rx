@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/dungen"
 	"RogueUI/foundation"
 	"RogueUI/gridmap"
 	"RogueUI/special"
@@ -16,51 +15,47 @@ import (
 )
 
 type GameState struct {
-	Player *Actor
+	// Global State (Needs to be saved)
+	TurnsTaken      int
+	gameTime        time.Time
+	gameFlags       *fxtools.StringFlags
+	logBuffer       []foundation.HiLiteString
+	terminalGuesses map[string][]string
+	journal         *Journal
+	showEverything  bool
 
-	TurnsTaken int
+	// Player State (Needs to be saved)
+	Player            *Actor
+	playerFoV         *geometry.FOV
+	playerLightSource *gridmap.LightSource
+	playerDijkstraMap map[geometry.Point]int
 
-	ui foundation.GameUI
+	// Map State (Needs to be saved)
+	mapLoader MapLoader
 
-	textIcons []textiles.TextIcon
+	activeMaps     map[string]*gridmap.GridMap[*Actor, *Item, Object]
+	currentMapName string
 
-	logBuffer []foundation.HiLiteString
+	visionRange int
 
-	gridMap       *gridmap.GridMap[*Actor, *Item, Object]
-	dungeonLayout *dungen.DungeonMap
-
-	tileStyle         int
-	defaultBackground color.RGBA
-	defaultForeground color.RGBA
-
-	playerDijkstraMap     map[geometry.Point]int
-	showEverything        bool
-	playerName            string
+	// Input Config, UI, and bookkeeping
+	config                *foundation.Configuration
+	ui                    foundation.GameUI
 	afterAnimationActions []func()
 
-	playerFoV               *geometry.FOV
-	playerLightSource       *gridmap.LightSource
-	visionRange             int
-	genericWallIconIndex    textiles.TextIcon
-	playerIcon              textiles.TextIcon
-	config                  *foundation.Configuration
-	ascensionsWithoutAmulet int
-	mapLoader               MapLoader
-	gameFlags               *fxtools.StringFlags
-	terminalGuesses         map[string][]string
-	iconsForItems           map[foundation.ItemCategory]textiles.TextIcon
-	iconsForObjects         map[string]textiles.TextIcon
-	spawnMap                string
-	spawnLocation           string
-	palette                 textiles.ColorPalette
-	inventoryColors         map[foundation.ItemCategory]color.RGBA
+	// Colors & Icons
+	palette         textiles.ColorPalette
+	inventoryColors map[foundation.ItemCategory]color.RGBA
+	iconsForItems   map[foundation.ItemCategory]textiles.TextIcon
+	iconsForObjects map[string]textiles.TextIcon
 
+	// Item Templates
 	globalItemTemplates map[string]recfile.Record
 	mapItemTemplates    map[string]recfile.Record
+}
 
-	journal *Journal
-
-	gameTime time.Time
+func (g *GameState) currentMap() *gridmap.GridMap[*Actor, *Item, Object] {
+	return g.activeMaps[g.currentMapName]
 }
 
 func (g *GameState) WizardAdvanceTime() {
@@ -69,7 +64,7 @@ func (g *GameState) WizardAdvanceTime() {
 }
 
 func (g *GameState) LightAt(p geometry.Point) fxtools.HDRColor {
-	return g.gridMap.LightAt(p, g.gameTime)
+	return g.currentMap().LightAt(p, g.gameTime)
 }
 
 func (g *GameState) PlayerInteractInDirection(direction geometry.CompassDirection) {
@@ -78,7 +73,7 @@ func (g *GameState) PlayerInteractInDirection(direction geometry.CompassDirectio
 }
 
 func (g *GameState) IsInteractionAt(position geometry.Point) bool {
-	return g.gridMap.IsTransitionAt(position)
+	return g.currentMap().IsTransitionAt(position)
 }
 
 func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
@@ -98,14 +93,8 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
 	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
 	g := &GameState{
-		config:     config,
-		playerName: config.PlayerName,
-		playerIcon: textiles.TextIcon{
-			Char: config.PlayerChar,
-			Fg:   palette.Get(config.PlayerColor),
-		},
+		config:    config,
 		ui:        ui,
-		tileStyle: 0,
 		playerFoV: geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
 		playerLightSource: &gridmap.LightSource{
 			Pos:          geometry.Point{},
@@ -116,12 +105,19 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 		visionRange:         80,
 		palette:             palette,
 		globalItemTemplates: loadItemTemplates(config.DataRootDir),
+		activeMaps:          make(map[string]*gridmap.GridMap[*Actor, *Item, Object]),
 	}
 
 	g.init()
 	ui.SetGame(g)
 
 	return g
+}
+func (g *GameState) GetPlayerNameAndIcon() (string, textiles.TextIcon) {
+	return g.config.PlayerName, textiles.TextIcon{
+		Char: g.config.PlayerChar,
+		Fg:   g.palette.Get(g.config.PlayerColor),
+	}
 }
 func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
 	newActor := NewActorFromRecord(rec, g.palette, g.NewItemFromString)
@@ -173,6 +169,10 @@ func (g *GameState) init() {
 
 	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getConditionFuncs())
 	g.journal.OnFlagsChanged()
+	g.hookupJournalAndFlags()
+}
+
+func (g *GameState) hookupJournalAndFlags() {
 	g.journal.SetChangeHandler(func() {
 		g.ui.PlayCue("ui/journal")
 		g.msg(foundation.HiLite(">>> %s <<<", "Journal updated"))
@@ -185,16 +185,17 @@ func (g *GameState) init() {
 func (g *GameState) initPlayerAndSpawnMap() {
 	playerSheet := special.NewCharSheet()
 	playerSheet.SetSkillAdjustment(special.SmallGuns, 50)
-	g.Player = NewPlayer(g.playerName, g.playerIcon, playerSheet)
-
+	playerName, playerIcon := g.GetPlayerNameAndIcon()
+	g.Player = NewPlayer(playerName, playerIcon, playerSheet)
+	var spawnMap, spawnLocation string
 	playerStartInfo := path.Join(g.config.DataRootDir, "definitions", "player_start.rec")
 	if fxtools.FileExists(playerStartInfo) {
 		startGear := recfile.Read(fxtools.MustOpen(playerStartInfo))[0]
 		for _, field := range startGear {
 			if field.Name == "mapName" {
-				g.spawnMap = field.Value
+				spawnMap = field.Value
 			} else if field.Name == "mapLocation" {
-				g.spawnLocation = field.Value
+				spawnLocation = field.Value
 			} else if field.Name == "item" {
 				parts := field.AsList("|")
 				amount := parts[0].AsInt()
@@ -207,25 +208,31 @@ func (g *GameState) initPlayerAndSpawnMap() {
 		}
 	}
 
-	loadedMapResult := g.mapLoader.LoadMap(g.spawnMap)
+	loadedMapResult := g.mapLoader.LoadMap(spawnMap)
 
 	loadedMap := loadedMapResult.Map
 	if loadedMap == nil {
 		g.msg(foundation.Msg("It's impossible to move there.."))
 		return
 	}
-	namedLocation := loadedMap.GetNamedLocation(g.spawnLocation)
+	namedLocation := loadedMap.GetNamedLocation(spawnLocation)
 	loadedMap.AddActor(g.Player, namedLocation)
-	loadedMap.AddDynamicLightSource(namedLocation, g.playerLightSource)
+	// TODO: ADD LIGHT SOURCE
+	//loadedMap.AddDynamicLightSource(namedLocation, g.playerLightSource)
 	loadedMap.UpdateDynamicLights()
 
-	g.gridMap = loadedMap
+	g.setCurrentMap(loadedMap)
+
 	g.iconsForObjects = loadedMapResult.IconsForObjects
 
 	for flagName, flagValue := range loadedMapResult.FlagsOfMap {
 		g.gameFlags.Set(flagName, flagValue)
 	}
 
+	g.attachHooksToPlayer()
+}
+
+func (g *GameState) attachHooksToPlayer() {
 	equipment := g.Player.GetEquipment()
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
 		g.ui.UpdateStats()
@@ -239,6 +246,12 @@ func (g *GameState) initPlayerAndSpawnMap() {
 	g.Player.GetInventory().SetOnBeforeRemove(equipment.UnEquip)
 
 	equipment.SetOnChangeHandler(g.updateUIStatus)
+}
+
+func (g *GameState) setCurrentMap(loadedMap *gridmap.GridMap[*Actor, *Item, Object]) {
+	mapName := loadedMap.GetName()
+	g.activeMaps[mapName] = loadedMap
+	g.currentMapName = mapName
 }
 
 // UIReady is called by the UI when it has initialized itself
@@ -335,7 +348,7 @@ func (g *GameState) gameOver(death string) {
 }
 
 func (g *GameState) canActorSee(victim *Actor, position geometry.Point) bool {
-	return g.gridMap.IsLineOfSightClear(victim.Position(), position)
+	return g.currentMap().IsLineOfSightClear(victim.Position(), position)
 }
 
 func (g *GameState) tryAddChatter(actor *Actor, text string) bool {

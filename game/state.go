@@ -8,6 +8,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 	"strings"
+	"text/template"
 )
 
 // state changes / animations
@@ -120,11 +121,11 @@ func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 	g.msg(foundation.HiLite("%s killed %s", causeOfDeath.String(), victim.Name()))
 
 	//g.dropInventory(victim)
-	g.gridMap.SetActorToDowned(victim)
+	g.currentMap().SetActorToDowned(victim)
 }
 
 func (g *GameState) revealAll() {
-	g.gridMap.SetAllExplored()
+	g.currentMap().SetAllExplored()
 	g.showEverything = true
 }
 func (g *GameState) makeMapBloody(mapPos geometry.Point) {
@@ -132,12 +133,12 @@ func (g *GameState) makeMapBloody(mapPos geometry.Point) {
 	bloodColorFgInt := rand.Intn(11) + 5
 	bloodColorBgInt := rand.Intn(11) + 5
 
-	currentTileIcon := g.gridMap.GetTileIconAt(mapPos)
-	g.gridMap.SetTileIcon(mapPos, currentTileIcon.WithBg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorBgInt))).WithFg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorFgInt))))
+	currentTileIcon := g.currentMap().GetTileIconAt(mapPos)
+	g.currentMap().SetTileIcon(mapPos, currentTileIcon.WithBg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorBgInt))).WithFg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorFgInt))))
 	return
 }
 func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
-	spreadArea := g.gridMap.GetDijkstraMap(mapPos, 2, g.gridMap.IsCurrentlyPassable)
+	spreadArea := g.currentMap().GetDijkstraMap(mapPos, 2, g.currentMap().IsCurrentlyPassable)
 	randomIndex := rand.Intn(len(spreadArea))
 	currIndex := 0
 	for pos, _ := range spreadArea {
@@ -149,9 +150,9 @@ func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
 	}
 }
 func (g *GameState) updatePlayerFoVAndApplyExploration() {
-	g.gridMap.UpdateFieldOfView(g.playerFoV, g.Player.Position(), g.visionRange)
+	g.currentMap().UpdateFieldOfView(g.playerFoV, g.Player.Position(), g.visionRange)
 	for _, pos := range g.playerFoV.Visibles {
-		g.gridMap.SetExplored(pos)
+		g.currentMap().SetExplored(pos)
 	}
 }
 
@@ -205,9 +206,9 @@ func (g *GameState) checkPlayerCanAct() {
 
 func (g *GameState) triggerTileEffectsAfterMovement(actor *Actor, oldPos, newPos geometry.Point) []foundation.Animation {
 	isPlayer := actor == g.Player
-	if g.gridMap.IsObjectAt(newPos) {
+	if g.currentMap().IsObjectAt(newPos) {
 		var animations []foundation.Animation
-		objectAt := g.gridMap.ObjectAt(newPos)
+		objectAt := g.currentMap().ObjectAt(newPos)
 		if objectAt.IsTrap() {
 			if isPlayer {
 				playerMoveAnim := g.ui.GetAnimMove(g.Player, oldPos, newPos)
@@ -245,8 +246,8 @@ func (g *GameState) newLevelReached(level int) {
 func (g *GameState) checkTilesForHiddenObjects(tiles []geometry.Point) {
 	var noticedSomething bool
 	for _, tile := range tiles {
-		if g.gridMap.IsObjectAt(tile) {
-			object := g.gridMap.ObjectAt(tile)
+		if g.currentMap().IsObjectAt(tile) {
+			object := g.currentMap().ObjectAt(tile)
 			if object.IsHidden() {
 				perceptionResult := g.Player.GetCharSheet().StatRoll(special.Perception, 0)
 				if perceptionResult.Success {
@@ -284,4 +285,19 @@ func (g *GameState) startSprint(actor *Actor) {
 
 	*/
 	haste(g, actor)
+}
+
+func (g *GameState) fillTemplatedText(text string) string {
+	parsedTemplate, err := template.New("text").Parse(text)
+	if err != nil {
+		panic(err)
+	}
+	replaceValues := map[string]string{"pcname": g.Player.Name()}
+
+	var filledText strings.Builder
+	err = parsedTemplate.Execute(&filledText, replaceValues)
+	if err != nil {
+		panic(err)
+	}
+	return filledText.String()
 }

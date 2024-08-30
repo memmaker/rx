@@ -1,0 +1,30 @@
+%rec: default
+
+Text: You have a referral from your Doctor to see Dr. Winters.
++ Head to the hospital in the north part of town and look for him there.
+Cond: !HasFlag('TalkedTo(dr_winters)')
+Viewed: false
+Active: true
+
+Text: You'll have to deal with your medical condition on your own.
+Cond: HasFlag('TalkedTo(dr_winters)')
+Viewed: false
+Active: false
+
+Text: You know where the mansion of the rich old man is.
++ Maybe you should pay him a visit?
+Cond: HasFlag('LocationKnown(mansion)')
+Viewed: false
+Active: false
+
+Text: You know where the cryolab is.
++ Time to find yourself a place to sleep.
+Cond: HasFlag('LocationKnown(cryolab)')
+Viewed: false
+Active: false
+
+Text: Survive the apocalypse.
+Cond: true
+Viewed: false
+Active: true
+

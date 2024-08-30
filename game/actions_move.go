@@ -32,7 +32,7 @@ func (g *GameState) actorMove(actor *Actor, newPos geometry.Point) []foundation.
 	if oldPos == newPos {
 		return nil
 	}
-	g.gridMap.MoveActor(actor, newPos)
+	g.currentMap().MoveActor(actor, newPos)
 	if actor.Position() == newPos {
 		return g.triggerTileEffectsAfterMovement(actor, oldPos, newPos)
 	}

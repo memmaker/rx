@@ -85,6 +85,10 @@ type UI struct {
 	dialogueIsTerminal bool
 }
 
+func (u *UI) AskForString(prompt string, prefill string, result func(entered string)) {
+	cview.AskForString(u.application, u.pages, prompt, prefill, result)
+}
+
 func (u *UI) FadeToBlack() {
 	cview.FadeToBlack(u.application, u.settings.AnimationDelay/2)
 }

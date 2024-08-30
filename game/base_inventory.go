@@ -2,7 +2,9 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"bytes"
 	"cmp"
+	"encoding/gob"
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/geometry"
@@ -16,6 +18,35 @@ type Inventory struct {
 	maxItemStacks  int
 	onChanged      func()
 	onBeforeRemove func(*Item)
+}
+
+func (i *Inventory) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+
+	// Encode each field of the struct in order
+	if err := encoder.Encode(i.items); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(i.maxItemStacks); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (i *Inventory) GobDecode(data []byte) error {
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+
+	// Decode each field of the struct in order
+	if err := decoder.Decode(&i.items); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&i.maxItemStacks); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewInventory(maxItemStacks int) *Inventory {

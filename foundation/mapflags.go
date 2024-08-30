@@ -1,6 +1,8 @@
 package foundation
 
 import (
+	"bytes"
+	"encoding/gob"
 	"maps"
 	"strings"
 )
@@ -263,6 +265,18 @@ type ActorFlags struct {
 
 func NewActorFlags() *ActorFlags {
 	return &ActorFlags{values: make(map[ActorFlag]int)}
+}
+
+func (m *ActorFlags) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(m.values)
+	return buf.Bytes(), err
+}
+
+func (m *ActorFlags) GobDecode(data []byte) error {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	return dec.Decode(&m.values)
 }
 
 func (m *ActorFlags) Set(flag ActorFlag) {

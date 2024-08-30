@@ -255,8 +255,8 @@ func (g *GameState) PlayerPickupItemAt(itemPos geometry.Point) {
 		return
 	}
 
-	if item, exists := g.gridMap.TryGetItemAt(itemPos); exists {
-		g.gridMap.RemoveItem(item)
+	if item, exists := g.currentMap().TryGetItemAt(itemPos); exists {
+		g.currentMap().RemoveItem(item)
 		if item.IsGold() {
 			g.Player.AddGold(item.GetCharges())
 		} else {
@@ -590,10 +590,10 @@ const (
 func (g *GameState) PlayerInteractWithMap() {
 	pos := g.Player.Position()
 
-	transition, transitionExists := g.gridMap.GetTransitionAt(pos)
+	transition, transitionExists := g.currentMap().GetTransitionAt(pos)
 	if transitionExists {
-		currentMapName := g.gridMap.GetName()
-		location := g.gridMap.GetNamedLocationByPos(pos)
+		currentMapName := g.currentMap().GetName()
+		location := g.currentMap().GetNamedLocationByPos(pos)
 		lockFlagName := fmt.Sprintf("lock(%s/%s)", currentMapName, location)
 		if g.gameFlags.HasFlag(lockFlagName) {
 			g.msg(foundation.Msg("The way is blocked"))

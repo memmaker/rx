@@ -40,20 +40,20 @@ func (g *GameState) ChooseItemForThrow() {
 
 // TODO: ContextMenu Actions don't take up any time!
 func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) {
-	if g.gridMap.MoveDistance(g.Player.Position(), mapPos) > 1 {
+	if g.currentMap().MoveDistance(g.Player.Position(), mapPos) > 1 {
 		return
 	}
 	var menuItems []foundation.MenuItem
-	if g.gridMap.IsActorAt(mapPos) {
-		actor := g.gridMap.ActorAt(mapPos)
+	if g.currentMap().IsActorAt(mapPos) {
+		actor := g.currentMap().ActorAt(mapPos)
 		if actor == g.Player {
 			// TODO: Self actions..
 		} else {
 			menuItems = g.appendContextActionsForActor(menuItems, actor)
 		}
 	}
-	if g.gridMap.IsObjectAt(mapPos) {
-		object := g.gridMap.ObjectAt(mapPos)
+	if g.currentMap().IsObjectAt(mapPos) {
+		object := g.currentMap().ObjectAt(mapPos)
 		menuItems = object.AppendContextActions(menuItems, g)
 	}
 	if len(menuItems) == 0 {
@@ -281,8 +281,31 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
+			Name: "Set Flag",
+			Action: func() {
+				g.ui.AskForString("Flag name", "", func(flagName string) {
+					g.gameFlags.SetFlag(flagName)
+				})
+			},
+		},
+		{
 			Name:   "Create Trap",
 			Action: g.openWizardCreateTrapMenu,
+		},
+		{
+			Name: "Game Save",
+			Action: func() {
+				err := g.Save("savegame")
+				if err != nil {
+					panic(err)
+				}
+			},
+		},
+		{
+			Name: "Game Load",
+			Action: func() {
+				g.Load("savegame")
+			},
 		},
 	})
 }
@@ -292,7 +315,7 @@ func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource,
 	if !fxtools.FileExists(conversationFilename) {
 		return
 	}
-	conversation, err := g.ParseConversation(conversationFilename)
+	conversation, err := ParseConversation(conversationFilename, g.getConditionFuncs())
 	if err != nil {
 		panic(err)
 		return
@@ -412,10 +435,10 @@ func (g *GameState) openWizardCreateTrapMenu() {
 			Name: trapType.String(),
 			Action: func() {
 				random := rand.New(rand.NewSource(time.Now().UnixNano()))
-				trapPos := g.gridMap.GetRandomFreeAndSafeNeighbor(random, g.Player.Position())
-				newTrap := g.NewTrap(trapType, g.iconForObject)
+				trapPos := g.currentMap().GetRandomFreeAndSafeNeighbor(random, g.Player.Position())
+				newTrap := g.NewTrap(trapType)
 				newTrap.SetHidden(false)
-				g.gridMap.AddObject(newTrap, trapPos)
+				g.currentMap().AddObject(newTrap, trapPos)
 			},
 			CloseMenus: true,
 		})

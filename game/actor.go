@@ -4,22 +4,18 @@ import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/special"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"math/rand"
 	"strings"
 )
 
-// Player Starting Stats in Rogue
-// Strength: 16
-// Experience: 0
-// Level: 1
-// Armor Class: 10
-// Hit Points: 12/12
-// GetDamage: 1d4
 type CharacterMood uint8
 
 const (
@@ -52,22 +48,194 @@ type Actor struct {
 
 	statusFlags *foundation.ActorFlags
 
-	intrinsicAttacks    []IntrinsicAttack
 	intrinsicZapEffects []string
 	intrinsicUseEffects []string
 
-	icon                   textiles.TextIcon
-	currentIntrinsicAttack int
-	sizeModifier           int
-	timeEnergy             int
-	body                   []*foundation.BodyPart
+	icon         textiles.TextIcon
+	sizeModifier int
+	timeEnergy   int
+	body         []*foundation.BodyPart
 
 	mood         CharacterMood
 	dialogueFile string
 	teamName     string
-	enemyActors  map[string]bool
-	enemyTeams   map[string]bool
-	xp           int
+
+	enemyActors map[string]bool
+	enemyTeams  map[string]bool
+
+	xp int
+}
+
+// GobEncode encodes the Actor struct into a byte slice.
+func (a *Actor) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+
+	// Encode each field of the struct
+	err := encoder.Encode(a.internalName)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.name)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.charSheet)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.position)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.inventory)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.equipment)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.statusFlags)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.intrinsicZapEffects)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.intrinsicUseEffects)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.icon)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.sizeModifier)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.timeEnergy)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.body)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.mood)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.dialogueFile)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.teamName)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.enemyActors)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.enemyTeams)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.xp)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes a byte slice into an Actor struct.
+func (a *Actor) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+
+	// Decode each field of the struct
+	err := decoder.Decode(&a.internalName)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.name)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.charSheet)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.position)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.inventory)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.equipment)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.statusFlags)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.intrinsicZapEffects)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.intrinsicUseEffects)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.icon)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.sizeModifier)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.timeEnergy)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.body)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.mood)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.dialogueFile)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.teamName)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.enemyActors)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.enemyTeams)
+	if err != nil {
+		return err
+	}
+	err = decoder.Decode(&a.xp)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet) *Actor {
@@ -264,7 +432,12 @@ func (a *Actor) Icon() textiles.TextIcon {
 func (a *Actor) GetListInfo() string {
 	hp := a.charSheet.GetHitPoints()
 	hpMax := a.charSheet.GetHitPointsMax()
-	return fmt.Sprintf("%s HP: %d/%d Dmg: %s DR: %d", a.name, hp, hpMax, a.GetIntrinsicDamageAsString(), a.GetDamageResistance())
+	item, hasMainHandItem := a.GetEquipment().GetMainHandItem()
+	damage := "0"
+	if hasMainHandItem && item.IsWeapon() {
+		damage = item.GetWeapon().GetDamage().ShortString()
+	}
+	return fmt.Sprintf("%s HP: %d/%d Dmg: %s DR: %d", a.name, hp, hpMax, damage, a.GetDamageResistance())
 }
 
 func (a *Actor) IsStunned() bool {
@@ -285,7 +458,7 @@ func (a *Actor) Name() string {
 	return a.name
 }
 
-func (a *Actor) IsDrawn(playerCanSeeInvisible bool) bool {
+func (a *Actor) IsVisible(playerCanSeeInvisible bool) bool {
 	return !a.HasFlag(foundation.FlagInvisible) || playerCanSeeInvisible
 }
 
@@ -344,14 +517,6 @@ func (a *Actor) AddGold(i int) {
 	a.statusFlags.Increase(foundation.FlagGold, i)
 }
 
-func (a *Actor) GetIntrinsicDamageAsString() string {
-	var parts []string
-	for _, dice := range a.intrinsicAttacks {
-		parts = append(parts, dice.DamageDice.ShortString())
-	}
-	return strings.Join(parts, "/")
-}
-
 func (a *Actor) RemoveLevelStatusEffects() {
 	a.statusFlags.Unset(foundation.FlagSeeFood)
 	a.statusFlags.Unset(foundation.FlagSeeMagic)
@@ -368,14 +533,6 @@ func (a *Actor) GetInternalName() string {
 
 func (a *Actor) SetInternalName(name string) {
 	a.internalName = name
-}
-func (a *Actor) ChooseIntrinsicAttack() (int, dice_curve.Dice) {
-	if a.intrinsicAttacks == nil || len(a.intrinsicAttacks) == 0 {
-		return 0, dice_curve.Dice{}
-	}
-	randomIndexOfIntrinsicDamage := rand.Intn(len(a.intrinsicAttacks))
-	a.currentIntrinsicAttack = randomIndexOfIntrinsicDamage
-	return a.intrinsicAttacks[randomIndexOfIntrinsicDamage].BaseSkill, a.intrinsicAttacks[randomIndexOfIntrinsicDamage].DamageDice
 }
 func (a *Actor) GetHitPoints() int {
 	return a.charSheet.GetHitPoints()
@@ -464,10 +621,6 @@ func (a *Actor) GetDetailInfo() string {
 	result = append(result, "", "> Skills:")
 	result = append(result, skillLines...)
 	return strings.Join(result, "\n")
-}
-
-func (a *Actor) SetIntrinsicAttacks(attacks []IntrinsicAttack) {
-	a.intrinsicAttacks = attacks
 }
 
 func (a *Actor) GetStatModifier(stat special.Stat) int {
@@ -818,4 +971,19 @@ func (a *Actor) SetCharSheet(character *special.CharSheet) {
 
 func (a *Actor) SetXP(xp int) {
 	a.xp = xp
+}
+
+func (a *Actor) ToRecord() recfile.Record {
+	actorRecord := append(recfile.Record{
+		recfile.Field{Name: "Name", Value: a.name},
+		recfile.Field{Name: "InternalName", Value: a.internalName},
+		recfile.Field{Name: "Icon", Value: string(a.icon.Char)},
+		recfile.Field{Name: "Fg", Value: recfile.RGBStr(a.icon.Fg)},
+		recfile.Field{Name: "Bg", Value: recfile.RGBStr(a.icon.Bg)},
+		recfile.Field{Name: "Mood", Value: recfile.IntStr(int(a.mood))},
+		recfile.Field{Name: "DialogueFile", Value: a.dialogueFile},
+		recfile.Field{Name: "Team", Value: a.teamName},
+		recfile.Field{Name: "XP", Value: recfile.IntStr(a.xp)},
+	}, a.charSheet.ToRecord()...)
+	return actorRecord
 }

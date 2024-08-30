@@ -1,4 +1,30 @@
-# Millenium RPG
+The text above is a snippet from a dialogue file in my game engine.
+
+It contains some dialogue nodes for a conversation with an NPC called
+ "Dr. Winters"
+
+His Background is,
+ that he's a "butcher", meaning he has cellar in his doctor's office where he is doing experiments on unwilling patients and kills them afterwards and disposes of the evidence. However, the reason for doing this, is that he is looking for a cure for his daughter, who is terminally ill. He exhausted all other options but had to resort to these unethical experiments. They cannot be done without the "test subjects" dying for technical reasons.
+
+The conversation should lead to
+  - The Dr. explaining his reasons for doing what he does
+  - The player being able to ask questions about the background
+  - A choice for the player
+    - Try to help him with his experiments
+	- Try to kill him
+	- Try to talk him out of it (Very Hard - speech check / Has a letter from his daughter)
+	- Provide him with a cure for his daughter (Very Hard - science check / Has super rare medicine)
+	- Provide information, that there is no cure for his daughter (Very Hard - doctor check / Has Medical Journal)
+
+I want you to insert new dialogue nodes into the conversation tree, detailing the information I just told you about.
+
+Make it begin with some kind of check, that only presents an inquiry if the player knows about all this stuff.
+
+Don't make the speeches for the NPC too long, keep it simple but be flavourful.
+
+Allow the player to ask a few questions regarding the background, improvise to fill the gaps.
+
+Here is a detailed documentation of the conversation file format and the possible effects, conditions and skills you can use:
 
 ### Player Skills
 
@@ -65,3 +91,7 @@ This format supports branching dialogues that adapt to the player’s decisions.
 5. **IsMap(mapName)**: Checks if the player is currently on the specified map.
 6. **IsInCombat(npcName)**: Checks if the specified NPC is currently engaged in combat.
 7. **IsInCombatWithPlayer(npcName)**: Checks if the specified NPC is hostile toward the player.
+
+Make sure the generated conversation is complete and consistent, all referenced nodes should exist and the conversation should lead to an end node.
+
+Only provide me with the script for the new nodes you generated, don't repeat the ones I gave you again.

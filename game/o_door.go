@@ -3,6 +3,8 @@ package game
 import (
 	"RogueUI/foundation"
 	"RogueUI/special"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -19,8 +21,112 @@ type Door struct {
 	damageThreshold  int
 	audioCueBaseName string
 	player           foundation.AudioCuePlayer
+	onBump           func(actor *Actor)
 }
 
+func (b *Door) InitWithGameState(g *GameState) {
+	b.iconForObject = g.iconForObject
+
+	b.onBump = func(actor *Actor) {
+		if actor == g.Player && b.GetCategory() == foundation.ObjectLockedDoor {
+			if b.lockedFlag != "" && actor.HasKey(b.lockedFlag) {
+				b.category = foundation.ObjectClosedDoor
+				g.msg(foundation.Msg("You unlocked the door"))
+				g.ui.PlayCue("world/PICKKEYS")
+				return
+			}
+
+			if len(b.numberLock) > 0 {
+				g.ui.OpenKeypad(b.numberLock, func(result bool) {
+					if result {
+						b.category = foundation.ObjectClosedDoor
+						g.msg(foundation.Msg("You unlocked the door"))
+					}
+				})
+			} else {
+				g.ui.StartLockpickGame(b.lockDiff, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
+					if result == foundation.Success {
+						b.category = foundation.ObjectClosedDoor
+						g.msg(foundation.Msg("You picked the lock deftly"))
+						g.ui.PlayCue("world/PICKKEYS")
+					}
+				})
+			}
+		}
+	}
+
+}
+
+func (b *Door) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+
+	if err := b.BaseObject.gobEncode(enc); err != nil {
+		return nil, err
+	}
+
+	if err := enc.Encode(b.lockedFlag); err != nil {
+		return nil, err
+	}
+
+	if err := enc.Encode(b.lockDiff); err != nil {
+		return nil, err
+	}
+
+	if err := enc.Encode(b.numberLock); err != nil {
+		return nil, err
+	}
+
+	if err := enc.Encode(b.hitpoints); err != nil {
+		return nil, err
+	}
+
+	if err := enc.Encode(b.damageThreshold); err != nil {
+		return nil, err
+	}
+
+	if err := enc.Encode(b.audioCueBaseName); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (b *Door) GobDecode(data []byte) error {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+
+	b.BaseObject = &BaseObject{}
+
+	if err := b.BaseObject.gobDecode(dec); err != nil {
+		return err
+	}
+
+	if err := dec.Decode(&b.lockedFlag); err != nil {
+		return err
+	}
+
+	if err := dec.Decode(&b.lockDiff); err != nil {
+		return err
+	}
+
+	if err := dec.Decode(&b.numberLock); err != nil {
+		return err
+	}
+
+	if err := dec.Decode(&b.hitpoints); err != nil {
+		return err
+	}
+
+	if err := dec.Decode(&b.damageThreshold); err != nil {
+		return err
+	}
+
+	if err := dec.Decode(&b.audioCueBaseName); err != nil {
+		return err
+	}
+
+	return nil
+}
 func (b *Door) IsTransparent() bool {
 	switch b.GetCategory() {
 	case foundation.ObjectOpenDoor:
@@ -114,14 +220,13 @@ func (b *Door) PlayOpenSfx() {
 func (b *Door) IsBroken() bool {
 	return b.GetCategory() == foundation.ObjectBrokenDoor
 }
-func (g *GameState) NewDoor(rec recfile.Record, iconForObject func(category string) textiles.TextIcon) *Door {
+func (g *GameState) NewDoor(rec recfile.Record) *Door {
 	door := &Door{
 		BaseObject: &BaseObject{
 			category:      foundation.ObjectClosedDoor,
 			isAlive:       true,
-			isDrawn:       true,
 			displayName:   "a door",
-			iconForObject: iconForObject,
+			iconForObject: g.iconForObject,
 		},
 		lockDiff:        foundation.Easy,
 		hitpoints:       10,
@@ -132,33 +237,6 @@ func (g *GameState) NewDoor(rec recfile.Record, iconForObject func(category stri
 	door.SetHidden(false)
 	door.SetTransparent(true)
 
-	door.onBump = func(actor *Actor) {
-		if actor == g.Player && door.GetCategory() == foundation.ObjectLockedDoor {
-			if door.lockedFlag != "" && actor.HasKey(door.lockedFlag) {
-				door.category = foundation.ObjectClosedDoor
-				g.msg(foundation.Msg("You unlocked the door"))
-				g.ui.PlayCue("world/PICKKEYS")
-				return
-			}
-
-			if len(door.numberLock) > 0 {
-				g.ui.OpenKeypad(door.numberLock, func(result bool) {
-					if result {
-						door.category = foundation.ObjectClosedDoor
-						g.msg(foundation.Msg("You unlocked the door"))
-					}
-				})
-			} else {
-				g.ui.StartLockpickGame(door.lockDiff, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
-					if result == foundation.Success {
-						door.category = foundation.ObjectClosedDoor
-						g.msg(foundation.Msg("You picked the lock deftly"))
-						g.ui.PlayCue("world/PICKKEYS")
-					}
-				})
-			}
-		}
-	}
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
 		case "name":
@@ -192,6 +270,8 @@ func (g *GameState) NewDoor(rec recfile.Record, iconForObject func(category stri
 			door.audioCueBaseName = field.Value
 		}
 	}
+
+	door.InitWithGameState(g)
 	return door
 }
 
@@ -240,4 +320,36 @@ func (b *Door) IsOpen() bool {
 
 func (b *Door) IsClosedButNotLocked() bool {
 	return b.GetCategory() == foundation.ObjectClosedDoor
+}
+
+func (b *Door) OnBump(actor *Actor) {
+	if b.onBump != nil {
+		b.onBump(actor)
+	}
+}
+
+func (b *Door) ToRecord() recfile.Record {
+	rec := recfile.Record{}
+	rec = append(rec, recfile.Field{Name: "position", Value: b.position.Encode()})
+	rec = append(rec, recfile.Field{Name: "category", Value: b.GetCategory().String()})
+	rec = append(rec, recfile.Field{Name: "description", Value: b.displayName})
+	if b.lockedFlag != "" {
+		rec = append(rec, recfile.Field{Name: "lockflag", Value: b.lockedFlag})
+	}
+	if len(b.numberLock) > 0 {
+		rec = append(rec, recfile.Field{Name: "numberlock", Value: string(b.numberLock)})
+	}
+	if b.lockDiff != foundation.Easy {
+		rec = append(rec, recfile.Field{Name: "lockdifficulty", Value: b.lockDiff.String()})
+	}
+	if b.hitpoints != 10 {
+		rec = append(rec, recfile.Field{Name: "hitpoints", Value: recfile.IntStr(b.hitpoints)})
+	}
+	if b.damageThreshold != 2 {
+		rec = append(rec, recfile.Field{Name: "damage_threshold", Value: recfile.IntStr(b.damageThreshold)})
+	}
+	if b.audioCueBaseName != "" {
+		rec = append(rec, recfile.Field{Name: "audiocue", Value: b.audioCueBaseName})
+	}
+	return rec
 }

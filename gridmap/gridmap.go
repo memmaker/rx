@@ -1,8 +1,6 @@
 package gridmap
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -10,9 +8,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
-	"os"
 	"sort"
-	"strconv"
 	"time"
 )
 
@@ -257,29 +253,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IterWindow(window geometry.Re
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetPlayerSpawn(position geometry.Point) {
 	m.playerSpawn = position
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) SaveToDisk(path string) error {
-	file, _ := os.Open(path)
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	encodeErr := enc.Encode(m)
-	encodedMap := buf.Bytes()
-	writeCount, writeErr := file.Write(encodedMap)
-	if encodeErr == nil && writeErr == nil {
-		println("Map saved to file: " + path + ", length: " + strconv.Itoa(writeCount))
-		return nil
-	} else {
-		println("Error saving map to file: " + path)
-		if encodeErr != nil {
-			println(encodeErr.Error())
-			return encodeErr
-		} else if writeErr != nil {
-			println(writeErr.Error())
-			return writeErr
-		}
-	}
-	return nil
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) CellAt(location geometry.Point) MapCell[ActorType, ItemType, ObjectType] {
@@ -626,6 +599,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetCell(p geometry.Point, cel
 	m.cells[p.X+p.Y*m.mapWidth] = cell
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) SetCellByIndex(index int, cell MapCell[ActorType, ItemType, ObjectType]) {
+	m.cells[index] = cell
+}
+
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetActor(p geometry.Point) ActorType {
 	return *m.cells[p.X+p.Y*m.mapWidth].Actor
 }
@@ -943,12 +920,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetExplored(pos geometry.Poin
 	m.cells[pos.X+pos.Y*m.mapWidth].IsExplored = true
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetLit(pos geometry.Point, value bool) {
-	if !m.Contains(pos) {
-		return
-	}
-	m.cells[pos.X+pos.Y*m.mapWidth].IsLit = value
-}
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetPositionsByFilter(filter func(tile *MapCell[ActorType, ItemType, ObjectType]) bool) []geometry.Point {
 	result := make([]geometry.Point, 0)
 	for index, c := range m.cells {
@@ -1377,12 +1348,11 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddItem(item ItemType, spawnP
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) UpdateFieldOfView(fov *geometry.FOV, fovPosition geometry.Point, visionRange int) {
 	visionRangeSquared := visionRange * visionRange
-	sourceIsLit := m.IsTileLit(fovPosition)
 	var fovRange = geometry.NewRect(-visionRange, -visionRange, visionRange+1, visionRange+1)
 	fov.SetRange(fovRange.Add(fovPosition).Intersect(geometry.NewRect(0, 0, m.mapWidth, m.mapHeight)))
 
 	fov.SSCVisionMap(fovPosition, visionRange, false, func(p geometry.Point) bool {
-		if !m.Contains(p) || (sourceIsLit && !m.IsTileLit(p)) {
+		if !m.Contains(p) {
 			return false
 		}
 		return m.IsTransparent(p) && geometry.DistanceSquared(p, fovPosition) <= visionRangeSquared
@@ -1729,13 +1699,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetHeight() int {
 	return m.mapHeight
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsTileLit(pos geometry.Point) bool {
-	if !m.Contains(pos) {
-		return false
-	}
-	return m.GetCell(pos).IsLit
-}
-
 func GetLocationsInRadius(origin geometry.Point, radius float64, keep func(point geometry.Point) bool) []geometry.Point {
 	result := make([]geometry.Point, 0)
 	for y := origin.Y - int(radius); y <= origin.Y+int(radius); y++ {
@@ -1903,23 +1866,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) HasWalkableNeighbor(point geo
 	return len(neighbors) > 0
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetLitByFilter(filter func(pos geometry.Point) bool) {
-	for y := 0; y < m.mapHeight; y++ {
-		for x := 0; x < m.mapWidth; x++ {
-			pos := geometry.Point{X: x, Y: y}
-			if filter(pos) {
-				m.SetLit(pos, true)
-			}
-		}
-	}
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetLitMulti(tiles []geometry.Point) {
-	for _, tile := range tiles {
-		m.SetLit(tile, true)
-	}
-}
-
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsLineOfSightClear(source geometry.Point, dest geometry.Point) bool {
 	direction := dest.Sub(source).ToCenteredPointF()
 	hitInfo := m.RayCast(source.ToCenteredPointF(), direction, func(point geometry.Point) bool {
@@ -1947,14 +1893,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) ForceSpawnActorInWall(actor A
 	m.allActors = append(m.allActors, actor)
 	actor.SetPosition(to)
 	m.cells[to.X+to.Y*m.mapWidth] = m.cells[to.X+to.Y*m.mapWidth].WithActor(actor)
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetAllLit() {
-	for y := 0; y < m.mapHeight; y++ {
-		for x := 0; x < m.mapWidth; x++ {
-			m.SetLit(geometry.Point{X: x, Y: y}, true)
-		}
-	}
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetFirstWallCardinalInDirection(origin geometry.Point, dir geometry.CompassDirection) geometry.Point {
@@ -1988,6 +1926,54 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetMeta(data MapMeta) {
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetMeta() MapMeta {
 	return m.meta
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) generateTileSetAndMap() ([]Tile, []int16) {
+	tileSet := make([]Tile, 0)
+	tileMap := make([]int16, m.mapWidth*m.mapHeight)
+	for i := 0; i < len(m.cells); i++ {
+		tile := m.cells[i].TileType
+		tileIndex := -1
+		for k, existingTile := range tileSet {
+			if existingTile == tile {
+				tileIndex = k
+				break
+			}
+		}
+		if tileIndex == -1 {
+			tileIndex = len(tileSet)
+			tileSet = append(tileSet, tile)
+		}
+		tileMap[i] = int16(tileIndex)
+	}
+	return tileSet, tileMap
+
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) SetCells(cells []MapCell[ActorType, ItemType, ObjectType]) {
+	var allItems []ItemType
+	var allObjects []ObjectType
+	var allActors []ActorType
+	var allDownedActors []ActorType
+	for _, cell := range cells {
+		if cell.Actor != nil {
+			allActors = append(allActors, *cell.Actor)
+		}
+		if cell.DownedActor != nil {
+			allDownedActors = append(allDownedActors, *cell.DownedActor)
+		}
+		if cell.Item != nil {
+			allItems = append(allItems, *cell.Item)
+		}
+		if cell.Object != nil {
+			allObjects = append(allObjects, *cell.Object)
+		}
+	}
+	m.allItems = allItems
+	m.allObjects = allObjects
+	m.allActors = allActors
+	m.allDownedActors = allDownedActors
+	m.cells = cells
 }
 
 type JumpOverInfo struct {

@@ -12,9 +12,19 @@ import (
 
 type JournalEntry struct {
 	Entry         string
-	Condition     *govaluate.EvaluableExpression
+	strCondition  string
 	IsActive      bool
 	HasBeenViewed bool
+	Condition     *govaluate.EvaluableExpression
+}
+
+func (e JournalEntry) ToRecord() recfile.Record {
+	return recfile.Record{
+		recfile.Field{Name: "Text", Value: e.Entry},
+		recfile.Field{Name: "Cond", Value: e.strCondition},
+		recfile.Field{Name: "Viewed", Value: recfile.BoolStr(e.HasBeenViewed)},
+		recfile.Field{Name: "Active", Value: recfile.BoolStr(e.IsActive)},
+	}
 }
 
 func NewJournalEntry(record recfile.Record, fMap map[string]govaluate.ExpressionFunction) *JournalEntry {
@@ -24,11 +34,12 @@ func NewJournalEntry(record recfile.Record, fMap map[string]govaluate.Expression
 		case "text":
 			entry.Entry = strings.TrimSpace(field.Value)
 		case "cond":
-			expression, err := govaluate.NewEvaluableExpressionWithFunctions(field.Value, fMap)
-			if err != nil {
-				panic(err)
-			}
-			entry.Condition = expression
+			entry.strCondition = strings.TrimSpace(field.Value)
+			entry.Condition, _ = govaluate.NewEvaluableExpressionWithFunctions(entry.strCondition, fMap)
+		case "viewed":
+			entry.HasBeenViewed = recfile.StrBool(field.Value)
+		case "active":
+			entry.IsActive = recfile.StrBool(field.Value)
 		}
 	}
 	return &entry
@@ -41,7 +52,7 @@ type Journal struct {
 
 func NewJournal(io io.ReadCloser, fMap map[string]govaluate.ExpressionFunction) *Journal {
 	j := &Journal{entries: make(map[string][]*JournalEntry)}
-	j.AddEntriesFromSource("", io, fMap)
+	j.AddEntriesFromSource("default", io, fMap)
 	io.Close()
 	return j
 }
@@ -123,4 +134,26 @@ func (j *Journal) getActiveEntries(context string) []*JournalEntry {
 		}
 	}
 	return result
+}
+
+func (j *Journal) ToRecords() map[string][]recfile.Record {
+	records := make(map[string][]recfile.Record)
+	for context, entries := range j.entries {
+		records[context] = make([]recfile.Record, len(entries))
+		for i, entry := range entries {
+			records[context][i] = entry.ToRecord()
+		}
+	}
+	return records
+}
+
+func NewJournalFromRecords(records map[string][]recfile.Record, fMap map[string]govaluate.ExpressionFunction) *Journal {
+	j := &Journal{entries: make(map[string][]*JournalEntry)}
+	for context, recordList := range records {
+		for _, record := range recordList {
+			entry := NewJournalEntry(record, fMap)
+			j.entries[context] = append(j.entries[context], entry)
+		}
+	}
+	return j
 }

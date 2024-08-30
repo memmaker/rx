@@ -1,5 +1,8 @@
 %rec: OpeningBranch
 
+cond: HasFlag('KnowsOfWintersExperiments')
+goto: AwareOfExperiments
+
 cond: true
 goto: DefaultIntroduction
 
@@ -150,3 +153,147 @@ o_goto: Explanation
 #
 o_text: I'll think about it. I'll be back.
 o_goto: End
+
+name: AwareOfExperiments
+npc:
++ You know, don't you? About what I've been doing... downstairs.
++ It's not something I wanted, but it was the only option left to me.
+#
+o_text: What exactly are you doing down there?
+o_goto: WintersExplainsExperiments
+#
+o_text: Why would you do such a thing?
+o_goto: WintersExplainsMotivation
+#
+o_text: I know enough. This ends now.
+o_goto: ConfrontWinters
+
+name: WintersExplainsExperiments
+npc:
++ My daughter is dying. Every conventional treatment failed, so I turned to unconventional methods.
++ The experiments I'm conducting are the only thing keeping hope alive, but they come at a terrible cost.
++ The procedures can't be survived, but without them, she has no chance.
+#
+o_text: How could you do this to innocent people?
+o_goto: WintersJustification
+#
+o_text: Maybe I can help you find another way.
+o_goto: OfferHelp
+#
+o_text: I think you've lost your way, Dr. Winters.
+o_goto: ConfrontWinters
+
+name: WintersExplainsMotivation
+npc:
++ My daughter's condition left me with no choice. Every treatment, every experimental drug, nothing worked.
++ I had to take drastic measures, or lose her forever.
++ The people I'm experimenting on... they don't survive. But their deaths may save her life.
+#
+o_text: And you think this is justified?
+o_goto: WintersJustification
+#
+o_text: This has to stop.
+o_goto: ConfrontWinters
+#
+o_text: Maybe I can help you find another way.
+o_goto: OfferHelp
+
+name: WintersJustification
+npc:
++ It's not about justification anymore. It's about survival—hers.
++ If it means saving her, I'll live with the guilt. There are no other options left for me.
+#
+o_text: You could be wrong about that.
+o_goto: OfferHelp
+#
+o_text: Maybe you're right. But this has to stop.
+o_goto: ConfrontWinters
+#
+o_text: I can't let this continue.
+o_goto: ConfrontWinters
+
+name: OfferHelp
+npc:
++ You think there's another way? I'm willing to listen... but it better be good.
+#
+o_text: I could help with your experiments. Maybe we can speed things up.
+o_cond: GetSkill('Science') > 60
+o_goto: HelpExperiments
+#
+o_text: There's no cure, Dr. Winters. Your research is pointless.
+o_cond: GetSkill('Doctor') > 80 && HasItem('MedicalJournal')
+o_goto: NoCure
+#
+o_text: I have something that might work—a rare medicine.
+o_cond: GetSkill('Science') > 80 && HasItem('RareMedicine')
+o_goto: OfferCure
+#
+o_text: You need to stop this. Think of your daughter.
+o_cond: GetSkill('Speech') > 90 && HasItem('LetterFromDaughter')
+o_goto: PersuadeStop
+#
+o_text: You leave me no choice. I’m ending this.
+o_goto: FightWinters
+
+name: HelpExperiments
+npc:
++ You're willing to help? That could make all the difference.
++ But there's no turning back once you're involved. Are you sure?
+#
+o_text: I'm sure. Let's get to work.
+effect: JoinExperiments
+o_goto: End
+#
+o_text: On second thought, this isn't right.
+o_goto: ConfrontWinters
+
+name: NoCure
+npc:
++ *[Dr. Winters looks at the journal, his hands shaking.]* No... No, that can't be right.
++ If there's really no cure... then all of this, everything I've done... was for nothing.
++ *[He seems lost, utterly defeated.]* What do I do now?
+#
+o_text: Stop this madness. It's over.
+effect: StopExperiments
+o_goto: End
+#
+o_text: I'm sorry, Dr. Winters. There's nothing left to do.
+effect: EndConversation
+o_goto: End
+
+name: OfferCure
+npc:
++ *[Dr. Winters takes the medicine, disbelief in his eyes.]* This... this might actually work.
++ I can't believe it. After all this time... Thank you. You may have just saved her life.
+effect: CureDaughter
+o_goto: End
+
+name: PersuadeStop
+npc:
++ *[Dr. Winters reads the letter, his face pale.]* She... she wouldn't want this. I know that.
++ But I've been so blinded by my desperation. You're right. I need to stop... for her sake.
+effect: StopExperiments
+o_goto: End
+
+name: ConfrontWinters
+npc:
++ You think you can stop me? I can't let you get in the way of saving my daughter.
++ But... if you think you have a better solution, I'm willing to listen.
+#
+o_text: There might be another way. Let me help.
+o_cond: GetSkill('Science') > 60
+o_goto: OfferHelp
+#
+o_text: This has to end, Dr. Winters. I'm taking you down.
+o_goto: FightWinters
+#
+o_text: Maybe you're right. But you can't keep doing this.
+o_cond: GetSkill('Speech') > 75
+o_test: RollSkill('Speech', 0)
+o_succ: PersuadeStop
+o_fail: FightWinters
+
+name: FightWinters
+npc:
++ I won't let you stop me! Not when I'm so close!
+effect: StartCombat('Dr. Winters')

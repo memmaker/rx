@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
@@ -9,27 +8,6 @@ import (
 	"github.com/memmaker/go/textiles"
 	"strings"
 )
-
-/*
-strength: 18
-dexterity: 10
-intelligence: 9
-health: 12
-hp: 18
-will: 9
-perception: 10
-fp: 12
-speed: 6
-size_modifier: 1
-dodge: 8
-dr: 0
-attack: 12 | 1d2 | bite | claw
-*/
-type IntrinsicAttack struct {
-	BaseSkill  int
-	DamageDice dice_curve.Dice
-	AttackName string
-}
 
 func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, newItemFromString func(string) *Item) *Actor {
 	actor := NewActor()

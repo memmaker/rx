@@ -84,7 +84,6 @@ type GameForUI interface {
 
 	// Map Drawing
 	IsExplored(loc geometry.Point) bool
-	IsLit(pos geometry.Point) bool
 	IsVisibleToPlayer(loc geometry.Point) bool
 	IsInteractionAt(position geometry.Point) bool
 
@@ -126,6 +125,9 @@ type GameUI interface {
 	SetGame(game GameForUI)
 	StartGameLoop()
 	InitDungeonUI(palette textiles.ColorPalette, inventoryColors map[ItemCategory]color.RGBA)
+
+	// Basics / Debug
+	AskForString(prompt string, prefill string, result func(entered string))
 
 	// Notification of state changes
 	UpdateStats()

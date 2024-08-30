@@ -3,6 +3,8 @@ package game
 import (
 	"RogueUI/foundation"
 	"RogueUI/special"
+	"bytes"
+	"encoding/gob"
 )
 
 type Equipment struct {
@@ -10,6 +12,28 @@ type Equipment struct {
 	onChanged func()
 }
 
+func (e *Equipment) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+
+	// Encode each field of the struct in order
+	if err := encoder.Encode(e.slots); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (e *Equipment) GobDecode(data []byte) error {
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+
+	// Decode each field of the struct in order
+	if err := decoder.Decode(&e.slots); err != nil {
+		return err
+	}
+
+	return nil
+}
 func NewEquipment() *Equipment {
 	return &Equipment{
 		slots: make(map[foundation.EquipSlot]*Item),

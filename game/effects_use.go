@@ -28,7 +28,6 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"detect_magic":                   endTurn(true, noAnim(playerDetectMagic)),
 		"detect_monsters":                endTurn(true, noAnim(playerDetectMonsters)),
 		"detect_traps":                   endTurn(true, noAnim(playerDetectTraps)),
-		"light":                          endTurn(true, noAnim(light)),
 		"drain_life":                     endTurn(true, drainLife),
 		"heal":                           endTurn(true, heal),
 		"extra_heal":                     endTurn(true, extraHeal),
@@ -73,16 +72,12 @@ func satiateFully(g *GameState, actor *Actor) []foundation.Animation {
 func drainLife(g *GameState, user *Actor) []foundation.Animation {
 	userHealth := user.GetHitPoints()
 	damageDone := max(1, userHealth/2)
-	userRoom := g.dungeonLayout.GetRoomAt(user.Position())
-	isInRoom := userRoom != nil
 	var affectedActors []*Actor
-	for _, actor := range g.gridMap.Actors() {
+	for _, actor := range g.currentMap().Actors() {
 		if actor == user {
 			continue
 		}
-		if isInRoom && userRoom.Contains(actor.Position()) {
-			affectedActors = append(affectedActors, actor)
-		} else if !isInRoom && geometry.DistanceChebyshev(user.Position(), actor.Position()) <= 1 {
+		if geometry.DistanceChebyshev(user.Position(), actor.Position()) <= 1 {
 			affectedActors = append(affectedActors, actor)
 		}
 	}
@@ -91,9 +86,6 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 		return nil
 	}
 	ballPos := user.Position()
-	if isInRoom {
-		ballPos = userRoom.GetCenter()
-	}
 
 	flyFromUserAnim, _ := g.ui.GetAnimProjectile('☼', "LightRed", user.Position(), ballPos, nil)
 
@@ -139,19 +131,6 @@ func endTurn(endsTurnDirectly bool, h func(*GameState, *Actor) []foundation.Anim
 	return func(g *GameState, user *Actor) (bool, []foundation.Animation) {
 		return endsTurnDirectly, h(g, user)
 	}
-}
-
-func light(g *GameState, user *Actor) {
-	room := g.getPlayerRoom()
-	if room == nil {
-		g.msg(foundation.Msg("Nothing happens."))
-		return
-	}
-
-	roomTiles := room.GetAbsoluteRoomTiles()
-	room.SetLit(true)
-	g.gridMap.SetLitMulti(roomTiles)
-	g.gridMap.SetListExplored(roomTiles, true)
 }
 
 func playerDetectFood(g *GameState, user *Actor) {
@@ -276,12 +255,12 @@ func levitation(g *GameState, user *Actor) {
 }
 
 func aggroMonsters(g *GameState, actor *Actor) []foundation.Animation {
-	dMap := g.gridMap.GetDijkstraMap(actor.Position(), 1000, func(point geometry.Point) bool {
-		return g.gridMap.Contains(point)
+	dMap := g.currentMap().GetDijkstraMap(actor.Position(), 1000, func(point geometry.Point) bool {
+		return g.currentMap().Contains(point)
 	})
 	waveEffect := g.ui.GetAnimRadialAlert(actor.Position(), dMap, nil)
 
-	for _, monster := range g.gridMap.Actors() {
+	for _, monster := range g.currentMap().Actors() {
 		if monster == g.Player {
 			continue
 		}
@@ -360,7 +339,7 @@ func playerEnchantWeapon(g *GameState, actor *Actor) []foundation.Animation {
 }
 
 func phaseDoor(g *GameState, user *Actor) []foundation.Animation {
-	targetPos := g.gridMap.RandomSpawnPosition()
+	targetPos := g.currentMap().RandomSpawnPosition()
 
 	teleportAnimation := teleportWithAnimation(g, user, targetPos)
 	teleportAnimation.RequestMapUpdateOnFinish()
@@ -422,14 +401,10 @@ func confuseEnemyOnNextAttack(g *GameState, user *Actor) {
 	g.msg(msg)
 }
 func revealMap(g *GameState, user *Actor) []foundation.Animation {
-	dMap := g.gridMap.GetDijkstraMap(user.Position(), 1000, func(point geometry.Point) bool {
-		return g.gridMap.IsTileWalkable(point) || g.gridMap.HasWalkableNeighbor(point)
+	dMap := g.currentMap().GetDijkstraMap(user.Position(), 1000, func(point geometry.Point) bool {
+		return g.currentMap().IsTileWalkable(point) || g.currentMap().HasWalkableNeighbor(point)
 	})
-	litFilter := func(pos geometry.Point) bool {
-		return g.dungeonLayout.IsCorridor(pos) || g.dungeonLayout.IsDoorAt(pos) || (!g.gridMap.IsTileWalkable(pos) && g.gridMap.HasWalkableNeighbor(pos))
-	}
-	g.gridMap.SetAllExplored()
-	g.gridMap.SetLitByFilter(litFilter)
+	g.currentMap().SetAllExplored()
 
 	waveEffect := g.ui.GetAnimRadialReveal(user.Position(), dMap, nil)
 

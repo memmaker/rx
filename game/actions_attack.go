@@ -42,8 +42,8 @@ func (g *GameState) PlayerRangedAttack() {
 		})
 	} else {
 		g.ui.SelectTarget(func(targetPos geometry.Point, bodyPart int) {
-			if g.gridMap.IsActorAt(targetPos) {
-				target := g.gridMap.ActorAt(targetPos)
+			if g.currentMap().IsActorAt(targetPos) {
+				target := g.currentMap().ActorAt(targetPos)
 				shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode.Mode, target, bodyPart)
 				g.ui.AddAnimations(shotAnim)
 				g.endPlayerTurn(attackMode.TUCost)
@@ -336,14 +336,14 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 		if origin.X == x && origin.Y == y {
 			return true
 		}
-		return g.gridMap.IsCurrentlyPassable(geometry.Point{X: x, Y: y})
+		return g.currentMap().IsCurrentlyPassable(geometry.Point{X: x, Y: y})
 	})
 	if len(pathOfFlight) > 1 {
 		// remove start
 		pathOfFlight = pathOfFlight[1:]
 	}
 	targetPos = pathOfFlight[len(pathOfFlight)-1]
-	if !g.gridMap.IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
+	if !g.currentMap().IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
 		targetPos = pathOfFlight[len(pathOfFlight)-2]
 	}
 	var onHitAnimations []foundation.Animation
@@ -356,13 +356,13 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 
 	throwAnim, _ := g.ui.GetAnimThrow(missile, origin, targetPos)
 
-	if g.gridMap.IsActorAt(targetPos) {
-		defender := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		defender := g.currentMap().ActorAt(targetPos)
 		//isLaunch := thrower.IsLaunching(missile) // otherwise it's a throw
 		consequenceOfActorHit := g.actorRangedAttack(thrower, missile, special.TargetingModeFireSingle, defender, 0)
 		onHitAnimations = append(onHitAnimations, consequenceOfActorHit...)
-	} else if g.gridMap.IsObjectAt(targetPos) {
-		object := g.gridMap.ObjectAt(targetPos)
+	} else if g.currentMap().IsObjectAt(targetPos) {
+		object := g.currentMap().ObjectAt(targetPos)
 		consequenceOfObjectHit := object.OnDamage(SourcedDamage{
 			NameOfThing:     "",
 			Attacker:        thrower,

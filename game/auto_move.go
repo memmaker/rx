@@ -19,7 +19,7 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 
 	currentPos := player.Position()
 	targetPos := currentPos.Add(direction.ToPoint())
-	currentMap := g.gridMap
+	currentMap := g.currentMap()
 
 	if !isStarting {
 		if !currentMap.IsTileWalkable(targetPos) && !direction.IsDiagonal() {
@@ -47,12 +47,7 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 	}
 
 	currentDirection := targetPos.Sub(currentPos).ToDirection()
-	if g.dungeonLayout != nil && g.dungeonLayout.IsCorridor(currentPos) && g.dungeonLayout.IsDoorAt(targetPos) {
-		firstRoomTileAfterDoor := targetPos.Add(currentDirection.ToPoint())
-		if !currentMap.IsExplored(firstRoomTileAfterDoor) {
-			return false
-		}
-	}
+
 	g.playerMove(currentPos, targetPos)
 
 	g.ui.AfterPlayerMoved(foundation.MoveInfo{

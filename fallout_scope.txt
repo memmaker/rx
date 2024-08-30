@@ -35,3 +35,8 @@ Fallout Core Features
 
 See:
 https://mikesrpgcenter.com/fallout/index.html
+
+Test Runs:
+ - Stealth - Don't fight anyone, don't talk to anyone
+ - Combat - Don't talk to anyone, kill everyone
+ - Diplomacy - Don't fight anyone, talk to everyone

@@ -14,7 +14,7 @@ func (g *GameState) aiAct(enemy *Actor) {
 	if !isHostile {
 		return
 	}
-	sameRoom := g.isInPlayerRoom(enemy.Position()) || distanceToPlayer <= 1
+	sameRoom := distanceToPlayer <= 1
 
 	if enemy.HasFlag(foundation.FlagStun) {
 		stunCounter := enemy.GetFlags().Get(foundation.FlagStun)
@@ -68,7 +68,7 @@ func (g *GameState) aiAct(enemy *Actor) {
 			enemy.GetFlags().Unset(foundation.FlagScared)
 			g.msg(foundation.HiLite("%s regains its courage", enemy.Name()))
 		} else {
-			newPos := g.gridMap.GetMoveOnPlayerDijkstraMap(enemy.Position(), false, g.playerDijkstraMap)
+			newPos := g.currentMap().GetMoveOnPlayerDijkstraMap(enemy.Position(), false, g.playerDijkstraMap)
 			consequencesOfMonsterMove := g.actorMoveAnimated(enemy, newPos)
 			g.ui.AddAnimations(consequencesOfMonsterMove)
 			return
@@ -98,9 +98,9 @@ func (g *GameState) aiAct(enemy *Actor) {
 }
 
 func (g *GameState) defaultBehaviour(enemy *Actor) {
-	distanceToPlayer := g.gridMap.MoveDistance(enemy.Position(), g.Player.Position())
+	distanceToPlayer := g.currentMap().MoveDistance(enemy.Position(), g.Player.Position())
 
-	sameRoom := g.isInPlayerRoom(enemy.Position()) || distanceToPlayer <= 1
+	sameRoom := distanceToPlayer <= 1
 
 	rangedWeapon, hasRangedWeapon := enemy.GetEquipment().GetRangedWeapon()
 	if hasRangedWeapon {
@@ -140,7 +140,7 @@ func (g *GameState) defaultBehaviour(enemy *Actor) {
 		return
 	}
 
-	gridMap := g.gridMap
+	gridMap := g.currentMap()
 	var newPos geometry.Point
 	if !gridMap.IsTileWalkable(enemy.Position()) {
 		newPos = gridMap.GetRandomFreeAndSafeNeighbor(rand.New(rand.NewSource(23)), enemy.Position())
@@ -158,9 +158,9 @@ func (g *GameState) doesActConfused(enemy *Actor) []foundation.Animation {
 		} else if rand.Intn(5) != 0 {
 			actionDirection := geometry.RandomDirection()
 			targetPos := enemy.Position().Add(actionDirection.ToPoint())
-			if g.gridMap.IsActorAt(targetPos) {
-				return g.actorMeleeAttack(enemy, g.gridMap.ActorAt(targetPos))
-			} else if g.gridMap.IsCurrentlyPassable(targetPos) {
+			if g.currentMap().IsActorAt(targetPos) {
+				return g.actorMeleeAttack(enemy, g.currentMap().ActorAt(targetPos))
+			} else if g.currentMap().IsCurrentlyPassable(targetPos) {
 				return g.actorMoveAnimated(enemy, targetPos)
 			} else {
 				return nil
@@ -173,29 +173,8 @@ func (g *GameState) doesActConfused(enemy *Actor) []foundation.Animation {
 func (g *GameState) customBehaviours(internalName string) (func(actor *Actor), bool) {
 	switch internalName {
 	case "xeroc_2":
-		return g.aiWallMimic, true
+		return nil, false
 	}
 	return nil, false
 
-}
-
-func (g *GameState) aiWallMimic(actor *Actor) {
-	stillCloaked := actor.HasFlag(foundation.FlagInvisible)
-
-	if !stillCloaked {
-		g.defaultBehaviour(actor)
-		return
-	}
-
-	sameRoom := g.isInPlayerRoom(actor.Position())
-
-	if !sameRoom {
-		return
-	}
-
-	if stillCloaked && rand.Intn(5) == 0 {
-		uncloakAnim := uncloakAndCharge(g, actor, g.Player.Position())
-		g.ui.AddAnimations(uncloakAnim)
-		return
-	}
 }

@@ -21,15 +21,15 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 		g.gameFlags.Set(flagName, flagValue)
 	}
 
-	if g.gridMap != nil && g.Player != nil { // Remove Player from Old Map
-		g.gridMap.RemoveActor(g.Player)
+	if g.currentMap() != nil && g.Player != nil { // Remove Player from Old Map
+		g.currentMap().RemoveActor(g.Player)
 		g.Player.RemoveLevelStatusEffects()
 	}
 
 	namedLocation := loadedMap.GetNamedLocation(location)
 	loadedMap.AddActor(g.Player, namedLocation)
 
-	g.gridMap = loadedMap
+	g.setCurrentMap(loadedMap)
 	g.iconsForObjects = result.IconsForObjects
 
 	g.afterPlayerMoved(geometry.Point{}, true)
@@ -39,8 +39,8 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 
 /*
 func (g *GameState) GotoDungeonLevel(level int, stairs StairsInLevel, placePlayerOnStairs bool) {
-    if g.gridMap != nil {
-        g.gridMap.RemoveActor(g.Player)
+    if g.currentMap() != nil {
+        g.currentMap().RemoveActor(g.Player)
         g.Player.RemoveLevelStatusEffects()
     }
     isDown := level > g.currentDungeonLevel
@@ -85,7 +85,7 @@ func (g *GameState) GotoDungeonLevel(level int, stairs StairsInLevel, placePlaye
 
     spawnPos := g.Player.Position()
 
-    g.gridMap = newMap
+    g.currentMap() = newMap
 
     g.afterPlayerMoved()
 

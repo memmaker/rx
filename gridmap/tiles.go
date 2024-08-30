@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
 	"io"
 )
@@ -53,6 +54,38 @@ func (t Tile) WithIsTransparent(value bool) Tile {
 	return t
 }
 
+func (t Tile) ToRecord() recfile.Record {
+	return recfile.Record{
+		recfile.Field{Name: "Icon", Value: string(t.Icon.Char)},
+		recfile.Field{Name: "Fg", Value: recfile.RGBStr(t.Icon.Fg)},
+		recfile.Field{Name: "Bg", Value: recfile.RGBStr(t.Icon.Bg)},
+		recfile.Field{Name: "IsWalkable", Value: recfile.BoolStr(t.IsWalkable)},
+		recfile.Field{Name: "IsTransparent", Value: recfile.BoolStr(t.IsTransparent)},
+		recfile.Field{Name: "IsDamaging", Value: recfile.BoolStr(t.IsDamaging)},
+	}
+}
+
+func NewTileFromRecord(record recfile.Record) Tile {
+	tile := Tile{}
+	for _, field := range record {
+		switch field.Name {
+		case "Icon":
+			tile.Icon.Char = []rune(field.Value)[0]
+		case "Fg":
+			tile.Icon.Fg = field.AsRGB(",")
+		case "Bg":
+			tile.Icon.Bg = field.AsRGB(",")
+		case "IsWalkable":
+			tile.IsWalkable = field.AsBool()
+		case "IsTransparent":
+			tile.IsTransparent = field.AsBool()
+		case "IsDamaging":
+			tile.IsDamaging = field.AsBool()
+		}
+	}
+	return tile
+}
+
 type MapCell[ActorType interface {
 	comparable
 	MapActor
@@ -65,7 +98,6 @@ type MapCell[ActorType interface {
 }] struct {
 	TileType      Tile
 	IsExplored    bool
-	IsLit         bool // IsLit is true if this tile receives light from a light source and is thus permanently lit if it's explored.
 	Actor         *ActorType
 	DownedActor   *ActorType
 	Item          *ItemType

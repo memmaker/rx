@@ -1,320 +1,541 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/special"
-	"fmt"
-	"github.com/memmaker/go/cview"
-	"github.com/memmaker/go/fxtools"
-	"github.com/memmaker/go/geometry"
-	"github.com/memmaker/go/textiles"
-	"image/color"
-	"math/rand"
-	"strconv"
-	"strings"
+    "RogueUI/foundation"
+    "RogueUI/special"
+    "bytes"
+    "encoding/gob"
+    "fmt"
+    "github.com/memmaker/go/cview"
+    "github.com/memmaker/go/fxtools"
+    "github.com/memmaker/go/geometry"
+    "github.com/memmaker/go/textiles"
+    "image/color"
+    "math/rand"
+    "strconv"
+    "strings"
 )
 
 type Item struct {
-	description   string
-	internalName  string
-	position      geometry.Point
-	category      foundation.ItemCategory
-	weapon        *WeaponInfo
-	armor         *ArmorInfo
-	ammo          *AmmoInfo
-	useEffectName string
-	zapEffectName string
-	charges       int
+    description   string
+    internalName  string
+    position      geometry.Point
+    category      foundation.ItemCategory
+    weapon        *WeaponInfo
+    armor         *ArmorInfo
+    ammo          *AmmoInfo
+    useEffectName string
+    zapEffectName string
+    charges       int
 
-	stat       special.Stat
-	statBonus  int
-	skill      special.Skill
-	skillBonus int
+    stat       special.Stat
+    statBonus  int
+    skill      special.Skill
+    skillBonus int
 
-	equipFlag    foundation.ActorFlag
-	thrownDamage fxtools.Interval
-	tags         foundation.ItemTags
-	textFile     string
-	text         string
-	lockFlag     string
+    equipFlag    foundation.ActorFlag
+    thrownDamage fxtools.Interval
+    tags         foundation.ItemTags
+    textFile     string
+    text         string
+    lockFlag     string
 
-	icon                   textiles.TextIcon
-	chanceToBreakOnThrow   int
-	currentAttackModeIndex int
-	setFlagOnPickup        string
-	size                   int
-	weight                 int
-	cost                   int
+    icon                   textiles.TextIcon
+    chanceToBreakOnThrow   int
+    currentAttackModeIndex int
+    setFlagOnPickup        string
+    size                   int
+    weight                 int
+    cost                   int
+}
+
+// GobEncode encodes the Item struct into a byte slice.
+func (i *Item) GobEncode() ([]byte, error) {
+    var buf bytes.Buffer
+    encoder := gob.NewEncoder(&buf)
+
+    // Encode each field of the struct in order
+    if err := encoder.Encode(i.description); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.internalName); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.position); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.category); err != nil {
+        return nil, err
+    }
+
+    conditionalEncode := func(cond bool, value any) error {
+        if cond {
+            err := encoder.Encode(true)
+            if err != nil {
+                return err
+            }
+            return encoder.Encode(value)
+        } else {
+            return encoder.Encode(false)
+        }
+    }
+
+    if err := conditionalEncode(i.weapon != nil, i.weapon); err != nil {
+        return nil, err
+    }
+    if err := conditionalEncode(i.armor != nil, i.armor); err != nil {
+        return nil, err
+    }
+    if err := conditionalEncode(i.ammo != nil, i.ammo); err != nil {
+        return nil, err
+    }
+
+    if err := encoder.Encode(i.useEffectName); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.zapEffectName); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.charges); err != nil {
+        return nil, err
+    }
+
+    if err := encoder.Encode(i.stat); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.statBonus); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.skill); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.skillBonus); err != nil {
+        return nil, err
+    }
+
+    if err := encoder.Encode(i.equipFlag); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.thrownDamage); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.tags); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.textFile); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.text); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.lockFlag); err != nil {
+        return nil, err
+    }
+
+    if err := encoder.Encode(i.icon); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.chanceToBreakOnThrow); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.currentAttackModeIndex); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.setFlagOnPickup); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.size); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.weight); err != nil {
+        return nil, err
+    }
+    if err := encoder.Encode(i.cost); err != nil {
+        return nil, err
+    }
+
+    return buf.Bytes(), nil
+}
+
+// GobDecode decodes a byte slice into an Item struct.
+func (i *Item) GobDecode(data []byte) error {
+    buf := bytes.NewBuffer(data)
+    decoder := gob.NewDecoder(buf)
+
+    // Decode each field of the struct in order
+    if err := decoder.Decode(&i.description); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.internalName); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.position); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.category); err != nil {
+        return err
+    }
+
+    conditionalDecode := func(value any) error {
+        hasComponent := false
+        if err := decoder.Decode(&hasComponent); err != nil {
+            return err
+        }
+        if hasComponent {
+            if err := decoder.Decode(value); err != nil {
+                return err
+            }
+        }
+        return nil
+    }
+
+    if err := conditionalDecode(&i.weapon); err != nil {
+        return err
+    }
+
+    if err := conditionalDecode(&i.armor); err != nil {
+        return err
+    }
+
+    if err := conditionalDecode(&i.ammo); err != nil {
+        return err
+    }
+
+    if err := decoder.Decode(&i.useEffectName); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.zapEffectName); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.charges); err != nil {
+        return err
+    }
+
+    if err := decoder.Decode(&i.stat); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.statBonus); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.skill); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.skillBonus); err != nil {
+        return err
+    }
+
+    if err := decoder.Decode(&i.equipFlag); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.thrownDamage); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.tags); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.textFile); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.text); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.lockFlag); err != nil {
+        return err
+    }
+
+    if err := decoder.Decode(&i.icon); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.chanceToBreakOnThrow); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.currentAttackModeIndex); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.setFlagOnPickup); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.size); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.weight); err != nil {
+        return err
+    }
+    if err := decoder.Decode(&i.cost); err != nil {
+        return err
+    }
+
+    return nil
 }
 
 func (g *GameState) NewItemFromString(itemShortString string) *Item {
-	charges := 1
-	if fxtools.LooksLikeAFunction(itemShortString) {
-		var item *Item
-		name, args := fxtools.GetNameAndArgs(itemShortString)
-		switch name {
-		case "key":
-			item = NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
-		case "note":
-			item = NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
-		}
-		return item
-	} else if strings.Contains(itemShortString, "|") {
-		parts := strings.Split(itemShortString, "|")
-		itemShortString = strings.TrimSpace(parts[0])
-		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
-	}
+    charges := 1
+    if fxtools.LooksLikeAFunction(itemShortString) {
+        var item *Item
+        name, args := fxtools.GetNameAndArgs(itemShortString)
+        switch name {
+        case "key":
+            item = NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
+        case "note":
+            item = NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
+        }
+        return item
+    } else if strings.Contains(itemShortString, "|") {
+        parts := strings.Split(itemShortString, "|")
+        itemShortString = strings.TrimSpace(parts[0])
+        charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
+    }
 
-	itemDef := g.getItemTemplateByName(itemShortString)
-	newItem := NewItemFromRecord(itemDef, g.iconForItem)
+    itemDef := g.getItemTemplateByName(itemShortString)
+    newItem := NewItemFromRecord(itemDef, g.iconForItem)
 
-	if newItem == nil {
-		panic(fmt.Sprintf("Item not found: %s", itemShortString))
-	}
-	newItem.SetCharges(charges)
+    if newItem == nil {
+        panic(fmt.Sprintf("Item not found: %s", itemShortString))
+    }
+    newItem.SetCharges(charges)
 
-	return newItem
+    return newItem
 }
 func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Item {
-	return &Item{
-		description:  description,
-		internalName: fileName,
-		category:     foundation.ItemCategoryReadables,
-		textFile:     fileName,
-		icon:         icon,
-	}
+    return &Item{
+        description:  description,
+        internalName: fileName,
+        category:     foundation.ItemCategoryReadables,
+        textFile:     fileName,
+        icon:         icon,
+    }
 }
 func NewKey(keyID, description string, icon textiles.TextIcon) *Item {
-	return &Item{
-		description:  description,
-		internalName: keyID,
-		lockFlag:     keyID,
-		category:     foundation.ItemCategoryKeys,
-		charges:      -1,
-		icon:         icon,
-	}
+    return &Item{
+        description:  description,
+        internalName: keyID,
+        lockFlag:     keyID,
+        category:     foundation.ItemCategoryKeys,
+        charges:      -1,
+        icon:         icon,
+    }
 }
 
 func (i *Item) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
-	return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
+    return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
 }
 
 func (i *Item) Shortcut() rune {
-	return -1
+    return -1
 }
 
 func (i *Item) DisplayLength() int {
-	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut(""))
+    return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut(""))
 }
 
 func (i *Item) GetListInfo() string {
-	return fmt.Sprintf("%s", i.description)
+    return fmt.Sprintf("%s", i.description)
 }
 
 func (i *Item) LongNameWithColors(colorCode string) string {
-	line := cview.Escape(i.Name())
-	if i.IsWeapon() {
-		weapon := i.weapon
-		attackMode := weapon.GetAttackMode(i.currentAttackModeIndex)
-		targetMode := attackMode.String()
-		timeNeeded := attackMode.TUCost
-		bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
-		line = cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, weapon.GetDamage().ShortString(), bullets))
-	}
-	if i.IsArmor() {
-		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
-	}
-	return colorCode + line + "[-]"
+    line := cview.Escape(i.Name())
+    if i.IsWeapon() {
+        weapon := i.weapon
+        attackMode := weapon.GetAttackMode(i.currentAttackModeIndex)
+        targetMode := attackMode.String()
+        timeNeeded := attackMode.TUCost
+        bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
+        line = cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, weapon.GetDamage().ShortString(), bullets))
+    }
+    if i.IsArmor() {
+        line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
+    }
+    return colorCode + line + "[-]"
 }
 
 func (i *Item) InventoryNameWithColors(colorCode string) string {
-	line := cview.Escape(i.Name())
-	if i.IsWeapon() {
-		weapon := i.weapon
-		line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), weapon.GetDamage().ShortString()))
-	}
-	if i.IsArmor() {
-		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
-	}
-	if i.IsAmmo() {
-		line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetCharges()))
-	}
-	return colorCode + line + "[-]"
+    line := cview.Escape(i.Name())
+    if i.IsWeapon() {
+        weapon := i.weapon
+        line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), weapon.GetDamage().ShortString()))
+    }
+    if i.IsArmor() {
+        line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
+    }
+    if i.IsAmmo() {
+        line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetCharges()))
+    }
+    return colorCode + line + "[-]"
 }
 
 func (i *Item) SetPosition(pos geometry.Point) {
-	i.position = pos
+    i.position = pos
 }
 
 func (i *Item) Position() geometry.Point {
-	return i.position
+    return i.position
 }
 
 func (i *Item) Name() string {
-	name := i.description
-	if i.IsGold() {
-		name = fmt.Sprintf("%d gold", i.charges)
-	}
+    name := i.description
+    if i.IsGold() {
+        name = fmt.Sprintf("%d gold", i.charges)
+    }
 
-	if i.statBonus != 0 {
-		name = fmt.Sprintf("%s [%+d %s]", name, i.statBonus, i.stat.ToShortString())
-	}
+    if i.statBonus != 0 {
+        name = fmt.Sprintf("%s [%+d %s]", name, i.statBonus, i.stat.ToShortString())
+    }
 
-	if i.skillBonus != 0 {
-		name = fmt.Sprintf("%s [%+d %s]", name, i.skillBonus, i.skill.ToShortString())
-	}
+    if i.skillBonus != 0 {
+        name = fmt.Sprintf("%s [%+d %s]", name, i.skillBonus, i.skill.ToShortString())
+    }
 
-	return name
+    return name
 }
 
 func (i *Item) IsThrowable() bool {
-	return true
+    return true
 }
 
 func (i *Item) IsUsableOrZappable() bool {
-	return i.useEffectName != "" || i.zapEffectName != ""
+    return i.useEffectName != "" || i.zapEffectName != ""
 }
 
 func (i *Item) IsReadable() bool {
-	return i.textFile != "" || i.text != ""
+    return i.textFile != "" || i.text != ""
 }
 
 func (i *Item) IsUsable() bool {
-	return i.useEffectName != ""
+    return i.useEffectName != ""
 }
 
 func (i *Item) GetUseEffectName() string {
-	return i.useEffectName
+    return i.useEffectName
 }
 
 func (i *Item) GetZapEffectName() string {
-	return i.zapEffectName
+    return i.zapEffectName
 }
 
 func (i *Item) IsZappable() bool {
-	return i.zapEffectName != ""
+    return i.zapEffectName != ""
 }
 
 func (i *Item) Color() color.RGBA {
-	return color.RGBA{255, 255, 255, 255}
+    return color.RGBA{255, 255, 255, 255}
 }
 
 func (i *Item) CanStackWith(other *Item) bool {
-	if i.description != other.description || i.category != other.category {
-		return false
-	}
+    if i.description != other.description || i.category != other.category {
+        return false
+    }
 
-	if i.internalName != other.internalName {
-		return false
-	}
-	if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() {
-		return false
-	}
+    if i.internalName != other.internalName {
+        return false
+    }
+    if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() {
+        return false
+    }
 
-	if i.useEffectName != other.useEffectName || i.zapEffectName != other.zapEffectName {
-		return false
-	}
+    if i.useEffectName != other.useEffectName || i.zapEffectName != other.zapEffectName {
+        return false
+    }
 
-	if i.IsAmmo() && other.IsAmmo() && i.GetAmmo().Equals(other.GetAmmo()) {
-		return true
-	}
+    if i.IsAmmo() && other.IsAmmo() && i.GetAmmo().Equals(other.GetAmmo()) {
+        return true
+    }
 
-	if i.charges != other.charges {
-		return false
-	}
+    if i.charges != other.charges {
+        return false
+    }
 
-	return true
+    return true
 }
 
 func (i *Item) SlotName() foundation.EquipSlot {
-	switch {
-	case i.IsArmor():
-		return foundation.SlotNameArmorTorso
-	case i.IsWeapon():
-		return foundation.SlotNameMainHand
-	}
-	return foundation.SlotNameNotEquippable
+    switch {
+    case i.IsArmor():
+        return foundation.SlotNameArmorTorso
+    case i.IsWeapon():
+        return foundation.SlotNameMainHand
+    }
+    return foundation.SlotNameNotEquippable
 }
 
 func (i *Item) IsEquippable() bool {
-	return i.IsWeapon() || i.IsArmor()
+    return i.IsWeapon() || i.IsArmor()
 }
 
 func (i *Item) IsMeleeWeapon() bool {
-	return i.IsWeapon() && i.GetWeapon().IsMelee()
+    return i.IsWeapon() && i.GetWeapon().IsMelee()
 }
 
 func (i *Item) IsRangedWeapon() bool {
-	return i.IsWeapon() && i.GetWeapon().IsRanged()
+    return i.IsWeapon() && i.GetWeapon().IsRanged()
 }
 
 func (i *Item) IsArmor() bool {
-	return i.armor != nil
+    return i.armor != nil
 }
 
 func (i *Item) IsWeapon() bool {
-	return i.weapon != nil
+    return i.weapon != nil
 }
 
 func (i *Item) GetCategory() foundation.ItemCategory {
-	return i.category
+    return i.category
 }
 
 func (i *Item) GetWeapon() *WeaponInfo {
-	return i.weapon
+    return i.weapon
 }
 
 func (i *Item) GetArmor() *ArmorInfo {
-	return i.armor
+    return i.armor
 }
 
 func (i *Item) IsGold() bool {
-	return i.category == foundation.ItemCategoryGold
+    return i.category == foundation.ItemCategoryGold
 }
 
 func (i *Item) GetCharges() int {
-	return i.charges
+    return i.charges
 }
 
 func (i *Item) IsFood() bool {
-	return i.category == foundation.ItemCategoryFood
+    return i.category == foundation.ItemCategoryFood
 }
 
 func (i *Item) GetInternalName() string {
-	return i.internalName
+    return i.internalName
 }
 
 func (i *Item) GetStatBonus(stat special.Stat) int {
 
-	if i.stat == stat {
-		return i.statBonus
-	}
-	return 0
+    if i.stat == stat {
+        return i.statBonus
+    }
+    return 0
 }
 func (i *Item) GetSkillBonus(skill special.Skill) int {
-	if i.skill == skill {
-		return i.skillBonus
-	}
-	return 0
+    if i.skill == skill {
+        return i.skillBonus
+    }
+    return 0
 }
 func (i *Item) GetEquipFlag() foundation.ActorFlag {
-	return i.equipFlag
+    return i.equipFlag
 }
 
 func (i *Item) IsMissile() bool {
-	return i.IsWeapon() && i.GetWeapon().GetWeaponType().IsMissile()
+    return i.IsWeapon() && i.GetWeapon().GetWeaponType().IsMissile()
 }
 
 func (i *Item) GetThrowDamage() fxtools.Interval {
-	return i.thrownDamage
+    return i.thrownDamage
 }
 
 func (i *Item) ConsumeCharge() {
-	i.charges--
+    i.charges--
 }
 
 func (i *Item) SetCharges(amount int) {
-	i.charges = amount
+    i.charges = amount
 }
 
 func (i *Item) AfterEquippedTurn() {
@@ -322,84 +543,84 @@ func (i *Item) AfterEquippedTurn() {
 }
 
 func (i *Item) IsAmmo() bool {
-	return i.ammo != nil
+    return i.ammo != nil
 }
 
 func (i *Item) IsAmmoOfCaliber(ammo int) bool {
-	return i.IsAmmo() && i.GetAmmo().CaliberIndex == ammo
+    return i.IsAmmo() && i.GetAmmo().CaliberIndex == ammo
 }
 
 func (i *Item) RemoveCharges(spent int) {
-	i.charges -= spent
-	if i.charges < 0 {
-		i.charges = 0
-	}
+    i.charges -= spent
+    if i.charges < 0 {
+        i.charges = 0
+    }
 }
 
 func (i *Item) Split(bullets int) *Item {
-	if bullets >= i.charges {
-		return i
-	}
-	clone := *i
-	clone.charges = bullets
-	i.charges -= bullets
-	return &clone
+    if bullets >= i.charges {
+        return i
+    }
+    clone := *i
+    clone.charges = bullets
+    i.charges -= bullets
+    return &clone
 }
 
 func (i *Item) Merge(ammo *Item) {
-	i.charges += ammo.charges
+    i.charges += ammo.charges
 }
 
 func (i *Item) GetAmmo() *AmmoInfo {
-	return i.ammo
+    return i.ammo
 }
 
 func (i *Item) IsLockpick() bool {
-	return i.category == foundation.ItemCategoryLockpicks
+    return i.category == foundation.ItemCategoryLockpicks
 }
 
 func (i *Item) IsKey() bool {
-	return i.category == foundation.ItemCategoryKeys && i.lockFlag != ""
+    return i.category == foundation.ItemCategoryKeys && i.lockFlag != ""
 }
 
 func (i *Item) GetLockFlag() string {
-	return i.lockFlag
+    return i.lockFlag
 }
 
 func (i *Item) HasTag(tag foundation.ItemTags) bool {
-	return i.tags.Contains(tag)
+    return i.tags.Contains(tag)
 }
 
 func (i *Item) GetTextFile() string {
-	return i.textFile
+    return i.textFile
 }
 
 func (i *Item) GetIcon() textiles.TextIcon {
-	return i.icon
+    return i.icon
 }
 
 func (i *Item) IsBreakingNow() bool {
-	return rand.Intn(100) < i.chanceToBreakOnThrow
+    return rand.Intn(100) < i.chanceToBreakOnThrow
 }
 
 func (i *Item) GetCurrentAttackMode() AttackMode {
-	return i.weapon.GetAttackMode(i.currentAttackModeIndex)
+    return i.weapon.GetAttackMode(i.currentAttackModeIndex)
 }
 
 func (i *Item) CycleTargetMode() {
-	if !i.IsWeapon() {
-		return
-	}
-	i.currentAttackModeIndex++
-	if i.currentAttackModeIndex >= len(i.weapon.attackModes) {
-		i.currentAttackModeIndex = 0
-	}
+    if !i.IsWeapon() {
+        return
+    }
+    i.currentAttackModeIndex++
+    if i.currentAttackModeIndex >= len(i.weapon.attackModes) {
+        i.currentAttackModeIndex = 0
+    }
 }
 
 func (i *Item) PickupFlag() string {
-	return i.setFlagOnPickup
+    return i.setFlagOnPickup
 }
 
 func (i *Item) GetText() string {
-	return i.text
+    return i.text
 }

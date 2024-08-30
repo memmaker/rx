@@ -35,15 +35,15 @@ func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geom
 
 /*
 func forceDescendTarget(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
-    if !g.gridMap.IsActorAt(pos) {
+    if !g.currentMap().IsActorAt(pos) {
         return nil
     }
 
-    descendingActor := g.gridMap.ActorAt(pos)
+    descendingActor := g.currentMap().ActorAt(pos)
     if descendingActor == g.Player {
         g.QueueActionAfterAnimation(g.descendToRandomLocation)
     } else {
-        g.gridMap.RemoveActor(descendingActor)
+        g.currentMap().RemoveActor(descendingActor)
     }
     return nil
 }
@@ -63,7 +63,7 @@ func uncloakAndCharge(g *GameState, zapper *Actor, pos geometry.Point) []foundat
 	zapper.SetAware()
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(zapper, zapper.Position())
 	chargeAnim, _ := charge(g, zapper, pos, false, g.getLine)
-	//tileIcon := g.gridMap.GetTileIconAt(targetPos)
+	//tileIcon := g.currentMap().GetTileIconAt(targetPos)
 	uncloakAnim.SetFollowUp([]foundation.Animation{chargeAnim})
 
 	return []foundation.Animation{uncloakAnim}
@@ -82,9 +82,9 @@ func charge(g *GameState, zapper *Actor, pos geometry.Point, isHeroic bool, getP
 
 	var hitActor *Actor
 	targetPos := pathOfFlight[len(pathOfFlight)-1]
-	if !g.gridMap.IsCurrentlyPassable(targetPos) && len(pathOfFlight) > 1 {
-		if g.gridMap.IsActorAt(targetPos) {
-			hitActor = g.gridMap.ActorAt(targetPos)
+	if !g.currentMap().IsCurrentlyPassable(targetPos) && len(pathOfFlight) > 1 {
+		if g.currentMap().IsActorAt(targetPos) {
+			hitActor = g.currentMap().ActorAt(targetPos)
 		}
 		targetPos = pathOfFlight[len(pathOfFlight)-2]
 	}
@@ -104,8 +104,8 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 	trailLead := '☼'
 	trailColors := []string{"White", "White", "LightCyan", "light_blue_3", "Blue"}
 	hitEntityHandler := func(hitPos geometry.Point) []foundation.Animation {
-		if g.gridMap.IsActorAt(hitPos) {
-			actor := g.gridMap.ActorAt(hitPos)
+		if g.currentMap().IsActorAt(hitPos) {
+			actor := g.currentMap().ActorAt(hitPos)
 			if actor.IsAlive() {
 				freeze := func() {
 					g.msg(foundation.HiLite("%s is frozen", actor.Name()))
@@ -136,8 +136,8 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 }
 func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Animation {
 	radius := 3
-	affected := g.gridMap.GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
-		return g.gridMap.IsTileWalkable(p)
+	affected := g.currentMap().GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
+		return g.currentMap().IsTileWalkable(p)
 	})
 
 	var animationsForThisFrame []foundation.Animation
@@ -169,11 +169,11 @@ func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Ani
 }
 func (g *GameState) singleRay(origin, target geometry.Point, leadIcon rune, trailColors []string, hitEntityHandler func(hitPos geometry.Point) []foundation.Animation) []foundation.Animation {
 	direction := target.ToCenteredPointF().Sub(origin.ToCenteredPointF())
-	rayHitInfo := g.gridMap.RayCast(origin.ToCenteredPointF(), direction, g.IsBlockingRay)
+	rayHitInfo := g.currentMap().RayCast(origin.ToCenteredPointF(), direction, g.IsBlockingRay)
 
 	collisionAt := valuePairToPoint(rayHitInfo.ColliderGridPosition)
 
-	hitEntity := g.gridMap.IsActorAt(collisionAt) || g.gridMap.IsObjectAt(collisionAt)
+	hitEntity := g.currentMap().IsActorAt(collisionAt) || g.currentMap().IsObjectAt(collisionAt)
 
 	flightPath := ArraysToPoints(rayHitInfo.TraversedGridCells)
 
@@ -239,8 +239,8 @@ func lightningRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundati
 			DamageAmount:    damageRolled,
 		}
 		damageAnims := g.damageLocation(damage, hitPos)
-		if g.gridMap.IsActorAt(hitPos) {
-			dontHitThese[g.gridMap.ActorAt(hitPos)] = true
+		if g.currentMap().IsActorAt(hitPos) {
+			dontHitThese[g.currentMap().ActorAt(hitPos)] = true
 		}
 		return damageAnims
 	}
@@ -265,14 +265,14 @@ func lightningRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundati
 	return g.chainedRay(zapper, aimPos, ' ', trailColors, nextTarget, hitEntityHandler)
 }
 func (g *GameState) nearbyActors(curPos geometry.Point, exclude map[*Actor]bool) []*Actor {
-	return g.gridMap.GetFilteredActorsInRadius(curPos, 10, func(actor *Actor) bool {
+	return g.currentMap().GetFilteredActorsInRadius(curPos, 10, func(actor *Actor) bool {
 		if actor.Position() == curPos {
 			return false
 		}
 		if _, donthit := exclude[actor]; donthit {
 			return false
 		}
-		hasLos := g.gridMap.IsLineOfSightClear(curPos, actor.Position())
+		hasLos := g.currentMap().IsLineOfSightClear(curPos, actor.Position())
 		if !hasLos {
 			return false
 		}
@@ -290,8 +290,8 @@ func invisibilityTarget(g *GameState, zapper *Actor, targetPos geometry.Point) [
 	projAnim, _ := g.ui.GetAnimProjectile('*', "light_gray_5", zapper.Position(), targetPos, nil)
 	animations = append(animations, projAnim)
 
-	if g.gridMap.IsActorAt(targetPos) {
-		targetActor := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		targetActor := g.currentMap().ActorAt(targetPos)
 		//actorIcon := targetActor.Icon()
 		//coverAnim := g.ui.GetAnimCover(targetPos, actorIcon, dist, nil)
 		//animations = append(animations, coverAnim)
@@ -306,7 +306,7 @@ func teleportTargetTo(g *GameState, zapper *Actor, targetPos geometry.Point) []f
 
 	origin := zapper.Position()
 
-	freePositions := g.gridMap.GetFreeCellsForDistribution(origin, 1, g.gridMap.CanPlaceActorHere)
+	freePositions := g.currentMap().GetFreeCellsForDistribution(origin, 1, g.currentMap().CanPlaceActorHere)
 	if len(freePositions) == 0 {
 		g.msg(foundation.Msg("There is no place to teleport to"))
 		return nil
@@ -320,8 +320,8 @@ func teleportTargetTo(g *GameState, zapper *Actor, targetPos geometry.Point) []f
 	projAnim, _ := g.ui.GetAnimProjectile('°', "LightCyan", zapper.Position(), targetPos, nil)
 	animations = append(animations, projAnim)
 
-	if g.gridMap.IsActorAt(targetPos) {
-		targetActor := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		targetActor := g.currentMap().ActorAt(targetPos)
 		//hitActorIcon := targetActor.Icon()
 		//coverAnim := g.ui.GetAnimCover(targetPos, hitActorIcon, dist, nil)
 		//animations = append(animations, coverAnim)
@@ -347,8 +347,8 @@ func teleportTargetAway(g *GameState, zapper *Actor, targetPos geometry.Point) [
 		animations = append(animations, projAnim)
 	}
 
-	if g.gridMap.IsActorAt(targetPos) {
-		targetActor := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		targetActor := g.currentMap().ActorAt(targetPos)
 		//hitActorIcon := targetActor.Icon()
 		//coverAnim := g.ui.GetAnimCover(targetPos, hitActorIcon, dist, nil)
 		//animations = append(animations, coverAnim)
@@ -370,11 +370,6 @@ func originFromZapperOrWall(g *GameState, zapper *Actor, targetPos geometry.Poin
 		origin = zapper.Position()
 	} else {
 		origin = targetPos
-		roomHere := g.dungeonLayout.GetRoomAt(targetPos)
-		if roomHere != nil {
-			randomDir := geometry.RandomCardinalDirection()
-			origin = g.gridMap.GetFirstWallCardinalInDirection(targetPos, randomDir)
-		}
 	}
 	return origin
 }
@@ -390,8 +385,8 @@ func cancelTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []found
 	projAnim, _ := g.ui.GetAnimProjectile('*', "light_gray_5", origin, targetPos, nil)
 	animations = append(animations, projAnim)
 
-	if g.gridMap.IsActorAt(targetPos) {
-		targetActor := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		targetActor := g.currentMap().ActorAt(targetPos)
 		cancel(g, targetActor)
 	}
 
@@ -409,8 +404,8 @@ func holdTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundat
 	projAnim, _ := g.ui.GetAnimProjectile('*', "White", origin, targetPos, nil)
 	animations = append(animations, projAnim)
 
-	if g.gridMap.IsActorAt(targetPos) {
-		targetActor := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		targetActor := g.currentMap().ActorAt(targetPos)
 		targetActor.GetFlags().Increase(foundation.FlagHeld, rand.Intn(10)+5)
 	}
 
@@ -428,8 +423,8 @@ func slowTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundat
 	projAnim, _ := g.ui.GetAnimProjectile('*', "light_gray_5", origin, targetPos, nil)
 	animations = append(animations, projAnim)
 
-	if g.gridMap.IsActorAt(targetPos) {
-		targetActor := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		targetActor := g.currentMap().ActorAt(targetPos)
 		slow(g, targetActor)
 	}
 
@@ -447,8 +442,8 @@ func hasteTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []founda
 	projAnim, _ := g.ui.GetAnimProjectile('*', "light_gray_5", zapper.Position(), targetPos, nil)
 	animations = append(animations, projAnim)
 
-	if g.gridMap.IsActorAt(targetPos) {
-		targetActor := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		targetActor := g.currentMap().ActorAt(targetPos)
 		haste(g, targetActor)
 	}
 
@@ -460,7 +455,7 @@ func magicMissile(g *GameState, zapper *Actor, targetPos geometry.Point) []found
 	pathOfFlight := g.getLineOfSight(origin, targetPos)
 
 	targetPos = pathOfFlight[len(pathOfFlight)-1]
-	if !g.gridMap.IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
+	if !g.currentMap().IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
 		targetPos = pathOfFlight[len(pathOfFlight)-2]
 	}
 
@@ -491,7 +486,7 @@ func magicItemProjectile(g *GameState, zapper *Actor, targetPos geometry.Point, 
 	pathOfFlight := g.getLineOfSight(origin, targetPos)
 
 	targetPos = pathOfFlight[len(pathOfFlight)-1]
-	if !g.gridMap.IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
+	if !g.currentMap().IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
 		targetPos = pathOfFlight[len(pathOfFlight)-2]
 	}
 
@@ -529,11 +524,11 @@ func nameOfDamageSource(zapper *Actor, otherName string) string {
 }
 
 func (g *GameState) damageLocation(damage SourcedDamage, targetPos geometry.Point) []foundation.Animation {
-	if g.gridMap.IsActorAt(targetPos) {
-		defender := g.gridMap.ActorAt(targetPos)
+	if g.currentMap().IsActorAt(targetPos) {
+		defender := g.currentMap().ActorAt(targetPos)
 		return g.damageActor(damage, defender)
-	} else if g.gridMap.IsObjectAt(targetPos) {
-		object := g.gridMap.ObjectAt(targetPos)
+	} else if g.currentMap().IsObjectAt(targetPos) {
+		object := g.currentMap().ObjectAt(targetPos)
 		return object.OnDamage(damage)
 	}
 	return nil
@@ -615,13 +610,13 @@ func (g *GameState) damageActor(damage SourcedDamage, victim *Actor) []foundatio
 func (g *GameState) getLineOfSight(origin geometry.Point, targetPos geometry.Point) []geometry.Point {
 	pathOfFlight := geometry.BresenhamLine(origin, targetPos, func(x, y int) bool {
 		mapPos := geometry.Point{X: x, Y: y}
-		if !g.gridMap.Contains(mapPos) {
+		if !g.currentMap().Contains(mapPos) {
 			return false
 		}
 		if origin.X == x && origin.Y == y {
 			return true
 		}
-		return g.gridMap.IsCurrentlyPassable(mapPos)
+		return g.currentMap().IsCurrentlyPassable(mapPos)
 	})
 	if len(pathOfFlight) > 1 {
 		// remove start
@@ -633,13 +628,13 @@ func (g *GameState) getLineOfSight(origin geometry.Point, targetPos geometry.Poi
 func (g *GameState) getLine(origin geometry.Point, targetPos geometry.Point) []geometry.Point {
 	pathOfFlight := geometry.BresenhamLine(origin, targetPos, func(x, y int) bool {
 		mapPos := geometry.Point{X: x, Y: y}
-		if !g.gridMap.Contains(mapPos) {
+		if !g.currentMap().Contains(mapPos) {
 			return false
 		}
 		if origin.X == x && origin.Y == y {
 			return true
 		}
-		return g.gridMap.Contains(mapPos)
+		return g.currentMap().Contains(mapPos)
 	})
 	if len(pathOfFlight) > 1 {
 		// remove start
@@ -653,14 +648,14 @@ func fireBreath(g *GameState, zapper *Actor, pos geometry.Point) []foundation.An
 		if origin.X == x && origin.Y == y {
 			return true
 		}
-		return g.gridMap.IsCurrentlyPassable(geometry.Point{X: x, Y: y})
+		return g.currentMap().IsCurrentlyPassable(geometry.Point{X: x, Y: y})
 	})
 	if len(pathOfFlight) > 1 {
 		// remove start
 		pathOfFlight = pathOfFlight[1:]
 	}
 	targetPos := pathOfFlight[len(pathOfFlight)-1]
-	if !g.gridMap.IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
+	if !g.currentMap().IsTileWalkable(targetPos) && len(pathOfFlight) > 1 {
 		targetPos = pathOfFlight[len(pathOfFlight)-2]
 	}
 
@@ -742,7 +737,7 @@ func (g *GameState) bouncingRay(zapper *Actor, aimPos geometry.Point, bounceCoun
 	origin := zapper.Position()
 	aimDirection := aimPos.ToCenteredPointF().Sub(origin.ToCenteredPointF())
 	hitinfos := func() []fxtools.HitInfo2D {
-		return g.gridMap.ReflectingRayCast(origin.ToCenteredPointF(), aimDirection, bounceCount, g.IsBlockingRay)
+		return g.currentMap().ReflectingRayCast(origin.ToCenteredPointF(), aimDirection, bounceCount, g.IsBlockingRay)
 	}
 
 	return g.multiRay(lead, colors, hitinfos, hitEntityHandler)
@@ -752,7 +747,7 @@ func (g *GameState) chainedRay(zapper *Actor, aimPos geometry.Point, lead rune, 
 	origin := zapper.Position()
 	aimDirection := aimPos.ToCenteredPointF().Sub(origin.ToCenteredPointF())
 	hitinfos := func() []fxtools.HitInfo2D {
-		rayCasts := g.gridMap.ChainedRayCast(origin.ToCenteredPointF(), aimDirection, g.IsBlockingRay, nextTarget)
+		rayCasts := g.currentMap().ChainedRayCast(origin.ToCenteredPointF(), aimDirection, g.IsBlockingRay, nextTarget)
 		return rayCasts
 	}
 
@@ -767,10 +762,10 @@ func (g *GameState) multiRay(leadIcon rune, trailColors []string, getHitInfos fu
 
 	for _, rayHitInfo := range hitinfos {
 		collisionAt := valuePairToPoint(rayHitInfo.ColliderGridPosition)
-		if !g.gridMap.Contains(collisionAt) {
+		if !g.currentMap().Contains(collisionAt) {
 			break
 		}
-		hitEntity := g.gridMap.IsActorAt(collisionAt) || g.gridMap.IsObjectAt(collisionAt)
+		hitEntity := g.currentMap().IsActorAt(collisionAt) || g.currentMap().IsObjectAt(collisionAt)
 
 		flightPath := ArraysToPoints(rayHitInfo.TraversedGridCells)
 

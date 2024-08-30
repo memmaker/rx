@@ -10,9 +10,9 @@ require (
 	github.com/gopxl/beep v1.4.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-runewidth v0.0.16
-	github.com/memmaker/go v0.0.0-20240825175353-cf0b82e4e1a6
+	github.com/memmaker/go v0.0.0-20240830123415-571d00cecd99
 	github.com/rivo/uniseg v0.4.7
-	golang.org/x/term v0.22.0
+	golang.org/x/term v0.23.0
 )
 
 require (
@@ -25,6 +25,6 @@ require (
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
 	github.com/jfreymuth/vorbis v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 )

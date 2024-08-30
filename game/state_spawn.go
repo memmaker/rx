@@ -10,31 +10,25 @@ import (
 )
 
 func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, icons map[string]textiles.TextIcon, newMap *gridmap.GridMap[*Actor, *Item, Object]) Object {
-	iconResolver := func(objectType string) textiles.TextIcon {
-		if icon, exists := icons[strings.ToLower(objectType)]; exists {
-			return icon
-		}
-		return textiles.TextIcon{}
-	}
 	objectType := record.FindValueForKeyIgnoreCase("category")
 
 	switch strings.ToLower(objectType) {
 	case "explodingpushbox":
-		box := g.NewPushBox(record, iconResolver)
+		box := g.NewPushBox(record)
 		box.SetExploding()
 		return box
 	case "pushbox":
-		return g.NewPushBox(record, iconResolver)
+		return g.NewPushBox(record)
 	case "elevator":
-		elevator := g.NewElevator(record, iconResolver)
+		elevator := g.NewElevator(record)
 		newMap.AddNamedLocation(elevator.GetIdentifier(), elevator.Position())
 		return elevator
 	case "unknowncontainer":
-		return g.NewContainer(record, iconResolver)
+		return g.NewContainer(record)
 	case "terminal":
-		return g.NewTerminal(record, iconResolver)
+		return g.NewTerminal(record)
 	case "readable":
-		return g.NewReadable(record, iconResolver)
+		return g.NewReadable(record)
 	case "lockeddoor":
 		fallthrough
 	case "closeddoor":
@@ -42,7 +36,7 @@ func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.
 	case "brokendoor":
 		fallthrough
 	case "opendoor":
-		return g.NewDoor(record, iconResolver)
+		return g.NewDoor(record)
 	}
 	return nil
 }
@@ -61,7 +55,7 @@ func (g *GameState) iconForItem(itemCategory foundation.ItemCategory) textiles.T
 	return textiles.TextIcon{}
 }
 func (g *GameState) addItemToMap(item *Item, mapPos geometry.Point) {
-	g.gridMap.AddItemWithDisplacement(item, mapPos)
+	g.currentMap().AddItemWithDisplacement(item, mapPos)
 }
 
 func (g *GameState) NewGold(amount int) *Item {

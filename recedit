@@ -1,0 +1,10 @@
+#!/bin/zsh
+
+ITEMTYPE="$1"
+
+if [ -z "$ITEMTYPE" ]; then
+	echo "Usage: $0 <ammo | armor | food | weapons | miscItems>"
+	exit 1
+fi
+
+rectool "data_atom/definitions/${ITEMTYPE}.rec"

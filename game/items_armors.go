@@ -2,6 +2,8 @@ package game
 
 import (
 	"RogueUI/special"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 )
 
@@ -26,6 +28,55 @@ type ArmorInfo struct {
 	encumbrance        int
 	radiationReduction int
 	durability         int
+}
+
+func (i *ArmorInfo) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+
+	// Encode each field of the struct in order
+
+	if err := encoder.Encode(i.protection); err != nil {
+		return nil, err
+	}
+
+	if err := encoder.Encode(i.encumbrance); err != nil {
+		return nil, err
+	}
+
+	if err := encoder.Encode(i.radiationReduction); err != nil {
+		return nil, err
+	}
+
+	if err := encoder.Encode(i.durability); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (i *ArmorInfo) GobDecode(data []byte) error {
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+
+	// Decode each field of the struct in order
+
+	if err := decoder.Decode(&i.protection); err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(&i.encumbrance); err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(&i.radiationReduction); err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(&i.durability); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (i *ArmorInfo) GetProtection(dType special.DamageType) Protection {

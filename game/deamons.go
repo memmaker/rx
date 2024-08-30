@@ -6,7 +6,7 @@ import (
 )
 
 func (g *GameState) enemyMovement(playerTimeSpent int) {
-	gridMap := g.gridMap
+	gridMap := g.currentMap()
 	allEnemies := gridMap.Actors()
 	for _, enemy := range allEnemies {
 		if enemy == g.Player {
@@ -57,10 +57,10 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 		}
 	}
 
-	for i := len(g.gridMap.Actors()) - 1; i >= 0; i-- {
-		actor := g.gridMap.Actors()[i]
+	for i := len(g.currentMap().Actors()) - 1; i >= 0; i-- {
+		actor := g.currentMap().Actors()[i]
 		if !actor.IsAlive() {
-			g.gridMap.RemoveActor(actor)
+			g.currentMap().RemoveActor(actor)
 		} else {
 			actor.AfterTurn()
 			if actor.HasFlag(foundation.FlagRegenerating) && actor.NeedsHealing() {
@@ -68,10 +68,10 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 			}
 		}
 	}
-	for i := len(g.gridMap.Objects()) - 1; i >= 0; i-- {
-		object := g.gridMap.Objects()[i]
+	for i := len(g.currentMap().Objects()) - 1; i >= 0; i-- {
+		object := g.currentMap().Objects()[i]
 		if !object.IsAlive() {
-			g.gridMap.RemoveObject(object)
+			g.currentMap().RemoveObject(object)
 		}
 	}
 }

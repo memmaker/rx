@@ -17,6 +17,23 @@ func NewConversation() *Conversation {
 	return &Conversation{nodes: make(map[string]ConversationNode)}
 }
 
+func (c *Conversation) CreateGraph() string {
+	// output the conversation graph in the graphviz dot format
+	graph := "digraph G {\n"
+	for nodeName, node := range c.nodes {
+		graph += nodeName + " [label=\"" + node.NpcText + "\"];\n"
+		for _, option := range node.Options {
+			for _, branch := range option.GetAllPossibleBranches() {
+				graph += nodeName + " -> " + branch + " [label=\"" + option.playerText + "\"];\n"
+			}
+
+		}
+
+	}
+	graph += "}"
+	return graph
+}
+
 func (c *Conversation) GetRootNode(params map[string]interface{}) ConversationNode {
 	for _, branch := range c.openingBranches {
 		evaluateResult, err := branch.branchCondition.Evaluate(params)
@@ -80,14 +97,19 @@ func (o *ConversationOption) GetFollowupBranch() string {
 	return o.failureBranch
 }
 
-func (g *GameState) ParseConversation(filename string) (*Conversation, error) {
+func (o *ConversationOption) GetAllPossibleBranches() []string {
+	if o.branchCondition == nil {
+		return []string{o.successBranch}
+	}
+	return []string{o.successBranch, o.failureBranch}
+}
+
+func ParseConversation(filename string, conditionFuncs map[string]govaluate.ExpressionFunction) (*Conversation, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-
-	conditionFuncs := g.getConditionFuncs()
 
 	records := recfile.ReadMulti(file)
 	conversation := NewConversation()
@@ -174,11 +196,11 @@ func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction 
 		},
 		"IsMap": func(args ...interface{}) (interface{}, error) {
 			mapName := args[0].(string)
-			return g.gridMap.GetName() == mapName, nil
+			return g.currentMap().GetName() == mapName, nil
 		},
 		"IsInCombat": func(args ...interface{}) (interface{}, error) {
 			npcName := args[0].(string)
-			actors := g.gridMap.GetFilteredActors(func(actor *Actor) bool {
+			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
 				return actor.GetInternalName() == npcName
 			})
 			for _, actor := range actors {
@@ -190,7 +212,7 @@ func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction 
 		},
 		"IsInCombatWithPlayer": func(args ...interface{}) (interface{}, error) {
 			npcName := args[0].(string)
-			actors := g.gridMap.GetFilteredActors(func(actor *Actor) bool {
+			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
 				return actor.GetInternalName() == npcName
 			})
 			for _, actor := range actors {

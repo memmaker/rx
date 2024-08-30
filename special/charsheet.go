@@ -2,7 +2,11 @@ package special
 
 import (
 	"RogueUI/foundation"
+	"bytes"
 	"cmp"
+	"encoding/gob"
+	"fmt"
+	"github.com/memmaker/go/recfile"
 	"math"
 	"slices"
 	"strings"
@@ -266,6 +270,86 @@ type CharSheet struct {
 	onStatChangedHandler        func(Stat)
 	onDerivedStatChangedHandler func(DerivedStat)
 	onSkillChangedHandler       func(Skill)
+}
+
+// GobEncode encodes the CharSheet struct into a byte slice.
+func (cs *CharSheet) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+
+	// Encode each field of the struct in order
+	if err := encoder.Encode(cs.level); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.availableStatPoints); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.availableSkillPoints); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.availablePerks); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.stats); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.derivedStatAdjustments); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.skillAdjustments); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.taggedSkills); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.hitPointsCurrent); err != nil {
+		return nil, err
+	}
+	if err := encoder.Encode(cs.actionPointsCurrent); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// GobDecode decodes a byte slice into a CharSheet struct.
+func (cs *CharSheet) GobDecode(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(buf)
+
+	// Decode each field of the struct in order
+	if err := decoder.Decode(&cs.level); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.availableStatPoints); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.availableSkillPoints); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.availablePerks); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.stats); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.derivedStatAdjustments); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.skillAdjustments); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.taggedSkills); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.hitPointsCurrent); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&cs.actionPointsCurrent); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type Modifier interface {
@@ -579,4 +663,43 @@ func (cs *CharSheet) StatRoll(stat Stat, modifiers int) foundation.CheckResult {
 }
 func (cs *CharSheet) IsStatHigherOrEqual(stat Stat, difficulty int) bool {
 	return cs.GetStat(stat) >= difficulty
+}
+
+func (cs *CharSheet) GetHitPointsString() string {
+	return fmt.Sprintf("%d/%d", cs.GetHitPoints(), cs.GetHitPointsMax())
+}
+
+func (cs *CharSheet) ToRecord() recfile.Record {
+	return recfile.Record{
+		recfile.Field{Name: "Level", Value: recfile.IntStr(cs.GetLevel())},
+		recfile.Field{Name: "AvailableStatPoints", Value: recfile.IntStr(cs.availableStatPoints)},
+		recfile.Field{Name: "AvailableSkillPoints", Value: recfile.IntStr(cs.availableSkillPoints)},
+		recfile.Field{Name: "AvailablePerks", Value: recfile.IntStr(cs.availablePerks)},
+		recfile.Field{Name: "Strength", Value: recfile.IntStr(cs.GetStat(Strength))},
+		recfile.Field{Name: "Perception", Value: recfile.IntStr(cs.GetStat(Perception))},
+		recfile.Field{Name: "Endurance", Value: recfile.IntStr(cs.GetStat(Endurance))},
+		recfile.Field{Name: "Charisma", Value: recfile.IntStr(cs.GetStat(Charisma))},
+		recfile.Field{Name: "Intelligence", Value: recfile.IntStr(cs.GetStat(Intelligence))},
+		recfile.Field{Name: "Agility", Value: recfile.IntStr(cs.GetStat(Agility))},
+		recfile.Field{Name: "Luck", Value: recfile.IntStr(cs.GetStat(Luck))},
+		recfile.Field{Name: "HitPoints", Value: recfile.IntStr(cs.GetHitPoints())},
+		recfile.Field{Name: "ActionPoints", Value: recfile.IntStr(cs.GetActionPoints())},
+		recfile.Field{Name: "SmallGuns_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(SmallGuns))},
+		recfile.Field{Name: "BigGuns_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(BigGuns))},
+		recfile.Field{Name: "EnergyWeapons_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(EnergyWeapons))},
+		recfile.Field{Name: "Unarmed_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Unarmed))},
+		recfile.Field{Name: "MeleeWeapons_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(MeleeWeapons))},
+		recfile.Field{Name: "Throwing_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Throwing))},
+		recfile.Field{Name: "Doctor_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Doctor))},
+		recfile.Field{Name: "Sneak_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Sneak))},
+		recfile.Field{Name: "Lockpick_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Lockpick))},
+		recfile.Field{Name: "Steal_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Steal))},
+		recfile.Field{Name: "Traps_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Traps))},
+		recfile.Field{Name: "Science_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Science))},
+		recfile.Field{Name: "Repair_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Repair))},
+		recfile.Field{Name: "Speech_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Speech))},
+		recfile.Field{Name: "Barter_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Barter))},
+		recfile.Field{Name: "Gambling_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Gambling))},
+		recfile.Field{Name: "Outdoorsman_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Outdoorsman))},
+	}
 }
