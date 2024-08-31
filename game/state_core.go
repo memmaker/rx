@@ -30,9 +30,13 @@ type GameState struct {
 	playerLightSource *gridmap.LightSource
 	playerDijkstraMap map[geometry.Point]int
 
-	// Map State (Needs to be saved)
+	// Map State
 	mapLoader MapLoader
 
+	// Scripts
+	scriptRunner *ScriptRunner
+
+	// Maps (Needs to be saved)
 	activeMaps     map[string]*gridmap.GridMap[*Actor, *Item, Object]
 	currentMapName string
 
@@ -138,8 +142,8 @@ func (g *GameState) NewItem(rec recfile.Record) (*Item, geometry.Point) {
 	return nil, geometry.Point{}
 }
 
-func (g *GameState) NewObject(rec recfile.Record, iconsForObjects map[string]textiles.TextIcon, newMap *gridmap.GridMap[*Actor, *Item, Object]) (Object, geometry.Point) {
-	object := g.NewObjectFromRecord(rec, g.palette, iconsForObjects, newMap)
+func (g *GameState) NewObject(rec recfile.Record, newMap *gridmap.GridMap[*Actor, *Item, Object]) (Object, geometry.Point) {
+	object := g.NewObjectFromRecord(rec, g.palette, newMap)
 	if object != nil {
 		objectPos := object.Position()
 		return object, objectPos
@@ -147,11 +151,15 @@ func (g *GameState) NewObject(rec recfile.Record, iconsForObjects map[string]tex
 	panic(fmt.Sprintf("Could not create object from record: %v", rec))
 	return nil, geometry.Point{}
 }
-
+func (g *GameState) setIconsForObjects(iconsForObjects map[string]textiles.TextIcon) {
+	g.iconsForObjects = iconsForObjects
+}
 func (g *GameState) init() {
+
 	g.mapLoader = gridmap.NewRecMapLoader(
 		path.Join(g.config.DataRootDir, "maps"),
 		g.palette,
+		g.setIconsForObjects,
 		g.NewActor,
 		g.NewItem,
 		g.NewObject,
@@ -170,6 +178,8 @@ func (g *GameState) init() {
 	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getConditionFuncs())
 	g.journal.OnFlagsChanged()
 	g.hookupJournalAndFlags()
+
+	g.scriptRunner = NewScriptRunner()
 }
 
 func (g *GameState) hookupJournalAndFlags() {
@@ -299,6 +309,8 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 
 	didCancel := g.ui.AnimatePending() // animate player actions..
 
+	g.scriptRunner.OnTurn()
+
 	g.enemyMovement(playerTimeTakenForTurn)
 
 	g.gameTime = g.gameTime.Add(time.Second * time.Duration(float64(playerTimeTakenForTurn)/10))
@@ -403,8 +415,7 @@ func (g *GameState) tryStealItem(victim *Actor, item *Item, itemStealModifier in
 		if victim.IsSleeping() {
 			victim.WakeUp()
 		}
-		victim.AddToEnemyActors(g.Player.GetInternalName())
-		victim.SetHostile()
+		g.trySetHostile(victim, g.Player)
 	}
 }
 
@@ -416,4 +427,45 @@ func (g *GameState) getItemTemplateByName(shortString string) recfile.Record {
 		return record
 	}
 	return nil
+}
+
+func (g *GameState) IsInShootingRange(attacker *Actor, defender *Actor) bool {
+	attackerPos := attacker.Position()
+	defenderPos := defender.Position()
+	moveDistance := geometry.Distance(attackerPos, defenderPos)
+
+	attackerWeapon, hasWeapon := attacker.GetEquipment().GetRangedWeapon()
+	if !hasWeapon {
+		return moveDistance <= 1
+	}
+	weaponRange := float64(attackerWeapon.GetCurrentAttackMode().MaxRange)
+
+	inRange := moveDistance <= weaponRange
+
+	visible := g.canActorSee(attacker, defenderPos)
+
+	return inRange && visible
+}
+
+func (g *GameState) getShootingRangePosition(attacker *Actor, weaponRange int, victim *Actor) geometry.Point {
+	attackerPos := attacker.Position()
+	victimPos := victim.Position()
+
+	mapAroundVictim := g.currentMap().GetDijkstraMap(victimPos, weaponRange, g.currentMap().IsCurrentlyPassable)
+
+	// find the best position to shoot from
+	bestPos := attackerPos
+	bestDistance := geometry.Distance(attackerPos, victimPos)
+
+	for pos, dist := range mapAroundVictim {
+		distFloat := float64(dist) / 10
+		if !g.canActorSee(victim, pos) {
+			continue
+		}
+		if distFloat < bestDistance {
+			bestPos = pos
+			bestDistance = distFloat
+		}
+	}
+	return bestPos
 }

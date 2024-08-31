@@ -136,7 +136,7 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["switch_weapons"] = u.game.SwitchWeapons
 	u.commandTable["cycle_target_mode"] = u.game.CycleTargetMode
 	u.commandTable["apply_skill"] = u.game.PlayerApplySkill
-	u.commandTable["reload_weapon"] = u.game.ReloadWeapon
+	u.commandTable["reload_weapon"] = u.game.PlayerReloadWeapon
 
 	//u.commandTable["targeted_shot"] = u.game.TargetedShot
 

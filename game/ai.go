@@ -7,27 +7,33 @@ import (
 	"math/rand"
 )
 
-func (g *GameState) aiAct(enemy *Actor) {
+func (g *GameState) TryAIAction(enemy *Actor) int {
+	if enemy.timeEnergy <= 0 {
+		return 0 // not enough time energy for any action, spend 0 to accumulate
+	}
 	distanceToPlayer := geometry.DistanceChebyshev(enemy.Position(), g.Player.Position())
 
 	isHostile := enemy.IsHostile()
 	if !isHostile {
-		return
+		if enemy.HasActiveGoal() {
+			return enemy.ActOnGoal(g)
+		}
+		return enemy.timeEnergy // just wait and spend all time energy
 	}
-	sameRoom := distanceToPlayer <= 1
+	nearEachOther := distanceToPlayer <= 7
 
 	if enemy.HasFlag(foundation.FlagStun) {
 		stunCounter := enemy.GetFlags().Get(foundation.FlagStun)
 		if stunCounter == 1 {
 			//g.msg(foundation.HiLite("%s is stunned", enemy.Name()))
 			enemy.GetFlags().Increment(foundation.FlagStun)
-			return
+			return enemy.timeEnergy
 		} else {
 			//turnMod := stunCounter - 1
 			//_, result, _ := dice_curve.SuccessRoll(enemy.GetIntelligence() + turnMod)
 			if true { // result.IsFailure() { TODO
 				enemy.GetFlags().Increment(foundation.FlagStun)
-				return
+				return enemy.timeEnergy
 			}
 			g.msg(foundation.HiLite("%s clears its mind", enemy.Name()))
 		}
@@ -38,17 +44,17 @@ func (g *GameState) aiAct(enemy *Actor) {
 			enemy.GetFlags().Unset(foundation.FlagHeld)
 			g.msg(foundation.HiLite("%s breaks free", enemy.Name()))
 		} else {
-			return
+			return enemy.timeEnergy
 		}
 	}
 
 	if enemy.IsSleeping() {
-		if sameRoom && CanPerceive(enemy, g.Player) && rand.Intn(10) == 0 {
+		if nearEachOther && CanPerceive(enemy, g.Player) && rand.Intn(10) == 0 {
 			enemy.WakeUp()
 			g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
 			g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
 		} else {
-			return
+			return enemy.timeEnergy
 		}
 	}
 
@@ -60,63 +66,64 @@ func (g *GameState) aiAct(enemy *Actor) {
 	consequencesOfConfusion := g.doesActConfused(enemy)
 	if len(consequencesOfConfusion) > 0 {
 		g.ui.AddAnimations(consequencesOfConfusion)
-		return
+		return enemy.timeNeededForActions()
 	}
 
 	if enemy.HasFlag(foundation.FlagScared) {
-		if !sameRoom && rand.Intn(3) == 0 {
+		if !nearEachOther && rand.Intn(3) == 0 {
 			enemy.GetFlags().Unset(foundation.FlagScared)
 			g.msg(foundation.HiLite("%s regains its courage", enemy.Name()))
 		} else {
 			newPos := g.currentMap().GetMoveOnPlayerDijkstraMap(enemy.Position(), false, g.playerDijkstraMap)
 			consequencesOfMonsterMove := g.actorMoveAnimated(enemy, newPos)
 			g.ui.AddAnimations(consequencesOfMonsterMove)
-			return
+			return enemy.timeNeededForActions()
 		}
 	}
 
 	losToPlayer := g.canPlayerSee(enemy.Position())
-	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && sameRoom && losToPlayer && CanPerceive(enemy, g.Player) {
+	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && nearEachOther && losToPlayer && CanPerceive(enemy, g.Player) {
 		enemy.GetFlags().Set(foundation.FlagAwareOfPlayer)
 		g.msg(foundation.HiLite("%s notices you", enemy.Name()))
 	}
 
 	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) {
-		return
+		return enemy.timeEnergy
 	}
 
-	wantToChase := sameRoom || enemy.HasFlag(foundation.FlagChase)
+	wantToChase := nearEachOther || enemy.HasFlag(foundation.FlagChase)
 	if !wantToChase {
-		return
+		return enemy.timeEnergy
 	}
 
 	if customBehaviour, exists := g.customBehaviours(enemy.GetInternalName()); exists {
-		customBehaviour(enemy)
+		return customBehaviour(enemy)
+	} else if enemy.HasActiveGoal() {
+		return enemy.ActOnGoal(g)
 	} else {
-		g.defaultBehaviour(enemy)
+		return g.defaultBehaviour(enemy)
 	}
 }
 
-func (g *GameState) defaultBehaviour(enemy *Actor) {
+func (g *GameState) defaultBehaviour(enemy *Actor) int {
 	distanceToPlayer := g.currentMap().MoveDistance(enemy.Position(), g.Player.Position())
 
 	sameRoom := distanceToPlayer <= 1
 
 	rangedWeapon, hasRangedWeapon := enemy.GetEquipment().GetRangedWeapon()
 	if hasRangedWeapon {
-		weaponRange := 5 //rangedWeapon.GetWeapon().Range()
-		if distanceToPlayer <= weaponRange {
+		weaponRange := rangedWeapon.GetCurrentAttackMode().MaxRange - 1
+		if distanceToPlayer <= weaponRange && g.canPlayerSee(enemy.Position()) {
 			consequencesOfMonsterRangedAttack := g.actorRangedAttack(enemy, rangedWeapon, special.TargetingModeFireSingle, g.Player, 0)
 			g.ui.AddAnimations(consequencesOfMonsterRangedAttack)
-			return
+			return rangedWeapon.GetCurrentAttackMode().TUCost
 		}
-
 	}
 
 	if distanceToPlayer <= 1 {
 		consequencesOfMonsterAttack := g.actorMeleeAttack(enemy, g.Player)
 		g.ui.AddAnimations(consequencesOfMonsterAttack)
-		return
+		return enemy.GetMeleeTUCost()
 	}
 
 	// has skills?
@@ -128,7 +135,7 @@ func (g *GameState) defaultBehaviour(enemy *Actor) {
 		targetPos := g.Player.Position()
 		consequencesOfMonsterZap := g.actorInvokeZapEffect(enemy, zap, targetPos)
 		g.ui.AddAnimations(consequencesOfMonsterZap)
-		return
+		return enemy.timeNeededForActions()
 	}
 
 	aiUseEffects := enemy.GetIntrinsicUseEffects()
@@ -137,7 +144,7 @@ func (g *GameState) defaultBehaviour(enemy *Actor) {
 		useEffect := aiUseEffects[rand.Intn(len(aiUseEffects))]
 		_, consequencesOfMonsterUseEffect := g.actorInvokeUseEffect(enemy, useEffect)
 		g.ui.AddAnimations(consequencesOfMonsterUseEffect)
-		return
+		return enemy.timeNeededForActions()
 	}
 
 	gridMap := g.currentMap()
@@ -149,6 +156,8 @@ func (g *GameState) defaultBehaviour(enemy *Actor) {
 	}
 	consequencesOfMonsterMove := g.actorMoveAnimated(enemy, newPos)
 	g.ui.AddAnimations(consequencesOfMonsterMove)
+
+	return enemy.timeNeededForActions()
 }
 
 func (g *GameState) doesActConfused(enemy *Actor) []foundation.Animation {
@@ -170,7 +179,7 @@ func (g *GameState) doesActConfused(enemy *Actor) []foundation.Animation {
 	return nil
 }
 
-func (g *GameState) customBehaviours(internalName string) (func(actor *Actor), bool) {
+func (g *GameState) customBehaviours(internalName string) (func(actor *Actor) int, bool) {
 	switch internalName {
 	case "xeroc_2":
 		return nil, false

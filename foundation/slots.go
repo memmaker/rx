@@ -67,6 +67,7 @@ const (
 	TagNoLoot ItemTags = 1 << iota
 	TagNoAim
 	TagNoSound
+	TagLightSource
 )
 
 func ItemTagFromString(s string) ItemTags {
@@ -78,6 +79,8 @@ func ItemTagFromString(s string) ItemTags {
 		return TagNoAim
 	case "no_sound":
 		return TagNoSound
+	case "light_source":
+		return TagLightSource
 	}
 	panic("Unknown item tag: " + s)
 	return TagNone

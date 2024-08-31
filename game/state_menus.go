@@ -307,7 +307,17 @@ func (g *GameState) OpenWizardMenu() {
 				g.Load("savegame")
 			},
 		},
+		{
+			Name: "Run Test Script",
+			Action: func() {
+				g.RunScript("jeff_kills_winters")
+			},
+		},
 	})
+}
+
+func (g *GameState) RunScript(scriptName string) {
+	g.scriptRunner.RunScript(g.config.DataRootDir, scriptName, g.getScriptFuncs())
 }
 
 func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource, isTerminal bool) {
@@ -324,6 +334,9 @@ func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource,
 	var npcName string
 	if actor, isActor := partner.(*Actor); isActor {
 		npcName = actor.GetInternalName()
+		//TalkedTo(dr_winters)
+		talkedFlagName := fmt.Sprintf("TalkedTo(%s)", npcName)
+		g.gameFlags.SetFlag(talkedFlagName)
 	} else {
 		npcName = partner.Name()
 	}
@@ -335,13 +348,19 @@ func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource,
 	g.OpenDialogueNode(conversation, rootNode, partner, isTerminal)
 }
 
-func (g *GameState) OpenDialogueNode(conversation *Conversation, node ConversationNode, conversationPartnerName foundation.ChatterSource, isTerminal bool) {
+func (g *GameState) OpenDialogueNode(conversation *Conversation, node ConversationNode, conversationPartner foundation.ChatterSource, isTerminal bool) {
 	endConversation := false
 	instantEndWithChatter := false
 	var effectCalls []func()
 	for _, effect := range node.Effects {
-		if effect == "EndHostility" {
-			if actor, isActor := conversationPartnerName.(*Actor); isActor {
+		if effect == "StartCombat" {
+			if actor, isActor := conversationPartner.(*Actor); isActor {
+				actor.AddToEnemyActors(g.Player.GetInternalName())
+				actor.SetHostile()
+			}
+			instantEndWithChatter = true
+		} else if effect == "EndHostility" {
+			if actor, isActor := conversationPartner.(*Actor); isActor {
 				actor.RemoveEnemy(g.Player)
 				actor.SetNeutral()
 			}
@@ -351,6 +370,24 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 			if fxtools.LooksLikeAFunction(effect) {
 				name, args := fxtools.GetNameAndArgs(effect)
 				switch name {
+				case "DriverTransition":
+					mapName := args.Get(0)
+					locationName := args.Get(1)
+					g.ui.FadeToBlack()
+
+					var taxiDriver *Actor
+					if actor, isActor := conversationPartner.(*Actor); isActor {
+						taxiDriver = actor
+						g.currentMap().RemoveActor(taxiDriver)
+					}
+
+					g.GotoNamedLevel(mapName, locationName)
+
+					tdLoc := g.currentMap().GetNamedLocation("taxi_driver")
+					g.currentMap().AddActor(taxiDriver, tdLoc)
+
+					g.ui.FadeFromBlack()
+					instantEndWithChatter = true
 				case "Transition":
 					mapName := args.Get(0)
 					locationName := args.Get(1)
@@ -378,7 +415,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 								g.gameFlags.SetFlag(flagName)
 							}
 							nextNode := conversation.GetNodeByName(followUpNode)
-							g.OpenDialogueNode(conversation, nextNode, conversationPartnerName, isTerminal)
+							g.OpenDialogueNode(conversation, nextNode, conversationPartner, isTerminal)
 							return
 						})
 					})
@@ -393,7 +430,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 
 	if instantEndWithChatter {
 		g.ui.CloseConversation()
-		g.ui.TryAddChatter(conversationPartnerName, nodeText)
+		g.ui.TryAddChatter(conversationPartner, nodeText)
 		return
 	}
 
@@ -412,7 +449,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 					Name: option.playerText,
 					Action: func() {
 						nextNode := conversation.GetNextNode(option)
-						g.OpenDialogueNode(conversation, nextNode, conversationPartnerName, isTerminal)
+						g.OpenDialogueNode(conversation, nextNode, conversationPartner, isTerminal)
 					},
 					CloseMenus: true,
 				})
@@ -420,7 +457,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 		}
 	}
 
-	g.ui.SetConversationState(nodeText, nodeOptions, conversationPartnerName, isTerminal)
+	g.ui.SetConversationState(nodeText, nodeOptions, conversationPartner, isTerminal)
 	for _, effectCall := range effectCalls {
 		effectCall()
 	}
@@ -447,6 +484,6 @@ func (g *GameState) openWizardCreateTrapMenu() {
 }
 
 func (g *GameState) OpenJournal() {
-	entries := g.journal.GetEntriesForViewing("")
+	entries := g.journal.GetEntriesForViewing("default")
 	g.ui.OpenTextWindow(strings.Join(entries, "\n\n"))
 }

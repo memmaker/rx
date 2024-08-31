@@ -1,40 +1,49 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"bufio"
-	"github.com/memmaker/go/geometry"
-	"os"
+    "RogueUI/foundation"
+    "RogueUI/gridmap"
+    "bufio"
+    "github.com/memmaker/go/geometry"
+    "os"
+    "path"
 )
 
 func (g *GameState) GotoNamedLevel(levelName string, location string) {
-	result := g.mapLoader.LoadMap(levelName)
-	loadedMap := result.Map
-	flags := result.FlagsOfMap
+    var loadedMap *gridmap.GridMap[*Actor, *Item, Object]
+    var ok bool
+    if loadedMap, ok = g.activeMaps[levelName]; !ok {
+        result := g.mapLoader.LoadMap(levelName)
+        loadedMap = result.Map
+        flags := result.FlagsOfMap
 
-	if loadedMap == nil {
-		g.msg(foundation.Msg("It's impossible to move there.."))
-		return
-	}
+        if loadedMap == nil {
+            g.msg(foundation.Msg("It's impossible to move there.."))
+            return
+        }
 
-	for flagName, flagValue := range flags {
-		g.gameFlags.Set(flagName, flagValue)
-	}
+        for flagName, flagValue := range flags {
+            g.gameFlags.Set(flagName, flagValue)
+        }
 
-	if g.currentMap() != nil && g.Player != nil { // Remove Player from Old Map
-		g.currentMap().RemoveActor(g.Player)
-		g.Player.RemoveLevelStatusEffects()
-	}
+        g.iconsForObjects = result.IconsForObjects
+    } else {
+        g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", levelName), g.palette)
+    }
 
-	namedLocation := loadedMap.GetNamedLocation(location)
-	loadedMap.AddActor(g.Player, namedLocation)
+    if g.currentMap() != nil && g.Player != nil { // Remove Player from Old Map
+        g.currentMap().RemoveActor(g.Player)
+        g.Player.RemoveLevelStatusEffects()
+    }
 
-	g.setCurrentMap(loadedMap)
-	g.iconsForObjects = result.IconsForObjects
+    namedLocation := loadedMap.GetNamedLocation(location)
+    loadedMap.AddActor(g.Player, namedLocation)
 
-	g.afterPlayerMoved(geometry.Point{}, true)
+    g.setCurrentMap(loadedMap)
 
-	g.updateUIStatus()
+    g.afterPlayerMoved(geometry.Point{}, true)
+
+    g.updateUIStatus()
 }
 
 /*
@@ -189,15 +198,15 @@ func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, 
 }
 */
 func ReadFileAsOneStringWithoutNewLines(filename string) string {
-	file, err := os.Open(filename)
-	if err != nil {
-		return ""
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	var result string
-	for scanner.Scan() {
-		result += scanner.Text()
-	}
-	return result
+    file, err := os.Open(filename)
+    if err != nil {
+        return ""
+    }
+    defer file.Close()
+    scanner := bufio.NewScanner(file)
+    var result string
+    for scanner.Scan() {
+        result += scanner.Text()
+    }
+    return result
 }

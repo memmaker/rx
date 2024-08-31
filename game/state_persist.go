@@ -3,6 +3,7 @@ package game
 import (
 	"RogueUI/gridmap"
 	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"os"
 	"path"
@@ -20,8 +21,9 @@ func (g *GameState) Save(directory string) error {
 	}
 	globalFile := fxtools.MustCreate(path.Join(directory, "global.rec"))
 	err := recfile.WriteMulti(globalFile, map[string][]recfile.Record{
-		"global": {globalRecord},
-		"flags":  {g.gameFlags.ToRecord()},
+		"global":           {globalRecord},
+		"flags":            g.gameFlags.ToRecord(),
+		"terminal_guesses": g.terminalGuessesToRecords(),
 	})
 	if err != nil {
 		return err
@@ -79,8 +81,10 @@ func (g *GameState) Load(directory string) {
 
 	flagRecords := globalRecords["flags"]
 	if len(flagRecords) > 0 {
-		g.gameFlags = fxtools.NewStringFlagsFromRecord(flagRecords[0])
+		g.gameFlags = fxtools.NewStringFlagsFromRecord(flagRecords)
 	}
+
+	g.terminalGuesses = g.terminalGuessesFromRecords(globalRecords["terminal_guesses"])
 
 	// Journal
 	journalFile := fxtools.MustOpen(path.Join(directory, "journal.rec"))
@@ -112,9 +116,44 @@ func (g *GameState) Load(directory string) {
 	})
 	g.Player = filteredActors[0]
 
+	// Restore missing glue
+	g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", g.currentMapName), g.palette)
+
 	g.hookupJournalAndFlags()
 	g.attachHooksToPlayer()
 
+	// OnTurn lights & player position
 	g.currentMap().UpdateBakedLights()
-	g.currentMap().UpdateDynamicLights()
+	g.afterPlayerMoved(geometry.Point{}, true)
+}
+
+func (g *GameState) terminalGuessesToRecords() []recfile.Record {
+	var recs []recfile.Record
+	for key, values := range g.terminalGuesses {
+		record := recfile.Record{
+			recfile.Field{Name: "terminal", Value: key},
+		}
+		for _, value := range values {
+			record = append(record, recfile.Field{Name: "guess", Value: value})
+		}
+		recs = append(recs, record)
+	}
+	return recs
+}
+
+func (g *GameState) terminalGuessesFromRecords(records []recfile.Record) map[string][]string {
+	result := make(map[string][]string)
+	for _, record := range records {
+		var terminal string
+		var guesses []string
+		for _, field := range record {
+			if field.Name == "terminal" {
+				terminal = field.Value
+			} else if field.Name == "guess" {
+				guesses = append(guesses, field.Value)
+			}
+		}
+		result[terminal] = guesses
+	}
+	return result
 }

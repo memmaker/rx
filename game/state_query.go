@@ -12,23 +12,35 @@ import (
 
 func (g *GameState) GetRangedChanceToHitForUI(target foundation.ActorForUI) int {
 	defender := target.(*Actor)
-	return g.getRangedChanceToHit(defender)
-}
-
-func (g *GameState) getRangedChanceToHit(defender *Actor) int {
-	var posInfos special.PosInfo
-	posInfos.ObstacleCount = 0
-	posInfos.Distance = g.currentMap().MoveDistance(g.Player.Position(), defender.Position())
-	posInfos.IlluminationPenalty = 0
-	equippedWeapon, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
-	if !hasWeapon || !equippedWeapon.IsRangedWeapon() {
+	attacker := g.Player
+	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+	if !hasWeapon {
 		return 0
 	}
+	return g.getRangedChanceToHit(attacker, weapon, defender)
+}
+
+func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Item, defender *Actor) int {
+	var posInfos special.PosInfo
+	posInfos.ObstacleCount = 0
+	posInfos.Distance = g.currentMap().MoveDistance(attacker.Position(), defender.Position())
+	posInfos.IlluminationPenalty = 0
+
 	weaponSkill := equippedWeapon.GetWeapon().GetSkillUsed()
 
 	defenderIsHelpless := defender.IsSleeping() || defender.IsStunned() || defender.IsKnockedDown()
 
-	return special.RangedChanceToHit(posInfos, g.Player.GetCharSheet(), weaponSkill, defender.GetCharSheet(), defenderIsHelpless, special.Body)
+	acModifier := 0
+
+	if equippedWeapon != nil && equippedWeapon.IsRangedWeapon() && equippedWeapon.GetWeapon().NeedsAmmo() {
+		ammoItem := equippedWeapon.GetWeapon().GetAmmo()
+		if ammoItem != nil {
+			ammo := ammoItem.GetAmmo()
+			acModifier = ammo.ACModifier
+		}
+	}
+
+	return special.RangedChanceToHit(posInfos, attacker.GetCharSheet(), weaponSkill, defender.GetCharSheet(), defenderIsHelpless, acModifier, special.Body)
 }
 
 func (g *GameState) GetItemInMainHand() (foundation.ItemForUI, bool) {

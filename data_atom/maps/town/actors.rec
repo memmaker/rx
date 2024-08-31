@@ -25,6 +25,7 @@ equipment: key('doc_offices','Dr. Winters keys')
 Position: (45,5)
 
 Name: town_biopharma_bot
+Dialogue: town_biopharma_bot
 Icon: B
 Foreground: light_blue_4
 Description: a BioPharma medical assistance bot
@@ -90,6 +91,50 @@ equipment: 10mm_jhp | 24
 equipment: stimpak
 Position: (51,5)
 
+Name: town_son_santiago
+Icon: S
+Foreground: light_blue
+Description: a scruffy looking guy
+xp: 25
+body: human
+strength: 5
+perception: 5
+endurance: 5
+charisma: 5
+intelligence: 5
+agility: 5
+luck: 5
+hp: 20
+dodge: 5
+ap: 4
+default_relation: neutral
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
+Position: (9,17)
+
+Name: town_father_olaf
+Icon: O
+Foreground: light_blue
+Description: Father Olaf
+xp: 25
+body: human
+strength: 5
+perception: 5
+endurance: 5
+charisma: 5
+intelligence: 5
+agility: 5
+luck: 5
+hp: 20
+dodge: 5
+ap: 4
+default_relation: neutral
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
+Position: (24,18)
+
 Name: taxi_driver
 Icon: T
 Foreground: light_blue
@@ -113,28 +158,6 @@ equipment: 10mm_jhp | 24
 equipment: stimpak
 Position: (18,4)
 
-Name: town_son_santiago
-Icon: S
-Foreground: light_blue
-Description: a scruffy looking guy
-xp: 25
-body: human
-strength: 5
-perception: 5
-endurance: 5
-charisma: 5
-intelligence: 5
-agility: 5
-luck: 5
-hp: 20
-dodge: 5
-ap: 4
-default_relation: neutral
-equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
-equipment: stimpak
-Position: (9,17)
-
 Name: town_jeff
 Icon: J
 Foreground: light_blue
@@ -156,28 +179,6 @@ equipment: 10mm_pistol
 equipment: 10mm_jhp | 24
 equipment: stimpak
 Position: (48,17)
-
-Name: town_father_olaf
-Icon: O
-Foreground: light_blue
-Description: Father Olaf
-xp: 25
-body: human
-strength: 5
-perception: 5
-endurance: 5
-charisma: 5
-intelligence: 5
-agility: 5
-luck: 5
-hp: 20
-dodge: 5
-ap: 4
-default_relation: neutral
-equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
-equipment: stimpak
-Position: (24,18)
 
 Name: mother_metal
 Icon: M

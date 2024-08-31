@@ -108,6 +108,10 @@ github.com/memmaker/go v0.0.0-20240830123319-668b9388b589 h1:8all2Tz6dTnGLSYFkdd
 github.com/memmaker/go v0.0.0-20240830123319-668b9388b589/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
 github.com/memmaker/go v0.0.0-20240830123415-571d00cecd99 h1:clfIZxmZAcfV/mCkWTWpM939ueQVqlx4GSa/TlybwyU=
 github.com/memmaker/go v0.0.0-20240830123415-571d00cecd99/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
+github.com/memmaker/go v0.0.0-20240830172434-27f2f1c46d52 h1:DUkz9obAWl1zk1ZeEZucZkt5Bi0XOpbPxGvKO4Kz3Ig=
+github.com/memmaker/go v0.0.0-20240830172434-27f2f1c46d52/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
+github.com/memmaker/go v0.0.0-20240830173424-8274b10dae14 h1:qHDWF+l9mTVvSE84km4gQh7qvESSE0ttwq8JGVgvpbM=
+github.com/memmaker/go v0.0.0-20240830173424-8274b10dae14/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

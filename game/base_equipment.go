@@ -159,12 +159,19 @@ func appendIfNotNil(items []*Item, item *Item) []*Item {
 }
 
 func (e *Equipment) HasRangedWeaponEquipped() bool {
-	slotMain := e.GetBySlot(foundation.SlotNameMainHand)
-	if slotMain != nil && slotMain.IsRangedWeapon() {
+	if e.HasRangedWeaponInMainHand() {
 		return true
 	}
 	slotOff := e.GetBySlot(foundation.SlotNameOffHand)
 	return slotOff != nil && slotOff.IsRangedWeapon()
+}
+
+func (e *Equipment) HasRangedWeaponInMainHand() bool {
+	slotMain := e.GetBySlot(foundation.SlotNameMainHand)
+	if slotMain != nil && slotMain.IsRangedWeapon() {
+		return true
+	}
+	return false
 }
 
 func (e *Equipment) HasMeleeWeaponEquipped() bool {

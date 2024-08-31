@@ -562,8 +562,9 @@ func (g *GameState) damageActorWithFollowUp(
 
 	victim.TakeDamage(damage.DamageAmount)
 
-	g.trySetHostile(damage, victim)
-
+	if damage.IsObviousAttack {
+		g.trySetHostile(victim, damage.Attacker)
+	}
 	isKill := victim.GetHitPoints() <= 0
 	isOverKill := victim.GetHitPoints() <= (-victim.GetHitPointsMax() / 2)
 	var damageAnim foundation.Animation
@@ -592,14 +593,19 @@ func (g *GameState) damageActorWithFollowUp(
 	return []foundation.Animation{damageAnim}
 }
 
-func (g *GameState) trySetHostile(damage SourcedDamage, victim *Actor) {
-	if damage.IsActor() && !victim.IsPanicking() && !victim.IsHostileTowards(damage.Attacker) && damage.IsObviousAttack && g.canActorSee(victim, damage.Attacker.Position()) {
-		if victim.GetTeam() == damage.Attacker.GetTeam() || damage.Attacker == g.Player {
-			victim.AddToEnemyActors(damage.Attacker.GetInternalName())
+func (g *GameState) trySetHostile(affected *Actor, sourceOfTrouble *Actor) {
+	if !affected.IsPanicking() && !affected.IsHostileTowards(sourceOfTrouble) && g.canActorSee(affected, sourceOfTrouble.Position()) {
+		if affected.GetTeam() == sourceOfTrouble.GetTeam() || sourceOfTrouble == g.Player {
+			affected.AddToEnemyActors(sourceOfTrouble.GetInternalName())
 		} else {
-			victim.AddToEnemyTeams(damage.Attacker.GetTeam())
+			affected.AddToEnemyTeams(sourceOfTrouble.GetTeam())
 		}
-		victim.SetHostile()
+		affected.SetHostile()
+		affected.tryEquipRangedWeapon()
+		if !affected.GetEquipment().HasRangedWeaponInMainHand() {
+			affected.tryEquipWeapon()
+		}
+		affected.SetGoal(g.getKillGoal(affected, sourceOfTrouble))
 	}
 }
 

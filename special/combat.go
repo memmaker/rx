@@ -77,7 +77,7 @@ func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSh
 
 	return hitChance
 }
-func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, defender *CharSheet, defenderIsHelpless bool, bodyPart BodyPart) int {
+func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, defender *CharSheet, defenderIsHelpless bool, acModifier int, bodyPart BodyPart) int {
 	s := attacker.GetSkill(attackerSkill)
 	p := attacker.GetStat(Perception)
 	str := attacker.GetStat(Strength)
@@ -120,7 +120,7 @@ func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill
 
 	rang := ranged * (b + (-4-8*blind)*(h+pb-2*sharp))
 
-	defenderDodge := defender.GetDerivedStat(Dodge)
+	defenderDodge := defender.GetDerivedStat(Dodge) + acModifier
 
 	relativeSize := 0 // TODO: relative size of attacker and defender
 

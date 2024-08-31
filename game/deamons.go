@@ -19,9 +19,14 @@ func (g *GameState) enemyMovement(playerTimeSpent int) {
 		// IMPORTANT:
 		// Actions of enemies should never remove actors from the game directly
 		enemy.AddTimeEnergy(playerTimeSpent)
-		for enemy.HasEnergyForActions() {
-			enemy.SpendTimeEnergy()
-			g.aiAct(enemy)
+		hasActions := true
+		for hasActions {
+			tuSpent := g.TryAIAction(enemy)
+			if tuSpent == 0 {
+				hasActions = false
+			} else {
+				enemy.SpendTimeEnergy(tuSpent)
+			}
 		}
 	}
 }

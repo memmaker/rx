@@ -21,13 +21,14 @@ type RecMapLoader[ActorType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
 }] struct {
-	random        *rand.Rand
-	palette       textiles.ColorPalette
-	actorFactory  func(rec recfile.Record) (ActorType, geometry.Point)
-	itemFactory   func(rec recfile.Record) (ItemType, geometry.Point)
-	objectFactory func(rec recfile.Record, iconsForObjects map[string]textiles.TextIcon, newMap *GridMap[ActorType, ItemType, ObjectType]) (ObjectType, geometry.Point)
-	mapBaseDir    string
-	diagonalMove  bool
+	random                     *rand.Rand
+	palette                    textiles.ColorPalette
+	actorFactory               func(rec recfile.Record) (ActorType, geometry.Point)
+	itemFactory                func(rec recfile.Record) (ItemType, geometry.Point)
+	objectFactory              func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType]) (ObjectType, geometry.Point)
+	mapBaseDir                 string
+	diagonalMove               bool
+	setIconsResolverForObjects func(iconsForObject map[string]textiles.TextIcon)
 }
 
 func NewRecMapLoader[ActorType interface {
@@ -42,18 +43,20 @@ func NewRecMapLoader[ActorType interface {
 }](
 	mapBaseDir string,
 	palette textiles.ColorPalette,
+	setIconResolver func(iconsForObject map[string]textiles.TextIcon),
 	actorFactory func(rec recfile.Record) (ActorType, geometry.Point),
 	itemFactory func(rec recfile.Record) (ItemType, geometry.Point),
-	objectFactory func(rec recfile.Record, iconsForObject map[string]textiles.TextIcon, newMap *GridMap[ActorType, ItemType, ObjectType]) (ObjectType, geometry.Point),
+	objectFactory func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType]) (ObjectType, geometry.Point),
 ) *RecMapLoader[ActorType, ItemType, ObjectType] {
 	return &RecMapLoader[ActorType, ItemType, ObjectType]{
-		random:        rand.New(rand.NewSource(time.Now().UnixNano())),
-		palette:       palette,
-		actorFactory:  actorFactory,
-		itemFactory:   itemFactory,
-		objectFactory: objectFactory,
-		mapBaseDir:    mapBaseDir,
-		diagonalMove:  true,
+		random:                     rand.New(rand.NewSource(time.Now().UnixNano())),
+		palette:                    palette,
+		actorFactory:               actorFactory,
+		itemFactory:                itemFactory,
+		objectFactory:              objectFactory,
+		mapBaseDir:                 mapBaseDir,
+		diagonalMove:               true,
+		setIconsResolverForObjects: setIconResolver,
 	}
 }
 
@@ -78,7 +81,8 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 		return MapLoadResult[ActorType, ItemType, ObjectType]{}
 	}
 
-	objTypes := loadIconsForObjects(mapDir, t.palette)
+	objTypes := LoadIconsForObjects(mapDir, t.palette)
+	t.setIconsResolverForObjects(objTypes)
 
 	tileSet := textiles.ReadTilesFile(fxtools.MustOpen(path.Join(mapDir, "tileSet.rec")), t.palette)
 	mapSize, tileMap := textiles.ReadTileMap16(path.Join(mapDir, "tiles.bin"))
@@ -129,7 +133,7 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 		if tryHandleAsPseudoObject(objCategory, record, newMap) {
 			continue
 		}
-		newMap.AddObject(t.objectFactory(record, objTypes, newMap))
+		newMap.AddObject(t.objectFactory(record, newMap))
 	}
 	newMap.UpdateBakedLights()
 
@@ -164,7 +168,7 @@ func NewMapMetaData(record recfile.Record) MapMeta {
 	return result
 }
 
-func loadIconsForObjects(dataDirectory string, colors textiles.ColorPalette) map[string]textiles.TextIcon {
+func LoadIconsForObjects(dataDirectory string, colors textiles.ColorPalette) map[string]textiles.TextIcon {
 	convertObjectCategories := func(r map[string]textiles.IconRecord) map[string]textiles.TextIcon {
 		convertMap := make(map[string]textiles.TextIcon)
 		for name, rec := range r {

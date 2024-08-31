@@ -32,30 +32,40 @@ func (g *GameState) Wait() {
 	g.msg(foundation.Msg("Time passes"))
 	g.endPlayerTurn(10)
 }
-
-func (g *GameState) ReloadWeapon() {
-	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+func (g *GameState) PlayerReloadWeapon() {
+	g.actorReloadMainHandWeapon(g.Player)
+}
+func (g *GameState) actorReloadMainHandWeapon(actor *Actor) bool {
+	weapon, hasWeapon := actor.GetEquipment().GetMainHandItem()
 	if !hasWeapon {
-		g.msg(foundation.Msg("You have no weapon equipped"))
-		return
+		if actor == g.Player {
+			g.msg(foundation.Msg("You have no weapon equipped"))
+		}
+		return false
 	}
 	weaponPart := weapon.GetWeapon()
 	if weaponPart == nil {
-		g.msg(foundation.Msg("You have no weapon equipped"))
-		return
+		if actor == g.Player {
+			g.msg(foundation.Msg("You have no weapon equipped"))
+		}
+		return false
 	}
 	if !weaponPart.NeedsAmmo() {
-		g.msg(foundation.Msg("This weapon does not use ammo"))
-		return
+		if actor == g.Player {
+			g.msg(foundation.Msg("This weapon does not use ammo"))
+		}
+		return false
 	}
 
 	bulletsNeededForFullClip, ammoKindLoaded := weaponPart.BulletsNeededForFullClip()
 	if bulletsNeededForFullClip <= 0 {
-		g.msg(foundation.Msg("This weapon needs no reloading"))
-		return
+		if actor == g.Player {
+			g.msg(foundation.Msg("This weapon needs no reloading"))
+		}
+		return false
 	}
 	caliber := weaponPart.GetCaliber()
-	inventory := g.Player.GetInventory()
+	inventory := actor.GetInventory()
 	var ammo *Item
 	if ammoKindLoaded != "" && inventory.HasAmmo(caliber, ammoKindLoaded) {
 		ammo = inventory.RemoveAmmoByName(ammoKindLoaded, bulletsNeededForFullClip)
@@ -65,8 +75,10 @@ func (g *GameState) ReloadWeapon() {
 	}
 
 	if ammo == nil {
-		g.msg(foundation.Msg("You have no ammo for this weapon"))
-		return
+		if actor == g.Player {
+			g.msg(foundation.Msg("You have no ammo for this weapon"))
+		}
+		return false
 	}
 	unloadedAmmo := weaponPart.LoadAmmo(ammo)
 	if unloadedAmmo != nil {
@@ -75,8 +87,11 @@ func (g *GameState) ReloadWeapon() {
 
 	g.ui.PlayCue(weaponPart.GetReloadAudioCue())
 
-	g.ui.UpdateStats()
-	g.ui.UpdateInventory()
+	if actor == g.Player {
+		g.ui.UpdateStats()
+		g.ui.UpdateInventory()
+	}
+	return true
 }
 
 // ADDITIONAL MENUS

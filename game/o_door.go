@@ -26,7 +26,7 @@ type Door struct {
 
 func (b *Door) InitWithGameState(g *GameState) {
 	b.iconForObject = g.iconForObject
-
+	b.player = g.ui
 	b.onBump = func(actor *Actor) {
 		if actor == g.Player && b.GetCategory() == foundation.ObjectLockedDoor {
 			if b.lockedFlag != "" && actor.HasKey(b.lockedFlag) {
@@ -231,7 +231,6 @@ func (g *GameState) NewDoor(rec recfile.Record) *Door {
 		lockDiff:        foundation.Easy,
 		hitpoints:       10,
 		damageThreshold: 2,
-		player:          g.ui,
 	}
 	door.SetWalkable(false)
 	door.SetHidden(false)

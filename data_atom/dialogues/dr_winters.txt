@@ -296,4 +296,4 @@ o_fail: FightWinters
 name: FightWinters
 npc:
 + I won't let you stop me! Not when I'm so close!
-effect: StartCombat('Dr. Winters')
+effect: StartCombat

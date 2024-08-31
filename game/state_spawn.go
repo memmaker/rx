@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, icons map[string]textiles.TextIcon, newMap *gridmap.GridMap[*Actor, *Item, Object]) Object {
+func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, newMap *gridmap.GridMap[*Actor, *Item, Object]) Object {
 	objectType := record.FindValueForKeyIgnoreCase("category")
 
 	switch strings.ToLower(objectType) {

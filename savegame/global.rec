@@ -1,11 +1,20 @@
 %rec: global
 
 CurrentMap: town
-TurnsTaken: 387
-GameTime: 0001-01-01T00:06:08Z
+TurnsTaken: 57
+GameTime: 0001-01-01T00:00:57Z
 ShowEverything: false
 
 %rec: flags
 
-: 0
+Key: v84_cave_terminal_door_controls
+Value: 1
+
+Key: lock(v84_cave/vault_84)
+Value: 1
+
+%rec: terminal_guesses
+
+terminal: v84_cave_terminal
+guess: ABOUT
 

@@ -193,7 +193,7 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor) []foundat
 		DamageAmount:    damage.Roll(),
 	}
 
-	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, 0)
+	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, 0, 0, 0)
 
 	if rand.Intn(100) < chanceToHit && damageWithSource.DamageAmount > 0 {
 		damageAnims := g.damageActor(damageWithSource, defender)
@@ -204,7 +204,9 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor) []foundat
 		afterAttackAnimations = append(afterAttackAnimations, evade)
 	}
 
-	g.trySetHostile(damageWithSource, defender)
+	if damageWithSource.IsObviousAttack {
+		g.trySetHostile(defender, damageWithSource.Attacker)
+	}
 
 	return afterAttackAnimations
 }
@@ -230,26 +232,36 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, mode sp
 
 	var onAttackAnims []foundation.Animation
 	onAttackAnims = append(onAttackAnims, animAttackerIndicator)
-	chanceToHit := g.getRangedChanceToHit(defender)
+	chanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
 	damage := weapon.GetDamage()
 	var damageAnims []foundation.Animation
 	totalDamage := 0
 	for i := 0; i < bulletsSpent; i++ {
 		damageDone := damage.Roll()
+
 		if rand.Intn(100) < chanceToHit {
 			totalDamage += damageDone
 		}
 	}
+
+	drModifier := 0
+	damageFactor := 1.0
+	if weapon.NeedsAmmo() {
+		ammoItem := weapon.GetAmmo()
+		ammo := ammoItem.GetAmmo()
+		drModifier = ammo.DRModifier
+		damageFactor = float64(ammo.DamageMultiplier) / float64(ammo.DamageDivisor)
+	}
+
 	damageWithSource := SourcedDamage{
 		NameOfThing:     "",
 		Attacker:        attacker,
 		IsObviousAttack: true,
 		AttackMode:      mode,
 		DamageType:      weapon.GetDamageType(),
-		DamageAmount:    totalDamage,
+		DamageAmount:    int(float64(totalDamage) * damageFactor),
 	}
-
-	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, bodyPart)
+	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, drModifier, 0, bodyPart)
 
 	if damageWithSource.DamageAmount > 0 {
 		if weaponItem.IsZappable() {
@@ -259,7 +271,9 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, mode sp
 			damageAnims = g.damageActor(damageWithSource, defender)
 		}
 	} else {
-		g.trySetHostile(damageWithSource, defender)
+		if damageWithSource.IsObviousAttack {
+			g.trySetHostile(defender, damageWithSource.Attacker)
+		}
 		evade := g.ui.GetAnimEvade(defender, func() {
 			g.ui.PlayCue(weapon.GetMissAudioCue())
 		})

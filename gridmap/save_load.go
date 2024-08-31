@@ -22,33 +22,15 @@ type TileDataOnDisk struct {
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error {
-	/*
-	   tileSet, tileMap := m.generateTileSetAndMap()
-
-	   tileMapFileName := path.Join(directory, "tilemap16.bin")
-
-	   dimension := geometry.Point{X: m.mapWidth, Y: m.mapHeight}
-	   err := textiles.SaveTileMap16(tileMap, dimension, tileMapFileName)
-	   if err != nil {
-	       return err
-	   }
-	   tileRecords := make([]recfile.Record, len(tileSet))
-	   for i, tile := range tileSet {
-	       tileRecords[i] = tile.ToRecord()
-	   }
-
-	   err = recfile.Write(fxtools.MustCreate(path.Join(directory, "tileSet.rec")), tileRecords)
-	   if err != nil {
-	       return err
-	   }
-	*/
-
 	metaData := fxtools.MustCreate(path.Join(directory, "metaData.rec"))
 	defer metaData.Close()
 
 	metaRecord := recfile.Record{
 		recfile.Field{Name: "mapWidth", Value: recfile.IntStr(m.mapWidth)},
 		recfile.Field{Name: "mapHeight", Value: recfile.IntStr(m.mapHeight)},
+		recfile.Field{Name: "mapName", Value: m.name},
+		recfile.Field{Name: "ambientLight", Value: m.AmbientLight.EncodeAsString()},
+		recfile.Field{Name: "ambientSound", Value: m.ambienceSoundCue},
 	}
 
 	err := recfile.Write(metaData, []recfile.Record{metaRecord})
@@ -143,12 +125,21 @@ func Load[ActorType interface {
 	defer metaData.Close()
 	metaRecord := recfile.Read(metaData)[0]
 	var mapWidth, mapHeight int
+	var mapName string
+	var ambientLight fxtools.HDRColor
+	var ambientSound string
 	for _, field := range metaRecord {
 		switch field.Name {
 		case "mapWidth":
 			mapWidth = field.AsInt()
 		case "mapHeight":
 			mapHeight = field.AsInt()
+		case "mapName":
+			mapName = field.Value
+		case "ambientLight":
+			ambientLight = fxtools.NewColorFromString(field.Value)
+		case "ambientSound":
+			ambientSound = field.Value
 		}
 	}
 
@@ -162,9 +153,9 @@ func Load[ActorType interface {
 		panic(err)
 	}
 
-	newMap := NewEmptyMap[ActorType, ItemType, ObjectType](mapWidth, mapHeight)
+	restoredMap := NewEmptyMap[ActorType, ItemType, ObjectType](mapWidth, mapHeight)
 	for i, cell := range cells {
-		newMap.SetCellByIndex(i, MapCell[ActorType, ItemType, ObjectType]{
+		restoredMap.SetCellByIndex(i, MapCell[ActorType, ItemType, ObjectType]{
 			TileType: Tile{
 				Icon: textiles.TextIcon{
 					Char: cell.TileChar,
@@ -184,6 +175,9 @@ func Load[ActorType interface {
 			BakedLighting: fxtools.HDRColor{},
 		})
 	}
+	restoredMap.name = mapName
+	restoredMap.AmbientLight = ambientLight
+	restoredMap.ambienceSoundCue = ambientSound
 
 	if fxtools.FileExists(path.Join(directory, "items.bin")) {
 		itemFile := fxtools.MustOpen(path.Join(directory, "items.bin"))
@@ -195,7 +189,7 @@ func Load[ActorType interface {
 			panic(err)
 		}
 		for _, item := range items {
-			newMap.AddItem(item, item.Position())
+			restoredMap.AddItem(item, item.Position())
 		}
 	}
 
@@ -209,7 +203,7 @@ func Load[ActorType interface {
 			panic(err)
 		}
 		for _, object := range objects {
-			newMap.AddObject(object, object.Position())
+			restoredMap.AddObject(object, object.Position())
 		}
 	}
 
@@ -223,7 +217,7 @@ func Load[ActorType interface {
 			panic(err)
 		}
 		for _, actor := range actors {
-			newMap.AddActor(actor, actor.Position())
+			restoredMap.AddActor(actor, actor.Position())
 		}
 	}
 
@@ -237,7 +231,7 @@ func Load[ActorType interface {
 			panic(err)
 		}
 		for _, downedActor := range downedActors {
-			newMap.AddDownedActor(downedActor, downedActor.Position())
+			restoredMap.AddDownedActor(downedActor, downedActor.Position())
 		}
 	}
 
@@ -250,8 +244,8 @@ func Load[ActorType interface {
 		if err != nil {
 			panic(err)
 		}
-		newMap.BakedLights = lights
+		restoredMap.BakedLights = lights
 	}
 
-	return newMap
+	return restoredMap
 }

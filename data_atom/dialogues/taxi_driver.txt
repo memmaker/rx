@@ -65,16 +65,13 @@ o_text: (Wait)
 o_goto: DefaultIntroduction
 
 name: Kelso
-npc: Alright, let's go.
-effect: Transition('town', 'taxi_stand')
-effect: EndConversation
+npc: There you go.
+effect: DriverTransition('town', 'taxi_stand')
 
 name: CryoFacility
-npc: You got it.
-effect: Transition('cryolab', 'taxi_stand')
-effect: EndConversation
+npc: Right where you want to be.
+effect: DriverTransition('cryolab', 'taxi_stand')
 
 name: Mansion
-npc: You got it.
-effect: Transition('mansion', 'taxi_stand')
-effect: EndConversation
+npc: Nice place.
+effect: DriverTransition('mansion', 'taxi_stand')

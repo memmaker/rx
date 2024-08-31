@@ -360,9 +360,33 @@ func (i *Inventory) GetBestWeapon() *Item {
 	return bestWeapon
 }
 
+func (i *Inventory) GetBestRangedWeapon() *Item {
+	maxDamage := 0
+	var bestWeapon *Item
+	for _, invItem := range i.items {
+		if invItem.IsRangedWeapon() {
+			damage := invItem.GetWeapon().GetDamage().ExpectedValue()
+			if damage > maxDamage {
+				maxDamage = damage
+				bestWeapon = invItem
+			}
+		}
+	}
+	return bestWeapon
+}
+
 func (i *Inventory) HasStealableItems(isStealable func(item *Item) bool) bool {
 	for _, invItem := range i.items {
 		if isStealable(invItem) {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *Inventory) HasLightSource() bool {
+	for _, invItem := range i.items {
+		if invItem.IsLightSource() {
 			return true
 		}
 	}

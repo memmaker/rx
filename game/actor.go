@@ -64,6 +64,13 @@ type Actor struct {
 	enemyTeams  map[string]bool
 
 	xp int
+
+	activeGoal ActorGoal
+
+	SpawnPosition           geometry.Point
+	currentPathBlockedCount int
+	currentPath             []geometry.Point
+	currentPathIndex        int
 }
 
 // GobEncode encodes the Actor struct into a byte slice.
@@ -247,6 +254,8 @@ func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet
 	return player
 }
 
+var NoGoal = ActorGoal{}
+
 func NewActor() *Actor {
 	sheet := special.NewCharSheet()
 	body := foundation.BodyByName("human", sheet.GetHitPointsMax())
@@ -266,6 +275,7 @@ func NewActor() *Actor {
 		statusFlags: foundation.NewActorFlags(),
 		enemyActors: make(map[string]bool),
 		enemyTeams:  make(map[string]bool),
+		activeGoal:  NoGoal,
 	}
 	return a
 }
@@ -704,8 +714,8 @@ func (a *Actor) timeNeededForActions() int {
 	return timeNeeded
 }
 
-func (a *Actor) SpendTimeEnergy() {
-	a.timeEnergy -= a.timeNeededForActions()
+func (a *Actor) SpendTimeEnergy(amount int) {
+	a.timeEnergy -= amount
 }
 
 func (a *Actor) AfterTurn() {
@@ -766,6 +776,15 @@ func (a *Actor) SetHostile() {
 func (a *Actor) tryEquipWeapon() {
 	if !a.GetEquipment().HasWeaponEquipped() {
 		weapon := a.GetInventory().GetBestWeapon()
+		if weapon != nil {
+			a.GetEquipment().Equip(weapon)
+		}
+	}
+}
+
+func (a *Actor) tryEquipRangedWeapon() {
+	if !a.GetEquipment().HasWeaponEquipped() {
+		weapon := a.GetInventory().GetBestRangedWeapon()
 		if weapon != nil {
 			a.GetEquipment().Equip(weapon)
 		}
@@ -891,7 +910,7 @@ func (a *Actor) LookInfo() string {
 	return a.Name()
 }
 
-func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, bodyPart int) SourcedDamage {
+func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, drModifier int, dtModifier int, bodyPart int) SourcedDamage {
 	if !a.GetEquipment().HasArmorEquipped() {
 		return damage
 	}
@@ -911,6 +930,10 @@ func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, bodyPart int) SourcedD
 		threshold = protection.DamageThreshold
 		reduction = protection.DamageReduction
 	}
+
+	reduction = max(0, reduction+drModifier)
+	threshold = max(0, reduction+dtModifier)
+
 	originalDamageAmount := damage.DamageAmount
 
 	newDamageAmount := max(0, originalDamageAmount-threshold)
@@ -986,4 +1009,103 @@ func (a *Actor) ToRecord() recfile.Record {
 		recfile.Field{Name: "XP", Value: recfile.IntStr(a.xp)},
 	}, a.charSheet.ToRecord()...)
 	return actorRecord
+}
+
+func (a *Actor) ActOnGoal(g *GameState) int {
+	if a.activeGoal.IsEmpty() {
+		return 0
+	}
+	if a.activeGoal.Achieved(g, a) {
+		a.activeGoal = NoGoal
+		return 0
+	}
+	tuSpent := a.activeGoal.Action(g, a)
+	if a.activeGoal.Achieved(g, a) {
+		a.activeGoal = NoGoal
+	}
+	return tuSpent
+}
+
+func (a *Actor) HasActiveGoal() bool {
+	return !a.activeGoal.IsEmpty()
+}
+
+func (a *Actor) GetMeleeTUCost() int {
+	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandItem(); hasWeapon {
+		return meleeWeapon.GetCurrentAttackMode().TUCost
+	}
+	return a.timeNeededForActions()
+}
+
+func (a *Actor) SetGoal(goal ActorGoal) {
+	a.activeGoal = goal
+}
+
+func (a *Actor) GetWeaponRange() int {
+	if rangedWeapon, hasWeapon := a.GetEquipment().GetRangedWeapon(); hasWeapon {
+		return rangedWeapon.GetCurrentAttackMode().MaxRange
+	}
+	return 1
+}
+
+func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point {
+	if a.Position() == pos {
+		return a.Position()
+	}
+	if !a.hasPathTo(pos) {
+		a.calcAndSetPath(g, pos)
+	}
+
+	if !a.hasPathTo(pos) {
+		return a.Position()
+	}
+
+	if a.currentPathIndex >= len(a.currentPath) {
+		a.currentPath = nil
+		return a.Position()
+	}
+	nextStep := a.currentPath[a.currentPathIndex]
+
+	if !g.currentMap().IsCurrentlyPassable(nextStep) {
+		a.currentPathBlockedCount++
+		if a.currentPathBlockedCount <= 3 {
+			return a.Position()
+		} else {
+			a.calcAndSetPath(g, pos)
+			if !a.hasPathTo(pos) {
+				return a.Position()
+			}
+			nextStep = a.currentPath[a.currentPathIndex]
+		}
+	}
+
+	return nextStep
+}
+
+func (a *Actor) calcAndSetPath(g *GameState, pos geometry.Point) {
+	calcPath := g.currentMap().GetJPSPath(a.Position(), pos, func(point geometry.Point) bool {
+		return g.currentMap().IsWalkableFor(point, a)
+	})
+	if len(calcPath) > 1 {
+		a.currentPath = calcPath[1:]
+	}
+	a.currentPathIndex = 0
+}
+
+func (a *Actor) hasPathTo(pos geometry.Point) bool {
+	if a.currentPath == nil || len(a.currentPath) == 0 {
+		return false
+	}
+	targetOfPath := a.currentPath[len(a.currentPath)-1]
+	isNear := geometry.DistanceChebyshev(targetOfPath, pos) <= 1
+	return isNear
+}
+
+type ActorGoal struct {
+	Action   func(g *GameState, a *Actor) int
+	Achieved func(g *GameState, a *Actor) bool
+}
+
+func (g ActorGoal) IsEmpty() bool {
+	return g.Action == nil && g.Achieved == nil
 }

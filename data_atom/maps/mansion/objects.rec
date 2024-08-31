@@ -4,3 +4,14 @@ Category: NamedLocation
 Identifier: taxi_stand
 Position: (72,20)
 
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (75,20)
+
+Category: Terminal
+Name: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (75,21)
+

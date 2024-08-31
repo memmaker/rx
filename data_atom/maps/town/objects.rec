@@ -1,61 +1,25 @@
 %rec: default
 
-AudioCue: wood_door
+Category: ExplodingPushBox
+Description: a box
+Position: (72,18)
+
+Category: Terminal
+Name: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (19,4)
+
 Category: ClosedDoor
+AudioCue: wood_door
 Description: a door
 Position: (27,16)
 
-Category: Transition
-Location: doc_stairs
-TargetMap: doc_basement
-TargetLocation: stairs_up
-Position: (53,6)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (73,18)
-
-AudioCue: wood_door
 Category: ClosedDoor
-Description: a door
-Position: (63,11)
-
-Category: BakedLight
-Radius: 5
-Color: (1.0, 1.0, 1.0)
-Max_Intensity: 1.0
-Position: (25,15)
-
-Category: BakedLight
-Radius: 5
-Color: (1.0, 1.0, 1.0)
-Max_Intensity: 1.0
-Position: (11,15)
-
 AudioCue: wood_door
-Category: ClosedDoor
 Description: a door
-Position: (45,16)
-
-Category: BakedLight
-Radius: 5
-Color: (1.0, 1.0, 1.0)
-Max_Intensity: 1.0
-Position: (39,8)
-
-AudioCue: wood_door
-Category: LockedDoor
-Description: a door
-LockFlag: bar_door_security
-NumberLock: 1996
-Position: (77,11)
-
-AudioCue: wood_door
-Category: LockedDoor
-Description: a door
-LockFlag: bar_door_security
-NumberLock: 1996
-Position: (78,10)
+Position: (26,5)
 
 Category: Readable
 Name: MetalSign
@@ -63,25 +27,22 @@ Description: a metal sign
 Text: Dr. Winters
 Position: (38,7)
 
-AudioCue: wood_door
-Category: LockedDoor
-Description: a door
-LockFlag: doc_offices
-NumberLock: 0451
-Position: (35,5)
+Category: Readable
+Name: MetalSign
+Description: a sign
+Text: Independent Power & Gas
+Position: (11,16)
 
-AudioCue: wood_door
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 1.0
+Position: (25,15)
+
 Category: ClosedDoor
+AudioCue: wood_door
 Description: a door
-Position: (26,5)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (72,18)
-
-Category: NamedLocation
-Identifier: Spawn
-Position: (2,11)
+Position: (45,16)
 
 Category: Terminal
 Description: a terminal
@@ -100,38 +61,84 @@ Description: a degraded handwritten note
 Text: Keep out! I am Drinking.
 Position: (25,16)
 
-Category: Readable
-Name: MetalSign
-Description: a 'for sale' sign
-TextFile: town_for_sale
-Position: (9,6)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (75,18)
-
-Category: NamedLocation
-Identifier: taxi_stand
-Position: (17,5)
-
-Category: Terminal
-Name: Taxi
-Description: a taxi
-Dialogue: taxi
-Tags: No_Sound
-Position: (19,4)
-
 Category: BakedLight
 Radius: 5
 Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
 Position: (62,12)
 
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (18,4)
+
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 1.0
+Position: (11,15)
+
+Category: LockedDoor
+AudioCue: wood_door
+Description: a door
+LockFlag: doc_offices
+NumberLock: 0451
+Position: (35,5)
+
+Category: ClosedDoor
+AudioCue: wood_door
+Description: a door
+Position: (63,11)
+
 Category: Readable
 Name: MetalSign
-Description: a sign
-Text: Independent Power & Gas
-Position: (11,16)
+Description: a rotten sign
+Text: Serpent's Den
++ FOR BIKERS ONLY
+Position: (63,12)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (75,18)
+
+Category: Transition
+Location: serpents_den_stairs
+TargetMap: serpents_den_cellar
+TargetLocation: stairs_up
+Position: (76,10)
+
+Category: NamedLocation
+Identifier: Spawn
+Position: (2,11)
+
+Category: LockedDoor
+AudioCue: wood_door
+Description: a door
+LockFlag: doc_offices
+Position: (47,5)
+
+Category: OpenDoor
+AudioCue: wood_door
+Description: a door
+Position: (7,6)
+
+Category: Transition
+Location: doc_stairs
+TargetMap: doc_basement
+TargetLocation: stairs_up
+Position: (53,6)
+
+Category: LockedDoor
+AudioCue: wood_door
+Description: a door
+LockFlag: bar_door_security
+NumberLock: 1996
+Position: (78,10)
+
+Category: Readable
+Name: MetalSign
+Description: a 'for sale' sign
+TextFile: town_for_sale
+Position: (9,6)
 
 Category: Readable
 Name: MetalSign
@@ -140,32 +147,29 @@ Text: Lucy & Jeff Burton
 + Home Sweet Home
 Position: (47,16)
 
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 1.0
+Position: (39,8)
+
+Category: LockedDoor
 AudioCue: wood_door
+Description: a door
+LockFlag: bar_door_security
+NumberLock: 1996
+Position: (77,11)
+
 Category: ClosedDoor
+AudioCue: wood_door
 Description: a door
 Position: (13,16)
 
-AudioCue: wood_door
-Category: LockedDoor
-Description: a door
-LockFlag: doc_offices
-Position: (47,5)
+Category: ExplodingPushBox
+Description: a box
+Position: (73,18)
 
-AudioCue: wood_door
-Category: OpenDoor
-Description: a door
-Position: (7,6)
-
-Category: Transition
-Location: serpents_den_stairs
-TargetMap: serpents_den_cellar
-TargetLocation: stairs_up
-Position: (76,10)
-
-Category: Readable
-Name: MetalSign
-Description: a rotten sign
-Text: Serpent's Den
-+ FOR BIKERS ONLY
-Position: (63,12)
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (17,5)
 

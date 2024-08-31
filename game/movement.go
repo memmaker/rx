@@ -150,8 +150,12 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	if g.currentMap().IsItemAt(g.Player.Position()) && g.config.AutoPickup {
 		g.PlayerPickupItem()
 	}
-
-	g.currentMap().MoveLightSource(g.playerLightSource, g.Player.Position())
+	if g.Player.GetInventory().HasLightSource() {
+		g.playerLightSource.MaxIntensity = 1
+		g.currentMap().MoveLightSource(g.playerLightSource, g.Player.Position())
+	} else {
+		g.playerLightSource.MaxIntensity = 0
+	}
 	g.msg(g.GetMapInfoForMovement(g.Player.Position()))
 	g.updatePlayerFoVAndApplyExploration()
 	g.updateDijkstraMap()

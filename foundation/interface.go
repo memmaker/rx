@@ -32,7 +32,7 @@ type GameForUI interface {
 	PlayerRangedAttack()
 	PlayerQuickRangedAttack()
 
-	ReloadWeapon()
+	PlayerReloadWeapon()
 	SwitchWeapons()
 	CycleTargetMode()
 	PlayerApplySkill()
