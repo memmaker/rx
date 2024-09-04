@@ -36,15 +36,15 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 
 	g.Player.decrementStatusEffectCounters()
 
-	if !g.Player.HasFlag(foundation.FlagSlowDigestion) || g.TurnsTaken%2 == 0 {
-		g.Player.GetFlags().Increment(foundation.FlagTurnsSinceEating)
+	if !g.Player.HasFlag(special.FlagSlowDigestion) || g.TurnsTaken%2 == 0 {
+		g.Player.GetFlags().Increment(special.FlagTurnsSinceEating)
 	}
 
-	turnsSinceEating := g.Player.GetFlags().Get(foundation.FlagTurnsSinceEating)
+	turnsSinceEating := g.Player.GetFlags().Get(special.FlagTurnsSinceEating)
 
 	if turnsSinceEating%hungerInterval == 0 {
 		wasHungry := g.Player.IsHungry()
-		g.Player.GetFlags().Increment(foundation.FlagHunger)
+		g.Player.GetFlags().Increment(special.FlagHunger)
 		if g.Player.IsHungry() && !wasHungry {
 			g.msg(foundation.Msg("You are hungry."))
 		}
@@ -64,13 +64,9 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 
 	for i := len(g.currentMap().Actors()) - 1; i >= 0; i-- {
 		actor := g.currentMap().Actors()[i]
-		if !actor.IsAlive() {
-			g.currentMap().RemoveActor(actor)
-		} else {
-			actor.AfterTurn()
-			if actor.HasFlag(foundation.FlagRegenerating) && actor.NeedsHealing() {
-				actor.Heal(1)
-			}
+		actor.AfterTurn()
+		if actor.HasFlag(special.FlagRegenerating) && actor.NeedsHealing() {
+			actor.Heal(1)
 		}
 	}
 	for i := len(g.currentMap().Objects()) - 1; i >= 0; i-- {

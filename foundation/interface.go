@@ -1,6 +1,7 @@
 package foundation
 
 import (
+	"RogueUI/special"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
@@ -11,7 +12,7 @@ import (
 // Actions that the User Interface can trigger on the game
 type GameForUI interface {
 	// init
-
+	UIRunning()
 	UIReady()
 
 	/* Direct Player Control */
@@ -25,7 +26,7 @@ type GameForUI interface {
 
 	PlayerPickupItem()
 	EquipToggle(item ItemForUI)
-	DropItem(item ItemForUI)
+	DropItemFromInventory(item ItemForUI)
 	PlayerApplyItem(item ItemForUI)
 	Wait()
 
@@ -40,33 +41,43 @@ type GameForUI interface {
 	PlayerInteractWithMap() // up/down stairs..
 	PlayerInteractInDirection(direction geometry.CompassDirection)
 
+	OpenContextMenuFor(pos geometry.Point)
 	OpenTacticsMenu()
 	OpenJournal()
 	OpenRestMenu()
+	ShowDateTime()
 
 	// State Queries
+	GetPlayerName() string
+	GetPlayerCharSheet() *special.CharSheet
 	GetPlayerPosition() geometry.Point
 	GetCharacterSheet() string
+	IsPlayerOverEncumbered() bool
 
-	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple[string, int]
+	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple3[special.BodyPart, bool, int]
 	GetRangedChanceToHitForUI(target ActorForUI) int
 
 	GetHudStats() map[HudValue]int
-	GetHudFlags() map[ActorFlag]int
+	GetHudFlags() map[special.ActorFlag]int
 	GetMapInfo(pos geometry.Point) HiLiteString
 	LightAt(p geometry.Point) fxtools.HDRColor
 
-	GetInventory() []ItemForUI
+	GetInventoryForUI() []ItemForUI
 
 	GetVisibleEnemies() []ActorForUI
 	GetVisibleItems() []ItemForUI
 	GetLog() []HiLiteString
+
+	GetItemInMainHand() (ItemForUI, bool)
+	GetMapDisplayName() string
 
 	IsSomethingInterestingAtLoc(position geometry.Point) bool
 	IsSomethingBlockingTargetingAtLoc(point geometry.Point) bool
 
 	// Inventory Management
 	OpenInventory()
+	OpenAmmoInventory()
+
 	ChooseItemForDrop()
 	ChooseItemForThrow()
 	ChooseItemForEat()
@@ -99,9 +110,6 @@ type GameForUI interface {
 
 	// Wizard
 	OpenWizardMenu()
-	GetItemInMainHand() (ItemForUI, bool)
-	OpenContextMenuFor(pos geometry.Point)
-
 	WizardAdvanceTime()
 }
 
@@ -128,6 +136,7 @@ type GameUI interface {
 
 	// Basics / Debug
 	AskForString(prompt string, prefill string, result func(entered string))
+	GetKeybindingsAsString(command string) string
 
 	// Notification of state changes
 	UpdateStats()
@@ -136,9 +145,9 @@ type GameUI interface {
 	UpdateVisibleEnemies()
 
 	// Targeting
-	SelectTarget(onSelected func(targetPos geometry.Point, hitZone int))
+	SelectTarget(onSelected func(targetPos geometry.Point))
 	SelectDirection(onSelected func(direction geometry.CompassDirection))
-	SelectBodyPart(onSelected func(victim ActorForUI, hitZone int))
+	SelectBodyPart(previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
 
 	// Menus / Modals / Windows
 	OpenInventoryForManagement(stack []ItemForUI)
@@ -150,6 +159,7 @@ type GameUI interface {
 	OpenVendorMenu(itemsForSale []fxtools.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
 	ShowContainer(name string, containedItems []ItemForUI, transfer func(ui ItemForUI))
+	OpenAimedShotPicker(actorAt ActorForUI, previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
 
 	// Auto Move Callback
 	AfterPlayerMoved(moveInfo MoveInfo)
@@ -172,6 +182,7 @@ type GameUI interface {
 	// GetAnimProjectile won't draw a rune for the projectile if the icon's rune is negative
 	GetAnimProjectile(icon rune, colorName string, origin geometry.Point, dest geometry.Point, done func()) (Animation, int)
 	GetAnimProjectileWithTrail(leadIcon rune, colorNames []string, path []geometry.Point, done func()) (Animation, int)
+	GetAnimProjectileWithLight(leadIcon rune, lightColorName string, pathOfFlight []geometry.Point, done func()) (Animation, int)
 	GetAnimTiles(positions []geometry.Point, frames []textiles.TextIcon, done func()) Animation
 	GetAnimTeleport(actor ActorForUI, origin geometry.Point, targetPos geometry.Point, appearOnMap func()) (vanishAnim, appearAnim Animation)
 	GetAnimRadialReveal(position geometry.Point, dijkstra map[geometry.Point]int, done func()) Animation
@@ -237,11 +248,6 @@ const (
 	EntityTypeObject
 	EntityTypeOther
 )
-
-type CheckResult struct {
-	Success bool
-	Crit    bool
-}
 
 type InteractionResult uint8
 

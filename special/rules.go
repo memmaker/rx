@@ -1,15 +1,19 @@
 package special
 
 import (
-	"RogueUI/foundation"
 	"math/rand"
 )
 
+type CheckResult struct {
+	Success bool
+	Crit    bool
+}
+
 type Percentage uint8
 
-func SuccessRoll(chanceOfSuccess, critChance Percentage) foundation.CheckResult {
+func SuccessRoll(chanceOfSuccess, critChance Percentage) CheckResult {
 	roll := rand.Intn(100)
-	var result foundation.CheckResult
+	var result CheckResult
 	result.Success = roll < int(chanceOfSuccess)
 	result.Crit = roll < int(critChance)
 	return result

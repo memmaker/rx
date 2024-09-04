@@ -142,7 +142,9 @@ type GridMap[ActorType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
 }] struct {
-	name            string
+	name string
+	meta MapMeta
+
 	cells           []MapCell[ActorType, ItemType, ObjectType]
 	allActors       []ActorType
 	allDownedActors []ActorType
@@ -162,33 +164,29 @@ type GridMap[ActorType interface {
 	zoneMap     []*ZoneInfo
 	player      ActorType
 
-	namedLocations   map[string]geometry.Point
-	ambienceSoundCue string
-	noClip           bool
+	namedLocations map[string]geometry.Point
+	noClip         bool
 
 	transitionMap map[geometry.Point]Transition
-	secretDoors   map[geometry.Point]bool
 
 	namedRects   map[string]geometry.Rect
 	namedTrigger map[string]Trigger
 
-	namedPaths     map[string][]geometry.Point
-	displayName    string
-	metaInfoString []string
-
+	namedPaths           map[string][]geometry.Point
 	cardinalMovementOnly bool
 
 	// LIGHTING
-
 	DynamicLights        map[geometry.Point]*LightSource
 	BakedLights          map[geometry.Point]*LightSource
 	lightfov             *geometry.FOV
-	AmbientLight         fxtools.HDRColor
 	MaxLightIntensity    float64
 	dynamicallyLitCells  map[geometry.Point]fxtools.HDRColor
 	DynamicLightsChanged bool
-	isIndoor             bool
-	meta                 MapMeta
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsDarknessAt(timeOfDay time.Time, p geometry.Point) bool {
+	brightness := m.LightAt(p, timeOfDay).Brightness()
+	return brightness < 0.28
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetCardinalMovementOnly(cardinalMovementOnly bool) {
@@ -264,6 +262,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) ItemAt(location geometry.Poin
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsItemAt(location geometry.Point) bool {
+	if !m.Contains(location) {
+		return false
+	}
 	return m.cells[m.mapWidth*location.Y+location.X].Item != nil
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetActorToDowned(a ActorType) {
@@ -571,7 +572,6 @@ func NewEmptyMap[ActorType interface {
 		mapWidth:            width,
 		mapHeight:           height,
 		pathfinder:          pathRange,
-		secretDoors:         make(map[geometry.Point]bool),
 		transitionMap:       make(map[geometry.Point]Transition),
 		namedRects:          make(map[string]geometry.Rect),
 		namedTrigger:        make(map[string]Trigger),
@@ -1364,17 +1364,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) ToggleNoClip() bool {
 	return m.noClip
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetSecretDoorAt(pos geometry.Point) {
-	m.secretDoors[pos] = true
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsSecretDoorAt(neighbor geometry.Point) bool {
-	if _, ok := m.secretDoors[neighbor]; ok {
-		return true
-	}
-	return false
-}
-
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetName(name string) {
 	m.name = name
 }
@@ -1401,10 +1390,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) WriteTiles(out io.Writer) {
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) Transitions() map[geometry.Point]Transition {
 	return m.transitionMap
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) SecretDoors() map[geometry.Point]bool {
-	return m.secretDoors
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) AddNamedRegion(name string, region geometry.Rect) {
@@ -1448,12 +1433,8 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddNamedTrigger(name string, 
 	m.namedTrigger[name] = rect
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetDisplayName(name string) {
-	m.displayName = name
-}
-
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetDisplayName() string {
-	return m.displayName
+	return m.meta.DisplayName
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredActorsInRadius(location geometry.Point, radius int, filter func(actor ActorType) bool) []ActorType {
@@ -1539,17 +1520,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) CanPlaceActorHere(pos geometr
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) CanPlaceItemHere(pos geometry.Point) bool {
 	return m.IsWalkable(pos) && !m.IsItemAt(pos)
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetMetaString(info []string) {
-	m.metaInfoString = info
-}
-func (m *GridMap[ActorType, ItemType, ObjectType]) GetMetaString() []string {
-	return m.metaInfoString
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) AddToMetaInfo(infoLine string) {
-	m.metaInfoString = append(m.metaInfoString, infoLine)
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredActors(f func(actor ActorType) bool) []ActorType {
@@ -1914,10 +1884,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsTransitionAt(position geome
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) LightAt(p geometry.Point, timeOfDay time.Time) fxtools.HDRColor {
-	if m.isIndoor {
-		return m.IndoorLightAt(p)
+	if m.meta.IsOutdoor {
+		return m.OutdoorLightAt(p, timeOfDay)
 	}
-	return m.OutdoorLightAt(p, timeOfDay)
+	return m.IndoorLightAt(p)
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetMeta(data MapMeta) {

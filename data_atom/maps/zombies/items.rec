@@ -1,0 +1,125 @@
+%rec: default
+
+Category: Ammo
+Name: 223_fmj
+Description: .223 FMJ
+LongDescription: A case of ammunition, .223 caliber, Full Metal Jacket.
+Size: 0
+Weight: 2
+Cost: 200
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: -20
+ammo_dr_modifier: -20
+ammo_rounds_in_magazine: 50
+ammo_caliber_index: 5
+ammo_caliber_name: .223
+Position: (46,2)
+
+Category: Ammo
+Name: 223_fmj
+Description: .223 FMJ
+LongDescription: A case of ammunition, .223 caliber, Full Metal Jacket.
+Size: 0
+Weight: 2
+Cost: 200
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: -20
+ammo_dr_modifier: -20
+ammo_rounds_in_magazine: 50
+ammo_caliber_index: 5
+ammo_caliber_name: .223
+Position: (48,2)
+
+Category: Ammo
+Name: 223_fmj
+Description: .223 FMJ
+LongDescription: A case of ammunition, .223 caliber, Full Metal Jacket.
+Size: 0
+Weight: 2
+Cost: 200
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: -20
+ammo_dr_modifier: -20
+ammo_rounds_in_magazine: 50
+ammo_caliber_index: 5
+ammo_caliber_name: .223
+Position: (49,2)
+
+Category: Weapons
+Name: grenade_frag
+Description: Grenade (Frag)
+LongDescription: A generic fragmentation grenade. Contains a small amount of high explosives, the container itself forming most of the damaging fragments. Explodes on contact. Min ST: 3.
+Size: 1
+Weight: 1
+Cost: 150
+chance_to_break_on_throw: 100
+zap_effect: explode
+weapon_type: Throwing
+weapon_damage: 20-35
+weapon_magazine_size: 0
+weapon_burst_rounds: 0
+weapon_damage_type: Explosive
+weapon_min_str: 3
+weapon_attack_mode_one: Throw
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 4
+weapon_ap_cost_two: 0
+weapon_max_range_one: 15
+weapon_max_range_two: 0
+weapon_uses_ammo: none
+weapon_caliber_index: 0
+weapon_sound_id: 79
+Position: (53,0)
+
+Category: Weapons
+Name: grenade_plasma
+Description: Grenade (Plasma)
+LongDescription: A magnetically sealed plasma delivery unit, with detonating explosives. Creates a blast of superheated plasma on contact. Min ST: 4.
+Size: 1
+Weight: 1
+Cost: 300
+chance_to_break_on_throw: 100
+weapon_type: Energy
+weapon_damage: 40-90
+weapon_magazine_size: 0
+weapon_burst_rounds: 0
+weapon_damage_type: Plasma
+weapon_min_str: 4
+weapon_attack_mode_one: Throw
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 4
+weapon_ap_cost_two: 0
+weapon_max_range_one: 15
+weapon_max_range_two: 0
+weapon_uses_ammo: none
+weapon_caliber_index: 0
+weapon_sound_id: 80
+Position: (53,1)
+
+Category: Weapons
+Name: sniper_rifle
+Description: Sniper Rifle
+LongDescription: A DKS-501 Sniper Rifle. Excellent long range projectile weapon. Originally .308, this one is chambered in the more common .223 caliber. Min ST: 5.
+Size: 5
+Weight: 8
+Cost: 2200
+weapon_type: Rifle
+weapon_damage: 14-34
+weapon_magazine_size: 6
+weapon_burst_rounds: 0
+weapon_damage_type: Normal
+weapon_min_str: 5
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 6
+weapon_ap_cost_two: 0
+weapon_max_range_one: 50
+weapon_max_range_two: 0
+weapon_uses_ammo: 223
+weapon_caliber_index: 5
+weapon_sound_id: 71
+Position: (37,2)
+

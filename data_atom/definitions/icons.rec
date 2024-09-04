@@ -172,3 +172,87 @@ Char: ☼
 Fg: yellow_2
 Bg: black
 
+Char:  
+Fg: light_gray_4
+Bg: dark_gray_7
+
+Char: ─
+Fg: light_gray_4
+Bg: dark_gray_7
+
+Char:  
+Fg: gray
+Bg: light_gray_7
+
+Char: ■
+Fg: neon_green_1
+Bg: light_gray_5
+
+Char: ∩
+Fg: neon_green_1
+Bg: dark_gray_2
+
+Char: &
+Fg: tan_8
+Bg: 
+
+Char: ‼
+Fg: light_red_2
+Bg: white
+
+Char: ♣
+Fg: bright_green_2
+Bg: 
+
+Char: ■
+Fg: light_gray_2
+Bg: dark_gray_5
+
+Char: ·
+Fg: light_gray_2
+Bg: dark_gray_5
+
+Char: •
+Fg: light_gray_2
+Bg: dark_gray_5
+
+Char: ⌠
+Fg: light_blue
+Bg: dark_gray_5
+
+Char: ≈
+Fg: light_blue
+Bg: dark_gray_5
+
+Char: σ
+Fg: light_blue_3
+Bg: dark_gray_5
+
+Char: ▓
+Fg: rust_3
+Bg: orange_7
+
+Char: ∩
+Fg: red_7
+Bg: dark_gray_2
+
+Char: ∙
+Fg: dark_gray_4
+Bg: dark_gray_5
+
+Char: ░
+Fg: dark_gray_4
+Bg: dark_gray_5
+
+Char: ▬
+Fg: light_blue_3
+Bg: dark_gray_5
+
+Char: ≤
+Fg: light_blue_3
+Bg: dark_gray_5
+
+Char: ≥
+Fg: light_blue_3
+Bg: dark_gray_5
+

@@ -1,0 +1,27 @@
+%rec: OpeningBranch
+
+cond: true
+goto: Start
+
+%rec: Nodes
+
+name: Start
+npc: So, you are taking over the contracts then?
+#
+o_text: Cut the crap, Grim. Just give me the keys.
+o_goto: GiveKeys
+#
+o_text: Yes, I am. Tell me about the job.
+o_goto: TellJob
+
+name: GiveKeys
+npc: In a rush? Fine, here you go.
+ + (Grim hands you the keys to the apartment.)
+effect: TransferItem('grim_beard', 'player', 'home_keys')
+effect: EndConversation
+
+name: TellJob
+npc: I have a few contracts that need to be taken care of. You will be paid well for your services. Check the computer for more information.
+#
+o_text: Okay.
+o_goto: EndConversation

@@ -3,7 +3,7 @@ package game
 import (
 	"RogueUI/foundation"
 	"RogueUI/special"
-	"github.com/memmaker/go/fxtools"
+	"fmt"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
@@ -21,6 +21,17 @@ import (
 
 func (g *GameState) PlayerRangedAttack() {
 	mainHandItem, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+	if hasWeapon && mainHandItem.GetCurrentAttackMode().IsThrow() {
+		g.startThrowItem(mainHandItem)
+		return
+	}
+	if hasWeapon && mainHandItem.IsMeleeWeapon() && !mainHandItem.IsRangedWeapon() {
+		g.ui.SelectDirection(func(direction geometry.CompassDirection) {
+			targetPos := g.Player.Position().Add(direction.ToPoint())
+			g.playerMeleeAttackLocation(targetPos)
+		})
+		return
+	}
 	if !hasWeapon || !mainHandItem.IsRangedWeapon() {
 		g.msg(foundation.Msg("You have no suitable weapon equipped"))
 		return
@@ -33,22 +44,23 @@ func (g *GameState) PlayerRangedAttack() {
 	}
 	attackMode := mainHandItem.GetCurrentAttackMode()
 	if attackMode.IsAimed {
-		g.ui.SelectBodyPart(func(victim foundation.ActorForUI, bodyPart int) {
-			g.msg(foundation.HiLite("You aim at %s's %s", victim.Name(), victim.GetBodyPartByIndex(bodyPart)))
+		g.ui.SelectBodyPart(g.playerLastAimedAt, func(victim foundation.ActorForUI, bodyPart special.BodyPart) {
+			g.playerLastAimedAt = bodyPart
+			g.msg(foundation.HiLite("You aim at %s's %s", victim.Name(), bodyPart.String()))
 			target := victim.(*Actor)
-			shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode.Mode, target, bodyPart)
+			shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, bodyPart)
 			g.ui.AddAnimations(shotAnim)
 			g.endPlayerTurn(attackMode.TUCost)
 		})
 	} else {
-		g.ui.SelectTarget(func(targetPos geometry.Point, bodyPart int) {
+		g.ui.SelectTarget(func(targetPos geometry.Point) {
 			if g.currentMap().IsActorAt(targetPos) {
 				target := g.currentMap().ActorAt(targetPos)
-				shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode.Mode, target, bodyPart)
+				shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, special.Body)
 				g.ui.AddAnimations(shotAnim)
 				g.endPlayerTurn(attackMode.TUCost)
 			} else {
-				shotAnim := g.actorRangedAttackLocation(g.Player, mainHandItem, attackMode.Mode, targetPos)
+				shotAnim := g.actorRangedAttackLocation(g.Player, mainHandItem, attackMode, targetPos)
 				g.ui.AddAnimations(shotAnim)
 				g.endPlayerTurn(attackMode.TUCost)
 			}
@@ -78,7 +90,7 @@ func (g *GameState) PlayerQuickRangedAttack() {
 	}
 
 	mode := mainHandItem.GetCurrentAttackMode()
-	shotAnim := g.actorRangedAttack(g.Player, mainHandItem, mode.Mode, enemies[0], 2)
+	shotAnim := g.actorRangedAttack(g.Player, mainHandItem, mode, enemies[0], special.Body)
 	g.ui.AddAnimations(shotAnim)
 	g.endPlayerTurn(mode.TUCost)
 }
@@ -117,6 +129,7 @@ func (g *GameState) playerBackstab(defender *Actor) {
 			AttackMode:      special.TargetingModeFireSingle,
 			DamageType:      special.DamageTypeNormal,
 			DamageAmount:    defender.GetHitPointsMax(),
+			BodyPart:        special.Body,
 		}
 		g.msg(foundation.HiLite("You stab %s in the back", defender.Name()))
 		g.ui.AddAnimations(g.damageActor(sourcedDamage, defender))
@@ -145,55 +158,64 @@ func (g *GameState) playerNonLethalTakedown(victim *Actor) {
 		g.playerMeleeAttack(victim)
 	}
 }
-
-func (g *GameState) playerMeleeAttack(defender *Actor) {
-	consequences := g.actorMeleeAttack(g.Player, defender)
-	if !g.Player.HasFlag(foundation.FlagInvisible) {
-		defender.GetFlags().Set(foundation.FlagAwareOfPlayer)
+func (g *GameState) playerMeleeAttackLocation(targetPos geometry.Point) {
+	if g.currentMap().IsActorAt(targetPos) {
+		defender := g.currentMap().ActorAt(targetPos)
+		g.playerMeleeAttack(defender)
+	} else if g.currentMap().IsObjectAt(targetPos) {
+		objectAt := g.currentMap().ObjectAt(targetPos)
+		attackAudioCue, damageWithSource := g.getMeleeDamage(g.Player, special.Body)
+		objectAt.OnDamage(damageWithSource)
+		animAttackerIndicator := g.ui.GetAnimBackgroundColor(g.Player.Position(), "dark_gray_6", 4, nil)
+		animAttackerIndicator.SetAudioCue(attackAudioCue)
+		g.ui.AddAnimations([]foundation.Animation{animAttackerIndicator})
+		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
+	} else {
+		g.msg(foundation.Msg("Nothing to attack"))
 	}
-	g.ui.AddAnimations(consequences)
-	g.endPlayerTurn(10)
+}
+func (g *GameState) playerMeleeAttack(defender *Actor) {
+	doMeleeAttack := func(part special.BodyPart) {
+		consequences := g.actorMeleeAttack(g.Player, defender, part)
+		if !g.Player.HasFlag(special.FlagInvisible) {
+			defender.GetFlags().Set(special.FlagAwareOfPlayer)
+		}
+		g.ui.AddAnimations(consequences)
+		g.endPlayerTurn(10)
+	}
+
+	mainhandItem, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+	if hasWeapon && mainhandItem.IsMeleeWeapon() && mainhandItem.GetCurrentAttackMode().IsAimed {
+		g.ui.OpenAimedShotPicker(defender, g.playerLastAimedAt, func(victim foundation.ActorForUI, bodyPart special.BodyPart) {
+			doMeleeAttack(bodyPart)
+		})
+	} else {
+		doMeleeAttack(special.Body)
+	}
 }
 
-func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor) []foundation.Animation {
+func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part special.BodyPart) []foundation.Animation {
 	if !defender.IsAlive() {
 		return nil
 	}
 	var afterAttackAnimations []foundation.Animation
 
-	attackerSkill := special.Unarmed
-	targetingMode := special.TargetingModePunch
-	damageType := special.DamageTypeNormal
-	damage := fxtools.NewInterval(1, 4)
-	attackAudioCue := attacker.GetMeleeAudioCue(false)
+	attackAudioCue, damageWithSource := g.getMeleeDamage(attacker, part)
 
-	itemInHand, hasItem := attacker.GetEquipment().GetMeleeWeapon()
+	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, 0, 0)
 
-	if hasItem && itemInHand.IsMeleeWeapon() {
-		weapon := itemInHand.GetWeapon()
-		attackerSkill = special.MeleeWeapons
-		damage = weapon.GetDamage()
-		damageType = weapon.GetDamageType()
-		attackAudioCue = weapon.GetFireAudioCue(special.TargetingModeFireSingle)
+	mainHandItem, _ := attacker.GetEquipment().GetMainHandItem()
+
+	chanceToHit := g.getMeleeChanceToHit(attacker, mainHandItem, defender)
+	if damageWithSource.AttackMode == special.TargetingModeKick {
+		chanceToHit = max(1, chanceToHit-10)
 	}
-
-	chanceToHit := special.MeleeChanceToHit(attacker.GetCharSheet(), attackerSkill, defender.GetCharSheet(), special.Body)
+	chanceToHit += part.AimPenalty()
 
 	animAttackerIndicator := g.ui.GetAnimBackgroundColor(attacker.Position(), "dark_gray_6", 4, nil)
 	animAttackerIndicator.SetAudioCue(attackAudioCue)
 
 	afterAttackAnimations = append(afterAttackAnimations, animAttackerIndicator)
-
-	damageWithSource := SourcedDamage{
-		NameOfThing:     "melee",
-		Attacker:        attacker,
-		IsObviousAttack: true,
-		AttackMode:      targetingMode,
-		DamageType:      damageType,
-		DamageAmount:    damage.Roll(),
-	}
-
-	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, 0, 0, 0)
 
 	if rand.Intn(100) < chanceToHit && damageWithSource.DamageAmount > 0 {
 		damageAnims := g.damageActor(damageWithSource, defender)
@@ -211,34 +233,127 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor) []foundat
 	return afterAttackAnimations
 }
 
+func (g *GameState) getMeleeChanceToHit(attacker *Actor, weaponItem *Item, defender *Actor) int {
+	attackerSkill := special.Unarmed
+	if weaponItem != nil && weaponItem.IsMeleeWeapon() {
+		attackerSkill = weaponItem.GetWeapon().GetSkillUsed()
+	}
+
+	chanceToHit := special.MeleeChanceToHit(attacker.GetCharSheet(), attackerSkill, defender.GetCharSheet(), special.Body)
+	return chanceToHit
+}
+
+func (g *GameState) getMeleeDamage(attacker *Actor, part special.BodyPart) (string, SourcedDamage) {
+	targetingMode := special.TargetingModePunch
+	if rand.Intn(100) < 50 {
+		targetingMode = special.TargetingModeKick
+	}
+	damageType := special.DamageTypeNormal
+	meleeDamageBonus := attacker.GetMeleeDamageBonus()
+	attackAudioCue := attacker.GetMeleeAudioCue(false)
+	damage := 3 + meleeDamageBonus
+
+	if targetingMode == special.TargetingModeKick {
+		damage = 5 + meleeDamageBonus
+		attackAudioCue = attacker.GetMeleeAudioCue(true)
+	}
+
+	itemInHand, hasItem := attacker.GetEquipment().GetMeleeWeapon()
+
+	if hasItem && itemInHand.IsMeleeWeapon() {
+		weapon := itemInHand.GetWeapon()
+		damage = meleeDamageBonus + weapon.GetDamage().Roll()
+		damageType = weapon.GetDamageType()
+		attackAudioCue = weapon.GetFireAudioCue(special.TargetingModeFireSingle)
+	}
+
+	damageWithSource := SourcedDamage{
+		NameOfThing:     "melee",
+		Attacker:        attacker,
+		IsObviousAttack: true,
+		AttackMode:      targetingMode,
+		DamageType:      damageType,
+		DamageAmount:    damage,
+		BodyPart:        part,
+	}
+	return attackAudioCue, damageWithSource
+}
+
 // actorRangedAttack logic and animation of a ranged attack with the equipped weapon
-func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, mode special.TargetingMode, defender *Actor, bodyPart int) []foundation.Animation {
+func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, attackMode AttackMode, defender *Actor, bodyPart special.BodyPart) []foundation.Animation {
 	if !defender.IsAlive() {
 		return nil
 	}
 
-	bulletsSpent := 1
-	weapon := weaponItem.GetWeapon()
-	if mode == special.TargetingModeFireBurst {
-		bulletsSpent = min(weapon.GetLoadedBullets(), weapon.GetBurstRounds())
-	} else if mode == special.TargetingModeFireFullAuto {
-		bulletsSpent = weapon.GetLoadedBullets()
+	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
+
+	attackAnim, isProjectileAnimation := g.getWeaponAttackAnim(attacker, defender.Position(), weaponItem, attackMode, bulletsSpent)
+
+	chanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
+
+	damageWithSource, drModifier := g.calculateRangedDamage(attacker, weapon, attackMode, bulletsSpent, chanceToHit, bodyPart)
+
+	var consequenceOfActorHit []foundation.Animation
+	if weapon.GetDamageType() == special.DamageTypeExplosive {
+		weaponEffectParams := map[string]string{
+			"radius": "3",
+			"damage": "35-100",
+		}
+		explosionAnim := explosion(g, attacker, defender.Position(), NewParams(weaponEffectParams))
+		consequenceOfActorHit = append(consequenceOfActorHit, explosionAnim...)
+	} else {
+		consequenceOfActorHit = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender, drModifier)
 	}
 
-	weapon.RemoveBullets(bulletsSpent)
+	if isProjectileAnimation {
+		attackAnim.SetFollowUp(consequenceOfActorHit)
+		return []foundation.Animation{attackAnim}
+	} else {
+		return append(consequenceOfActorHit, attackAnim)
+	}
+}
 
-	animAttackerIndicator := g.ui.GetAnimMuzzleFlash(attacker.Position(), fxtools.NewColorFromRGBA(g.palette.Get("White")).MultiplyWithScalar(5), 4, bulletsSpent, nil)
-	animAttackerIndicator.SetAudioCue(weapon.GetFireAudioCue(mode))
+func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item, attackMode AttackMode, targetPos geometry.Point) []foundation.Animation {
 
-	var onAttackAnims []foundation.Animation
-	onAttackAnims = append(onAttackAnims, animAttackerIndicator)
-	chanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
+	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
+
+	onAttackAnims, isProjectileAnimation := g.getWeaponAttackAnim(attacker, targetPos, weaponItem, attackMode, bulletsSpent)
+
+	chanceToHit := 100
+
+	damageWithSource, _ := g.calculateRangedDamage(attacker, weapon, attackMode, bulletsSpent, chanceToHit, special.Body)
+
+	var consequenceOfHit []foundation.Animation
+	if weapon.GetDamageType() == special.DamageTypeExplosive {
+		weaponEffectParams := map[string]string{
+			"radius": "3",
+			"damage": "35-100",
+		}
+		consequenceOfHit = explosion(g, attacker, targetPos, NewParams(weaponEffectParams))
+	} else {
+		if damageWithSource.DamageAmount > 0 {
+			if weaponItem.IsZappable() {
+				weaponZapEffect := ZapEffectFromName(weaponItem.GetZapEffectName())
+				consequenceOfHit = weaponZapEffect(g, attacker, targetPos)
+			} else {
+				consequenceOfHit = g.damageLocation(damageWithSource, targetPos)
+			}
+		}
+	}
+
+	if isProjectileAnimation {
+		onAttackAnims.SetFollowUp(consequenceOfHit)
+		return []foundation.Animation{onAttackAnims}
+	} else {
+		return append(consequenceOfHit, onAttackAnims)
+	}
+}
+
+func (g *GameState) calculateRangedDamage(attacker *Actor, weapon *WeaponInfo, attackMode AttackMode, bulletsSpent int, chanceToHit int, bodyPart special.BodyPart) (SourcedDamage, int) {
 	damage := weapon.GetDamage()
-	var damageAnims []foundation.Animation
 	totalDamage := 0
 	for i := 0; i < bulletsSpent; i++ {
 		damageDone := damage.Roll()
-
 		if rand.Intn(100) < chanceToHit {
 			totalDamage += damageDone
 		}
@@ -257,11 +372,39 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, mode sp
 		NameOfThing:     "",
 		Attacker:        attacker,
 		IsObviousAttack: true,
-		AttackMode:      mode,
+		AttackMode:      attackMode.Mode,
 		DamageType:      weapon.GetDamageType(),
 		DamageAmount:    int(float64(totalDamage) * damageFactor),
+		BodyPart:        bodyPart,
 	}
-	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, drModifier, 0, bodyPart)
+	return damageWithSource, drModifier
+}
+
+func (g *GameState) removeBulletsFromWeapon(weaponItem *Item, attackMode AttackMode) (int, *WeaponInfo) {
+	bulletsSpent := 1
+	weapon := weaponItem.GetWeapon()
+	if attackMode.Mode == special.TargetingModeFireBurst {
+		bulletsSpent = min(weapon.GetLoadedBullets(), weapon.GetBurstRounds())
+	} else if attackMode.Mode == special.TargetingModeFireFullAuto {
+		bulletsSpent = weapon.GetLoadedBullets()
+	}
+
+	weapon.RemoveBullets(bulletsSpent)
+	return bulletsSpent, weapon
+}
+
+func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Item, damageWithSource SourcedDamage, defender *Actor, drModifier int) []foundation.Animation {
+	var damageAnims []foundation.Animation
+	weapon := weaponItem.GetWeapon()
+	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, drModifier, 0)
+
+	attackedFlag := fmt.Sprintf("WasAttacked(%s)", defender.GetInternalName())
+	g.gameFlags.SetFlag(attackedFlag)
+
+	if attacker == g.Player {
+		attackedByPlayer := fmt.Sprintf("WasAttackedByPlayer(%s)", defender.GetInternalName())
+		g.gameFlags.SetFlag(attackedByPlayer)
+	}
 
 	if damageWithSource.DamageAmount > 0 {
 		if weaponItem.IsZappable() {
@@ -280,50 +423,7 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, mode sp
 		evade.SetAudioCue(defender.GetDodgedAudioCue())
 		damageAnims = []foundation.Animation{evade}
 	}
-	return append(onAttackAnims, damageAnims...)
-}
-
-func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item, mode special.TargetingMode, loc geometry.Point) []foundation.Animation {
-	bulletsSpent := 1
-	weapon := weaponItem.GetWeapon()
-	if mode == special.TargetingModeFireBurst {
-		bulletsSpent = min(weapon.GetLoadedBullets(), weapon.GetBurstRounds())
-	} else if mode == special.TargetingModeFireFullAuto {
-		bulletsSpent = weapon.GetLoadedBullets()
-	}
-
-	weapon.RemoveBullets(bulletsSpent)
-
-	animAttackerIndicator := g.ui.GetAnimMuzzleFlash(attacker.Position(), fxtools.NewColorFromRGBA(g.palette.Get("White")).MultiplyWithScalar(5), 4, bulletsSpent, nil)
-	animAttackerIndicator.SetAudioCue(weapon.GetFireAudioCue(mode))
-
-	var onAttackAnims []foundation.Animation
-	onAttackAnims = append(onAttackAnims, animAttackerIndicator)
-
-	damage := weapon.GetDamage()
-	var damageAnims []foundation.Animation
-	totalDamage := 0
-	for i := 0; i < bulletsSpent; i++ {
-		damageDone := damage.Roll()
-		totalDamage += damageDone
-	}
-	damageWithSource := SourcedDamage{
-		NameOfThing:     "",
-		Attacker:        attacker,
-		IsObviousAttack: true,
-		AttackMode:      mode,
-		DamageType:      weapon.GetDamageType(),
-		DamageAmount:    totalDamage,
-	}
-	if totalDamage > 0 {
-		if weaponItem.IsZappable() {
-			weaponZapEffect := ZapEffectFromName(weaponItem.GetZapEffectName())
-			damageAnims = weaponZapEffect(g, attacker, loc)
-		} else {
-			damageAnims = g.damageLocation(damageWithSource, loc)
-		}
-	}
-	return append(onAttackAnims, damageAnims...)
+	return damageAnims
 }
 
 // Validation for Player Commands
@@ -339,7 +439,7 @@ func (g *GameState) Throw() {
 
 // Target Selection Stage
 func (g *GameState) startThrowItem(item *Item) {
-	g.ui.SelectTarget(func(targetPos geometry.Point, hitZone int) {
+	g.ui.SelectTarget(func(targetPos geometry.Point) {
 		g.actorThrowItem(g.Player, item, g.Player.Position(), targetPos)
 	})
 }
@@ -373,7 +473,13 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 	if g.currentMap().IsActorAt(targetPos) {
 		defender := g.currentMap().ActorAt(targetPos)
 		//isLaunch := thrower.IsLaunching(missile) // otherwise it's a throw
-		consequenceOfActorHit := g.actorRangedAttack(thrower, missile, special.TargetingModeFireSingle, defender, 0)
+		attackMode := AttackMode{
+			Mode:     special.TargetingModeFireSingle,
+			TUCost:   thrower.timeNeededForActions(),
+			MaxRange: thrower.GetMaxThrowRange(),
+			IsAimed:  false,
+		}
+		consequenceOfActorHit := g.actorRangedAttack(thrower, missile, attackMode, defender, 0)
 		onHitAnimations = append(onHitAnimations, consequenceOfActorHit...)
 	} else if g.currentMap().IsObjectAt(targetPos) {
 		object := g.currentMap().ObjectAt(targetPos)

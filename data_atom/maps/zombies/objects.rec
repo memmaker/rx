@@ -1,0 +1,22 @@
+%rec: default
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (7,1)
+
+Category: Terminal
+Name: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (3,1)
+
+Category: LockedDoor
+Description: a locked door
+LockFlag: zombie_hall_lock
+Position: (41,3)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (5,1)
+

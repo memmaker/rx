@@ -73,6 +73,7 @@ type MapLoadResult[ActorType interface {
 	Map             *GridMap[ActorType, ItemType, ObjectType]
 	IconsForObjects map[string]textiles.TextIcon
 	FlagsOfMap      map[string]int
+	ScriptsToRun    []string
 }
 
 func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) MapLoadResult[ActorType, ItemType, ObjectType] {
@@ -87,11 +88,18 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 	tileSet := textiles.ReadTilesFile(fxtools.MustOpen(path.Join(mapDir, "tileSet.rec")), t.palette)
 	mapSize, tileMap := textiles.ReadTileMap16(path.Join(mapDir, "tiles.bin"))
 
-	metaData := NewMapMetaData(recfile.Read(fxtools.MustOpen(path.Join(mapDir, "meta.rec")))[0])
+	metaData, scriptsToRun := NewMapMetaData(recfile.Read(fxtools.MustOpen(path.Join(mapDir, "meta.rec")))[0])
 
-	actorRecords := recfile.Read(fxtools.MustOpen(path.Join(mapDir, "actors.rec")))
-	objectRecords := recfile.Read(fxtools.MustOpen(path.Join(mapDir, "objects.rec")))
-	itemRecords := recfile.Read(fxtools.MustOpen(path.Join(mapDir, "items.rec")))
+	var actorRecords, objectRecords, itemRecords []recfile.Record
+	if fxtools.FileExists(path.Join(mapDir, "actors.rec")) {
+		actorRecords = recfile.Read(fxtools.MustOpen(path.Join(mapDir, "actors.rec")))
+	}
+	if fxtools.FileExists(path.Join(mapDir, "objects.rec")) {
+		objectRecords = recfile.Read(fxtools.MustOpen(path.Join(mapDir, "objects.rec")))
+	}
+	if fxtools.FileExists(path.Join(mapDir, "items.rec")) {
+		itemRecords = recfile.Read(fxtools.MustOpen(path.Join(mapDir, "items.rec")))
+	}
 
 	// Optional: Read init flags, if they exist and haven't been loaded before
 	flagsFile := path.Join(mapDir, "initFlags.rec")
@@ -141,31 +149,40 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 		Map:             newMap,
 		IconsForObjects: objTypes,
 		FlagsOfMap:      flagsOfMap,
+		ScriptsToRun:    scriptsToRun,
 	}
 }
 
 type MapMeta struct {
-	Name               string
+	DisplayName        string
 	IsOutdoor          bool
 	MusicFile          string
 	IndoorAmbientLight fxtools.HDRColor
 }
 
-func NewMapMetaData(record recfile.Record) MapMeta {
+func (m MapMeta) WithAmbientLight(color fxtools.HDRColor) MapMeta {
+	m.IndoorAmbientLight = color
+	return m
+}
+
+func NewMapMetaData(record recfile.Record) (MapMeta, []string) {
 	var result MapMeta
+	var scriptsToRun []string
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		case "name":
-			result.Name = field.Value
+			result.DisplayName = field.Value
 		case "isoutdoor":
 			result.IsOutdoor = field.AsBool()
 		case "musicfile":
 			result.MusicFile = field.Value
 		case "indoorambientlight":
 			result.IndoorAmbientLight = fxtools.NewColorFromString(field.Value)
+		case "runscript":
+			scriptsToRun = append(scriptsToRun, field.Value)
 		}
 	}
-	return result
+	return result, scriptsToRun
 }
 
 func LoadIconsForObjects(dataDirectory string, colors textiles.ColorPalette) map[string]textiles.TextIcon {

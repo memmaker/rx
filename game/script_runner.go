@@ -11,14 +11,14 @@ type ScriptInstance struct {
 	isDone       bool
 }
 
-func (i *ScriptInstance) IsDone() bool {
-	return i.isDone || i.currentFrame >= len(i.script.Frames)
-}
 func (i *ScriptInstance) GetCurrentFrame() ScriptFrame {
 	return i.script.Frames[i.currentFrame]
 }
 
 func (i *ScriptInstance) CanRunCurrentFrame() bool {
+	if i.currentFrame >= len(i.script.Frames) {
+		return false
+	}
 	frame := i.GetCurrentFrame()
 	condition, err := frame.Condition.Evaluate(i.script.Variables)
 	if err != nil {
@@ -28,7 +28,7 @@ func (i *ScriptInstance) CanRunCurrentFrame() bool {
 }
 
 func (i *ScriptInstance) RunCurrentFrame() {
-	if i.IsDone() {
+	if i.currentFrame >= len(i.script.Frames) {
 		return
 	}
 	i.Run(i.GetCurrentFrame())
@@ -55,6 +55,14 @@ func (i *ScriptInstance) HasReachedOutcome() (ScriptFrame, bool) {
 		}
 	}
 	return ScriptFrame{}, false
+}
+
+func (i *ScriptInstance) IsDone() bool {
+	return i.isDone
+}
+
+func (i *ScriptInstance) SetDone() {
+	i.isDone = true
 }
 
 type ScriptRunner struct {
@@ -84,6 +92,7 @@ func (s *ScriptRunner) OnTurn() {
 	for _, instance := range s.runningScripts {
 		if endFrame, isValid := instance.HasReachedOutcome(); isValid {
 			instance.Run(endFrame)
+			instance.SetDone()
 		} else if instance.CanRunCurrentFrame() {
 			instance.RunCurrentFrame()
 		}

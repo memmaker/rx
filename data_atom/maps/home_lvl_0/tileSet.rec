@@ -1,0 +1,114 @@
+%rec: default
+
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: shower
+Char: ⌠
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: interior floor
+Char: ≈
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: sink
+Char: ▬
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: toilet
+Char: σ
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: stairs up
+Char: ≤
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: stairs down
+Char: ≥
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: elevator floor
+Char: ○
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: street
+Char:  
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: street
+Char: ─
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+

@@ -47,10 +47,19 @@ func (g *GameState) GetItemInMainHand() (foundation.ItemForUI, bool) {
 	return g.Player.GetEquipment().GetMainHandItem()
 }
 
-func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []fxtools.Tuple[string, int] {
+func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []fxtools.Tuple3[special.BodyPart, bool, int] {
 	victim := targeted.(*Actor)
-	attackerSkill, defenderSkill := 0, 0 // TODO
-	return victim.GetBodyPartsAndHitChances(attackerSkill, defenderSkill)
+	mainHandItem, hasMainHandItem := g.Player.GetEquipment().GetMainHandItem()
+	if !hasMainHandItem {
+		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(special.Unarmed))
+	}
+	baseChance := 0
+	if mainHandItem.IsRangedWeapon() {
+		baseChance = g.getRangedChanceToHit(g.Player, mainHandItem, victim)
+	} else if mainHandItem.IsMeleeWeapon() {
+		baseChance = g.getMeleeChanceToHit(g.Player, mainHandItem, victim)
+	}
+	return victim.GetBodyPartsAndHitChances(baseChance)
 }
 
 func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {
@@ -108,17 +117,17 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 	}
 
 	// special abilities
-	canSeeFood := g.Player.HasFlag(foundation.FlagSeeFood)
+	canSeeFood := g.Player.HasFlag(special.FlagSeeFood)
 	if g.IsFoodAt(loc) && canSeeFood {
 		return true
 	}
 
-	canSeeMonsters := g.Player.HasFlag(foundation.FlagSeeMonsters)
+	canSeeMonsters := g.Player.HasFlag(special.FlagSeeMonsters)
 	if g.currentMap().IsActorAt(loc) && canSeeMonsters {
 		return true
 	}
 
-	canSeeTraps := g.Player.HasFlag(foundation.FlagSeeTraps)
+	canSeeTraps := g.Player.HasFlag(special.FlagSeeTraps)
 	if g.currentMap().IsObjectAt(loc) && canSeeTraps {
 		objectAt := g.currentMap().ObjectAt(loc)
 		if objectAt.IsTrap() {
@@ -168,7 +177,7 @@ func (g *GameState) GetVisibleEnemies() []foundation.ActorForUI {
 	return actorsForUI(g.playerVisibleEnemiesByDistance())
 }
 
-func (g *GameState) GetHudFlags() map[foundation.ActorFlag]int {
+func (g *GameState) GetHudFlags() map[special.ActorFlag]int {
 	flagSet := g.Player.GetFlags().UnderlyingCopy()
 	equipFlags := g.Player.GetEquipment().GetAllFlags()
 	for flag, _ := range equipFlags {
@@ -179,6 +188,9 @@ func (g *GameState) GetHudFlags() map[foundation.ActorFlag]int {
 
 func (g *GameState) GetHudStats() map[foundation.HudValue]int {
 	uiStats := make(map[foundation.HudValue]int)
+	if g.Player == nil {
+		return uiStats
+	}
 	//g.Player.stats
 
 	uiStats[foundation.HudTurnsTaken] = g.TurnsTaken
@@ -213,19 +225,19 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	}
 	if g.currentMap().IsActorAt(pos) && g.Player.Position() != pos {
 		actor := g.currentMap().ActorAt(pos)
-		return foundation.HiLite("You see %s here", actor.LookInfo())
+		return foundation.HiLite("You see %s", actor.LookInfo())
 	}
 	if g.currentMap().IsDownedActorAt(pos) && g.Player.Position() != pos {
 		actor := g.currentMap().DownedActorAt(pos)
-		return foundation.HiLite("You see %s here", actor.LookInfo())
+		return foundation.HiLite("You see %s", actor.LookInfo())
 	}
 	if g.currentMap().IsItemAt(pos) {
 		item := g.currentMap().ItemAt(pos)
-		return foundation.HiLite("You see %s here", item.Name())
+		return foundation.HiLite("You see %s", item.Name())
 	}
 	if g.currentMap().IsObjectAt(pos) {
 		object := g.currentMap().ObjectAt(pos)
-		return foundation.HiLite("You see %s here", object.Name())
+		return foundation.HiLite("You see %s", object.Name())
 	}
 
 	cell := g.currentMap().GetCell(pos)
@@ -233,11 +245,14 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 		return foundation.NoMsg()
 	}
 	tileDesc := cell.TileType.DefinedDescription
-	return foundation.HiLite("You see %s here", tileDesc)
+	return foundation.HiLite("You see %s", tileDesc)
 }
 
-func (g *GameState) GetInventory() []foundation.ItemForUI {
-	return itemStacksForUI(g.Player.GetInventory().StackedItems())
+func (g *GameState) GetInventoryForUI() []foundation.ItemForUI {
+	if g.Player == nil {
+		return []foundation.ItemForUI{}
+	}
+	return itemStacksForUI(g.Player.GetInventory().StackedItemsWithFilter(func(item *Item) bool { return !item.IsAmmo() }))
 }
 
 func (g *GameState) MapAt(loc geometry.Point) textiles.TextIcon {
@@ -256,14 +271,14 @@ func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 
 	if mapCell.Actor != nil {
 		actor := *mapCell.Actor
-		if actor.IsVisible(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
+		if actor.IsVisible(g.Player.HasFlag(special.FlagSeeInvisible)) {
 			return foundation.EntityTypeActor
 		}
 	}
 
 	if mapCell.DownedActor != nil {
 		actor := *mapCell.DownedActor
-		if actor.IsVisible(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
+		if actor.IsVisible(g.Player.HasFlag(special.FlagSeeInvisible)) {
 			return foundation.EntityTypeDownedActor
 		}
 	}

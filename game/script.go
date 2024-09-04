@@ -28,6 +28,10 @@ type ActionScript struct {
 func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 	return map[string]govaluate.ExpressionFunction{
 		// Queries
+		"HasFlag": func(args ...interface{}) (interface{}, error) {
+			flagName := args[0].(string)
+			return (bool)(g.gameFlags.HasFlag(flagName)), nil
+		},
 		"ActorWithName": func(args ...interface{}) (interface{}, error) {
 			actorName := args[0].(string)
 			actors := g.currentMap().GetFilteredActors(func(a *Actor) bool {
@@ -61,6 +65,25 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			g.tryAddChatter(actor, chatter)
 			return nil, nil
 		},
+		"SetFlag": func(args ...interface{}) (interface{}, error) {
+			flagName := args[0].(string)
+			g.gameFlags.SetFlag(flagName)
+			return nil, nil
+		},
+		"SetGoalMoveToNamedLocation": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			locName := args[1].(string)
+			loc := g.currentMap().GetNamedLocation(locName)
+			actor.SetGoal(ActorGoal{
+				Action: func(g *GameState, a *Actor) int {
+					return moveTowards(g, a, loc)
+				},
+				Achieved: func(g *GameState, a *Actor) bool {
+					return a.Position() == loc
+				},
+			})
+			return nil, nil
+		},
 		"SetGoalMoveToSpawn": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			actor.SetGoal(ActorGoal{
@@ -77,6 +100,7 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 		"SetGoalMoveIntoShootingRange": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			target := args[1].(*Actor)
+			actor.tryEquipRangedWeapon()
 			actor.SetGoal(ActorGoal{
 				Action: func(g *GameState, a *Actor) int {
 					return moveIntoShootingRange(g, a, target)
@@ -121,7 +145,7 @@ func tryKill(g *GameState, a *Actor, target *Actor) int {
 			return a.timeNeededForActions()
 		}
 
-		g.ui.AddAnimations(g.actorRangedAttack(a, mainHandItem, mainHandItem.GetCurrentAttackMode().Mode, target, 0))
+		g.ui.AddAnimations(g.actorRangedAttack(a, mainHandItem, mainHandItem.GetCurrentAttackMode(), target, 0))
 		return mainHandItem.GetCurrentAttackMode().TUCost
 	}
 
@@ -146,7 +170,7 @@ func moveTowards(g *GameState, a *Actor, targetPos geometry.Point) int {
 
 	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
 
-	return a.timeNeededForActions()
+	return a.timeNeededForMovement()
 }
 
 func LoadScript(dataDir string, name string, condFuncs map[string]govaluate.ExpressionFunction) ActionScript {

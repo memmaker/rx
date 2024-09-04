@@ -1,0 +1,21 @@
+# Fallout 1 XP rewards
+# Typical Range: 250-2000
+# Major Main Quest: 10k
+# Average: 350
+
+
+cond: HasFlag('TalkedTo(dr_winters)')
+xp: 250
+text: for talking to Dr. Winters
+
+cond: HasFlag('PlayerVisited(zombies)')
+xp: 100
+text: for finding the research facility
+
+cond: HasFlag('PlayerVisited(mansion)')
+xp: 1500
+text: for finding the mansion
+
+cond: HasFlag('PlayerVisited(cryolab)')
+xp: 5000
+text: for finding the cryo lab

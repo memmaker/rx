@@ -20,6 +20,7 @@ type ItemForUI interface {
 	Position() geometry.Point
 	LongNameWithColors(colorCode string) string
 	GetIcon() textiles.TextIcon
+	GetCarryWeight() int
 }
 
 type ItemCategory int

@@ -1,0 +1,146 @@
+%rec: default
+
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: street
+Char:  
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: street
+Char: |
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: stove
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: shower
+Char: ⌠
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: bed
+Char: ▓
+Foreground: rust_3
+Background: orange_7
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: shower
+Char: ≈
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: chair
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: sink
+Char: ▬
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: toilet
+Char: σ
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: synthetic tree
+Char: ♣
+Foreground: bright_green_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+IsDamaging: false
+
+Name: park bench
+Char: π
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: city pond
+Char: ≈
+Foreground: light_blue
+Background: steel_blue_9
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: street
+Char: ─
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+

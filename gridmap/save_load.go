@@ -28,12 +28,34 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error 
 	metaRecord := recfile.Record{
 		recfile.Field{Name: "mapWidth", Value: recfile.IntStr(m.mapWidth)},
 		recfile.Field{Name: "mapHeight", Value: recfile.IntStr(m.mapHeight)},
-		recfile.Field{Name: "mapName", Value: m.name},
-		recfile.Field{Name: "ambientLight", Value: m.AmbientLight.EncodeAsString()},
-		recfile.Field{Name: "ambientSound", Value: m.ambienceSoundCue},
+
+		recfile.Field{Name: "isOutdoor", Value: recfile.BoolStr(m.meta.IsOutdoor)},
+		recfile.Field{Name: "friendlyName", Value: m.meta.DisplayName},
+		recfile.Field{Name: "indoorAmbientLight", Value: m.meta.IndoorAmbientLight.EncodeAsString()},
+		recfile.Field{Name: "musicFile", Value: m.meta.MusicFile},
 	}
 
-	err := recfile.Write(metaData, []recfile.Record{metaRecord})
+	locationRecords := make([]recfile.Record, 0)
+	for name, location := range m.namedLocations {
+		locationRecords = append(locationRecords, recfile.Record{
+			recfile.Field{Name: "Name", Value: name},
+			recfile.Field{Name: "Location", Value: location.Encode()},
+		})
+	}
+	transitionRecords := make([]recfile.Record, 0)
+	for pos, transition := range m.transitionMap {
+		transitionRecords = append(transitionRecords, recfile.Record{
+			recfile.Field{Name: "Location", Value: pos.Encode()},
+			recfile.Field{Name: "TransitionToMap", Value: transition.TargetMap},
+			recfile.Field{Name: "TransitionToLocation", Value: transition.TargetLocation},
+		})
+	}
+
+	err := recfile.WriteMulti(metaData, map[string][]recfile.Record{
+		"meta":        {metaRecord},
+		"locations":   locationRecords,
+		"transitions": transitionRecords,
+	})
 	if err != nil {
 		return err
 	}
@@ -119,27 +141,31 @@ func Load[ActorType interface {
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
-}](directory string) *GridMap[ActorType, ItemType, ObjectType] {
+}](mapDirectory, mapName string) *GridMap[ActorType, ItemType, ObjectType] {
+
+	directory := path.Join(mapDirectory, "maps", mapName)
 
 	metaData := fxtools.MustOpen(path.Join(directory, "metaData.rec"))
 	defer metaData.Close()
-	metaRecord := recfile.Read(metaData)[0]
+	metaRecords := recfile.ReadMulti(metaData)
+	metaRecord := metaRecords["meta"][0]
+
 	var mapWidth, mapHeight int
-	var mapName string
-	var ambientLight fxtools.HDRColor
-	var ambientSound string
+	var meta MapMeta
 	for _, field := range metaRecord {
 		switch field.Name {
 		case "mapWidth":
 			mapWidth = field.AsInt()
 		case "mapHeight":
 			mapHeight = field.AsInt()
-		case "mapName":
-			mapName = field.Value
-		case "ambientLight":
-			ambientLight = fxtools.NewColorFromString(field.Value)
-		case "ambientSound":
-			ambientSound = field.Value
+		case "friendlyName":
+			meta.DisplayName = field.Value
+		case "indoorAmbientLight":
+			meta.IndoorAmbientLight = fxtools.NewColorFromString(field.Value)
+		case "musicFile":
+			meta.MusicFile = field.Value
+		case "isOutdoor":
+			meta.IsOutdoor = field.AsBool()
 		}
 	}
 
@@ -175,9 +201,38 @@ func Load[ActorType interface {
 			BakedLighting: fxtools.HDRColor{},
 		})
 	}
+	restoredMap.meta = meta
 	restoredMap.name = mapName
-	restoredMap.AmbientLight = ambientLight
-	restoredMap.ambienceSoundCue = ambientSound
+
+	for _, record := range metaRecords["locations"] {
+		var name string
+		var location geometry.Point
+		for _, field := range record {
+			switch field.Name {
+			case "Name":
+				name = field.Value
+			case "Location":
+				location, _ = geometry.NewPointFromEncodedString(field.Value)
+			}
+		}
+		restoredMap.namedLocations[name] = location
+	}
+
+	for _, record := range metaRecords["transitions"] {
+		var pos geometry.Point
+		var transition Transition
+		for _, field := range record {
+			switch field.Name {
+			case "Location":
+				pos, _ = geometry.NewPointFromEncodedString(field.Value)
+			case "TransitionToMap":
+				transition.TargetMap = field.Value
+			case "TransitionToLocation":
+				transition.TargetLocation = field.Value
+			}
+		}
+		restoredMap.transitionMap[pos] = transition
+	}
 
 	if fxtools.FileExists(path.Join(directory, "items.bin")) {
 		itemFile := fxtools.MustOpen(path.Join(directory, "items.bin"))

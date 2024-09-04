@@ -1,0 +1,7 @@
+%rec: default
+
+Name: a small residential area
+MusicFile: 
+IsOutdoor: true
+IndoorAmbientLight: (1.0, 1.0, 1.0)
+RunScript: tutorial

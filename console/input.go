@@ -67,7 +67,8 @@ func (u *UI) setupCommandTable() {
 
 	u.commandTable["inventory"] = u.game.OpenInventory
 	u.commandTable["tactics"] = u.game.OpenTacticsMenu
-	u.commandTable["character"] = u.ShowCharacterSheet
+	//u.commandTable["character"] = u.ShowCharacterSheet // OLD
+	u.commandTable["character"] = u.openCharSheet
 	u.commandTable["wizard"] = u.game.OpenWizardMenu
 	u.commandTable["rest"] = u.game.OpenRestMenu
 	u.commandTable["journal"] = u.game.OpenJournal
@@ -76,6 +77,7 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["items"] = u.ShowVisibleItems
 	u.commandTable["help"] = u.ShowHelpScreen
 	u.commandTable["log"] = u.ShowLog
+	u.commandTable["show_datetime"] = u.game.ShowDateTime
 
 	u.commandTable["north"] = func() { u.game.ManualMovePlayer(geometry.North) }
 	u.commandTable["south"] = func() { u.game.ManualMovePlayer(geometry.South) }
@@ -126,6 +128,7 @@ func (u *UI) setupCommandTable() {
 	//u.commandTable["ring_put_on"] = u.game.ChooseRingToPutOn
 	//u.commandTable["ring_remove"] = u.game.ChooseRingToRemove
 	u.commandTable["drop"] = u.game.ChooseItemForDrop
+	u.commandTable["show_ammo"] = u.game.OpenAmmoInventory
 	u.commandTable["eat"] = u.game.ChooseItemForEat
 
 	u.commandTable["apply"] = u.game.ChooseItemForApply
@@ -154,6 +157,7 @@ func (u *UI) showKeyBindings() {
 	friendlyNames := map[string]string{
 		"quit":              "Quit",
 		"inventory":         "Inventory",
+		"show_ammo":         "Ammo Inventory",
 		"tactics":           "Tactics Menu",
 		"rest":              "Rest Menu",
 		"character":         "Character",
@@ -189,14 +193,18 @@ func (u *UI) showKeyBindings() {
 		"use":               "Use",
 		"drop":              "Drop",
 		"eat":               "Eat",
-		"attack":            "Attack",
-		"quick_attack":      "Quick Attack",
-		"aim":               "Aim",
+		"attack":            "Ranged Attack",
+		"quick_attack":      "Ranged Attack Nearest",
 		"pickup":            "Pickup",
 		"map_interaction":   "Map Interaction",
 		"run_direction":     "Run Direction",
 		"wait":              "Wait",
 		"cycle_target_mode": "Cycle Weapon Mode",
+		"apply_skill":       "Apply Skill",
+		"reload_weapon":     "Reload Weapon",
+		"switch_weapons":    "Switch Weapons",
+		"apply":             "Apply",
+		"show_datetime":     "Show Date/Time",
 	}
 
 	leftColCommands := []string{
@@ -221,6 +229,7 @@ func (u *UI) showKeyBindings() {
 		"run_southwest",
 		"run_southeast",
 		"run_direction",
+		"quit",
 	}
 
 	rightColCommands := []string{
@@ -230,11 +239,13 @@ func (u *UI) showKeyBindings() {
 		"drop",
 		"pickup",
 		"cycle_target_mode",
+		"reload_weapon",
+		"switch_weapons",
 		"attack",
 		"quick_attack",
-		"aim",
 		"look",
 		"inventory",
+		"show_ammo",
 		"character",
 		"tactics",
 		"log",
@@ -243,8 +254,8 @@ func (u *UI) showKeyBindings() {
 		"overlay_monsters",
 		"items",
 		"overlay_items",
+		"show_datetime",
 		"wizard",
-		"quit",
 	}
 
 	rowsOfTable := make([]fxtools.TableRow, 0)

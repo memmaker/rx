@@ -23,6 +23,10 @@ func (m AttackMode) String() string {
 	return m.Mode.ToString()
 }
 
+func (m AttackMode) IsThrow() bool {
+	return m.Mode == special.TargetingModeThrow
+}
+
 type AmmoInfo struct {
 	DamageMultiplier int
 	DamageDivisor    int
@@ -364,7 +368,7 @@ func (t WeaponType) IsRanged() bool {
 }
 
 func (t WeaponType) IsMelee() bool {
-	return t == WeaponTypeSword || t == WeaponTypeClub || t == WeaponTypeAxe || t == WeaponTypeDagger || t == WeaponTypeSpear || t == WeaponTypeKnife || t == WeaponTypeEnergy || t == WeaponTypeThrown || t == WeaponTypeMelee
+	return t == WeaponTypeSword || t == WeaponTypeClub || t == WeaponTypeAxe || t == WeaponTypeDagger || t == WeaponTypeSpear || t == WeaponTypeKnife || t == WeaponTypeMelee
 }
 
 const (

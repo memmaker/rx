@@ -18,6 +18,9 @@ func (g *GameState) Save(directory string) error {
 		recfile.Field{Name: "TurnsTaken", Value: recfile.IntStr(g.TurnsTaken)},
 		recfile.Field{Name: "GameTime", Value: recfile.TimeStr(g.gameTime)},
 		recfile.Field{Name: "ShowEverything", Value: recfile.BoolStr(g.showEverything)},
+		recfile.Field{Name: "RewardsReceived", Value: strings.Join(fxtools.MapSlice(g.rewardTracker.GetRewardsReceived(), func(intVal int) string {
+			return recfile.IntStr(intVal)
+		}), ", ")},
 	}
 	globalFile := fxtools.MustCreate(path.Join(directory, "global.rec"))
 	err := recfile.WriteMulti(globalFile, map[string][]recfile.Record{
@@ -66,6 +69,7 @@ func (g *GameState) Load(directory string) {
 	globalFile.Close()
 
 	globalRecord := globalRecords["global"][0]
+	var rewardsReceived []int
 	for _, field := range globalRecord {
 		switch strings.ToLower(field.Name) {
 		case "currentmap":
@@ -76,6 +80,13 @@ func (g *GameState) Load(directory string) {
 			g.gameTime = recfile.StrTime(field.Value)
 		case "showeverything":
 			g.showEverything = recfile.StrBool(field.Value)
+		case "rewardsreceived":
+			list := field.AsList(",")
+			rewards := make([]int, len(list))
+			for _, item := range list {
+				rewards = append(rewards, item.AsInt())
+			}
+			rewardsReceived = rewards
 		}
 	}
 
@@ -92,6 +103,10 @@ func (g *GameState) Load(directory string) {
 	journalFile.Close()
 	g.journal = NewJournalFromRecords(journalRecords, g.getConditionFuncs())
 
+	rewardsFile := fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec"))
+	g.rewardTracker = NewRewardTracker(rewardsFile, g.getConditionFuncs())
+	g.rewardTracker.SetRewardsReceived(rewardsReceived)
+
 	// Loaded Map States
 	mapEntries, err := os.ReadDir(path.Join(directory, "maps"))
 	if err != nil {
@@ -101,8 +116,7 @@ func (g *GameState) Load(directory string) {
 	for _, mapEntry := range mapEntries {
 		if mapEntry.IsDir() {
 			mapName := mapEntry.Name()
-			mapFileName := path.Join(directory, "maps", mapName)
-			gameMap := gridmap.Load[*Actor, *Item, Object](mapFileName)
+			gameMap := gridmap.Load[*Actor, *Item, Object](directory, mapName)
 			for _, obj := range gameMap.Objects() {
 				obj.InitWithGameState(g)
 			}
@@ -125,6 +139,8 @@ func (g *GameState) Load(directory string) {
 	// OnTurn lights & player position
 	g.currentMap().UpdateBakedLights()
 	g.afterPlayerMoved(geometry.Point{}, true)
+
+	g.updateUIStatus()
 }
 
 func (g *GameState) terminalGuessesToRecords() []recfile.Record {

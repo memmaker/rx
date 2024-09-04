@@ -8,6 +8,11 @@ cond: HasFlag('TalkedTo(dr_winters)')
 text:
 + You'll have to deal with your medical condition on your own.
 
+cond: HasFlag('LocationKnown(zombies)')
+text:
++ You learned about the BioPharmaceuticals Inc. lab at the outskirts of town.
++ There might be something useful there.
+
 cond: HasFlag('LocationKnown(mansion)')
 text:
 + You know where the mansion of the rich old man is.

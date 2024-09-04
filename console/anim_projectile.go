@@ -2,6 +2,7 @@ package console
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/gridmap"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 )
@@ -13,8 +14,17 @@ type BaseAnimation struct {
 	calledDone          bool
 	requestMapUpdate    bool
 	audioCue            string
+
+	light *gridmap.LightSource
 }
 
+func (p *BaseAnimation) GetLight() *gridmap.LightSource {
+	return p.light
+}
+
+func (p *BaseAnimation) SetLightSource(light *gridmap.LightSource) {
+	p.light = light
+}
 func (p *BaseAnimation) Cancel() {
 	p.onFinishedOrCancelled()
 }
@@ -98,13 +108,17 @@ func (p *ProjectileAnimation) NextFrame() {
 		return
 	}
 	drawIcon := p.icon
+	currentPathPosition := p.currentPathPosition()
 	if p.icon.Char < 0 && p.lookup != nil {
-		icon, exists := p.lookup(p.path[p.currentPathIndex])
+		icon, exists := p.lookup(currentPathPosition)
 		if exists {
 			drawIcon = icon.WithBg(p.icon.Bg)
 		}
 	}
-	p.drawables[p.path[p.currentPathIndex]] = drawIcon
+	p.drawables[currentPathPosition] = drawIcon
+	if p.light != nil {
+		p.light.Pos = currentPathPosition
+	}
 
 	if p.currentPathIndex > 0 && p.trail != nil {
 		trailLength := min(len(p.trail), p.currentPathIndex)
@@ -120,6 +134,10 @@ func (p *ProjectileAnimation) NextFrame() {
 			p.drawables[pathPos] = trailIcon
 		}
 	}
+}
+
+func (p *ProjectileAnimation) currentPathPosition() geometry.Point {
+	return p.path[p.currentPathIndex]
 }
 
 func (p *ProjectileAnimation) IsDone() bool {

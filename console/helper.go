@@ -9,6 +9,8 @@ import (
 
 type InputCapturer interface {
 	SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey)
+	GetInputCapture() func(event *tcell.EventKey) *tcell.EventKey
+	SetRect(x int, y int, w int, h int)
 }
 
 func wrapPrimitivesSideBySide(p, q cview.Primitive, width, height int) cview.Primitive {

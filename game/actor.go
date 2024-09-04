@@ -2,7 +2,6 @@ package game
 
 import (
 	"RogueUI/dice_curve"
-	"RogueUI/foundation"
 	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
@@ -46,7 +45,7 @@ type Actor struct {
 	inventory *Inventory
 	equipment *Equipment
 
-	statusFlags *foundation.ActorFlags
+	statusFlags *special.ActorFlags
 
 	intrinsicZapEffects []string
 	intrinsicUseEffects []string
@@ -54,7 +53,8 @@ type Actor struct {
 	icon         textiles.TextIcon
 	sizeModifier int
 	timeEnergy   int
-	body         []*foundation.BodyPart
+	body         special.BodyStructure
+	bodyDamage   map[special.BodyPart]int
 
 	mood         CharacterMood
 	dialogueFile string
@@ -71,6 +71,24 @@ type Actor struct {
 	currentPathBlockedCount int
 	currentPath             []geometry.Point
 	currentPathIndex        int
+}
+
+func (a *Actor) GetBodyPartIndex(aim special.BodyPart) int {
+	structure := a.body
+	for i, part := range structure {
+		if part == aim {
+			return i
+		}
+	}
+	return -1
+}
+
+func (a *Actor) GetBodyPart(index int) special.BodyPart {
+	structure := a.body
+	if index < 0 || index >= len(structure) {
+		return special.Body
+	}
+	return structure[index]
 }
 
 // GobEncode encodes the Actor struct into a byte slice.
@@ -152,6 +170,10 @@ func (a *Actor) GobEncode() ([]byte, error) {
 		return nil, err
 	}
 	err = encoder.Encode(a.xp)
+	if err != nil {
+		return nil, err
+	}
+	err = encoder.Encode(a.bodyDamage)
 	if err != nil {
 		return nil, err
 	}
@@ -241,6 +263,10 @@ func (a *Actor) GobDecode(data []byte) error {
 	if err != nil {
 		return err
 	}
+	err = decoder.Decode(&a.bodyDamage)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -258,7 +284,6 @@ var NoGoal = ActorGoal{}
 
 func NewActor() *Actor {
 	sheet := special.NewCharSheet()
-	body := foundation.BodyByName("human", sheet.GetHitPointsMax())
 
 	a := &Actor{
 		name: "Unknown",
@@ -270,9 +295,10 @@ func NewActor() *Actor {
 		inventory:   NewInventory(23),
 		equipment:   NewEquipment(),
 		charSheet:   sheet,
-		body:        body,
+		body:        special.HumanBodyParts,
+		bodyDamage:  make(map[special.BodyPart]int),
 		mood:        Neutral,
-		statusFlags: foundation.NewActorFlags(),
+		statusFlags: special.NewActorFlags(),
 		enemyActors: make(map[string]bool),
 		enemyTeams:  make(map[string]bool),
 		activeGoal:  NoGoal,
@@ -284,24 +310,12 @@ func (a *Actor) SetDialogueFile(scriptName string) {
 	a.dialogueFile = scriptName
 }
 
-func (a *Actor) GetBodyPartsAndHitChances(attackerSkill int, defenderSkill int) []fxtools.Tuple[string, int] {
-	var result []fxtools.Tuple[string, int]
-	defenseChance := dice_curve.ChanceOfSuccess(defenderSkill)
+func (a *Actor) GetBodyPartsAndHitChances(baseHitChance int) []fxtools.Tuple3[special.BodyPart, bool, int] {
+	var result []fxtools.Tuple3[special.BodyPart, bool, int]
 	for _, part := range a.body {
-		effectiveSkill := attackerSkill + part.SizeModifier
-		hitChance := dice_curve.ChanceOfSuccess(effectiveSkill)
-		combinedChanceToHit := hitChance * (1 - defenseChance)
-		chanceAsInt := int(combinedChanceToHit * 100)
-		result = append(result, fxtools.Tuple[string, int]{Item1: part.Name, Item2: chanceAsInt})
+		result = append(result, fxtools.Tuple3[special.BodyPart, bool, int]{Item1: part, Item2: a.IsCrippled(part), Item3: baseHitChance + part.AimPenalty()})
 	}
 	return result
-}
-
-func (a *Actor) GetBodyPartByIndex(part int) string {
-	if part < 0 || part >= len(a.body) {
-		return "None"
-	}
-	return a.body[part].Name
 }
 
 type CapModifier struct {
@@ -332,23 +346,6 @@ func (c CapModifier) IsPersistent() bool {
 
 func (c CapModifier) SortOrder() int {
 	return 3
-}
-
-func ModCapWhen(maxValue int, description string, conditionForApplication func() bool) dice_curve.Modifier {
-	return CapModifier{
-		maxValue:    maxValue,
-		doesApply:   conditionForApplication,
-		description: description,
-		persistent:  true,
-	}
-}
-func ModCap(maxValue int, reason string) dice_curve.Modifier {
-	return CapModifier{
-		maxValue:    maxValue,
-		doesApply:   func() bool { return true },
-		description: fmt.Sprintf("Cap %d - %s", maxValue, reason),
-		persistent:  true,
-	}
 }
 
 type FlatModifier struct {
@@ -451,7 +448,7 @@ func (a *Actor) GetListInfo() string {
 }
 
 func (a *Actor) IsStunned() bool {
-	return a.HasFlag(foundation.FlagStun)
+	return a.HasFlag(special.FlagStun)
 }
 
 func (a *Actor) Position() geometry.Point {
@@ -462,14 +459,14 @@ func (a *Actor) SetPosition(pos geometry.Point) {
 }
 
 func (a *Actor) Name() string {
-	if a.HasFlag(foundation.FlagInvisible) {
+	if a.HasFlag(special.FlagInvisible) {
 		return "something"
 	}
 	return a.name
 }
 
 func (a *Actor) IsVisible(playerCanSeeInvisible bool) bool {
-	return !a.HasFlag(foundation.FlagInvisible) || playerCanSeeInvisible
+	return !a.HasFlag(special.FlagInvisible) || playerCanSeeInvisible
 }
 
 func (a *Actor) GetInventory() *Inventory {
@@ -484,7 +481,7 @@ func (a *Actor) GetDamageResistance() int {
 	return 0
 }
 
-func (a *Actor) GetFlags() *foundation.ActorFlags {
+func (a *Actor) GetFlags() *special.ActorFlags {
 	return a.statusFlags
 }
 
@@ -492,20 +489,44 @@ func (a *Actor) IsAlive() bool {
 	return a.charSheet.IsAlive()
 }
 
-func (a *Actor) HasFlag(flag foundation.ActorFlag) bool {
+func (a *Actor) HasFlag(flag special.ActorFlag) bool {
 	return a.statusFlags.IsSet(flag) || a.GetEquipment().ContainsFlag(flag)
 }
 
-func (a *Actor) TakeDamage(amount int) {
-	a.charSheet.TakeRawDamage(amount)
+func (a *Actor) TakeDamage(dmg SourcedDamage) (didCripple bool) {
+	if a.HasFlag(special.FlagZombie) && dmg.DamageType != special.DamageTypeExplosive { // explosive damage works as usual
+		// headshots with normal damage kill zombies instantly if the damage is high enough
+		if dmg.DamageType == special.DamageTypeNormal && dmg.DamageAmount > 10 {
+			if dmg.BodyPart == special.Head || dmg.BodyPart == special.Eyes {
+				currentHitPoints := a.GetHitPoints()
+				a.charSheet.TakeRawDamage(currentHitPoints)
+			} else if dmg.BodyPart == special.Legs || dmg.BodyPart == special.Arms {
+				return a.addDamageToBodyPart(dmg) // still able to cripple
+			}
+		}
+		return
+	}
+	a.charSheet.TakeRawDamage(dmg.DamageAmount)
+
+	return a.addDamageToBodyPart(dmg)
+}
+
+func (a *Actor) addDamageToBodyPart(dmg SourcedDamage) (didCripple bool) {
+	wasCrippled := a.IsCrippled(dmg.BodyPart)
+	a.bodyDamage[dmg.BodyPart] += dmg.DamageAmount
+	return !wasCrippled && a.IsCrippled(dmg.BodyPart)
+}
+
+func (a *Actor) IsCrippled(part special.BodyPart) bool {
+	return a.bodyDamage[part] > part.DamageForCrippled(a.GetHitPointsMax())
 }
 
 func (a *Actor) IsSleeping() bool {
-	return a.HasFlag(foundation.FlagSleep)
+	return a.HasFlag(special.FlagSleep)
 }
 
 func (a *Actor) WakeUp() {
-	a.statusFlags.Unset(foundation.FlagSleep)
+	a.statusFlags.Unset(special.FlagSleep)
 }
 
 func (a *Actor) SetIntrinsicZapEffects(effects []string) {
@@ -524,13 +545,13 @@ func (a *Actor) GetIntrinsicUseEffects() []string {
 	return a.intrinsicUseEffects
 }
 func (a *Actor) AddGold(i int) {
-	a.statusFlags.Increase(foundation.FlagGold, i)
+	a.statusFlags.Increase(special.FlagGold, i)
 }
 
 func (a *Actor) RemoveLevelStatusEffects() {
-	a.statusFlags.Unset(foundation.FlagSeeFood)
-	a.statusFlags.Unset(foundation.FlagSeeMagic)
-	a.statusFlags.Unset(foundation.FlagSeeTraps)
+	a.statusFlags.Unset(special.FlagSeeFood)
+	a.statusFlags.Unset(special.FlagSeeMagic)
+	a.statusFlags.Unset(special.FlagSeeTraps)
 }
 
 func (a *Actor) Heal(amount int) {
@@ -655,15 +676,15 @@ func (a *Actor) SetSizeModifier(modifier int) {
 	a.sizeModifier = modifier
 }
 func (a *Actor) HasGold(price int) bool {
-	return a.statusFlags.Get(foundation.FlagGold) >= price
+	return a.statusFlags.Get(special.FlagGold) >= price
 }
 
 func (a *Actor) RemoveGold(price int) {
-	a.statusFlags.Decrease(foundation.FlagGold, price)
+	a.statusFlags.Decrease(special.FlagGold, price)
 }
 
 func (a *Actor) GetGold() int {
-	return a.statusFlags.Get(foundation.FlagGold)
+	return a.statusFlags.Get(special.FlagGold)
 }
 
 func (a *Actor) NeedsHealing() bool {
@@ -671,33 +692,33 @@ func (a *Actor) NeedsHealing() bool {
 }
 
 func (a *Actor) IsHungry() bool {
-	return a.statusFlags.Get(foundation.FlagHunger) > 0
+	return a.statusFlags.Get(special.FlagHunger) > 0
 }
 
 func (a *Actor) IsStarving() bool {
-	return a.statusFlags.Get(foundation.FlagHunger) > 1
+	return a.statusFlags.Get(special.FlagHunger) > 1
 }
 
 func (a *Actor) Satiate() {
-	a.statusFlags.Unset(foundation.FlagHunger)
-	a.statusFlags.Unset(foundation.FlagTurnsSinceEating)
+	a.statusFlags.Unset(special.FlagHunger)
+	a.statusFlags.Unset(special.FlagTurnsSinceEating)
 }
 
 func (a *Actor) SetSleeping() {
 	flags := a.GetFlags()
-	flags.Set(foundation.FlagSleep)
-	flags.Unset(foundation.FlagAwareOfPlayer)
-	flags.Unset(foundation.FlagScared)
+	flags.Set(special.FlagSleep)
+	flags.Unset(special.FlagAwareOfPlayer)
+	flags.Unset(special.FlagScared)
 }
 
 func (a *Actor) SetAware() {
 	flags := a.GetFlags()
-	flags.Unset(foundation.FlagSleep)
-	flags.Set(foundation.FlagAwareOfPlayer)
+	flags.Unset(special.FlagSleep)
+	flags.Set(special.FlagAwareOfPlayer)
 }
 
 func (a *Actor) IsBlind() bool {
-	return a.HasFlag(foundation.FlagBlind)
+	return a.HasFlag(special.FlagBlind)
 }
 
 func (a *Actor) AddTimeEnergy(timeSpent int) {
@@ -705,11 +726,28 @@ func (a *Actor) AddTimeEnergy(timeSpent int) {
 }
 
 func (a *Actor) HasEnergyForActions() bool {
-	return a.timeEnergy >= a.timeNeededForActions()
+	return a.timeEnergy >= a.maximalTimeNeededForActions()
 }
 
 func (a *Actor) timeNeededForActions() int {
 	speed := a.GetBasicSpeed()
+	if a.IsCrippled(special.Arms) {
+		speed = max(1, speed-2)
+	}
+	if a.IsCrippled(special.Eyes) {
+		speed = max(1, speed-1)
+	}
+	timeNeeded := 100 / speed
+	return timeNeeded
+}
+func (a *Actor) maximalTimeNeededForActions() int {
+	return max(a.timeNeededForActions(), a.timeNeededForMovement())
+}
+func (a *Actor) timeNeededForMovement() int {
+	speed := a.GetBasicSpeed()
+	if a.IsCrippled(special.Legs) {
+		speed = max(1, speed/2)
+	}
 	timeNeeded := 100 / speed
 	return timeNeeded
 }
@@ -724,12 +762,12 @@ func (a *Actor) AfterTurn() {
 
 func (a *Actor) decrementStatusEffectCounters() {
 	flags := a.GetFlags()
-	flags.Decrement(foundation.FlagHaste)
-	flags.Decrement(foundation.FlagSlow)
-	flags.Decrement(foundation.FlagConfused)
-	flags.Decrement(foundation.FlagFly)
-	flags.Decrement(foundation.FlagSeeInvisible)
-	flags.Decrement(foundation.FlagHallucinating)
+	flags.Decrement(special.FlagHaste)
+	flags.Decrement(special.FlagSlow)
+	flags.Decrement(special.FlagConfused)
+	flags.Decrement(special.FlagFly)
+	flags.Decrement(special.FlagSeeInvisible)
+	flags.Decrement(special.FlagHallucinating)
 }
 
 func (a *Actor) GetBasicSpeed() int {
@@ -846,7 +884,9 @@ func (a *Actor) GetDodgedAudioCue() string {
 	audioName := a.getAudioName()
 	return fmt.Sprintf("critters/%s/DODGE", audioName)
 }
-
+func (a *Actor) GetMeleeDamageBonus() int {
+	return a.charSheet.GetDerivedStat(special.MeleeDamageBonus)
+}
 func (a *Actor) GetMeleeAudioCue(isKick bool) string {
 	audioName := a.getAudioName()
 	hitType := "PUNCH"
@@ -910,7 +950,7 @@ func (a *Actor) LookInfo() string {
 	return a.Name()
 }
 
-func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, drModifier int, dtModifier int, bodyPart int) SourcedDamage {
+func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, drModifier int, dtModifier int) SourcedDamage {
 	if !a.GetEquipment().HasArmorEquipped() {
 		return damage
 	}
@@ -932,7 +972,7 @@ func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, drModifier int, dtModi
 	}
 
 	reduction = max(0, reduction+drModifier)
-	threshold = max(0, reduction+dtModifier)
+	threshold = max(0, threshold+dtModifier)
 
 	originalDamageAmount := damage.DamageAmount
 
@@ -956,7 +996,7 @@ func (a *Actor) HasStealableItems() bool {
 }
 
 func (a *Actor) IsKnockedDown() bool {
-	return a.HasFlag(foundation.FlagKnockedDown)
+	return a.HasFlag(special.FlagKnockedDown)
 }
 
 func (a *Actor) injuredString() string {
@@ -1099,6 +1139,22 @@ func (a *Actor) hasPathTo(pos geometry.Point) bool {
 	targetOfPath := a.currentPath[len(a.currentPath)-1]
 	isNear := geometry.DistanceChebyshev(targetOfPath, pos) <= 1
 	return isNear
+}
+
+func (a *Actor) GetMaxThrowRange() int {
+	strength := a.GetCharSheet().GetStat(special.Strength)
+	return strength * 2
+}
+
+func (a *Actor) GetXP() int {
+	return a.xp
+}
+
+func (a *Actor) timeNeededForMeleeAttack() int {
+	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandItem(); hasWeapon {
+		return meleeWeapon.GetCurrentAttackMode().TUCost
+	}
+	return a.timeNeededForActions()
 }
 
 type ActorGoal struct {

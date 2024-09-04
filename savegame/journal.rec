@@ -11,6 +11,12 @@ Cond: HasFlag('TalkedTo(dr_winters)')
 Viewed: false
 Active: false
 
+Text: You learned about the BioPharmaceuticals Inc. lab at the outskirts of town.
++ There might be something useful there.
+Cond: HasFlag('LocationKnown(zombies)')
+Viewed: false
+Active: true
+
 Text: You know where the mansion of the rich old man is.
 + Maybe you should pay him a visit?
 Cond: HasFlag('LocationKnown(mansion)')

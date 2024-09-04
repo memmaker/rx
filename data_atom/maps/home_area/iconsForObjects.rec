@@ -1,0 +1,62 @@
+%rec: default
+
+Name: OpenDoor
+Icon: ─
+Foreground: light_gray_1
+Background: dark_gray_2
+
+Name: LockedDoor
+Icon: ∩
+Foreground: red_5
+Background: dark_gray_2
+
+Name: ClosedDoor
+Icon: ∩
+Foreground: green_1
+Background: dark_gray_2
+
+Name: BrokenDoor
+Icon: *
+Foreground: light_gray_1
+Background: dark_gray_2
+
+Name: UnknownContainer
+Icon: ?
+Foreground: orange_red_1
+
+Name: KnownContainer
+Icon: !
+Foreground: light_blue
+
+Name: KnownEmptyContainer
+Icon: !
+Foreground: yellow_5
+
+Name: Terminal
+Icon: ■
+Foreground: neon_green_1
+Background: light_gray_5
+
+Name: Elevator
+Icon: ■
+Foreground: neon_green_1
+Background: light_gray_5
+
+Name: Transition
+Icon: ⌂
+Foreground: yellow_2
+
+Name: NamedLocation
+Icon: ⌂
+Foreground: yellow_2
+
+Name: Taxi
+Icon: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+
+Name: MetalSign
+Icon: ≡
+Foreground: gray_3
+Background: light_blue_2
+

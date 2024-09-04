@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
@@ -23,11 +24,15 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	oldPos := player.Position()
 
 	// adapted from: https://github.com/memmaker/rogue-pc-modern-C/blob/582340fcaef32dd91595721efb2d5db41ff3cb05/src/move.c#L56
-	if player.HasFlag(foundation.FlagConfused) && rand.Intn(5) != 0 {
+	if player.HasFlag(special.FlagConfused) && rand.Intn(5) != 0 {
 		direction = geometry.RandomDirection()
 	}
 
 	newPos := oldPos.Add(direction.ToPoint())
+
+	if oldPos == newPos {
+		return
+	}
 
 	if objectAt, exists := g.currentMap().TryGetObjectAt(newPos); exists {
 		if door, isDoor := objectAt.(*Door); isDoor { // THIS IS STILL HACKY; DOOR OBJECT ALSO IMPLEMENTS THIS
@@ -108,6 +113,7 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	}
 	direction = newPos.Sub(oldPos).ToDirection()
 	g.playerMove(oldPos, newPos)
+	g.gameFlags.Increment("playerSteps")
 	g.ui.AfterPlayerMoved(foundation.MoveInfo{
 		Direction: direction,
 		OldPos:    oldPos,
@@ -160,7 +166,7 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	g.updatePlayerFoVAndApplyExploration()
 	g.updateDijkstraMap()
 
-	if g.Player.HasFlag(foundation.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
+	if g.Player.HasFlag(special.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
 		g.ui.AddAnimations(OneAnimation(teleportWithAnimation(g, g.Player, g.currentMap().RandomSpawnPosition())))
 	}
 

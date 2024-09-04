@@ -1,11 +1,13 @@
 %rec: ui
-UIForeground: light_gray_4
 UIBackground: black
+#UIForeground: light_gray_4
+UIForeground: neon_green_5
 #
-UIForegroundHighlighted: white
+#UIForegroundHighlighted: white
+UIForegroundHighlighted: neon_green_1
 #
 BorderBackground: black
-BorderForeground: light_gray_4
+BorderForeground: neon_green_5
 
 %rec: borders
 
@@ -22,7 +24,7 @@ UIBorder_BottomT: |
 UIBorder_Cross: +
 UIBorder_HorizontalFocus: ─
 UIBorder_VerticalFocus: │
-UIBorder_TopLeftFocus: ┌
-UIBorder_TopRightFocus: ┐
-UIBorder_BottomLeftFocus: └
-UIBorder_BottomRightFocus: ┘
+UIBorder_TopLeftFocus: ╭
+UIBorder_TopRightFocus: ╮
+UIBorder_BottomLeftFocus: ╰
+UIBorder_BottomRightFocus: ╯

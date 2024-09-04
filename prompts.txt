@@ -1,0 +1,44 @@
+You are going to help me outline the plot of a small scale computer based roleplaying game.
+
+The game is about a "Contractor", an underworld freelancer hired for dirty work.
+
+The setting is vaguely cyberpunk inspired, set in an dystopian america in the year 2077. Corporations have overtaken nations and states and are policing the people now.
+
+Consumerism and cyber augmentation is at an all-time high, while greed is back to 80s levels.
+
+Instead of 50s vibe, like fallout has, we are going for an 80s inspired setting and world, that spiralled out of control from there.
+
+So, we want to be this first game to be small in scale and a preparation for a post-apocalyptic setting. So the plot will be about surviving the upcoming apocalypse.
+
+The main means of dealing with this will be a cryogenic facility where it's possible to safely sleep through the unfolding events.
+
+These cryo labs are only know to a few select people, one of them living in a big mansion out side of the town where our player will have his main hub of operations.
+
+So, for a minimal playthrough, at least these locations will be visited:
+
+ - The town of Kelso‚ to acquire the information about the cryo facilities and the mansion
+ - The mansion outside Kelso, to acquire means to access the cryo facility
+ - The cryo facility itself, where the player needs to find a safe cryo pod
+
+
+The focus for this game is player agency, so for every problem there should be multiple solutions. Specifically we want to support three main play styles:
+
+- Fighters, will just try to kill everyone
+- Sneaker, will try to avoid all the obstacles
+- Manipulators, will hack and persuade their way through the maps
+
+So the game must be completable if you kill absolutely everyone (murder run) and also if you don't kill anyone (pacifist run).
+
+A key message embedded in this world is that humanity is its own greatest enemy. So basically all characters will be deeply flawed, some very obviously so, others might seem like straight forward good people but really aren't. So no simple line between good and bad.
+
+The game will be centered around small quests given to the player by NPCs in the world. These may belong to factions.
+
+It's important for characters (NPCs) and factions to have believable and interesting motivations that inform conflict or introduce struggle.
+
+So, let's start out with a basic outline for the main quest line.
+
+It should have a defined start and ending and cover the three main locations (town, mansion, cryo lab).
+
+I need you to come up with some NPCs as quest givers, their name, a brief description of themselves and their motivation and how their quest connects to the main quest line.
+
+For each quest, there must be at least three different ways of solving it.

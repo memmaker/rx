@@ -1,5 +1,14 @@
 %rec: OpeningBranch
 
+cond: HasFlag('Killed(town_jeff)') && HasFlag('WasHurtByPlayer(town_jeff)') && !HasFlag('TalkedToWintersAfterJeff')
+goto: PlayerHelpedWithJeff
+
+cond: HasFlag('Killed(town_jeff)') && HasFlag('WasAttackedByPlayer(town_jeff)') && !HasFlag('WasHurtByPlayer(town_jeff)') && !HasFlag('TalkedToWintersAfterJeff')
+goto: PlayerMissedJeff
+
+cond: HasFlag('Killed(town_jeff)') && !HasFlag('WasAttackedByPlayer(town_jeff)') && !HasFlag('TalkedToWintersAfterJeff')
+goto: PlayerDidNotHelpWithJeff
+
 cond: HasFlag('KnowsOfWintersExperiments')
 goto: AwareOfExperiments
 
@@ -27,6 +36,7 @@ npc:
 + Let me see that. Hmm, another one of these?
 + I'll take it. Have you been told what to expect?
 effect: RemoveItem('doctors_referral')
+effect: RunScript('jeff_kills_winters')
 #
 o_text: No, not really.
 o_goto: NoExpectations
@@ -297,3 +307,98 @@ name: FightWinters
 npc:
 + I won't let you stop me! Not when I'm so close!
 effect: StartCombat
+
+
+name: PlayerHelpedWithJeff
+npc: Thank you for your help with Jeff. I really appreciate it. \
+I hope you didn't get hurt in the process.
+effect: SetFlag('TalkedToWintersAfterJeff')
+#
+o_text: I'm fine. What's going on here?
+o_goto: ExplainJeffSituation
+#
+o_text: I took a few hits, you could fix me up.
+o_cond: NeedsHealing('player')
+o_goto: OfferTreatment
+#
+o_text: I'm not here to chat. I have other business.
+o_goto: End
+
+name: PlayerMissedJeff
+npc: Well, you didn't hit him once, did you? I'm not sure if I should thank you or not.
+effect: SetFlag('TalkedToWintersAfterJeff')
+#
+o_text: Whatever. What's going on here?
+o_goto: ExplainJeffSituation
+#
+o_text: Look, I tried. I'm not a fighter. Can you at least heal me?
+o_cond: PlayerNeedsHealing()
+o_goto: OfferTreatment
+#
+o_text: I've got other things to do. Goodbye.
+o_goto: End
+
+name: PlayerDidNotHelpWithJeff
+npc: I am not sure you realized, but Jeff just tried to kill me. I could've used some help.
+effect: SetFlag('TalkedToWintersAfterJeff')
+#
+o_text: I didn't see him. What's going on here?
+o_goto: ExplainJeffSituation
+#
+o_text: Okay, I'm sorry. Can you heal me?
+o_cond: PlayerNeedsHealing()
+o_goto: OfferTreatment
+#
+o_text: I have to leave. Goodbye.
+o_goto: End
+
+name: ExplainJeffSituation
+npc:
++ Jeff and I had a long-standing disagreement. He finally snapped, and I had to defend myself.
++ It’s unfortunate, but it’s over now. I just hope the town doesn’t hold it against me.
+#
+o_text: What was the disagreement about?
+o_goto: DisagreementDetails
+#
+o_text: That’s unfortunate. What will you do now?
+o_goto: WintersNextSteps
+#
+o_text: I don’t need to know more. Goodbye.
+o_goto: End
+
+name: DisagreementDetails
+npc:
++ Jeff was convinced that I was involved in something shady. He kept digging into my work, making accusations.
++ I tried to reason with him, but he wouldn't let it go. Eventually, it became clear he wouldn’t stop until one of us was gone.
+#
+o_text: So, was he right? Are you involved in something?
+o_goto: AskAboutShadyWork
+#
+o_text: That sounds like a tough situation.
+o_goto: WintersNextSteps
+#
+o_text: That's unfortunate. I hope it doesn't happen again. (Leave)
+o_goto: End
+
+name: WintersNextSteps
+npc:
++ I’ll try to keep a low profile for a while. Hopefully, the town will move on, and I can continue my work in peace.
++ But if you need anything, I’ll be here. Just keep an eye out for trouble, will you?
+#
+o_text: I will. Take care, Dr. Winters.
+o_goto: End
+#
+o_text: I might take you up on that. Goodbye.
+o_goto: End
+
+name: OfferTreatment
+npc:
++ I can patch you up, but it'll cost you. I'm not running a charity here.
++ The price is 100 caps. Take it or leave it.
+#
+o_text: I'll take it.
+o_cond: HasItem('caps', 100)
+o_goto: GetHealed
+#
+o_text: That's too steep for me. I'll pass.
+o_goto: End

@@ -67,6 +67,10 @@ type InventoryStack struct {
 	invIndex int
 }
 
+func (i InventoryStack) GetCarryWeight() int {
+	return i.First().GetCarryWeight() * len(i.items)
+}
+
 func (i InventoryStack) GetIcon() textiles.TextIcon {
 	return i.items[0].GetIcon()
 }
@@ -391,6 +395,34 @@ func (i *Inventory) HasLightSource() bool {
 		}
 	}
 	return false
+}
+
+func (i *Inventory) GetTotalWeight() int {
+	totalWeight := 0
+	for _, invItem := range i.items {
+		totalWeight += invItem.GetCarryWeight()
+	}
+	return totalWeight
+}
+
+func (i *Inventory) GetAmmoWeight() int {
+	totalWeight := 0
+	for _, invItem := range i.items {
+		if invItem.IsAmmo() {
+			totalWeight += invItem.GetCarryWeight()
+		}
+	}
+	return totalWeight
+}
+
+func (i *Inventory) GetNonAmmoWeight() int {
+	totalWeight := 0
+	for _, invItem := range i.items {
+		if !invItem.IsAmmo() {
+			totalWeight += invItem.GetCarryWeight()
+		}
+	}
+	return totalWeight
 }
 
 func SortInventory(stacks []*InventoryStack) {

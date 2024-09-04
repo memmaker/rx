@@ -26,12 +26,42 @@ Fallout Core Features
  - Quests - missing
  - Tactical Combat
    - Melee - melee weapons missing
-   - Ranged (Aimed/Burst) - targeting mode cycle missing
+   - Ranged (Aimed/Burst) - DONE
    - Thrown - currently not working?
    - Explosives - missing
    - Traps - missing
    - Critical Hits / Fails - missing
    - Enemy AI - missing
+
+  - Mechanics
+    - Radiation
+    - Encumbrance
+    - Traits
+    - Perks
+    - Weapon Strength Requirements
+
+  - Animations
+    - Lasers
+    - Electricity
+    - EMP
+    - Burst?
+
+DX Items:
+  - Thermoptic Camo
+  - Hazmat Suit
+  - Rebreather
+  - Tech Goggles
+  - Binoculars
+  - Multi-Tool
+  - Lockpick
+  - Flare
+
+Cool Ideas to add:
+ - Zombie Shooting Area - Headshots kill, limb shots slow down, body shots do nothing
+ - Escape Room - Solve puzzles to escape
+ - Stealth Mission - Avoid detection
+ - Manipulated Senses - Make the player kill innocents
+ - Doom Style Traps / Triggers / Secrets
 
 See:
 https://mikesrpgcenter.com/fallout/index.html

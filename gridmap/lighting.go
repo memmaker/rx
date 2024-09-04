@@ -59,7 +59,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddBakedLightSource(pos geome
 	m.BakedLights[pos] = light
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetAmbientLight(color fxtools.HDRColor) {
-	m.AmbientLight = color
+	m.meta = m.meta.WithAmbientLight(color)
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsDynamicLightSource(pos geometry.Point) bool {
 	_, ok := m.DynamicLights[pos]
@@ -84,8 +84,8 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) MoveLightSource(lightSource *
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) IndoorLightAt(p geometry.Point) fxtools.HDRColor {
 	bakedLighting := m.cells[p.X+p.Y*m.mapWidth].BakedLighting
-	if m.AmbientLight.Brightness() > bakedLighting.Brightness() {
-		bakedLighting = m.AmbientLight
+	if m.meta.IndoorAmbientLight.Brightness() > bakedLighting.Brightness() {
+		bakedLighting = m.meta.IndoorAmbientLight
 	}
 
 	if dynamicLightAt, ok := m.dynamicallyLitCells[p]; ok {

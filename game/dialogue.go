@@ -175,6 +175,20 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction {
 	// NO INTEGERS..ONLY FLOATS
 	conditionFuncs := map[string]govaluate.ExpressionFunction{
+		"PlayerNeedsHealing": func(args ...interface{}) (interface{}, error) {
+			return g.Player.NeedsHealing(), nil
+		},
+		"NeedsHealing": func(args ...interface{}) (interface{}, error) {
+			actorName := args[0].(string)
+			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
+				return actor.GetInternalName() == actorName
+			})
+			if len(actors) == 0 {
+				return false, nil
+			}
+			actor := actors[0]
+			return actor.NeedsHealing(), nil
+		},
 		"HasFlag": func(args ...interface{}) (interface{}, error) {
 			flagName := args[0].(string)
 			return g.gameFlags.HasFlag(flagName), nil

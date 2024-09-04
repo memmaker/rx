@@ -1,0 +1,17 @@
+%rec: definitions
+
+var: OLDMAN
+set: ActorWithName('grim_beard')
+
+%rec: outcomes
+
+if: IsDead(OLDMAN)
+do: AddChatter(OLDMAN, 'You\'ll regret this.')
+
+%rec: frames
+
+if: true
+do: AddChatter(OLDMAN, 'Can you move? Try {{ .keys_move }} to move around.')
+
+if: HasFlag('playerSteps')
+do: AddChatter(OLDMAN, 'Great! We are making progress.')

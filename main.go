@@ -12,7 +12,6 @@ import (
 	"golang.org/x/term"
 	"math/rand"
 	"os"
-	"path"
 	"strings"
 )
 
@@ -27,49 +26,52 @@ func main() {
 		fmt.Println("This program must be run in a terminal.")
 		return
 	}
-	width, _, err := term.GetSize(0)
-	if err != nil {
-		return
-	}
+	//width, _, err := term.GetSize(0)
+	/*
+	   	if err != nil {
+	           return
+	       }
+	*/
 
 	fxtools.SetKeypadToNumericMode()
 
 	config := foundation.NewConfigurationFromFile("config.rec")
-
-	var playerName string
-	var showScoresOnly bool
-	if len(os.Args) > 1 {
-		argName := os.Args[1]
-		if argName == "-s" {
-			showScoresOnly = true
-		} else if len(os.Args) > 2 && argName == "-n" {
-			playerName = os.Args[2]
+	/*
+		var playerNameFromArgs string
+		var showScoresOnly bool
+		if len(os.Args) > 1 {
+			argName := os.Args[1]
+			if argName == "-s" {
+				showScoresOnly = true
+			} else if len(os.Args) > 2 && argName == "-n" {
+				playerNameFromArgs = os.Args[2]
+			}
+		} else {
+			showBanner(path.Join(config.DataRootDir, "banner.txt"), width)
 		}
-	} else {
-		showBanner(path.Join(config.DataRootDir, "banner.txt"), width)
-	}
 
-	if playerName != "" {
-		config.PlayerName = playerName
-	} else if config.PlayerName == "" && !showScoresOnly {
-		playerName = askForName()
-		config.PlayerName = playerName
+		if playerNameFromArgs != "" {
+			config.PlayerName = playerNameFromArgs
+		} else if config.PlayerName == "" && !showScoresOnly {
+			playerNameFromArgs = askForName()
+			config.PlayerName = playerNameFromArgs
+		}
+	*/
+	showIntro := false
+	if config.PlayerName == "" {
+		config.PlayerName = askForName()
+		showIntro = true
+		//config.WriteToFile("config.rec")
 	}
-
 	gameUI := console.NewTextUI(config)
 	game.NewGameState(gameUI, config)
 
-	if showScoresOnly {
-		scoresFile := "scores.bin"
-		scoreTable := game.LoadHighScoreTable(scoresFile)
-		gameUI.Queue(func() {
-			gameUI.ShowHighScoresOnly(scoreTable)
-		})
+	if showIntro {
+		gameUI.StartWithIntro()
+	} else {
+		gameUI.StartGameLoop()
 	}
-
-	gameUI.StartGameLoop()
 }
-
 func showBanner(filename string, width int) {
 	bannerLines := fxtools.ReadFileAsLines(filename)
 	for _, line := range bannerLines {

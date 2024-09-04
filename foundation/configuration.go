@@ -24,6 +24,7 @@ type Configuration struct {
 	DefaultToAdvancedTargeting bool
 	PlayerChar                 rune
 	PlayerColor                string
+	KeyMap                     string
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -69,6 +70,8 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.PlayerChar = field.AsRune()
 		case "PlayerColor":
 			configuration.PlayerColor = field.Value
+		case "KeyMap":
+			configuration.KeyMap = field.Value
 		}
 	}
 	return configuration
@@ -92,6 +95,7 @@ func NewDefaultConfiguration() *Configuration {
 		PlayerName:                 "Rogue",
 		PlayerChar:                 '@',
 		PlayerColor:                "white",
+		KeyMap:                     "numpad",
 	}
 }
 
@@ -118,6 +122,7 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "PlayerColor", Value: c.PlayerColor},
 			recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
 			recfile.Field{Name: "DefaultToAdvancedTargeting", Value: recfile.BoolStr(c.DefaultToAdvancedTargeting)},
+			recfile.Field{Name: "KeyMap", Value: c.KeyMap},
 		},
 	}
 	file, _ := os.Create(filename)

@@ -1,6 +1,7 @@
 package foundation
 
 import (
+	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"image/color"
@@ -14,9 +15,10 @@ type ActorForUI interface {
 	GetListInfo() string
 	GetHitPoints() int
 	GetHitPointsMax() int
-	HasFlag(held ActorFlag) bool
+	HasFlag(held special.ActorFlag) bool
 	GetDetailInfo() string
 	GetInternalName() string
-	GetBodyPartByIndex(part int) string
 	IsAlive() bool
+	GetBodyPart(index int) special.BodyPart
+	GetBodyPartIndex(aim special.BodyPart) int
 }

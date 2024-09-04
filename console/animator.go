@@ -2,7 +2,9 @@ package console
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/gridmap"
 	"cmp"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"slices"
@@ -17,9 +19,11 @@ type TextAnimation interface {
 	Cancel()
 	IsRequestingMapStateUpdate() bool
 	GetAudioCue() string
+	GetLight() *gridmap.LightSource
 }
 type Animator struct {
 	animationState    map[geometry.Point]textiles.TextIcon
+	lightState        map[geometry.Point]fxtools.HDRColor
 	runningAnimations []TextAnimation
 	audioCuePlayer    foundation.AudioCuePlayer
 }
@@ -27,6 +31,7 @@ type Animator struct {
 func NewAnimator() *Animator {
 	return &Animator{
 		animationState: make(map[geometry.Point]textiles.TextIcon),
+		lightState:     make(map[geometry.Point]fxtools.HDRColor),
 	}
 }
 
@@ -72,10 +77,14 @@ func (a *Animator) Tick() (shouldUpdateMapState bool) {
 	})
 
 	clear(a.animationState)
+	clear(a.lightState)
 
 	for _, animation := range a.runningAnimations {
 		for pos, icon := range animation.GetDrawables() {
 			a.animationState[pos] = icon
+		}
+		if animation.GetLight() != nil {
+			a.updateDynamicLight(animation.GetLight())
 		}
 		animation.NextFrame()
 	}
@@ -88,6 +97,40 @@ func (a *Animator) CancelAll() {
 	}
 	a.runningAnimations = nil
 	clear(a.animationState)
+}
+
+func (a *Animator) updateDynamicLight(light *gridmap.LightSource) {
+	radius := light.Radius
+	for x := -radius; x <= radius; x++ {
+		for y := -radius; y <= radius; y++ {
+			if x*x+y*y > radius*radius {
+				continue
+			}
+			pos := geometry.Point{X: x, Y: y}.Add(light.Pos)
+			existingLight := a.lightAt(pos)
+			thisLight := light.Color.MultiplyWithScalar(light.MaxIntensity)
+			mixedLight := existingLight.Add(thisLight)
+			a.lightState[pos] = mixedLight
+		}
+	}
+}
+
+func (a *Animator) lightAt(pos geometry.Point) fxtools.HDRColor {
+	color, exists := a.lightState[pos]
+	if !exists {
+		return fxtools.HDRColor{A: 1}
+	}
+	return color
+}
+
+func (a *Animator) isPositionAnimated(pos geometry.Point) bool {
+	if _, exists := a.animationState[pos]; exists {
+		return true
+	}
+	if _, exists := a.lightState[pos]; exists {
+		return true
+	}
+	return false
 }
 
 func cancelRecursive(animation TextAnimation) {

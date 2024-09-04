@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/foundation"
 	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -17,10 +16,11 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	var useEffects []string
 	var equipment []string
 
-	flags := foundation.NewActorFlags()
+	flags := special.NewActorFlags()
 
 	charSheet := special.NewCharSheet()
 
+	var dodge, hitpoints, actionpoints, speed int
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		case "name":
@@ -52,11 +52,13 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		case "luck":
 			charSheet.SetStat(special.Luck, field.AsInt())
 		case "hitpoints":
-			charSheet.SetDerivedStatAbsoluteValue(special.HitPoints, field.AsInt())
+			hitpoints = field.AsInt()
+		case "dodge":
+			dodge = field.AsInt()
 		case "actionpoints":
-			charSheet.SetDerivedStatAbsoluteValue(special.ActionPoints, field.AsInt())
+			actionpoints = field.AsInt()
 		case "speed":
-			charSheet.SetDerivedStatAbsoluteValue(special.Speed, field.AsInt())
+			speed = field.AsInt()
 		case "skillbonusunarmed":
 			charSheet.SetSkillAdjustment(special.Unarmed, field.AsInt())
 		case "skillbonusmeleeweapons":
@@ -71,8 +73,6 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			charSheet.SetSkillAdjustment(special.Throwing, field.AsInt())
 		case "size_modifier":
 			actor.SetSizeModifier(field.AsInt())
-		case "dodge":
-			charSheet.SetDerivedStatAbsoluteValue(special.Dodge, field.AsInt())
 		case "equipment":
 			equipment = append(equipment, field.Value)
 		case "default_relation":
@@ -84,7 +84,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			actor.SetDialogueFile(field.Value)
 		case "flags":
 			for _, mFlag := range field.AsList("|") {
-				flags.Set(foundation.ActorFlagFromString(mFlag.Value))
+				flags.Set(special.ActorFlagFromString(mFlag.Value))
 			}
 		default:
 			//println("WARNING: Unknown field: " + field.Name)
@@ -93,7 +93,16 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 
 	actor.GetFlags().Init(flags.UnderlyingCopy())
 
+	charSheet.SetDerivedStatAbsoluteValue(special.HitPoints, hitpoints)
+	charSheet.SetDerivedStatAbsoluteValue(special.ActionPoints, actionpoints)
+	charSheet.SetDerivedStatAbsoluteValue(special.Speed, speed)
+	charSheet.SetDerivedStatAbsoluteValue(special.Dodge, dodge)
+
 	charSheet.HealCompletely()
+
+	if actor.HasFlag(special.FlagZombie) {
+		actor.SetHostile()
+	}
 
 	actor.SetCharSheet(charSheet)
 	actor.SetIcon(icon)

@@ -225,13 +225,13 @@ func (e *Equipment) GetShield() *Item {
 }
 
 func (e *Equipment) CanUnequip(item *Item) bool {
-	if item.GetEquipFlag() == foundation.FlagCurseStuck && item.GetCharges() > 0 {
+	if item.GetEquipFlag() == special.FlagCurseStuck && item.GetCharges() > 0 {
 		return false
 	}
 	return true
 }
 
-func (e *Equipment) ContainsFlag(flag foundation.ActorFlag) bool {
+func (e *Equipment) ContainsFlag(flag special.ActorFlag) bool {
 	for _, item := range e.slots {
 		itemFlags := item.GetEquipFlag()
 		if itemFlags == flag {
@@ -271,11 +271,11 @@ func (e *Equipment) AfterTurn() {
 	}
 }
 
-func (e *Equipment) GetAllFlags() map[foundation.ActorFlag]int {
-	flags := make(map[foundation.ActorFlag]int)
+func (e *Equipment) GetAllFlags() map[special.ActorFlag]int {
+	flags := make(map[special.ActorFlag]int)
 	for _, item := range e.slots {
 		itemFlags := item.GetEquipFlag()
-		if itemFlags == foundation.FlagNone {
+		if itemFlags == special.FlagNone {
 			continue
 		}
 		flags[itemFlags] = 1

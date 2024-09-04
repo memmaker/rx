@@ -1,14 +1,5 @@
 % main
 
-w -> north
-s -> south
-a -> west
-d -> east
-W -> run_north
-S -> run_south
-A -> run_west
-D -> run_east
-
 8 -> north
 2 -> south
 4 -> west
@@ -25,12 +16,14 @@ Enter -> map_interaction
 
 = -> inventory
 i -> inventory
+n -> show_ammo
 
 g -> attack
 h -> quick_attack
 
 f -> cycle_target_mode
 r -> reload_weapon
+b -> switch_weapons
 
 x -> look
 v -> throw
@@ -54,11 +47,11 @@ Q -> quit
 F1 -> help
 F2 -> show_key_bindings
 
+F8 -> show_datetime
 F9 -> wiz_advance_time
 F10 -> wizard
 F11 -> gamma_down
 F12 -> gamma_up
-
 
 % advanced_targeting
 
@@ -70,11 +63,6 @@ Esc -> target_cancel
 0 -> target_cancel
 Space -> target_confirm
 Enter -> target_confirm
-
-w -> north
-s -> south
-a -> west
-d -> east
 
 8 -> north
 2 -> south
@@ -101,11 +89,6 @@ F10 -> target_confirm_body_part_9
 Esc -> target_cancel
 Escape -> target_cancel
 Space -> target_switch_to_advanced
-
-w -> north
-s -> south
-a -> west
-d -> east
 
 8 -> north
 2 -> south

@@ -1,7 +1,6 @@
 package special
 
 import (
-	"RogueUI/foundation"
 	"bytes"
 	"cmp"
 	"encoding/gob"
@@ -62,6 +61,46 @@ func (s Stat) ToShortString() string {
 	return ""
 }
 
+func (s Stat) GetDescription() string {
+	switch s {
+	case Strength:
+		return "Strength measures the raw physical power of your character. It affects how much you can carry, and the damage of all melee attacks."
+	case Perception:
+		return "Perception affects your ranged combat skills, and your ability to detect traps and enemies."
+	case Endurance:
+		return "Endurance affects your Hit Points, Poison Resistance, and Radiation Resistance."
+	case Charisma:
+		return "Charisma affects your ability to negotiate, and the size of your party."
+	case Intelligence:
+		return "Intelligence affects the number of skill points you receive when you level up, and the number of new Perks you can choose."
+	case Agility:
+		return "Agility affects your Action Points, and your ability to dodge attacks."
+	case Luck:
+		return "Luck affects your Critical Chance, and the outcome of random events."
+	}
+	return ""
+}
+
+func (s Stat) String() string {
+	switch s {
+	case Strength:
+		return "Strength"
+	case Perception:
+		return "Perception"
+	case Endurance:
+		return "Endurance"
+	case Charisma:
+		return "Charisma"
+	case Intelligence:
+		return "Intelligence"
+	case Agility:
+		return "Agility"
+	case Luck:
+		return "Luck"
+	}
+	return ""
+}
+
 const (
 	Strength Stat = iota
 	Perception
@@ -70,6 +109,7 @@ const (
 	Intelligence
 	Agility
 	Luck
+	StatCount
 )
 
 func StatFromString(name string) Stat {
@@ -96,23 +136,62 @@ func StatFromString(name string) Stat {
 
 type DerivedStat int
 
+func (s DerivedStat) String() string {
+	switch s {
+	case ActionPoints:
+		return "Action Points"
+	case Dodge:
+		return "Dodge"
+	case CarryWeight:
+		return "Carry Weight"
+	case CriticalChance:
+		return "Critical Chance"
+	case DamageResistance:
+		return "Damage Resistance"
+	case EnergyResistance:
+		return "Energy Resistance"
+	case HealingRate:
+		return "Healing Rate"
+	case HitPoints:
+		return "Hit Points"
+	case MeleeDamageBonus:
+		return "Melee Damage"
+	case PartyLimit:
+		return "Party Limit"
+	case PerkRate:
+		return "Perk Rate"
+	case PoisonResistance:
+		return "Poison Resistance"
+	case RadiationResistance:
+		return "Radiation Resistance"
+	case Speed:
+		return "Speed"
+	case SkillRate:
+		return "Skill Rate"
+	}
+	return ""
+}
+
 const (
 	ActionPoints DerivedStat = iota
+	HitPoints
+	HealingRate
+	Speed
 	Dodge
 	CarryWeight
 	CriticalChance
+	MeleeDamageBonus
 	DamageResistance
-	HealingRate
-	HitPoints
-	MeleeDamage
-	PartyLimit
-	PerkRate
 	EnergyResistance
 	PoisonResistance
 	RadiationResistance
-	Speed
+	PartyLimit
 	SkillRate
+	PerkRate
+	DerivedStatCount
 )
+
+var VisibleDerivedStatCount = 12
 
 type Skill int
 
@@ -164,6 +243,46 @@ func (s Skill) ToShortString() string {
 	return ""
 }
 
+func (s Skill) String() string {
+	switch s {
+	case SmallGuns:
+		return "Small Guns"
+	case BigGuns:
+		return "Big Guns"
+	case EnergyWeapons:
+		return "Energy Weapons"
+	case Unarmed:
+		return "Unarmed"
+	case MeleeWeapons:
+		return "Melee Weapons"
+	case Throwing:
+		return "Throwing"
+	case Doctor:
+		return "Doctor"
+	case Sneak:
+		return "Sneak"
+	case Lockpick:
+		return "Lockpick"
+	case Steal:
+		return "Steal"
+	case Traps:
+		return "Traps"
+	case Science:
+		return "Science"
+	case Repair:
+		return "Repair"
+	case Speech:
+		return "Speech"
+	case Barter:
+		return "Barter"
+	case Gambling:
+		return "Gambling"
+	case Outdoorsman:
+		return "Outdoorsman"
+	}
+	return ""
+}
+
 const (
 	SmallGuns Skill = iota
 	BigGuns
@@ -182,6 +301,7 @@ const (
 	Barter
 	Gambling
 	Outdoorsman
+	SkillCount
 )
 
 func SkillFromString(name string) Skill {
@@ -225,6 +345,8 @@ func SkillFromString(name string) Skill {
 	panic("invalid skill name")
 	return 0
 }
+
+// tagging gives 20% bonus to skill
 func NewCharSheet() *CharSheet {
 	c := &CharSheet{
 		stats: map[Stat]int{
@@ -240,6 +362,7 @@ func NewCharSheet() *CharSheet {
 		derivedStatAdjustments: make(map[DerivedStat]int),
 		skillAdjustments:       make(map[Skill]int),
 		taggedSkills:           make(map[Skill]bool),
+		level:                  1,
 	}
 	c.HealCompletely()
 	return c
@@ -270,6 +393,7 @@ type CharSheet struct {
 	onStatChangedHandler        func(Stat)
 	onDerivedStatChangedHandler func(DerivedStat)
 	onSkillChangedHandler       func(Skill)
+	xp                          int
 }
 
 // GobEncode encodes the CharSheet struct into a byte slice.
@@ -389,9 +513,16 @@ func (cs *CharSheet) SetStat(stat Stat, value int) {
 }
 
 func (cs *CharSheet) GetSkill(skill Skill) int {
-	baseValue := cs.getSkillBase(skill) + cs.getSkillAdjustment(skill)
+	baseValue := cs.getSkillBase(skill) + cs.getSkillAdjustment(skill) + cs.getTagSkillBonus(skill)
 	skillValue := cs.onRetrieveSkillHook(skill, baseValue)
 	return skillValue
+}
+
+func (cs *CharSheet) getTagSkillBonus(skill Skill) int {
+	if cs.taggedSkills[skill] {
+		return 20
+	}
+	return 0
 }
 
 func (cs *CharSheet) getSkillAdjustment(skill Skill) int {
@@ -425,7 +556,7 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 	case Dodge:
 		return cs.GetStat(Agility) // Needs to factor in armor..
 	case CarryWeight:
-		return 25 + 25*cs.GetStat(Strength)
+		return 20 + 15*cs.GetStat(Strength)
 	case CriticalChance:
 		return cs.GetStat(Luck)
 	case DamageResistance:
@@ -436,7 +567,7 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 		return max(1, cs.GetStat(Endurance)/3)
 	case HitPoints:
 		return 15 + (2 * cs.GetStat(Endurance)) + cs.GetStat(Strength)
-	case MeleeDamage:
+	case MeleeDamageBonus:
 		return max(1, cs.GetStat(Strength)-5)
 	case PartyLimit:
 		return int(math.Floor(float64(cs.GetStat(Charisma)) / 2.0))
@@ -458,7 +589,7 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 func (cs *CharSheet) getSkillBase(skill Skill) int {
 	switch skill {
 	case SmallGuns:
-		return 5 + (cs.GetStat(Perception) * 4)
+		return 20 + (cs.GetStat(Perception) * 4)
 	case BigGuns:
 		return cs.GetStat(Strength) + cs.GetStat(Perception) + 5
 	case EnergyWeapons:
@@ -591,7 +722,7 @@ func (cs *CharSheet) LooseActionPoints(amount int) {
 	cs.onDerivedStatChanged(ActionPoints)
 }
 
-func (cs *CharSheet) HasFlag(flagName foundation.ActorFlag) bool {
+func (cs *CharSheet) HasFlag(flagName ActorFlag) bool {
 	return false
 }
 
@@ -651,12 +782,12 @@ func (cs *CharSheet) Kill() {
 func (cs *CharSheet) IsSkillHigherOrEqual(skill Skill, difficulty int) bool {
 	return cs.GetSkill(skill) >= difficulty
 }
-func (cs *CharSheet) SkillRoll(skill Skill, modifiers int) foundation.CheckResult {
+func (cs *CharSheet) SkillRoll(skill Skill, modifiers int) CheckResult {
 	critChance := cs.GetStat(Luck)
 	return SuccessRoll(Percentage(max(0, min(95, cs.GetSkill(skill)+modifiers))), Percentage(critChance))
 }
 
-func (cs *CharSheet) StatRoll(stat Stat, modifiers int) foundation.CheckResult {
+func (cs *CharSheet) StatRoll(stat Stat, modifiers int) CheckResult {
 	critChance := cs.GetStat(Luck)
 	statSkill := max(0, min(95, (cs.GetStat(stat)*10)+modifiers))
 	return SuccessRoll(Percentage(statSkill), Percentage(critChance))
@@ -702,4 +833,140 @@ func (cs *CharSheet) ToRecord() recfile.Record {
 		recfile.Field{Name: "Gambling_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Gambling))},
 		recfile.Field{Name: "Outdoorsman_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Outdoorsman))},
 	}
+}
+
+func (cs *CharSheet) HasStatPointsToSpend() bool {
+	return cs.availableStatPoints > 0
+}
+
+func (cs *CharSheet) GetStatPointsToSpend() int {
+	return cs.availableStatPoints
+}
+
+func (cs *CharSheet) IsTagSkill(skill Skill) bool {
+	return cs.taggedSkills[skill]
+}
+
+func (cs *CharSheet) HasSkillPointsToSpend() bool {
+	return cs.availableSkillPoints > 0
+}
+
+func (cs *CharSheet) TagSkill(skill Skill) {
+	if cs.GetTagSkillCount() >= 3 {
+		return
+	}
+	cs.taggedSkills[skill] = true
+}
+
+func (cs *CharSheet) UntagSkill(skill Skill) {
+	delete(cs.taggedSkills, skill)
+}
+
+func (cs *CharSheet) GetTagSkillCount() int {
+	return len(cs.taggedSkills)
+}
+
+func (cs *CharSheet) SpendStatPoint(stat Stat) {
+	if cs.availableStatPoints <= 0 {
+		return
+	}
+	if cs.stats[stat] >= 10 {
+		return
+	}
+	cs.stats[stat]++
+	cs.availableStatPoints--
+	cs.onStatChanged(stat)
+}
+
+func (cs *CharSheet) RefundStatPoint(stat Stat) {
+	if cs.stats[stat] <= 1 {
+		return
+	}
+	cs.stats[stat]--
+	cs.availableStatPoints++
+	cs.onStatChanged(stat)
+}
+
+func (cs *CharSheet) GetSkillPointsToSpend() int {
+	return cs.availableSkillPoints
+}
+
+func (cs *CharSheet) ResetStatPoints() {
+	for stat := range cs.stats {
+		cs.stats[stat] = 5
+	}
+	cs.availableStatPoints = 5
+}
+
+func (cs *CharSheet) ResetTagSkills() {
+	cs.taggedSkills = make(map[Skill]bool)
+}
+
+func (cs *CharSheet) SpendSkillPoints(skill Skill, points int) {
+	if cs.availableSkillPoints < points {
+		return
+	}
+	cs.availableSkillPoints -= points
+	isTagSkill := cs.IsTagSkill(skill)
+	if isTagSkill {
+		points = points * 2
+	}
+	cs.skillAdjustments[skill] += points
+	cs.onSkillChanged(skill)
+}
+
+func (cs *CharSheet) AddXP(xp int) bool {
+	if xp <= 0 {
+		return false
+	}
+	wasAbleToLevelBefore := cs.CanLevelUp()
+	cs.xp += xp
+
+	if cs.CanLevelUp() && !wasAbleToLevelBefore {
+		cs.LevelUp()
+		return true
+	}
+	return false
+}
+
+func (cs *CharSheet) CanLevelUp() bool {
+	return cs.xp >= cs.GetTotalXPForNextLevel(cs.level)
+}
+
+func (cs *CharSheet) GetTotalXPForNextLevel(currentLevel int) int {
+	if currentLevel > 21 {
+		// (n*(n-1)/2) * 1,000 XP
+		return (currentLevel * (currentLevel - 1) / 2) * 1000
+	}
+	return []int{
+		0,
+		1000,
+		3000,
+		6000,
+		10000,
+		15000,
+		21000,
+		28000,
+		36000,
+		45000,
+		55000,
+		66000,
+		78000,
+		91000,
+		105000,
+		120000,
+		136000,
+		153000,
+		171000,
+		190000,
+		210000,
+	}[currentLevel]
+}
+
+func (cs *CharSheet) GetCurrentXP() int {
+	return cs.xp
+}
+
+func (cs *CharSheet) GetXPNeededForNextLevel() int {
+	return cs.GetTotalXPForNextLevel(cs.level) - cs.xp
 }

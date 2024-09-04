@@ -4,6 +4,7 @@ import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/special"
+	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
@@ -24,9 +25,16 @@ func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geom
 		"fire_ray":             fireRay,
 		"charge_attack":        chargeAttack,
 		"heroic_charge":        heroicCharge,
-		"explode":              explosion,
-		"magic_dart":           magicDart,
-		"magic_arrow":          magicArrow,
+		"explode": func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
+			return explosion(g, zapper, aimPos, Params{
+				kvp: map[string]string{
+					"radius": "3",
+					"damage": "20-35",
+				},
+			})
+		},
+		"magic_dart":  magicDart,
+		"magic_arrow": magicArrow,
 		//"force_descend_target": forceDescendTarget,
 		"hold_target": holdTarget,
 	}
@@ -59,7 +67,7 @@ func magicArrow(g *GameState, zapper *Actor, pos geometry.Point) []foundation.An
 }
 
 func uncloakAndCharge(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
-	zapper.GetFlags().Unset(foundation.FlagInvisible)
+	zapper.GetFlags().Unset(special.FlagInvisible)
 	zapper.SetAware()
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(zapper, zapper.Position())
 	chargeAnim, _ := charge(g, zapper, pos, false, g.getLine)
@@ -93,7 +101,7 @@ func charge(g *GameState, zapper *Actor, pos geometry.Point, isHeroic bool, getP
 	moveAnim := g.ui.GetAnimQuickMove(zapper, pathOfFlight)
 
 	if hitActor != nil {
-		attackAnims := g.actorMeleeAttack(zapper, hitActor) // TODO: apply -4 to hit, cap effective skill at 9
+		attackAnims := g.actorMeleeAttack(zapper, hitActor, 0) // TODO: apply -4 to hit, cap effective skill at 9
 		moveAnim.SetFollowUp(attackAnims)
 	}
 	return moveAnim, targetPos
@@ -109,7 +117,7 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 			if actor.IsAlive() {
 				freeze := func() {
 					g.msg(foundation.HiLite("%s is frozen", actor.Name()))
-					actor.GetFlags().Set(foundation.FlagHeld)
+					actor.GetFlags().Set(special.FlagHeld)
 				}
 				damageWithSource := SourcedDamage{
 					NameOfThing:     "ice ray",
@@ -134,8 +142,10 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 	return g.singleRay(zapper.Position(), aimPos, trailLead, trailColors, hitEntityHandler)
 
 }
-func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Animation {
-	radius := 3
+func explosion(g *GameState, zapper *Actor, loc geometry.Point, params Params) []foundation.Animation {
+	radius := params.GetIntOrDefault("radius", 3)
+	damageInterval := params.GetIntervalOrDefault("damage", fxtools.NewInterval(25, 50))
+
 	affected := g.currentMap().GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
 		return g.currentMap().IsTileWalkable(p)
 	})
@@ -149,7 +159,7 @@ func explosion(g *GameState, zapper *Actor, loc geometry.Point) []foundation.Ani
 		IsObviousAttack: false,
 		AttackMode:      special.TargetingModeFireSingle,
 		DamageType:      special.DamageTypeExplosive,
-		DamageAmount:    rand.Intn(26) + 25,
+		DamageAmount:    damageInterval.Roll(),
 	}
 	for point, _ := range affected {
 		damageAnims := g.damageLocation(damage, point)
@@ -406,7 +416,7 @@ func holdTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundat
 
 	if g.currentMap().IsActorAt(targetPos) {
 		targetActor := g.currentMap().ActorAt(targetPos)
-		targetActor.GetFlags().Increase(foundation.FlagHeld, rand.Intn(10)+5)
+		targetActor.GetFlags().Increase(special.FlagHeld, rand.Intn(10)+5)
 	}
 
 	return animations
@@ -541,6 +551,7 @@ type SourcedDamage struct {
 	AttackMode      special.TargetingMode
 	DamageType      special.DamageType
 	DamageAmount    int
+	BodyPart        special.BodyPart
 }
 
 func (d SourcedDamage) IsActor() bool {
@@ -560,7 +571,7 @@ func (g *GameState) damageActorWithFollowUp(
 	followUps []foundation.Animation,
 ) []foundation.Animation {
 
-	victim.TakeDamage(damage.DamageAmount)
+	didCripple := victim.TakeDamage(damage)
 
 	if damage.IsObviousAttack {
 		g.trySetHostile(victim, damage.Attacker)
@@ -569,6 +580,14 @@ func (g *GameState) damageActorWithFollowUp(
 	isOverKill := victim.GetHitPoints() <= (-victim.GetHitPointsMax() / 2)
 	var damageAnim foundation.Animation
 	var damageAudioCue string
+
+	hurtFlag := fmt.Sprintf("WasHurt(%s)", victim.GetInternalName())
+	g.gameFlags.SetFlag(hurtFlag)
+
+	if damage.Attacker == g.Player {
+		hurtByPlayerFlag := fmt.Sprintf("WasHurtByPlayer(%s)", victim.GetInternalName())
+		g.gameFlags.SetFlag(hurtByPlayerFlag)
+	}
 
 	if isKill {
 		g.actorKilled(damage, victim)
@@ -583,6 +602,7 @@ func (g *GameState) damageActorWithFollowUp(
 	} else { // only a flesh wound
 		damageAudioCue = victim.GetHitAudioCue(damage.AttackMode.IsMelee())
 		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, done)
+		g.actorHitMessage(victim, damage, didCripple)
 		if victim != g.Player {
 			g.tryAddChatter(victim, "Ouch!")
 		}
@@ -594,7 +614,7 @@ func (g *GameState) damageActorWithFollowUp(
 }
 
 func (g *GameState) trySetHostile(affected *Actor, sourceOfTrouble *Actor) {
-	if !affected.IsPanicking() && !affected.IsHostileTowards(sourceOfTrouble) && g.canActorSee(affected, sourceOfTrouble.Position()) {
+	if !affected.IsPanicking() && g.canActorSee(affected, sourceOfTrouble.Position()) {
 		if affected.GetTeam() == sourceOfTrouble.GetTeam() || sourceOfTrouble == g.Player {
 			affected.AddToEnemyActors(sourceOfTrouble.GetInternalName())
 		} else {

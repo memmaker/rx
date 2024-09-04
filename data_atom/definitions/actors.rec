@@ -7,7 +7,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -39,7 +39,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -70,7 +70,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -111,7 +111,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -151,7 +151,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 60
+XP: 60
 KillType: 6
 DamageType: 0
 TeamNum: 1
@@ -189,7 +189,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 110
+XP: 110
 KillType: 6
 DamageType: 0
 TeamNum: 1
@@ -231,7 +231,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 250
+XP: 250
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -273,7 +273,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 250
+XP: 250
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -315,7 +315,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 40
+XP: 40
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -354,7 +354,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 1
-ExpValue: 80
+XP: 80
 KillType: 5
 DamageType: 0
 TeamNum: 1
@@ -393,7 +393,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 1
-ExpValue: 25
+XP: 25
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -426,7 +426,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 1
-ExpValue: 70
+XP: 70
 KillType: 12
 DamageType: 0
 TeamNum: 1
@@ -459,7 +459,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -495,7 +495,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -531,7 +531,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -569,7 +569,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 14
 DamageType: 0
 TeamNum: 1
@@ -604,7 +604,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 35
+XP: 35
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -638,7 +638,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 35
+XP: 35
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -673,7 +673,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -711,7 +711,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -751,7 +751,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -788,7 +788,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -827,7 +827,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -871,7 +871,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -916,7 +916,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 40
+XP: 40
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -957,7 +957,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 40
+XP: 40
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1001,7 +1001,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1032,7 +1032,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1064,7 +1064,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1106,7 +1106,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1150,7 +1150,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1193,7 +1193,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1235,7 +1235,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1276,7 +1276,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1319,7 +1319,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1361,7 +1361,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1405,7 +1405,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1448,7 +1448,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1492,7 +1492,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1535,7 +1535,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1583,7 +1583,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1630,7 +1630,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1676,7 +1676,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1721,7 +1721,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1768,7 +1768,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1814,7 +1814,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 95
+XP: 95
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1862,7 +1862,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 95
+XP: 95
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -1909,7 +1909,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 95
+XP: 95
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -1957,7 +1957,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 95
+XP: 95
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2004,7 +2004,7 @@ Icon: O
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 2
 DamageType: 0
 TeamNum: 1
@@ -2040,7 +2040,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 2
 DamageType: 0
 TeamNum: 1
@@ -2075,7 +2075,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 2
 DamageType: 0
 TeamNum: 1
@@ -2108,7 +2108,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 2
 DamageType: 0
 TeamNum: 1
@@ -2140,7 +2140,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 35
+XP: 35
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2172,7 +2172,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 35
+XP: 35
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2203,7 +2203,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2241,7 +2241,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2278,7 +2278,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2316,7 +2316,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2353,7 +2353,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 40
+XP: 40
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2391,7 +2391,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 40
+XP: 40
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2428,7 +2428,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 240
+XP: 240
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2462,7 +2462,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2494,7 +2494,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2525,7 +2525,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 40
+XP: 40
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2557,7 +2557,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 40
+XP: 40
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2588,7 +2588,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 55
+XP: 55
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2620,7 +2620,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 55
+XP: 55
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2651,7 +2651,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2693,7 +2693,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2735,7 +2735,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -2778,7 +2778,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -2820,7 +2820,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 240
+XP: 240
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -2863,7 +2863,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 280
+XP: 280
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -2907,7 +2907,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 300
+XP: 300
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -2954,7 +2954,7 @@ Icon: F
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 275
+XP: 275
 KillType: 10
 DamageType: 4
 TeamNum: 1
@@ -3000,7 +3000,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 600
+XP: 600
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -3047,7 +3047,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 300
+XP: 300
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -3096,7 +3096,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 55
+XP: 55
 KillType: 15
 DamageType: 0
 TeamNum: 1
@@ -3134,7 +3134,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 15
 DamageType: 0
 TeamNum: 1
@@ -3172,7 +3172,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 60
+XP: 60
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -3210,7 +3210,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 135
+XP: 135
 KillType: 15
 DamageType: 0
 TeamNum: 1
@@ -3249,7 +3249,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 1000
+XP: 1000
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -3293,7 +3293,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 300
+XP: 300
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -3331,7 +3331,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 210
+XP: 210
 KillType: 15
 DamageType: 0
 TeamNum: 1
@@ -3371,7 +3371,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -3408,7 +3408,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 125
+XP: 125
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3445,7 +3445,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3485,7 +3485,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3519,7 +3519,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -3556,7 +3556,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3594,7 +3594,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -3632,7 +3632,7 @@ Icon: U
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3669,7 +3669,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3718,7 +3718,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -3769,7 +3769,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3810,7 +3810,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -3841,7 +3841,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3878,7 +3878,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -3916,7 +3916,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -3955,7 +3955,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -3993,7 +3993,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -4037,7 +4037,7 @@ Icon: Z
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -4075,7 +4075,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -4114,7 +4114,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 250
+XP: 250
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4154,7 +4154,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 130
+XP: 130
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -4190,7 +4190,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 160
+XP: 160
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -4225,7 +4225,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -4260,7 +4260,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4293,7 +4293,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 160
+XP: 160
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4333,7 +4333,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 50
+XP: 50
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4366,7 +4366,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 75
+XP: 75
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4399,7 +4399,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -4442,7 +4442,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 80
+XP: 80
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4482,7 +4482,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 300
+XP: 300
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4528,7 +4528,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 90
+XP: 90
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -4567,7 +4567,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -4615,7 +4615,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 425
+XP: 425
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -4663,7 +4663,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 475
+XP: 475
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -4712,7 +4712,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -4756,7 +4756,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -4793,7 +4793,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -4825,7 +4825,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -4856,7 +4856,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -4895,7 +4895,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -4933,7 +4933,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -4975,7 +4975,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -5016,7 +5016,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5054,7 +5054,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -5091,7 +5091,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5135,7 +5135,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -5178,7 +5178,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 210
+XP: 210
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5227,7 +5227,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 210
+XP: 210
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -5275,7 +5275,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 200
+XP: 200
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -5318,7 +5318,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5367,7 +5367,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5416,7 +5416,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 175
+XP: 175
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5466,7 +5466,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5512,7 +5512,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 275
+XP: 275
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5556,7 +5556,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5601,7 +5601,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -5646,7 +5646,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -5688,7 +5688,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 170
+XP: 170
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5721,7 +5721,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 140
+XP: 140
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5758,7 +5758,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5789,7 +5789,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 125
+XP: 125
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5823,7 +5823,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -5864,7 +5864,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -5899,7 +5899,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 1200
+XP: 1200
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -5945,7 +5945,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -5990,7 +5990,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -6031,7 +6031,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -6072,7 +6072,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -6113,7 +6113,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -6154,7 +6154,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -6195,7 +6195,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -6236,7 +6236,46 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
+KillType: 4
+DamageType: 0
+TeamNum: 1
+HitPoints: 53
+ActionPoints: 8
+ArmorClass: 6
+MeleeDamage: 1
+CarryWeight: 175
+Sequence: 10
+HealingRate: 2
+CriticalChance: 4
+Strength: 6
+Perception: 5
+Endurance: 6
+Charisma: 3
+Intelligence: 5
+Agility: 6
+Luck: 4
+SkillBonusSmallGuns: 50
+SkillBonusBigGuns: 23
+SkillBonusEnergyWeapons: 4
+SkillBonusUnarmed: 36
+SkillBonusMelee: 46
+SkillBonusThrowing: 22
+SkillBonusFirstAid: 15
+DREMP: 500
+DRRadiation: 12
+DRPoison: 30
+SourceFile: 00000159.pro
+
+Name: zombie
+Description: slow-moving ghoul
+LongDescription:
+Flags: Is_Zombie
+Icon: G
+Foreground: red_12
+Age: 25
+BodyType: 0
+XP: 150
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -6274,7 +6313,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6314,7 +6353,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 475
+XP: 475
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -6362,7 +6401,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6406,7 +6445,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6438,7 +6477,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -6469,7 +6508,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 60
+XP: 60
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -6501,7 +6540,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6544,7 +6583,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6579,7 +6618,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 130
+XP: 130
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -6613,7 +6652,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 160
+XP: 160
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6654,7 +6693,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6696,7 +6735,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6738,7 +6777,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 200
+XP: 200
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -6779,7 +6818,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -6817,7 +6856,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -6863,7 +6902,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 160
+XP: 160
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -6907,7 +6946,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 180
+XP: 180
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6950,7 +6989,7 @@ Icon: t
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -6993,7 +7032,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -7031,7 +7070,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -7069,7 +7108,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 160
+XP: 160
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7104,7 +7143,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7147,7 +7186,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7191,7 +7230,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -7238,7 +7277,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 225
+XP: 225
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7283,7 +7322,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 225
+XP: 225
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -7328,7 +7367,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 500
+XP: 500
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -7377,7 +7416,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 400
+XP: 400
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7427,7 +7466,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 400
+XP: 400
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -7476,7 +7515,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 900
+XP: 900
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7525,7 +7564,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 700
+XP: 700
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7576,7 +7615,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 1
-ExpValue: 80
+XP: 80
 KillType: 5
 DamageType: 0
 TeamNum: 1
@@ -7614,7 +7653,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7656,7 +7695,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7696,7 +7735,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7742,7 +7781,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 800
+XP: 800
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -7787,7 +7826,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7819,7 +7858,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 2
 DamageType: 0
 TeamNum: 1
@@ -7854,7 +7893,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7892,7 +7931,7 @@ Icon: Z
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7925,7 +7964,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7958,7 +7997,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 35
+XP: 35
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -7989,7 +8028,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8024,7 +8063,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8058,7 +8097,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8093,7 +8132,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8127,7 +8166,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8165,7 +8204,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 70
+XP: 70
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8202,7 +8241,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8243,7 +8282,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 95
+XP: 95
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8287,7 +8326,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8329,7 +8368,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 95
+XP: 95
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8372,7 +8411,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 105
+XP: 105
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8414,7 +8453,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 105
+XP: 105
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8456,7 +8495,7 @@ Icon: F
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8492,7 +8531,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8527,7 +8566,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 70
+XP: 70
 KillType: 12
 DamageType: 0
 TeamNum: 1
@@ -8560,7 +8599,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8603,7 +8642,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8638,7 +8677,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 120
+XP: 120
 KillType: 5
 DamageType: 0
 TeamNum: 1
@@ -8678,7 +8717,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 180
+XP: 180
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8714,7 +8753,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 180
+XP: 180
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8749,7 +8788,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 260
+XP: 260
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8799,7 +8838,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 260
+XP: 260
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8848,7 +8887,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -8891,7 +8930,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -8933,7 +8972,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 165
+XP: 165
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -8973,7 +9012,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 165
+XP: 165
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -9013,7 +9052,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 135
+XP: 135
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -9053,7 +9092,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 135
+XP: 135
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -9093,7 +9132,7 @@ Icon: F
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -9128,7 +9167,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 80
+XP: 80
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -9162,7 +9201,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -9197,7 +9236,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -9231,7 +9270,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -9267,7 +9306,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -9310,7 +9349,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -9345,7 +9384,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 120
+XP: 120
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -9379,7 +9418,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 130
+XP: 130
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -9423,7 +9462,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 130
+XP: 130
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -9465,7 +9504,7 @@ Icon: F
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 250
+XP: 250
 KillType: 15
 DamageType: 0
 TeamNum: 1
@@ -9512,7 +9551,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 260
+XP: 260
 KillType: 15
 DamageType: 0
 TeamNum: 1
@@ -9559,7 +9598,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 500
+XP: 500
 KillType: 16
 DamageType: 0
 TeamNum: 1
@@ -9603,7 +9642,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 600
+XP: 600
 KillType: 16
 DamageType: 0
 TeamNum: 1
@@ -9648,7 +9687,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 750
+XP: 750
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -9695,7 +9734,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 1750
+XP: 1750
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -9740,7 +9779,7 @@ Icon: F
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 750
+XP: 750
 KillType: 8
 DamageType: 3
 TeamNum: 1
@@ -9782,7 +9821,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 1000
+XP: 1000
 KillType: 8
 DamageType: 3
 TeamNum: 1
@@ -9826,7 +9865,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 650
+XP: 650
 KillType: 9
 DamageType: 0
 TeamNum: 1
@@ -9871,7 +9910,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 9
 DamageType: 0
 TeamNum: 1
@@ -9916,7 +9955,7 @@ Icon: E
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 550
+XP: 550
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -9966,7 +10005,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 550
+XP: 550
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -10015,7 +10054,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10057,7 +10096,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -10102,7 +10141,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 400
+XP: 400
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10145,7 +10184,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 400
+XP: 400
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -10191,7 +10230,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 500
+XP: 500
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -10234,7 +10273,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 650
+XP: 650
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -10277,7 +10316,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -10311,7 +10350,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10357,7 +10396,7 @@ Icon: Y
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 260
+XP: 260
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10403,7 +10442,7 @@ Icon: N
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10453,7 +10492,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -10502,7 +10541,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10546,7 +10585,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -10593,7 +10632,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10641,7 +10680,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 7500
+XP: 7500
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -10687,7 +10726,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10719,7 +10758,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -10750,7 +10789,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 7500
+XP: 7500
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10796,7 +10835,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10841,7 +10880,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -10885,7 +10924,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 225
+XP: 225
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10919,7 +10958,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10960,7 +10999,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -10999,7 +11038,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 1
-ExpValue: 2000
+XP: 2000
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -11045,7 +11084,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 800
+XP: 800
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11085,7 +11124,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 500
+XP: 500
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11126,7 +11165,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11170,7 +11209,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -11213,7 +11252,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11263,7 +11302,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -11312,7 +11351,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11362,7 +11401,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -11411,7 +11450,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11461,7 +11500,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -11510,7 +11549,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11561,7 +11600,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -11611,7 +11650,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 10000
+XP: 10000
 KillType: 18
 DamageType: 0
 TeamNum: 1
@@ -11660,7 +11699,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 30
+XP: 30
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -11691,7 +11730,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11736,7 +11775,7 @@ Icon: E
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 750
+XP: 750
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11786,7 +11825,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 750
+XP: 750
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -11835,7 +11874,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 1000
+XP: 1000
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11879,7 +11918,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 600
+XP: 600
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11923,7 +11962,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -11967,7 +12006,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 450
+XP: 450
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12007,7 +12046,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12047,7 +12086,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 2
 DamageType: 0
 TeamNum: 1
@@ -12083,7 +12122,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 2
 DamageType: 0
 TeamNum: 1
@@ -12118,7 +12157,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 550
+XP: 550
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12169,7 +12208,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12213,7 +12252,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12257,7 +12296,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12295,7 +12334,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -12332,7 +12371,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12370,7 +12409,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -12407,7 +12446,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12440,7 +12479,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12478,7 +12517,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 220
+XP: 220
 KillType: 7
 DamageType: 0
 TeamNum: 1
@@ -12519,7 +12558,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12560,7 +12599,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12602,7 +12641,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12644,7 +12683,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12686,7 +12725,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12728,7 +12767,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 110
+XP: 110
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -12770,7 +12809,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 130
+XP: 130
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -12819,7 +12858,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 130
+XP: 130
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -12868,7 +12907,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 130
+XP: 130
 KillType: 4
 DamageType: 0
 TeamNum: 1
@@ -12917,7 +12956,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -12966,7 +13005,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -13015,7 +13054,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -13064,7 +13103,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -13113,7 +13152,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -13161,7 +13200,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 900
+XP: 900
 KillType: 13
 DamageType: 0
 TeamNum: 1
@@ -13210,7 +13249,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13251,7 +13290,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13295,7 +13334,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13339,7 +13378,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13383,7 +13422,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -13429,7 +13468,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -13475,7 +13514,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -13521,7 +13560,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -13569,7 +13608,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 3
 DamageType: 0
 TeamNum: 1
@@ -13617,7 +13656,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 200
+XP: 200
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -13660,7 +13699,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 200
+XP: 200
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -13703,7 +13742,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 200
+XP: 200
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -13746,7 +13785,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 200
+XP: 200
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -13789,7 +13828,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13832,7 +13871,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13874,7 +13913,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13914,7 +13953,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -13954,7 +13993,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -13996,7 +14035,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -14038,7 +14077,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -14080,7 +14119,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -14122,7 +14161,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -14166,7 +14205,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -14210,7 +14249,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -14254,7 +14293,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 60
+XP: 60
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -14305,7 +14344,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 60
+XP: 60
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -14356,7 +14395,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 60
+XP: 60
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -14407,7 +14446,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 60
+XP: 60
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -14458,7 +14497,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 60
+XP: 60
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -14510,7 +14549,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 1
-ExpValue: 1000
+XP: 1000
 KillType: 16
 DamageType: 0
 TeamNum: 1
@@ -14555,7 +14594,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 110
+XP: 110
 KillType: 6
 DamageType: 0
 TeamNum: 1
@@ -14596,7 +14635,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 220
+XP: 220
 KillType: 6
 DamageType: 0
 TeamNum: 1
@@ -14638,7 +14677,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 500
+XP: 500
 KillType: 6
 DamageType: 0
 TeamNum: 1
@@ -14680,7 +14719,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 230
+XP: 230
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -14728,7 +14767,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -14771,7 +14810,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -14814,7 +14853,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -14850,7 +14889,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -14888,7 +14927,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -14926,7 +14965,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -14964,7 +15003,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15003,7 +15042,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 450
+XP: 450
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15041,7 +15080,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 400
+XP: 400
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15080,7 +15119,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 600
+XP: 600
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15121,7 +15160,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15171,7 +15210,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -15220,7 +15259,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15256,7 +15295,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -15291,7 +15330,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 240
+XP: 240
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15327,7 +15366,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 240
+XP: 240
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15363,7 +15402,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 240
+XP: 240
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15399,7 +15438,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 240
+XP: 240
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15435,7 +15474,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 240
+XP: 240
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15471,7 +15510,7 @@ Icon: V
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 240
+XP: 240
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15507,7 +15546,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 200
+XP: 200
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -15549,7 +15588,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 200
+XP: 200
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -15592,7 +15631,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 200
+XP: 200
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -15640,7 +15679,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 25
+XP: 25
 KillType: 17
 DamageType: 0
 TeamNum: 1
@@ -15673,7 +15712,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 50
+XP: 50
 KillType: 17
 DamageType: 0
 TeamNum: 1
@@ -15709,7 +15748,7 @@ Icon: P
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 60
+XP: 60
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -15752,7 +15791,7 @@ Icon: Z
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15791,7 +15830,7 @@ Icon: I
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15830,7 +15869,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 400
+XP: 400
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15869,7 +15908,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 400
+XP: 400
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15908,7 +15947,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 500
+XP: 500
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15947,7 +15986,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 500
+XP: 500
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -15986,7 +16025,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 600
+XP: 600
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16025,7 +16064,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 600
+XP: 600
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16064,7 +16103,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 800
+XP: 800
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16103,7 +16142,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 800
+XP: 800
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16142,7 +16181,7 @@ Icon: Z
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 800
+XP: 800
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16182,7 +16221,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 500
+XP: 500
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16223,7 +16262,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16276,7 +16315,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -16323,7 +16362,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -16361,7 +16400,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16408,7 +16447,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16455,7 +16494,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16504,7 +16543,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16553,7 +16592,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 150
+XP: 150
 KillType: 5
 DamageType: 0
 TeamNum: 1
@@ -16593,7 +16632,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16639,7 +16678,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16686,7 +16725,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16731,7 +16770,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16776,7 +16815,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16821,7 +16860,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16870,7 +16909,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16919,7 +16958,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -16959,7 +16998,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -16995,7 +17034,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17042,7 +17081,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17081,7 +17120,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17120,7 +17159,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17160,7 +17199,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -17202,7 +17241,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -17243,7 +17282,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 200
+XP: 200
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17279,7 +17318,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17329,7 +17368,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17379,7 +17418,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17429,7 +17468,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17469,7 +17508,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17509,7 +17548,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17549,7 +17588,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17583,7 +17622,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17617,7 +17656,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17651,7 +17690,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17685,7 +17724,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 1000
+XP: 1000
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17730,7 +17769,7 @@ Icon: H
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 500
+XP: 500
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17773,7 +17812,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17806,7 +17845,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17846,7 +17885,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 55
+XP: 55
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17893,7 +17932,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 100
+XP: 100
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -17936,7 +17975,7 @@ Icon: F
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -17975,7 +18014,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18022,7 +18061,7 @@ Icon: C
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 250
+XP: 250
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18070,7 +18109,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 25
+XP: 25
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -18105,7 +18144,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18153,7 +18192,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18201,7 +18240,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18243,7 +18282,7 @@ Icon: D
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18285,7 +18324,7 @@ Icon: M
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18322,7 +18361,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -18360,7 +18399,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 65
+XP: 65
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -18400,7 +18439,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 65
+XP: 65
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -18439,7 +18478,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 90
+XP: 90
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18477,7 +18516,7 @@ Icon: R
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18516,7 +18555,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18550,7 +18589,7 @@ Icon: E
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 150
+XP: 150
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18604,7 +18643,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 10
+XP: 10
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18635,7 +18674,7 @@ Icon: J
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 85
+XP: 85
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18676,7 +18715,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18712,7 +18751,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -18747,7 +18786,7 @@ Icon: T
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18783,7 +18822,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 30
+XP: 30
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -18818,7 +18857,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 125
+XP: 125
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18868,7 +18907,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 125
+XP: 125
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -18919,7 +18958,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 125
+XP: 125
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -18970,7 +19009,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 125
+XP: 125
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -19020,7 +19059,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 175
+XP: 175
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -19070,7 +19109,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 175
+XP: 175
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -19121,7 +19160,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 175
+XP: 175
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -19172,7 +19211,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 175
+XP: 175
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -19222,7 +19261,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 300
+XP: 300
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -19272,7 +19311,7 @@ Icon: "
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 75
+XP: 75
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -19312,7 +19351,7 @@ Icon: B
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -19350,7 +19389,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 300
+XP: 300
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -19394,7 +19433,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 500
+XP: 500
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -19439,7 +19478,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 500
+XP: 500
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -19484,7 +19523,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 500
+XP: 500
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -19529,7 +19568,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 500
+XP: 500
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -19574,7 +19613,7 @@ Icon: K
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 500
+XP: 500
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -19619,7 +19658,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 325
+XP: 325
 KillType: 11
 DamageType: 0
 TeamNum: 1
@@ -19663,7 +19702,7 @@ Icon: W
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
-ExpValue: 10
+XP: 10
 KillType: 16
 DamageType: 0
 TeamNum: 1
@@ -19694,7 +19733,7 @@ Icon: L
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 350
+XP: 350
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -19743,7 +19782,7 @@ Foreground: light_gray_2
 Age: 25
 Gender: 1
 BodyType: 0
-ExpValue: 50
+XP: 50
 KillType: 1
 DamageType: 0
 TeamNum: 1
@@ -19777,7 +19816,7 @@ Icon: A
 Foreground: light_gray_2
 Age: 25
 BodyType: 2
-ExpValue: 200
+XP: 200
 KillType: 10
 DamageType: 0
 TeamNum: 1
@@ -19821,7 +19860,7 @@ Icon: S
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 60
+XP: 60
 KillType: 0
 DamageType: 0
 TeamNum: 1
@@ -19851,7 +19890,7 @@ Icon: G
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
-ExpValue: 1
+XP: 1
 KillType: 0
 DamageType: 0
 TeamNum: 1

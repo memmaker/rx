@@ -103,7 +103,6 @@ Category: Weapons
 Size: 6
 Weight: 15
 Cost: 2300
-zap_effect: explode
 tags: no_aim
 weapon_type: RocketLauncher
 weapon_damage: 35-100
@@ -442,7 +441,6 @@ Category: Weapons
 Size: 2
 Weight: 4
 Cost: 2750
-zap_effect: lightning_ray
 weapon_type: Energy
 weapon_damage: 15-35
 weapon_magazine_size: 16
@@ -467,6 +465,8 @@ Category: Weapons
 Size: 1
 Weight: 1
 Cost: 150
+zap_effect: explode
+chance_to_break_on_throw: 100
 weapon_type: Throwing
 weapon_damage: 20-35
 weapon_magazine_size: 0
@@ -491,6 +491,7 @@ Category: Weapons
 Size: 1
 Weight: 1
 Cost: 300
+chance_to_break_on_throw: 100
 weapon_type: Energy
 weapon_damage: 40-90
 weapon_magazine_size: 0

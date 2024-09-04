@@ -3,6 +3,7 @@ package game
 import (
 	"RogueUI/dice_curve"
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -179,15 +180,14 @@ func (g *GameState) OpenTacticsMenu() {
 }
 
 // ITEM MANAGEMENT & APPLICATION
-
 func (g *GameState) startZapItem(item *Item) {
-	g.ui.SelectTarget(func(targetPos geometry.Point, hitZone int) {
+	g.ui.SelectTarget(func(targetPos geometry.Point) {
 		g.playerZapItemAndEndTurn(item, targetPos)
 	})
 }
 
 func (g *GameState) startZapEffect(zapEffectName string, payCost func()) {
-	g.ui.SelectTarget(func(targetPos geometry.Point, hitZone int) {
+	g.ui.SelectTarget(func(targetPos geometry.Point) {
 		if payCost != nil {
 			payCost()
 		}
@@ -281,13 +281,18 @@ func (g *GameState) PlayerPickupItemAt(itemPos geometry.Point) {
 		g.msg(foundation.HiLite("You picked up %s", item.Name()))
 
 		if item.PickupFlag() != "" {
-			g.gameFlags.SetFlag(item.PickupFlag())
+			g.gameFlags.Increment(item.PickupFlag())
 		}
 		//g.endPlayerTurn()
 	}
 }
 
-func (g *GameState) DropItem(uiItem foundation.ItemForUI) {
+func (g *GameState) DropItemFromInventory(uiItem foundation.ItemForUI) {
+	g.dropItemFromUI(uiItem)
+	g.OpenInventory()
+}
+
+func (g *GameState) dropItemFromUI(uiItem foundation.ItemForUI) {
 	itemStack, isItem := uiItem.(*InventoryStack)
 	if !isItem {
 		return
@@ -311,6 +316,9 @@ func (g *GameState) actorDropItem(holder *Actor, item *Item) {
 	g.addItemToMap(item, holder.Position())
 	g.msg(foundation.HiLite("You dropped %s", item.Name()))
 	if holder == g.Player {
+		if item.DropFlag() != "" {
+			g.gameFlags.Increment(item.DropFlag())
+		}
 		g.endPlayerTurn(g.Player.timeNeededForActions() / 2)
 		g.ui.PlayCue("world/drop")
 	}
@@ -409,12 +417,34 @@ func (g *GameState) ChooseItemForDrop() {
 		if !isStack {
 			return
 		}
-		g.DropItem(stack)
+		g.dropItemFromUI(stack)
 		return
 
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Drop what?", func(itemStack foundation.ItemForUI) {
-		g.DropItem(itemStack)
+		g.dropItemFromUI(itemStack)
+	})
+}
+
+func (g *GameState) OpenAmmoInventory() {
+	inventory := g.GetFilteredInventory(func(item *Item) bool {
+		return item.IsAmmo()
+	})
+	if len(inventory) == 0 {
+		g.msg(foundation.Msg("You are not carrying anything."))
+		return
+	}
+	if len(inventory) == 1 {
+		stack, isStack := inventory[0].(*InventoryStack)
+		if !isStack {
+			return
+		}
+		g.dropItemFromUI(stack)
+		return
+
+	}
+	g.ui.OpenInventoryForSelection(inventory, "Drop what?", func(itemStack foundation.ItemForUI) {
+		g.dropItemFromUI(itemStack)
 	})
 }
 
@@ -655,7 +685,7 @@ func useEffectExists(effectName string) bool {
 }
 
 func (g *GameState) couldPlayerSeeActor(actor *Actor) bool {
-	if actor.HasFlag(foundation.FlagInvisible) && !g.Player.HasFlag(foundation.FlagSeeInvisible) {
+	if actor.HasFlag(special.FlagInvisible) && !g.Player.HasFlag(special.FlagSeeInvisible) {
 		return false
 	}
 

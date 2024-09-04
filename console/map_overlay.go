@@ -47,7 +47,11 @@ func (o *Overlay) PrintColored(x, y int, text string, fg, bg color.RGBA) {
 		if x+i >= o.width {
 			break
 		}
-		o.grid[y*o.width+x+i] = textiles.TextIcon{Char: r, Fg: fg, Bg: bg}
+		gridIndex := y*o.width + x + i
+		if gridIndex < 0 || gridIndex >= len(o.grid) {
+			continue
+		}
+		o.grid[gridIndex] = textiles.TextIcon{Char: r, Fg: fg, Bg: bg}
 	}
 }
 
@@ -141,6 +145,11 @@ func (o *Overlay) calculateOverlayPos(windowSize, position geometry.Point, width
 	centeredAbove := position.Add(geometry.Point{X: -widthNeeded / 2, Y: -1})
 	if isPosForLabelValid(centeredAbove) {
 		return centeredAbove, nil
+	}
+
+	centeredBelow := position.Add(geometry.Point{X: -widthNeeded / 2, Y: 1})
+	if isPosForLabelValid(centeredBelow) {
+		return centeredBelow, nil
 	}
 
 	simpleRightConnector := position.Add(geometry.Point{X: 1, Y: 0})

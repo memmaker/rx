@@ -2,6 +2,7 @@ package console
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
@@ -16,7 +17,7 @@ func (u *UI) SelectDirection(onSelected func(direction geometry.CompassDirection
 	u.mapWindow.SetInputCapture(u.handleDirectionalTargetingInput(onSelected))
 }
 
-func (u *UI) SelectBodyPart(onSelected func(victim foundation.ActorForUI, part int)) {
+func (u *UI) SelectBodyPart(previousAim special.BodyPart, onSelected func(victim foundation.ActorForUI, hitZone special.BodyPart)) {
 	// we want advanced targeting but only on tiles with actors
 	// we also want to show the body part selection whenever the current target is updated
 	// when the user has confirmed a body part of the currently selected target, we're done
@@ -27,7 +28,7 @@ func (u *UI) SelectBodyPart(onSelected func(victim foundation.ActorForUI, part i
 			var text string
 			for i, hitZone := range hitZones {
 				keys := u.GetKeysForCommandAsString(KeyLayerAdvancedTargeting, fmt.Sprintf("target_confirm_body_part_%d", i))
-				text += fmt.Sprintf("%s - %s (%d%%)\n", keys, hitZone.Item1, hitZone.Item2)
+				text += fmt.Sprintf("%s - %s (%d%%)\n", keys, hitZone.Item1, hitZone.Item3)
 			}
 			u.Print(foundation.Msg("Select body part"))
 			u.rightPanel.SetText(text)
@@ -36,13 +37,33 @@ func (u *UI) SelectBodyPart(onSelected func(victim foundation.ActorForUI, part i
 	u.state = StateTargetingBodyPart
 	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {
 		actorAt := u.game.ActorAt(targetPos)
-		if actorAt != nil {
-			onSelected(actorAt, hitZone)
-		}
+		u.OpenAimedShotPicker(actorAt, previousAim, onSelected)
 	})
 }
 
-func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point, hitZone int)) {
+func (u *UI) OpenAimedShotPicker(actorAt foundation.ActorForUI, previousAim special.BodyPart, onSelected func(victim foundation.ActorForUI, hitZone special.BodyPart)) {
+	if actorAt != nil {
+		var items []foundation.MenuItem
+		for i, tuple := range u.game.GetBodyPartsAndHitChances(actorAt) {
+			statusString := "ok"
+			if tuple.Item2 { // iscrippled
+				statusString = "CR"
+			}
+			hitString := fmt.Sprintf("<%s> %s (%d%%)", statusString, tuple.Item1, tuple.Item3)
+			items = append(items, foundation.MenuItem{
+				Name: hitString,
+				Action: func() {
+					onSelected(actorAt, actorAt.GetBodyPart(i))
+				},
+				CloseMenus: true,
+			})
+		}
+		menu := u.openSimpleMenu(items)
+		menu.SetCurrentItem(actorAt.GetBodyPartIndex(previousAim))
+	}
+}
+
+func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point)) {
 	u.state = StateTargeting
 	u.onTargetUpdated = func(targetPos geometry.Point) {
 		actorAt := u.game.ActorAt(targetPos)
@@ -57,7 +78,9 @@ func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point, hitZone int)
 			}
 		}
 	}
-	u.beginTargeting(onSelected)
+	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {
+		onSelected(targetPos)
+	})
 }
 
 func (u *UI) beginTargeting(onSelected func(targetPos geometry.Point, hitZone int)) {

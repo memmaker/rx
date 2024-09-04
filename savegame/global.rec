@@ -1,20 +1,33 @@
 %rec: global
 
-CurrentMap: town
-TurnsTaken: 57
-GameTime: 0001-01-01T00:00:57Z
+CurrentMap: zombies
+TurnsTaken: 110
+GameTime: 2077-02-05T16:37:10Z
 ShowEverything: false
+RewardsReceived: 1
 
 %rec: flags
 
-Key: v84_cave_terminal_door_controls
+Key: WasAttackedByPlayer(zombie)
 Value: 1
 
-Key: lock(v84_cave/vault_84)
+Key: WasHurt(zombie)
+Value: 1
+
+Key: WasHurtByPlayer(zombie)
+Value: 1
+
+Key: LocationKnown(zombies)
+Value: 1
+
+Key: TalkedTo(taxi_driver)
+Value: 1
+
+Key: PlayerVisited(zombies)
+Value: 1
+
+Key: WasAttacked(zombie)
 Value: 1
 
 %rec: terminal_guesses
-
-terminal: v84_cave_terminal
-guess: ABOUT
 

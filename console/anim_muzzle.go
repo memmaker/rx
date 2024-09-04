@@ -11,5 +11,6 @@ type MuzzleAnimation struct {
 }
 
 func (u *UI) GetAnimMuzzleFlash(position geometry.Point, flashColor fxtools.HDRColor, radius int, bulletCount int, done func()) foundation.Animation {
-	return u.GetAnimBackgroundColor(position, "White", bulletCount*4, done)
+	color := u.GetAnimBackgroundColor(position, "White", bulletCount*4, done)
+	return color
 }

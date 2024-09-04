@@ -50,6 +50,17 @@ type Journal struct {
 	onJournalChanged func()
 }
 
+func NewJournalFromRecords(records map[string][]recfile.Record, fMap map[string]govaluate.ExpressionFunction) *Journal {
+	j := &Journal{entries: make(map[string][]*JournalEntry)}
+	for context, recordList := range records {
+		for _, record := range recordList {
+			entry := NewJournalEntry(record, fMap)
+			j.entries[context] = append(j.entries[context], entry)
+		}
+	}
+	return j
+}
+
 func NewJournal(io io.ReadCloser, fMap map[string]govaluate.ExpressionFunction) *Journal {
 	j := &Journal{entries: make(map[string][]*JournalEntry)}
 	j.AddEntriesFromSource("default", io, fMap)
@@ -145,15 +156,4 @@ func (j *Journal) ToRecords() map[string][]recfile.Record {
 		}
 	}
 	return records
-}
-
-func NewJournalFromRecords(records map[string][]recfile.Record, fMap map[string]govaluate.ExpressionFunction) *Journal {
-	j := &Journal{entries: make(map[string][]*JournalEntry)}
-	for context, recordList := range records {
-		for _, record := range recordList {
-			entry := NewJournalEntry(record, fMap)
-			j.entries[context] = append(j.entries[context], entry)
-		}
-	}
-	return j
 }

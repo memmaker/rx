@@ -1,0 +1,19 @@
+%rec: locations
+
+Name: taxi_stand
+Location: (7,1)
+
+Name: taxi_driver
+Location: (5,1)
+
+%rec: transitions
+
+%rec: meta
+
+mapWidth: 80
+mapHeight: 23
+isOutdoor: true
+friendlyName: BioPharma Inc. Research Facility
+indoorAmbientLight: (0.00, 0.00, 0.00)
+musicFile: town_ambience
+

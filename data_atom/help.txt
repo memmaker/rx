@@ -1,0 +1,27 @@
+Welcome, Contractor
+
+In the year 2077, America has descended into chaos, ruled by powerful corporations that care little for the people they oppress. You are a "Contractor," a shadowy freelancer who takes on dangerous jobs in exchange for survival in a world where morality is a luxury few can afford.
+
+[#00ff00]Your Role[-]
+
+You are a "Contractor", a skilled but morally ambiguous figure who navigates the dark underworld. Moving through decaying cities rife with corruption, cybernetic enhancements, and desperate people. Your missions will take you from the neon-lit streets to secretive hideouts, all in an effort to secure your future in a world on the brink of collapse.
+
+[#00ff00]Basics[-]
+
+The game is played in a 2D grid world. Your primary means of interaction with the environment and other characters is a simple "bump" mechanic:
+
+> Bump to Attack
+Move your character into enemies to attack them. Combat is straightforward—direct your character into an enemy on the grid to engage them in a fight.
+
+> Bump to Interact
+To talk to NPCs, open doors, search containers, or interact with objects, just move your character into them. This same action is used for everything from picking up items to hacking terminals.
+
+[#00ff00]The Broker and Your Computer[-]
+
+The Broker is your lifeline. This mysterious figure assigns you contracts through your computer terminal, guiding your actions and offering payment for successful jobs. Your apartment computer is your hub—check it regularly to receive new missions, review your status, and access important information.
+
+To start your journey, you'll want to begin by [#00ff00]checking your email[-] on the computer in your apartment. This will often be the first step in progressing the story and receiving your next task.
+
+---
+
+For detailed controls, press [#00ff00]F2[-] at any time to view the key bindings.

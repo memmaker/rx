@@ -1,4 +1,4 @@
-package foundation
+package special
 
 import (
 	"bytes"
@@ -63,6 +63,10 @@ func (f ActorFlag) String() string { // Nice strings for display
 		return "Slow Digestion"
 	case FlagKnockedDown:
 		return "Knocked Down"
+	case FlagZombie:
+		return "Zombie"
+	case FlagAnimal:
+		return "Animal"
 	}
 	return "Unknown"
 }
@@ -123,6 +127,10 @@ func (f ActorFlag) StringShort() string { // short abbreviated strings (2-3 lett
 		return "SDg"
 	case FlagKnockedDown:
 		return "Knd"
+	case FlagZombie:
+		return "Zmb"
+	case FlagAnimal:
+		return "Anm"
 	}
 	return "Unk"
 
@@ -162,6 +170,8 @@ const (
 	FlagHallucinating
 	FlagSlowDigestion
 	FlagKnockedDown
+	FlagZombie
+	FlagAnimal
 )
 
 func AllFlagsExceptGoldOrdered() []ActorFlag {
@@ -192,6 +202,8 @@ func AllFlagsExceptGoldOrdered() []ActorFlag {
 		FlagHallucinating,
 		FlagSlowDigestion,
 		FlagKnockedDown,
+		FlagZombie,
+		FlagAnimal,
 	}
 }
 
@@ -252,6 +264,10 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagSlowDigestion
 	case "knocked_down":
 		return FlagKnockedDown
+	case "is_zombie":
+		return FlagZombie
+	case "is_animal":
+		return FlagAnimal
 	}
 	panic("Invalid actor flag: " + flag)
 	return 0

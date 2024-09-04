@@ -83,7 +83,10 @@ func (b *PushBox) InitWithGameState(g *GameState) {
 	b.onDamage = func(dmg SourcedDamage) []foundation.Animation {
 		if b.category == foundation.ObjectExplodingPushBox {
 			g.currentMap().RemoveObject(b)
-			return explosion(g, dmg.Attacker, b.Position())
+			return explosion(g, dmg.Attacker, b.Position(), NewParams(map[string]string{
+				"radius": "3",
+				"damage": "10-20",
+			}))
 		}
 		return nil
 	}

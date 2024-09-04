@@ -196,9 +196,9 @@ light_peach_11: 120 | 64 | 48
 light_peach_12: 96 | 48 | 36
 light_peach_13: 72 | 36 | 28
 light_peach_14: 56 | 24 | 20
-green_1: 100 | 228 | 100
-green_2: 20 | 152 | 20
-green_3: 0 | 164 | 0
+bright_green_1: 100 | 228 | 100
+bright_green_2: 20 | 152 | 20
+bright_green_3: 0 | 164 | 0
 gray_1: 80 | 80 | 72
 green_4: 0 | 108 | 0
 gray_2: 140 | 140 | 132
@@ -238,9 +238,9 @@ gray_13: 99 | 103 | 127
 gray_14: 87 | 107 | 143
 blue_1: 0 | 147 | 163
 light_blue: 107 | 187 | 255
-red_1: 255 | 0 | 0
-red_2: 215 | 0 | 0
-red_3: 147 | 43 | 11
+light_red_1: 255 | 0 | 0
+light_red_2: 215 | 0 | 0
+light_red_3: 147 | 43 | 11
 orange_red_1: 255 | 119 | 0
 orange_red_2: 255 | 59 | 0
 dark_red_1: 71 | 0 | 0

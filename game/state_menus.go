@@ -13,7 +13,9 @@ import (
 )
 
 func (g *GameState) OpenInventory() {
-	inventory := g.GetInventory()
+	inventory := g.GetFilteredInventory(func(item *Item) bool {
+		return !item.IsAmmo()
+	})
 	if len(inventory) == 0 {
 		g.msg(foundation.Msg("You are not carrying anything."))
 		return
@@ -269,9 +271,15 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
-			Name: "250 Skill Points",
+			Name: "10 Skill Points",
 			Action: func() {
-				g.Player.GetCharSheet().AddSkillPoints(250)
+				g.Player.GetCharSheet().AddSkillPoints(10)
+			},
+		},
+		{
+			Name: "1000 XP",
+			Action: func() {
+				g.awardXP(1000, "for testing")
 			},
 		},
 		{
@@ -334,9 +342,8 @@ func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource,
 	var npcName string
 	if actor, isActor := partner.(*Actor); isActor {
 		npcName = actor.GetInternalName()
-		//TalkedTo(dr_winters)
 		talkedFlagName := fmt.Sprintf("TalkedTo(%s)", npcName)
-		g.gameFlags.SetFlag(talkedFlagName)
+		g.gameFlags.Increment(talkedFlagName)
 	} else {
 		npcName = partner.Name()
 	}
@@ -370,6 +377,15 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 			if fxtools.LooksLikeAFunction(effect) {
 				name, args := fxtools.GetNameAndArgs(effect)
 				switch name {
+				case "AdvanceTimeByMinutes":
+					minutes, err := strconv.Atoi(args.Get(0))
+					if err != nil {
+						panic(err)
+					}
+					g.advanceTime(time.Minute * time.Duration(minutes))
+				case "RunScript":
+					scriptName := args.Get(0)
+					g.RunScript(scriptName)
 				case "DriverTransition":
 					mapName := args.Get(0)
 					locationName := args.Get(1)
@@ -426,11 +442,11 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 		}
 	}
 
-	nodeText := node.NpcText
+	nodeText := g.fillTemplatedText(node.NpcText)
 
-	if instantEndWithChatter {
+	if otherActor, isActor := conversationPartner.(*Actor); isActor && instantEndWithChatter {
 		g.ui.CloseConversation()
-		g.ui.TryAddChatter(conversationPartner, nodeText)
+		g.tryAddChatter(otherActor, nodeText)
 		return
 	}
 

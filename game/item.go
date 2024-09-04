@@ -33,7 +33,7 @@ type Item struct {
 	skill      special.Skill
 	skillBonus int
 
-	equipFlag    foundation.ActorFlag
+	equipFlag    special.ActorFlag
 	thrownDamage fxtools.Interval
 	tags         foundation.ItemTags
 	textFile     string
@@ -44,6 +44,7 @@ type Item struct {
 	chanceToBreakOnThrow   int
 	currentAttackModeIndex int
 	setFlagOnPickup        string
+	setFlagOnDrop          string
 	size                   int
 	weight                 int
 	cost                   int
@@ -518,7 +519,7 @@ func (i *Item) GetSkillBonus(skill special.Skill) int {
 	}
 	return 0
 }
-func (i *Item) GetEquipFlag() foundation.ActorFlag {
+func (i *Item) GetEquipFlag() special.ActorFlag {
 	return i.equipFlag
 }
 
@@ -621,10 +622,18 @@ func (i *Item) PickupFlag() string {
 	return i.setFlagOnPickup
 }
 
+func (i *Item) DropFlag() string {
+	return i.setFlagOnDrop
+}
+
 func (i *Item) GetText() string {
 	return i.text
 }
 
 func (i *Item) IsLightSource() bool {
 	return i.HasTag(foundation.TagLightSource)
+}
+
+func (i *Item) GetCarryWeight() int {
+	return i.weight
 }

@@ -47,6 +47,10 @@ o_text: The old mansion, right outside Kelso.
 o_cond: HasFlag('LocationKnown(mansion)') && !IsMap('mansion')
 o_goto: Mansion
 #
+o_text: Get me to the BioPharmaceuticals lab.
+o_cond: HasFlag('LocationKnown(zombies)') && !IsMap('zombies')
+o_goto: ZombieLab
+#
 o_text: Just take me back to Kelso.
 o_cond: !IsMap('town')
 o_goto: Kelso
@@ -67,11 +71,19 @@ o_goto: DefaultIntroduction
 name: Kelso
 npc: There you go.
 effect: DriverTransition('town', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
 
 name: CryoFacility
 npc: Right where you want to be.
 effect: DriverTransition('cryolab', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+name: ZombieLab
+npc: Here we are.
+effect: DriverTransition('zombies', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
 
 name: Mansion
 npc: Nice place.
 effect: DriverTransition('mansion', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)

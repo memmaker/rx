@@ -11,6 +11,7 @@ import (
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"path"
+	"strconv"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type GameState struct {
 	logBuffer       []foundation.HiLiteString
 	terminalGuesses map[string][]string
 	journal         *Journal
+	rewardTracker   *RewardTracker
 	showEverything  bool
 
 	// Player State (Needs to be saved)
@@ -29,6 +31,7 @@ type GameState struct {
 	playerFoV         *geometry.FOV
 	playerLightSource *gridmap.LightSource
 	playerDijkstraMap map[geometry.Point]int
+	playerLastAimedAt special.BodyPart
 
 	// Map State
 	mapLoader MapLoader
@@ -56,6 +59,24 @@ type GameState struct {
 	// Item Templates
 	globalItemTemplates map[string]recfile.Record
 	mapItemTemplates    map[string]recfile.Record
+}
+
+func (g *GameState) IsPlayerOverEncumbered() bool {
+	carryWeight := g.Player.GetCharSheet().GetDerivedStat(special.CarryWeight)
+	totalWeight := g.Player.GetInventory().GetTotalWeight()
+	return totalWeight > carryWeight
+}
+
+func (g *GameState) GetPlayerName() string {
+	return g.Player.Name()
+}
+
+func (g *GameState) GetPlayerCharSheet() *special.CharSheet {
+	return g.Player.charSheet
+}
+
+func (g *GameState) GetMapDisplayName() string {
+	return g.currentMap().GetDisplayName()
 }
 
 func (g *GameState) currentMap() *gridmap.GridMap[*Actor, *Item, Object] {
@@ -114,7 +135,6 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 
 	g.init()
 	ui.SetGame(g)
-
 	return g
 }
 func (g *GameState) GetPlayerNameAndIcon() (string, textiles.TextIcon) {
@@ -168,6 +188,7 @@ func (g *GameState) init() {
 	g.iconsForItems, g.inventoryColors = loadIconsForItems(path.Join(g.config.DataRootDir, "definitions"), g.palette)
 
 	g.TurnsTaken = 0
+	g.gameTime = time.Date(2077, 2, 5, 16, 20, 23, 0, time.UTC)
 	g.logBuffer = []foundation.HiLiteString{}
 	g.showEverything = false
 
@@ -175,6 +196,7 @@ func (g *GameState) init() {
 
 	g.terminalGuesses = make(map[string][]string)
 
+	g.rewardTracker = NewRewardTracker(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec")), g.getConditionFuncs())
 	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getConditionFuncs())
 	g.journal.OnFlagsChanged()
 	g.hookupJournalAndFlags()
@@ -185,16 +207,23 @@ func (g *GameState) init() {
 func (g *GameState) hookupJournalAndFlags() {
 	g.journal.SetChangeHandler(func() {
 		g.ui.PlayCue("ui/journal")
-		g.msg(foundation.HiLite(">>> %s <<<", "Journal updated"))
+		g.msg(foundation.HiLite(">>> Journal updated <<<"))
 	})
 	g.gameFlags.SetChangeHandler(func(flagName string, value int) {
 		g.journal.OnFlagsChanged()
+
+		rewards := g.rewardTracker.GetNewRewards(nil)
+		for _, reward := range rewards {
+			g.awardXP(reward.XP, reward.Text)
+		}
 	})
 }
 
-func (g *GameState) initPlayerAndSpawnMap() {
+func (g *GameState) initPlayerAndMap() {
 	playerSheet := special.NewCharSheet()
-	playerSheet.SetSkillAdjustment(special.SmallGuns, 50)
+	playerSheet.AddSkillPoints(0)
+
+	//playerSheet.SetSkillAdjustment(special.SmallGuns, 50)
 	playerName, playerIcon := g.GetPlayerNameAndIcon()
 	g.Player = NewPlayer(playerName, playerIcon, playerSheet)
 	var spawnMap, spawnLocation string
@@ -227,6 +256,7 @@ func (g *GameState) initPlayerAndSpawnMap() {
 	}
 	namedLocation := loadedMap.GetNamedLocation(spawnLocation)
 	loadedMap.AddActor(g.Player, namedLocation)
+
 	// TODO: ADD LIGHT SOURCE
 	//loadedMap.AddDynamicLightSource(namedLocation, g.playerLightSource)
 	loadedMap.UpdateDynamicLights()
@@ -235,8 +265,14 @@ func (g *GameState) initPlayerAndSpawnMap() {
 
 	g.iconsForObjects = loadedMapResult.IconsForObjects
 
+	g.updatePlayerFoVAndApplyExploration()
+
 	for flagName, flagValue := range loadedMapResult.FlagsOfMap {
 		g.gameFlags.Set(flagName, flagValue)
+	}
+
+	for _, script := range loadedMapResult.ScriptsToRun {
+		g.RunScript(script)
 	}
 
 	g.attachHooksToPlayer()
@@ -244,7 +280,7 @@ func (g *GameState) initPlayerAndSpawnMap() {
 
 func (g *GameState) attachHooksToPlayer() {
 	equipment := g.Player.GetEquipment()
-	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
+	g.Player.GetFlags().SetOnChangeHandler(func(flag special.ActorFlag, value int) {
 		g.ui.UpdateStats()
 	})
 	g.Player.charSheet.SetOnStatChangeHandler(func(stat special.Stat) {
@@ -264,11 +300,17 @@ func (g *GameState) setCurrentMap(loadedMap *gridmap.GridMap[*Actor, *Item, Obje
 	g.currentMapName = mapName
 }
 
+// UIRunning is called by the UI when it has started the game loop
+func (g *GameState) UIRunning() {
+	g.ui.InitDungeonUI(g.palette, g.inventoryColors)
+}
+
 // UIReady is called by the UI when it has initialized itself
 func (g *GameState) UIReady() {
 	g.moveIntoDungeon()
 	// ADD Banner
 	//g.ui.ShowTextFileFullscreen(path.Join("data","banner.txt"), g.moveIntoDungeon)
+	g.scriptRunner.OnTurn()
 }
 
 // moveIntoDungeon requires the UI to be available. It will request a dungeon crawl UI
@@ -276,11 +318,9 @@ func (g *GameState) UIReady() {
 func (g *GameState) moveIntoDungeon() {
 
 	// Since the player has equipment, we need the item
-	g.initPlayerAndSpawnMap()
+	g.initPlayerAndMap()
 
 	g.afterPlayerMoved(geometry.Point{}, true)
-
-	g.ui.InitDungeonUI(g.palette, g.inventoryColors)
 
 	g.updateUIStatus()
 }
@@ -306,14 +346,13 @@ func (g *GameState) QueueActionAfterAnimation(action func()) {
 func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	// player has changed the game state..
 	g.TurnsTaken++
+	g.gameTime = g.gameTime.Add(time.Second * time.Duration(float64(playerTimeTakenForTurn)/10))
 
 	didCancel := g.ui.AnimatePending() // animate player actions..
 
 	g.scriptRunner.OnTurn()
 
 	g.enemyMovement(playerTimeTakenForTurn)
-
-	g.gameTime = g.gameTime.Add(time.Second * time.Duration(float64(playerTimeTakenForTurn)/10))
 
 	if didCancel {
 		g.ui.SkipAnimations()
@@ -360,11 +399,15 @@ func (g *GameState) gameOver(death string) {
 }
 
 func (g *GameState) canActorSee(victim *Actor, position geometry.Point) bool {
+	if geometry.DistanceChebyshev(victim.Position(), position) <= 1 {
+		return true
+	}
 	return g.currentMap().IsLineOfSightClear(victim.Position(), position)
 }
 
 func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
 	if g.canPlayerSee(actor.Position()) {
+		text = g.fillTemplatedText(text)
 		if g.ui.TryAddChatter(actor, text) {
 			g.msg(foundation.HiLite("%s: \"%s\"", actor.Name(), text))
 			return true
@@ -394,7 +437,7 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 		menuItems = append(menuItems, foundation.MenuItem{
 			Name: fmt.Sprintf("Steal %s (%d%%)", item.Name(), chance),
 			Action: func() {
-				g.tryStealItem(actor, item.First(), itemStealModifier)
+				g.PlayerStealItem(actor, item.First(), itemStealModifier)
 			},
 			CloseMenus: true,
 		})
@@ -403,13 +446,14 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 	g.ui.OpenMenu(menuItems)
 }
 
-func (g *GameState) tryStealItem(victim *Actor, item *Item, itemStealModifier int) {
+func (g *GameState) PlayerStealItem(victim *Actor, item *Item, itemStealModifier int) {
 	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Steal, itemStealModifier)
 	if skillRoll.Success {
 		victim.GetInventory().Remove(item)
 		g.Player.GetInventory().Add(item)
 		g.msg(foundation.HiLite("You steal %s", item.Name()))
 		g.ui.PlayCue("world/pickup")
+		g.StartPickpocket(victim)
 	} else {
 		g.msg(foundation.HiLite("%s notices you trying to steal %s", victim.Name(), item.Name()))
 		if victim.IsSleeping() {
@@ -418,7 +462,10 @@ func (g *GameState) tryStealItem(victim *Actor, item *Item, itemStealModifier in
 		g.trySetHostile(victim, g.Player)
 	}
 }
-
+func (g *GameState) ShowDateTime() {
+	// full date
+	g.msg(foundation.HiLite("The time is %s", g.gameTime.Format("2006-01-02 15:04")))
+}
 func (g *GameState) getItemTemplateByName(shortString string) recfile.Record {
 	if record, ok := g.mapItemTemplates[shortString]; ok {
 		return record
@@ -468,4 +515,41 @@ func (g *GameState) getShootingRangePosition(attacker *Actor, weaponRange int, v
 		}
 	}
 	return bestPos
+}
+
+func (g *GameState) advanceTime(duration time.Duration) {
+	g.gameTime = g.gameTime.Add(duration)
+}
+
+func (g *GameState) awardXP(xp int, text string) {
+	didLevelUpNow := g.Player.GetCharSheet().AddXP(xp)
+	g.msg(foundation.HiLite("You received %s "+text, strconv.Itoa(xp)+" XP"))
+	if didLevelUpNow {
+		g.ui.PlayCue("ui/LEVELUP")
+		g.msg(foundation.HiLite(">>> You have gone up a level <<<"))
+	}
+}
+
+func (g *GameState) actorHitMessage(victim *Actor, damage SourcedDamage, cripple bool) {
+	if victim == g.Player {
+		g.playerHitMessage(damage, cripple)
+		return
+	}
+	baseMessage := fmt.Sprintf("%s was hit for %d hit points", victim.Name(), damage.DamageAmount)
+
+	if cripple {
+		baseMessage += fmt.Sprintf(", crippling their %s", damage.BodyPart.String())
+	}
+
+	g.msg(foundation.Msg(baseMessage))
+}
+
+func (g *GameState) playerHitMessage(damage SourcedDamage, cripple bool) {
+	baseMessage := fmt.Sprintf("You were hit for %d hit points", damage.DamageAmount)
+
+	if cripple {
+		baseMessage += fmt.Sprintf(", crippling your %s", damage.BodyPart.String())
+	}
+
+	g.msg(foundation.Msg(baseMessage))
 }

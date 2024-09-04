@@ -1,0 +1,17 @@
+%rec: default
+
+Category: Elevator
+Description: an elevator
+Identifier: home_tower
+FloorDescription: Street Level
+FloorTarget: home_lvl_0
+FloorDescription: Floor 8
+FloorTarget: home_lvl_8
+Position: (45,14)
+
+Category: Readable
+Name: MetalSign
+Description: a pinned notic
+TextFile: home_notice
+Position: (41,16)
+

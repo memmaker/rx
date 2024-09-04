@@ -5,6 +5,7 @@ import (
 	"RogueUI/gridmap"
 	"RogueUI/special"
 	"fmt"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 	"strings"
@@ -116,9 +117,10 @@ func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 	if causeOfDeath.IsActor() && causeOfDeath.Attacker == g.Player {
 		killedByPlayerFlag := fmt.Sprintf("KilledByPlayer(%s)", victim.GetInternalName())
 		g.gameFlags.SetFlag(killedByPlayerFlag)
+		g.awardXP(victim.GetXP(), fmt.Sprintf("for killing %s", victim.Name()))
+	} else {
+		g.msg(foundation.HiLite("%s was killed by %s", victim.Name(), causeOfDeath.String()))
 	}
-
-	g.msg(foundation.HiLite("%s killed %s", causeOfDeath.String(), victim.Name()))
 
 	//g.dropInventory(victim)
 	g.currentMap().SetActorToDowned(victim)
@@ -151,6 +153,10 @@ func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
 }
 func (g *GameState) updatePlayerFoVAndApplyExploration() {
 	g.currentMap().UpdateFieldOfView(g.playerFoV, g.Player.Position(), g.visionRange)
+	g.playerFoV.RemoveFromVisibles(func(p geometry.Point) bool {
+		return g.currentMap().IsDarknessAt(g.gameTime, p) && g.Player.Position() != p
+	})
+
 	for _, pos := range g.playerFoV.Visibles {
 		g.currentMap().SetExplored(pos)
 	}
@@ -163,35 +169,35 @@ func (g *GameState) checkPlayerCanAct() {
 	// then check the end condition for this status effect
 	// if it's not reached, we want the UI to show a message about the situation
 	// the player has to confirm it and then we can end the turn
-	if !g.Player.HasFlag(foundation.FlagStun) && !g.Player.HasFlag(foundation.FlagHeld) {
+	if !g.Player.HasFlag(special.FlagStun) && !g.Player.HasFlag(special.FlagHeld) {
 		return
 	}
 
-	if g.Player.HasFlag(foundation.FlagStun) {
+	if g.Player.HasFlag(special.FlagStun) {
 		result := g.Player.GetCharSheet().StatRoll(special.Strength, 0)
 
 		if result.Success {
 			g.msg(foundation.Msg("You shake off the stun"))
-			g.Player.GetFlags().Unset(foundation.FlagStun)
+			g.Player.GetFlags().Unset(special.FlagStun)
 			return
 		}
-		g.Player.GetFlags().Increment(foundation.FlagStun)
+		g.Player.GetFlags().Increment(special.FlagStun)
 
 		g.msg(foundation.Msg("You are stunned and cannot act"))
 
 		// TODO: animate a small delay here?
 		g.endPlayerTurn(g.Player.timeNeededForActions())
 	}
-	if g.Player.HasFlag(foundation.FlagHeld) {
+	if g.Player.HasFlag(special.FlagHeld) {
 		result := g.Player.GetCharSheet().StatRoll(special.Strength, 0)
 
 		if result.Crit {
 			g.msg(foundation.Msg("You break free from the hold"))
-			g.Player.GetFlags().Unset(foundation.FlagHeld)
+			g.Player.GetFlags().Unset(special.FlagHeld)
 			return
 		} else if result.Success {
-			g.Player.GetFlags().Decrease(foundation.FlagHeld, 10)
-			if !g.Player.HasFlag(foundation.FlagHeld) {
+			g.Player.GetFlags().Decrease(special.FlagHeld, 10)
+			if !g.Player.HasFlag(special.FlagHeld) {
 				g.msg(foundation.Msg("You break free from the hold"))
 				return
 			}
@@ -292,7 +298,12 @@ func (g *GameState) fillTemplatedText(text string) string {
 	if err != nil {
 		panic(err)
 	}
-	replaceValues := map[string]string{"pcname": g.Player.Name()}
+	replaceValues := map[string]string{
+		"pcname":         g.Player.Name(), // use as {{ .pcname }}
+		"keys_move":      g.ui.GetKeybindingsAsString("move"),
+		"keys_action":    g.ui.GetKeybindingsAsString("map_interaction"),
+		"keys_inventory": g.ui.GetKeybindingsAsString("inventory"),
+	}
 
 	var filledText strings.Builder
 	err = parsedTemplate.Execute(&filledText, replaceValues)
@@ -300,4 +311,36 @@ func (g *GameState) fillTemplatedText(text string) string {
 		panic(err)
 	}
 	return filledText.String()
+}
+
+func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Point, item *Item, attackMode AttackMode, bulletCount int) (foundation.Animation, bool) {
+	weapon := item.GetWeapon()
+	var attackAnim foundation.Animation
+	isProjectile := false
+	sourcePos := attacker.Position()
+	switch weapon.GetDamageType() {
+	case special.DamageTypePlasma:
+		flightPath := g.getFlightPath(sourcePos, targetPos)
+		attackAnim, _ = g.ui.GetAnimProjectileWithLight('*', "green_2", flightPath, nil)
+		isProjectile = true
+	case special.DamageTypeExplosive:
+		flightPath := g.getFlightPath(sourcePos, targetPos)
+		attackAnim, _ = g.ui.GetAnimProjectileWithLight('°', "white", flightPath, nil)
+		isProjectile = true
+	default:
+		attackAnim = g.ui.GetAnimMuzzleFlash(sourcePos, fxtools.NewColorFromRGBA(g.palette.Get("White")).MultiplyWithScalar(5), 4, bulletCount, nil)
+	}
+
+	attackAnim.SetAudioCue(weapon.GetFireAudioCue(attackMode.Mode))
+	return attackAnim, isProjectile
+}
+
+func (g *GameState) getFlightPath(sourcePos geometry.Point, targetPos geometry.Point) []geometry.Point {
+	flightPath := geometry.BresenhamLine(sourcePos, targetPos, func(x, y int) bool {
+		if x == sourcePos.X && y == sourcePos.Y {
+			return true
+		}
+		return g.currentMap().IsCurrentlyPassable(geometry.Point{X: x, Y: y})
+	})
+	return flightPath
 }
