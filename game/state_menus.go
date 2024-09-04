@@ -417,6 +417,25 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 					if removedItem != nil {
 						g.msg(foundation.HiLite("%s removed.", removedItem.Name()))
 					}
+				case "StopScript":
+					scriptName := args.Get(0)
+					g.scriptRunner.StopScript(scriptName)
+				case "GiveItem":
+					itemName := args.Get(0)
+					actor, isActor := conversationPartner.(*Actor)
+					var itemForPlayer *Item
+					if isActor {
+						itemForPlayer = actor.GetInventory().GetItemByName(itemName)
+						if itemForPlayer != nil {
+							actor.GetInventory().Remove(itemForPlayer)
+						}
+					} else {
+						itemForPlayer = g.NewItemFromString(itemName)
+					}
+					if itemForPlayer != nil {
+						g.Player.GetInventory().Add(itemForPlayer)
+						g.msg(foundation.HiLite("%s received.", itemForPlayer.Name()))
+					}
 				case "Hacking":
 					terminalID := args.Get(0)
 					difficulty := args.Get(1)

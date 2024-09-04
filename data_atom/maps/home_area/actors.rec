@@ -28,7 +28,7 @@ Charisma: 9
 Intelligence: 7
 Agility: 5
 Luck: 9
-SkillBonusSmallGuns: 50
+SkillBonusSmallGuns: 120
 SkillBonusUnarmed: 37
 SkillBonusMelee: 47
 SkillBonusBarter: 64
@@ -44,6 +44,9 @@ DRRadiation: 8
 DRPoison: 20
 SourceFile: 00000144.pro
 Equipment: key('home_keys','apartment keys')
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
 Position: (61,14)
 
 Name: taxi_driver
@@ -95,6 +98,9 @@ DRExplosive: 40
 DRRadiation: 12
 DRPoison: 30
 SourceFile: 00000137.pro
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
 Position: (57,20)
 
 Name: duck
@@ -110,7 +116,7 @@ KillType: 17
 DamageType: 0
 TeamNum: 1
 HitPoints: 6
-ActionPoints: 5
+ActionPoints: 3
 ArmorClass: 4
 MeleeDamage: 2
 CarryWeight: 50
@@ -124,8 +130,8 @@ Charisma: 1
 Intelligence: 1
 Agility: 4
 Luck: 1
-SkillBonusUnarmed: 25
-SkillBonusMelee: 35
+SkillBonusUnarmed: 0
+SkillBonusMelee: 0
 DREMP: 500
 DRRadiation: 2
 DRPoison: 5

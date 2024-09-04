@@ -76,7 +76,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		case "equipment":
 			equipment = append(equipment, field.Value)
 		case "default_relation":
-			actor.SetRelationToPlayer(PlayerRelationFromString(field.Value))
+			actor.SetAIState(PlayerRelationFromString(field.Value))
 		case "position":
 			pos, _ := geometry.NewPointFromEncodedString(field.Value)
 			actor.SetPosition(pos)

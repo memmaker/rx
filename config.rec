@@ -2,7 +2,7 @@
 
 AnimationDelay: 55
 AnimationsEnabled: true
-AnimateMovement: true
+AnimateMovement: false
 AnimateProjectiles: true
 AnimateDamage: true
 AnimateEffects: true

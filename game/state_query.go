@@ -304,7 +304,7 @@ func (g *GameState) playerVisibleEnemiesByDistance() []*Actor {
 	}
 	playerPos := g.Player.Position()
 	for _, actor := range g.currentMap().Actors() {
-		if actor == g.Player || !actor.IsHostile() {
+		if actor == g.Player || !actor.IsInCombat() {
 			continue
 		}
 		if g.canPlayerSee(actor.Position()) && g.couldPlayerSeeActor(actor) {

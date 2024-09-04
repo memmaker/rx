@@ -23,6 +23,8 @@ type ActionScript struct {
 	Frames []ScriptFrame
 
 	Outcomes []ScriptFrame
+
+	CancelFrame ScriptFrame
 }
 
 func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
@@ -56,7 +58,7 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 		},
 		"InCombat": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
-			return actor.IsHostile(), nil
+			return actor.IsInCombat(), nil
 		},
 		// Actions
 		"AddChatter": func(args ...interface{}) (interface{}, error) {
@@ -183,54 +185,63 @@ func NewActionScript(name string, records map[string][]recfile.Record, condFuncs
 	frames := FramesFromRecords(records["frames"], condFuncs)
 
 	script := ActionScript{
-		Name:      name,
-		Frames:    frames,
-		Variables: make(map[string]interface{}),
+		Name:        name,
+		Frames:      frames,
+		Variables:   make(map[string]interface{}),
+		CancelFrame: NewScriptFrameFromRecord(records["cancel"][0], condFuncs),
 	}
-	outcomes := records["outcomes"]
-	for _, outcome := range outcomes {
-		outcomeFrame := ScriptFrame{}
-		for _, f := range outcome {
-			switch strings.ToLower(f.Name) {
-			case "if":
-				cond, parseErr := govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
-				if parseErr != nil {
-					panic(parseErr)
-				} else {
-					outcomeFrame.Condition = cond
-				}
-			case "do":
-				action, parseErr := govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
-				if parseErr != nil {
-					panic(parseErr)
-				} else {
-					outcomeFrame.Actions = append(outcomeFrame.Actions, action)
-				}
+
+	if len(records["outcomes"]) > 0 {
+		for _, outcome := range records["outcomes"] {
+			outcomeFrame := NewScriptFrameFromRecord(outcome, condFuncs)
+			if outcomeFrame.Condition != nil {
+				script.Outcomes = append(script.Outcomes, outcomeFrame)
 			}
-		}
-		if outcomeFrame.Condition != nil {
-			script.Outcomes = append(script.Outcomes, outcomeFrame)
 		}
 	}
 
-	defNodes := records["definitions"]
-	for _, defNode := range defNodes {
-		varName := ""
-		var varValue *govaluate.EvaluableExpression
-		for _, f := range defNode {
-			switch strings.ToLower(f.Name) {
-			case "var":
-				varName = f.Value
-			case "set":
-				varValue, _ = govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
+	if len(records["definitions"]) > 0 {
+		for _, defNode := range records["definitions"] {
+			varName := ""
+			var varValue *govaluate.EvaluableExpression
+			for _, f := range defNode {
+				switch strings.ToLower(f.Name) {
+				case "var":
+					varName = f.Value
+				case "set":
+					varValue, _ = govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
+				}
+			}
+			if varName != "" && varValue != nil {
+				script.Variables[varName], _ = varValue.Evaluate(nil)
 			}
 		}
-		if varName != "" && varValue != nil {
-			script.Variables[varName], _ = varValue.Evaluate(nil)
-		}
-	}
 
+	}
 	return script
+}
+
+func NewScriptFrameFromRecord(outcome recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) ScriptFrame {
+	outcomeFrame := ScriptFrame{}
+	for _, f := range outcome {
+		switch strings.ToLower(f.Name) {
+		case "if":
+			cond, parseErr := govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
+			if parseErr != nil {
+				panic(parseErr)
+			} else {
+				outcomeFrame.Condition = cond
+			}
+		case "do":
+			action, parseErr := govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
+			if parseErr != nil {
+				panic(parseErr)
+			} else {
+				outcomeFrame.Actions = append(outcomeFrame.Actions, action)
+			}
+		}
+	}
+	return outcomeFrame
 }
 
 func FramesFromRecords(records []recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) []ScriptFrame {

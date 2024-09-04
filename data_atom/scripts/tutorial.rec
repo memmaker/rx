@@ -8,6 +8,11 @@ set: ActorWithName('grim_beard')
 if: IsDead(OLDMAN)
 do: AddChatter(OLDMAN, 'You\'ll regret this.')
 
+%rec: cancel
+
+if: true
+do: AddChatter(OLDMAN, 'Whatever.')
+
 %rec: frames
 
 if: true

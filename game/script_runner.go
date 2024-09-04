@@ -65,6 +65,10 @@ func (i *ScriptInstance) SetDone() {
 	i.isDone = true
 }
 
+func (i *ScriptInstance) RunCancelFrame() {
+	i.Run(i.script.CancelFrame)
+}
+
 type ScriptRunner struct {
 	runningScripts []*ScriptInstance
 }
@@ -96,5 +100,21 @@ func (s *ScriptRunner) OnTurn() {
 		} else if instance.CanRunCurrentFrame() {
 			instance.RunCurrentFrame()
 		}
+	}
+}
+
+func (s *ScriptRunner) StopScript(name string) {
+	scriptIndex := -1
+	for index, instance := range s.runningScripts {
+		if instance.script.Name == name {
+			scriptIndex = index
+			break
+		}
+	}
+
+	if scriptIndex != -1 {
+		scripToStop := s.runningScripts[scriptIndex]
+		scripToStop.RunCancelFrame()
+		s.runningScripts = append(s.runningScripts[:scriptIndex], s.runningScripts[scriptIndex+1:]...)
 	}
 }

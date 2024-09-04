@@ -218,7 +218,7 @@ func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction 
 				return actor.GetInternalName() == npcName
 			})
 			for _, actor := range actors {
-				if actor.IsHostile() {
+				if actor.IsInCombat() {
 					return true, nil
 				}
 			}

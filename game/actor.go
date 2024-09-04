@@ -15,21 +15,22 @@ import (
 	"strings"
 )
 
-type CharacterMood uint8
+type AIState uint8
 
 const (
-	Neutral CharacterMood = iota
-	Hostile
+	Neutral AIState = iota
+	AttackEverything
+	AttackEnemies
 	Panic
 )
 
-func PlayerRelationFromString(str string) CharacterMood {
+func PlayerRelationFromString(str string) AIState {
 	str = strings.ToLower(str)
 	switch str {
 	case "neutral":
 		return Neutral
 	case "hostile":
-		return Hostile
+		return AttackEverything
 	case "ally":
 		return Panic
 	}
@@ -56,7 +57,6 @@ type Actor struct {
 	body         special.BodyStructure
 	bodyDamage   map[special.BodyPart]int
 
-	mood         CharacterMood
 	dialogueFile string
 	teamName     string
 
@@ -71,6 +71,7 @@ type Actor struct {
 	currentPathBlockedCount int
 	currentPath             []geometry.Point
 	currentPathIndex        int
+	aiState                 AIState
 }
 
 func (a *Actor) GetBodyPartIndex(aim special.BodyPart) int {
@@ -149,7 +150,7 @@ func (a *Actor) GobEncode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = encoder.Encode(a.mood)
+	err = encoder.Encode(a.aiState)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +240,7 @@ func (a *Actor) GobDecode(data []byte) error {
 	if err != nil {
 		return err
 	}
-	err = decoder.Decode(&a.mood)
+	err = decoder.Decode(&a.aiState)
 	if err != nil {
 		return err
 	}
@@ -297,7 +298,7 @@ func NewActor() *Actor {
 		charSheet:   sheet,
 		body:        special.HumanBodyParts,
 		bodyDamage:  make(map[special.BodyPart]int),
-		mood:        Neutral,
+		aiState:     Neutral,
 		statusFlags: special.NewActorFlags(),
 		enemyActors: make(map[string]bool),
 		enemyTeams:  make(map[string]bool),
@@ -790,12 +791,12 @@ func (a *Actor) HasKey(identifier string) bool {
 	return a.GetInventory().HasKey(identifier)
 }
 
-func (a *Actor) IsHostile() bool {
-	return a.mood == Hostile
+func (a *Actor) IsInCombat() bool {
+	return a.HasActiveGoal() && (a.aiState == AttackEverything || a.aiState == AttackEnemies)
 }
 
-func (a *Actor) SetRelationToPlayer(relation CharacterMood) {
-	a.mood = relation
+func (a *Actor) SetAIState(relation AIState) {
+	a.aiState = relation
 }
 
 func (a *Actor) SetDisplayName(name string) {
@@ -807,7 +808,7 @@ func (a *Actor) GetDialogueFile() string {
 }
 
 func (a *Actor) SetHostile() {
-	a.mood = Hostile
+	a.aiState = AttackEverything
 	a.tryEquipWeapon()
 }
 
@@ -918,8 +919,11 @@ func (a *Actor) AddToEnemyTeams(name string) {
 }
 
 func (a *Actor) IsHostileTowards(attacker *Actor) bool {
-	if a.mood != Hostile {
+	if a.aiState == Neutral || a.aiState == Panic || !a.HasActiveGoal() {
 		return false
+	}
+	if a.aiState == AttackEverything {
+		return true
 	}
 	if _, exists := a.enemyActors[attacker.GetInternalName()]; exists {
 		return true
@@ -931,7 +935,7 @@ func (a *Actor) IsHostileTowards(attacker *Actor) bool {
 }
 
 func (a *Actor) IsPanicking() bool {
-	return a.mood == Panic
+	return a.aiState == Panic
 }
 
 func (a *Actor) LookInfo() string {
@@ -1020,10 +1024,6 @@ func (a *Actor) RemoveEnemy(other *Actor) {
 	delete(a.enemyActors, other.GetInternalName())
 }
 
-func (a *Actor) SetNeutral() {
-	a.mood = Neutral
-}
-
 func (a *Actor) SetIcon(icon textiles.TextIcon) {
 	a.icon = icon
 }
@@ -1043,7 +1043,6 @@ func (a *Actor) ToRecord() recfile.Record {
 		recfile.Field{Name: "Icon", Value: string(a.icon.Char)},
 		recfile.Field{Name: "Fg", Value: recfile.RGBStr(a.icon.Fg)},
 		recfile.Field{Name: "Bg", Value: recfile.RGBStr(a.icon.Bg)},
-		recfile.Field{Name: "Mood", Value: recfile.IntStr(int(a.mood))},
 		recfile.Field{Name: "DialogueFile", Value: a.dialogueFile},
 		recfile.Field{Name: "Team", Value: a.teamName},
 		recfile.Field{Name: "XP", Value: recfile.IntStr(a.xp)},
@@ -1155,6 +1154,21 @@ func (a *Actor) timeNeededForMeleeAttack() int {
 		return meleeWeapon.GetCurrentAttackMode().TUCost
 	}
 	return a.timeNeededForActions()
+}
+
+func (a *Actor) SetNeutral() {
+	a.aiState = Neutral
+}
+
+func (a *Actor) SetHostileTowards(sourceOfTrouble *Actor) {
+	a.aiState = AttackEnemies
+
+	a.AddToEnemyActors(sourceOfTrouble.GetInternalName())
+
+	a.tryEquipRangedWeapon()
+	if !a.GetEquipment().HasRangedWeaponInMainHand() {
+		a.tryEquipWeapon()
+	}
 }
 
 type ActorGoal struct {

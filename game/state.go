@@ -118,8 +118,6 @@ func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 		killedByPlayerFlag := fmt.Sprintf("KilledByPlayer(%s)", victim.GetInternalName())
 		g.gameFlags.SetFlag(killedByPlayerFlag)
 		g.awardXP(victim.GetXP(), fmt.Sprintf("for killing %s", victim.Name()))
-	} else {
-		g.msg(foundation.HiLite("%s was killed by %s", victim.Name(), causeOfDeath.String()))
 	}
 
 	//g.dropInventory(victim)

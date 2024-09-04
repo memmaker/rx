@@ -425,6 +425,15 @@ func (i *Inventory) GetNonAmmoWeight() int {
 	return totalWeight
 }
 
+func (i *Inventory) GetItemByName(name string) *Item {
+	for _, invItem := range i.items {
+		if invItem.GetInternalName() == name {
+			return invItem
+		}
+	}
+	return nil
+}
+
 func SortInventory(stacks []*InventoryStack) {
 	slices.SortStableFunc(stacks, func(i, j *InventoryStack) int {
 		itemI := i.items[0]

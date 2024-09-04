@@ -17,7 +17,8 @@ do: SetGoalMoveToNamedLocation(JEFF, 'jeffs_hideout')
 if: IsDead(JEFF) && !IsDead(WINTERS)
 do: AddChatter(WINTERS, 'Damn you, Jeff. What did I ever do to you?')
 
-# cancel
+%rec: cancel
+
 if: Turns() > 180 && !InCombat(JEFF) && !InCombat(WINTERS)
 do: AddChatter(JEFF, 'I\'m out of here.")
 do: AddChatter(WINTERS, 'Better luck next time, Jeff.')

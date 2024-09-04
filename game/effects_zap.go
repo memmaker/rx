@@ -589,6 +589,8 @@ func (g *GameState) damageActorWithFollowUp(
 		g.gameFlags.SetFlag(hurtByPlayerFlag)
 	}
 
+	g.actorHitMessage(victim, damage, didCripple, isKill, isOverKill)
+
 	if isKill {
 		g.actorKilled(damage, victim)
 		if isOverKill {
@@ -602,7 +604,6 @@ func (g *GameState) damageActorWithFollowUp(
 	} else { // only a flesh wound
 		damageAudioCue = victim.GetHitAudioCue(damage.AttackMode.IsMelee())
 		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, done)
-		g.actorHitMessage(victim, damage, didCripple)
 		if victim != g.Player {
 			g.tryAddChatter(victim, "Ouch!")
 		}
@@ -615,16 +616,7 @@ func (g *GameState) damageActorWithFollowUp(
 
 func (g *GameState) trySetHostile(affected *Actor, sourceOfTrouble *Actor) {
 	if !affected.IsPanicking() && g.canActorSee(affected, sourceOfTrouble.Position()) {
-		if affected.GetTeam() == sourceOfTrouble.GetTeam() || sourceOfTrouble == g.Player {
-			affected.AddToEnemyActors(sourceOfTrouble.GetInternalName())
-		} else {
-			affected.AddToEnemyTeams(sourceOfTrouble.GetTeam())
-		}
-		affected.SetHostile()
-		affected.tryEquipRangedWeapon()
-		if !affected.GetEquipment().HasRangedWeaponInMainHand() {
-			affected.tryEquipWeapon()
-		}
+		affected.SetHostileTowards(sourceOfTrouble)
 		affected.SetGoal(g.getKillGoal(affected, sourceOfTrouble))
 	}
 }

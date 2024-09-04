@@ -18,9 +18,8 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 
 	distanceToPlayer := geometry.DistanceChebyshev(enemy.Position(), g.Player.Position())
 
-	isHostile := enemy.IsHostile()
-	if !isHostile {
-
+	inCombat := enemy.IsInCombat()
+	if !inCombat {
 		if enemy.HasFlag(special.FlagAnimal) {
 			consequencesOfConfusion := g.actConfused(enemy)
 			if len(consequencesOfConfusion) > 0 {
@@ -101,6 +100,10 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 	}
 
 	if !enemy.HasFlag(special.FlagAwareOfPlayer) {
+		return enemy.timeEnergy
+	}
+
+	if !enemy.IsHostileTowards(g.Player) {
 		return enemy.timeEnergy
 	}
 

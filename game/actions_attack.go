@@ -46,7 +46,6 @@ func (g *GameState) PlayerRangedAttack() {
 	if attackMode.IsAimed {
 		g.ui.SelectBodyPart(g.playerLastAimedAt, func(victim foundation.ActorForUI, bodyPart special.BodyPart) {
 			g.playerLastAimedAt = bodyPart
-			g.msg(foundation.HiLite("You aim at %s's %s", victim.Name(), bodyPart.String()))
 			target := victim.(*Actor)
 			shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, bodyPart)
 			g.ui.AddAnimations(shotAnim)

@@ -453,7 +453,9 @@ func (g *GameState) PlayerStealItem(victim *Actor, item *Item, itemStealModifier
 		g.Player.GetInventory().Add(item)
 		g.msg(foundation.HiLite("You steal %s", item.Name()))
 		g.ui.PlayCue("world/pickup")
-		g.StartPickpocket(victim)
+		if victim.HasStealableItems() {
+			g.StartPickpocket(victim)
+		}
 	} else {
 		g.msg(foundation.HiLite("%s notices you trying to steal %s", victim.Name(), item.Name()))
 		if victim.IsSleeping() {
@@ -530,15 +532,22 @@ func (g *GameState) awardXP(xp int, text string) {
 	}
 }
 
-func (g *GameState) actorHitMessage(victim *Actor, damage SourcedDamage, cripple bool) {
+func (g *GameState) actorHitMessage(victim *Actor, damage SourcedDamage, cripple bool, kill bool, overKill bool) {
 	if victim == g.Player {
 		g.playerHitMessage(damage, cripple)
 		return
 	}
 	baseMessage := fmt.Sprintf("%s was hit for %d hit points", victim.Name(), damage.DamageAmount)
+	if damage.BodyPart != special.Body {
+		baseMessage += fmt.Sprintf("%s was hit in the %s for %d hit points", victim.Name(), damage.BodyPart.String(), damage.DamageAmount)
+	}
 
-	if cripple {
-		baseMessage += fmt.Sprintf(", crippling their %s", damage.BodyPart.String())
+	if kill {
+		baseMessage += fmt.Sprintf(", killing them")
+	} else if overKill {
+		baseMessage += fmt.Sprintf(", reducing them to a bloody pulp")
+	} else if cripple {
+		baseMessage += fmt.Sprintf(", crippling them")
 	}
 
 	g.msg(foundation.Msg(baseMessage))
