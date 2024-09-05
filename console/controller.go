@@ -1964,6 +1964,7 @@ func (u *UI) SetConversationState(starterText string, starterOptions []foundatio
 	}
 
 }
+
 func (u *UI) directionalWrapperWithoutAlphabet(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune && (event.Rune() >= 'a' && event.Rune() <= 'z') || (event.Rune() >= 'A' && event.Rune() <= 'Z') {

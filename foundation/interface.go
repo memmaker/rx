@@ -287,6 +287,38 @@ func (d Difficulty) String() string {
 	return "Unknown"
 }
 
+func (d Difficulty) GetRollModifier() int {
+	switch d {
+	case VeryEasy:
+		return 10
+	case Easy:
+		return 5
+	case Medium:
+		return 0
+	case Hard:
+		return -20
+	case VeryHard:
+		return -40
+	}
+	return 0
+}
+
+func (d Difficulty) GetStrength() int {
+	switch d {
+	case VeryEasy:
+		return 20
+	case Easy:
+		return 40
+	case Medium:
+		return 60
+	case Hard:
+		return 80
+	case VeryHard:
+		return 100
+	}
+	return 3
+}
+
 const (
 	VeryEasy Difficulty = iota
 	Easy

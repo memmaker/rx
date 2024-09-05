@@ -14,14 +14,15 @@ import (
 
 type Door struct {
 	*BaseObject
-	lockedFlag       string
-	lockDiff         foundation.Difficulty
-	numberLock       []rune
-	hitpoints        int
-	damageThreshold  int
-	audioCueBaseName string
-	player           foundation.AudioCuePlayer
-	onBump           func(actor *Actor)
+	lockedFlag            string
+	lockDiff              foundation.Difficulty
+	lockStrengthRemaining int
+	numberLock            []rune
+	hitpoints             int
+	damageThreshold       int
+	audioCueBaseName      string
+	player                foundation.AudioCuePlayer
+	onBump                func(actor *Actor)
 }
 
 func (b *Door) InitWithGameState(g *GameState) {
@@ -44,13 +45,48 @@ func (b *Door) InitWithGameState(g *GameState) {
 					}
 				})
 			} else {
-				g.ui.StartLockpickGame(b.lockDiff, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
-					if result == foundation.Success {
+				// lockpicking
+				lockPickResult := func(success bool) {
+					if success {
 						b.category = foundation.ObjectClosedDoor
 						g.msg(foundation.Msg("You picked the lock deftly"))
 						g.ui.PlayCue("world/PICKKEYS")
+					} else {
+						g.msg(foundation.Msg("You failed to pick the lock"))
 					}
-				})
+				}
+				if g.config.UseLockpickingMiniGame {
+					g.ui.StartLockpickGame(b.lockDiff, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
+						lockPickResult(result == foundation.Success)
+					})
+				} else if g.config.UseLockpickingDX {
+					if g.Player.GetInventory().GetLockpickCount() == 0 {
+						g.msg(foundation.Msg("You don't have any lockpicks"))
+						return
+					}
+					g.Player.GetInventory().RemoveLockpick()
+					skill := g.Player.GetCharSheet().GetSkill(special.Lockpick)
+					reduction := int(float64(skill) * 0.375)
+					if b.PickByReduceStrength(reduction) {
+						lockPickResult(true)
+					} else {
+						remaining := b.lockStrengthRemaining
+						g.msg(foundation.Msg(fmt.Sprintf("You reduced the lock strength by %d%%, lock strength remaining: %d%%", reduction, remaining)))
+					}
+
+				} else {
+					skill := g.Player.GetCharSheet().GetSkill(special.Lockpick)
+					modifier := b.lockDiff.GetRollModifier()
+					chance := skill + modifier
+					if chance <= 0 {
+						g.msg(foundation.Msg("You don't have the skill to pick this lock"))
+						return
+					}
+					luckPercent := special.Percentage(g.Player.GetCharSheet().GetStat(special.Luck))
+					rollResult := special.SuccessRoll(special.Percentage(chance), luckPercent)
+					lockPickResult(rollResult.Success)
+				}
+
 			}
 		}
 	}
@@ -176,6 +212,7 @@ func (b *Door) SetLockedByFlag(flag string) {
 }
 func (b *Door) SetLockDifficulty(difficulty foundation.Difficulty) {
 	b.lockDiff = difficulty
+	b.lockStrengthRemaining = difficulty.GetStrength()
 }
 
 func (b *Door) IsLocked() bool {
@@ -228,10 +265,10 @@ func (g *GameState) NewDoor(rec recfile.Record) *Door {
 			displayName:   "a door",
 			iconForObject: g.iconForObject,
 		},
-		lockDiff:        foundation.Easy,
 		hitpoints:       10,
 		damageThreshold: 2,
 	}
+	door.SetLockDifficulty(foundation.Easy)
 	door.SetWalkable(false)
 	door.SetHidden(false)
 	door.SetTransparent(true)
@@ -258,7 +295,7 @@ func (g *GameState) NewDoor(rec recfile.Record) *Door {
 		case "numberlock":
 			door.numberLock = []rune(field.Value)
 		case "lockdifficulty":
-			door.lockDiff = foundation.DifficultyFromString(field.Value)
+			door.SetLockDifficulty(foundation.DifficultyFromString(field.Value))
 		case "position":
 			door.position, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "hitpoints":
@@ -351,4 +388,13 @@ func (b *Door) ToRecord() recfile.Record {
 		rec = append(rec, recfile.Field{Name: "audiocue", Value: b.audioCueBaseName})
 	}
 	return rec
+}
+
+func (b *Door) PickByReduceStrength(reduction int) bool {
+	b.lockStrengthRemaining -= reduction
+	if b.lockStrengthRemaining <= 0 {
+		b.Unlock()
+		return true
+	}
+	return false
 }

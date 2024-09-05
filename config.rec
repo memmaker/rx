@@ -17,4 +17,6 @@ PlayerColor: white
 DataRootDir: data_atom
 DefaultToAdvancedTargeting: false
 KeyMap: numpad
+UseLockpickingDX: false
+UseLockpickingMiniGame: false
 

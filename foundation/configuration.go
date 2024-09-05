@@ -27,6 +27,8 @@ type Configuration struct {
 	KeyMap                     string
 
 	DialogueShortcutsAreNumbers bool
+	UseLockpickingMiniGame      bool
+	UseLockpickingDX            bool
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -76,6 +78,10 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.KeyMap = field.Value
 		case "DialogueShortcutsAreNumbers":
 			configuration.DialogueShortcutsAreNumbers = field.AsBool()
+		case "UseLockpickingMiniGame":
+			configuration.UseLockpickingMiniGame = field.AsBool()
+		case "UseLockpickingDX":
+			configuration.UseLockpickingDX = field.AsBool()
 		}
 	}
 	return configuration
@@ -101,6 +107,8 @@ func NewDefaultConfiguration() *Configuration {
 		PlayerColor:                 "white",
 		KeyMap:                      "numpad",
 		DialogueShortcutsAreNumbers: false,
+		UseLockpickingMiniGame:      false,
+		UseLockpickingDX:            false,
 	}
 }
 
@@ -129,6 +137,8 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "DefaultToAdvancedTargeting", Value: recfile.BoolStr(c.DefaultToAdvancedTargeting)},
 			recfile.Field{Name: "KeyMap", Value: c.KeyMap},
 			recfile.Field{Name: "DialogueShortcutsAreNumbers", Value: recfile.BoolStr(c.DialogueShortcutsAreNumbers)},
+			recfile.Field{Name: "UseLockpickingMiniGame", Value: recfile.BoolStr(c.UseLockpickingMiniGame)},
+			recfile.Field{Name: "UseLockpickingDX", Value: recfile.BoolStr(c.UseLockpickingDX)},
 		},
 	}
 	file, _ := os.Create(filename)
