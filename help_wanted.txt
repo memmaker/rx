@@ -1,0 +1,8 @@
+
+Not sure if this is the right place to ask, if not, please delete and take my apologies.
+
+I am currently working on a small scale terminal based game that is heavily influenced by the classic fallout games. I have attached a screenshot so you get a feel for how it looks. At its core, it's a turn based RPG. I have a map editor and a dialogue and scripting system.
+
+I am looking for collaborators. Specifically people who love fallout or similar games with a heavy emphasis on player agency and would want to contribute to quest, npc, dialogue or world design.
+
+If that is something that would be interesting to you, then I would be happy to have a chat with you. This is completely non-profit and purely a hobby, no money is changing hands.

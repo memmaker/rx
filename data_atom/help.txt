@@ -4,7 +4,7 @@ In the year 2077, America has descended into chaos, ruled by powerful corporatio
 
 [#00ff00]Your Role[-]
 
-You are a "Contractor", a skilled but morally ambiguous figure who navigates the dark underworld. Moving through decaying cities rife with corruption, cybernetic enhancements, and desperate people. Your missions will take you from the neon-lit streets to secretive hideouts, all in an effort to secure your future in a world on the brink of collapse.
+As a "Contractor", a skilled but morally ambiguous figure who navigates the dark underworld. Moving through decaying cities rife with corruption, cybernetic enhancements, and desperate people. Your missions will take you from the neon-lit streets to secretive hideouts, all in an effort to secure your future in a world on the brink of collapse.
 
 [#00ff00]Basics[-]
 

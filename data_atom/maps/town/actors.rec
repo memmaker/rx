@@ -13,9 +13,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 default_relation: neutral
 equipment: 10mm_pistol
 equipment: 10mm_jhp | 24
@@ -36,9 +36,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 default_relation: neutral
 SkillBonusSmallGuns: 20
 equipment: 10mm_pistol
@@ -61,9 +61,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 SkillBonusSmallGuns: 30
 default_relation: neutral
 equipment: 10mm_pistol
@@ -84,9 +84,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 SkillBonusSmallGuns: 20
 default_relation: neutral
 equipment: 10mm_pistol
@@ -107,9 +107,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 SkillBonusSmallGuns: 30
 default_relation: neutral
 equipment: 10mm_pistol
@@ -130,9 +130,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 SkillBonusSmallGuns: 25
 default_relation: neutral
 equipment: 10mm_pistol
@@ -153,9 +153,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 SkillBonusSmallGuns: 25
 default_relation: neutral
 equipment: 10mm_pistol
@@ -176,9 +176,9 @@ charisma: 5
 intelligence: 5
 agility: 5
 luck: 5
-hp: 20
+HitPoints: 20
 dodge: 5
-ap: 4
+ActionPoints: 4
 default_relation: neutral
 equipment: 10mm_pistol
 equipment: 10mm_jhp | 24

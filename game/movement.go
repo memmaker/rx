@@ -130,7 +130,7 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 	}))
 
 	if inventory.IsEmpty() || len(stackRef) == 0 {
-		g.msg(foundation.HiLite("There is nothing to pick up"))
+		g.msg(foundation.Msg("There is nothing to pick up"))
 		return
 	}
 

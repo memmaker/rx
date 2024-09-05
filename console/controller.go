@@ -1114,10 +1114,13 @@ func (u *UI) initCoreUI() {
 	u.application.SetAfterDrawFunc(func(screen tcell.Screen) {
 		if u.mainGrid != nil && u.sentUIRunning && !u.sentUIReady && u.GetMapWindowGridSize().X >= 80 && u.GetMapWindowGridSize().Y >= 23 {
 
-			u.game.UIReady()
 			u.sentUIReady = true
 
 			u.application.SetAfterDrawFunc(nil)
+
+			u.application.QueueUpdateDraw(func() {
+				u.game.UIReady()
+			})
 
 			//u.application.QueueEvent(tcell.NewEventKey(tcell.KeyRune, ' ', 0)) // WTF DOESNT THIS WORK?
 		}
@@ -1946,15 +1949,33 @@ func (u *UI) SetConversationState(starterText string, starterOptions []foundatio
 		}
 		action.Action()
 	})
-	setListItemsFromMenuItems(u.dialogueOptions, starterOptions)
+
 	u.makeTopAndBottomModal(u.dialogueText, u.dialogueOptions)
 	u.lockFocusToPrimitive(u.dialogueOptions)
+
 	originalCapture := u.dialogueOptions.GetInputCapture()
-	u.dialogueOptions.SetInputCapture(u.directionalWrapper(originalCapture))
+
+	if u.settings.DialogueShortcutsAreNumbers {
+		u.dialogueOptions.SetInputCapture(u.directionalWrapperWithoutNumbers(originalCapture))
+		setListItemsFromMenuItemsWithNumbers(u.dialogueOptions, starterOptions)
+	} else {
+		u.dialogueOptions.SetInputCapture(u.directionalWrapperWithoutAlphabet(originalCapture))
+		setListItemsFromMenuItems(u.dialogueOptions, starterOptions)
+	}
+
 }
 func (u *UI) directionalWrapperWithoutAlphabet(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune && (event.Rune() >= 'a' && event.Rune() <= 'z') || (event.Rune() >= 'A' && event.Rune() <= 'Z') {
+			return originalCapture(event)
+		}
+		return u.directionalWrapper(originalCapture)(event)
+	}
+}
+
+func (u *UI) directionalWrapperWithoutNumbers(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune && (event.Rune() >= '0' && event.Rune() <= '9') {
 			return originalCapture(event)
 		}
 		return u.directionalWrapper(originalCapture)(event)
@@ -2034,7 +2055,21 @@ func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 	}))
 	return list
 }
-
+func setListItemsFromMenuItemsWithNumbers(list *cview.List, menuItems []foundation.MenuItem) int {
+	list.Clear()
+	longestItem := 0
+	for index, a := range menuItems {
+		action := a
+		listItem := cview.NewListItem(action.Name)
+		// we need the runes 0-9
+		asRune := '0' + rune(index+1)
+		listItem.SetShortcut(asRune)
+		list.AddItem(listItem)
+		itemLength := cview.TaggedStringWidth(action.Name) + 4
+		longestItem = max(longestItem, itemLength)
+	}
+	return longestItem
+}
 func setListItemsFromMenuItems(list *cview.List, menuItems []foundation.MenuItem) int {
 	list.Clear()
 	longestItem := 0
@@ -2308,8 +2343,10 @@ func (u *UI) ShowVisibleItems() {
 
 func (u *UI) onTerminalResized(width int, height int) {
 	if !u.sentUIRunning {
-		tty, _ := u.application.GetScreen().Tty()
-		tty.Write([]byte{0x1B, 0x3E}) // set keypad to numeric mode
+		tty, isTerm := u.application.GetScreen().Tty()
+		if isTerm {
+			tty.Write([]byte{0x1B, 0x3E})
+		}
 
 		u.game.UIRunning()
 		u.sentUIRunning = true
@@ -2353,12 +2390,6 @@ func (u *UI) onTerminalResized(width int, height int) {
 			u.UpdateStats()
 		})
 	}
-
-	/*
-
-
-	 */
-
 }
 
 func toTcellColor(rgba color.RGBA) tcell.Color {

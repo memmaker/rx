@@ -16,7 +16,15 @@ do: AddChatter(OLDMAN, 'Whatever.')
 %rec: frames
 
 if: true
-do: AddChatter(OLDMAN, 'Can you move? Try {{ .keys_move }} to move around.')
+do: AddChatter(OLDMAN, 'Can you move? Try {{ .keys_move }} to move in any direction.')
 
 if: HasFlag('playerSteps')
-do: AddChatter(OLDMAN, 'Great! We are making progress.')
+do: AddChatter(OLDMAN, 'Looks good. Waiting is {{ .keys_wait }}.')
+
+if: true
+do: AddChatter(OLDMAN, 'It will also cancel most actions.')
+
+if: true
+do: AddChatter(OLDMAN, 'Try looking around with {{ .keys_look }} and then moving.')
+
+

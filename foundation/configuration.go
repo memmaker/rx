@@ -25,6 +25,8 @@ type Configuration struct {
 	PlayerChar                 rune
 	PlayerColor                string
 	KeyMap                     string
+
+	DialogueShortcutsAreNumbers bool
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -72,6 +74,8 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.PlayerColor = field.Value
 		case "KeyMap":
 			configuration.KeyMap = field.Value
+		case "DialogueShortcutsAreNumbers":
+			configuration.DialogueShortcutsAreNumbers = field.AsBool()
 		}
 	}
 	return configuration
@@ -81,21 +85,22 @@ func NewDefaultConfiguration() *Configuration {
 		MapWidth:                80,
 		MapHeight:               23,
 		DiagonalMovementEnabled: true,
-		AnimationDelay:          75 * time.Millisecond,
+		AnimationDelay:          55 * time.Millisecond,
 
-		AnimationsEnabled:          true,
-		AnimateMovement:            true,
-		AnimateDamage:              true,
-		AnimateEffects:             true,
-		AnimateProjectiles:         true,
-		AutoPickup:                 true,
-		WallSlide:                  true,
-		DataRootDir:                "data",
-		DefaultToAdvancedTargeting: false,
-		PlayerName:                 "Rogue",
-		PlayerChar:                 '@',
-		PlayerColor:                "white",
-		KeyMap:                     "numpad",
+		AnimationsEnabled:           true,
+		AnimateMovement:             false,
+		AnimateDamage:               true,
+		AnimateEffects:              true,
+		AnimateProjectiles:          true,
+		AutoPickup:                  true,
+		WallSlide:                   true,
+		DataRootDir:                 "data_atom",
+		DefaultToAdvancedTargeting:  true,
+		PlayerName:                  "Rogue",
+		PlayerChar:                  '@',
+		PlayerColor:                 "white",
+		KeyMap:                      "numpad",
+		DialogueShortcutsAreNumbers: false,
 	}
 }
 
@@ -123,6 +128,7 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
 			recfile.Field{Name: "DefaultToAdvancedTargeting", Value: recfile.BoolStr(c.DefaultToAdvancedTargeting)},
 			recfile.Field{Name: "KeyMap", Value: c.KeyMap},
+			recfile.Field{Name: "DialogueShortcutsAreNumbers", Value: recfile.BoolStr(c.DialogueShortcutsAreNumbers)},
 		},
 	}
 	file, _ := os.Create(filename)

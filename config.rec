@@ -11,7 +11,7 @@ MapHeight: 23
 DiagonalMovementEnabled: true
 AutoPickup: true
 WallSlide: true
-PlayerName:
+PlayerName: Player
 PlayerChar: @
 PlayerColor: white
 DataRootDir: data_atom
