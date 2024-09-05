@@ -26,3 +26,5 @@ Crossbows will have fixed damage and STR requirements.
 Bows will have damage depend on STR directly.
 
 We'll use save rolls for magic.
+
+(testing)
