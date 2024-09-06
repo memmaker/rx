@@ -440,14 +440,17 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 					terminalID := args.Get(0)
 					difficulty := args.Get(1)
 					flagName := args.Get(2)
-					followUpNode := args.Get(3)
+					successNode := args.Get(3)
+					failNode := args.Get(4)
 
 					effectCalls = append(effectCalls, func() {
 						previousGuesses := g.terminalGuesses[terminalID]
 						g.ui.StartHackingGame(fxtools.MurmurHash(flagName), foundation.DifficultyFromString(difficulty), previousGuesses, func(pGuesses []string, result foundation.InteractionResult) {
 							g.terminalGuesses[terminalID] = pGuesses
+							followUpNode := failNode
 							if result == foundation.Success {
 								g.gameFlags.SetFlag(flagName)
+								followUpNode = successNode
 							}
 							nextNode := conversation.GetNodeByName(followUpNode)
 							g.OpenDialogueNode(conversation, nextNode, conversationPartner, isTerminal)

@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"bytes"
 	"cmp"
 	"encoding/gob"
@@ -432,6 +433,59 @@ func (i *Inventory) GetItemByName(name string) *Item {
 		}
 	}
 	return nil
+}
+
+func (i *Inventory) getItemWithBestSkillModifier(skill special.Skill) *Item {
+	bestModifier := 0
+	var bestItem *Item
+	for _, invItem := range i.items {
+		if invItem.skill == skill && invItem.skillBonus > bestModifier {
+			bestModifier = invItem.skillBonus
+			bestItem = invItem
+		}
+	}
+	return bestItem
+}
+
+func (i *Inventory) getItemWithBestStatModifier(stat special.Stat) *Item {
+	bestModifier := 0
+	var bestItem *Item
+	for _, invItem := range i.items {
+		if invItem.stat == stat && invItem.statBonus > bestModifier {
+			bestModifier = invItem.statBonus
+			bestItem = invItem
+		}
+	}
+	return bestItem
+}
+
+func (i *Inventory) GetStatModifier(stat special.Stat) special.Modifier {
+	statItem := i.getItemWithBestStatModifier(stat)
+	if statItem == nil {
+		return nil
+	}
+	return special.DefaultModifier{
+		Source:   statItem.Name(),
+		Modifier: statItem.GetStatBonus(stat),
+		Order:    0,
+	}
+}
+
+func (i *Inventory) GetSkillModifier(skill special.Skill) special.Modifier {
+	skillItem := i.getItemWithBestSkillModifier(skill)
+	if skillItem == nil {
+		return nil
+	}
+	return special.DefaultModifier{
+		Source:    skillItem.Name(),
+		Modifier:  skillItem.GetSkillBonus(skill),
+		Order:     0,
+		IsPercent: true,
+	}
+}
+
+func (i *Inventory) HasSkillModifier(skill special.Skill) bool {
+	return i.getItemWithBestSkillModifier(skill) != nil
 }
 
 func SortInventory(stacks []*InventoryStack) {

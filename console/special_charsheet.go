@@ -139,7 +139,11 @@ func (c *CharsheetViewer) setupUI() {
 			isOnlyInfo := x < 6
 			isPlus := x > 10
 			stat := (special.Stat)(i)
-			c.descriptionWindow.SetText(stat.GetDescription())
+
+			_, mods := c.sheet.GetStatWithModInfo(stat)
+
+			c.descriptionWindow.SetText(stat.String() + "\n" + modifiersToString(mods))
+
 			if isOnlyInfo || c.mode == ModeView {
 				return action, event
 			}
@@ -180,11 +184,41 @@ func (c *CharsheetViewer) setupUI() {
 				// the last four characters are the plus button
 				isPlus := x > width-6
 				skill := (special.Skill)(i)
+
+				isOnlyInfo := x < 10
+
+				_, mods := c.sheet.GetSkillWithModInfo(skill)
+
+				c.descriptionWindow.SetText(skill.String() + "\n" + modifiersToString(mods))
+
+				if isOnlyInfo {
+					return action, event
+				}
+
 				if isPlus {
 					c.increaseSkill(skill)
 				} else {
 					c.decreaseSkill(skill)
 				}
+			}
+			return action, event
+		})
+	} else {
+		skillList.SetMouseCapture(func(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
+			if action == cview.MouseLeftClick {
+				x, y := event.Position()
+				// to local coordinates
+				startX, startY, _, _ := skillList.GetInnerRect()
+				x -= startX
+				y -= startY
+				// to list item index
+				i := y
+				skill := (special.Skill)(i)
+
+				_, mods := c.sheet.GetSkillWithModInfo(skill)
+
+				c.descriptionWindow.SetText(skill.String() + "\n" + modifiersToString(mods))
+				return action, event
 			}
 			return action, event
 		})
@@ -234,6 +268,17 @@ func (c *CharsheetViewer) setupUI() {
 	c.charPointsDisplay = charPointsDisplay
 	c.traitsList = traitsList
 	c.buttonBar = buttonBar
+}
+
+func modifiersToString(mods []special.Modifier) string {
+	if len(mods) == 0 {
+		return ""
+	}
+	modStrs := make([]string, len(mods))
+	for i, mod := range mods {
+		modStrs[i] = mod.Description()
+	}
+	return strings.Join(modStrs, "\n")
 }
 
 func (c *CharsheetViewer) decreaseSkill(skill special.Skill) {
@@ -318,7 +363,7 @@ func (c *CharsheetViewer) updateUIFromSheet() {
 	c.statList.Clear()
 	for i := 0; i < int(special.StatCount); i++ {
 		stat := (special.Stat)(i)
-		statVal := c.sheet.GetStat(stat)
+		statVal, mods := c.sheet.GetStatWithModInfo(stat)
 		statCC := "[-:-:-]"
 		if c.mode == ModeCreate {
 			if statVal < 5 {
@@ -327,8 +372,15 @@ func (c *CharsheetViewer) updateUIFromSheet() {
 				statCC = "[green:black:]"
 			}
 		}
+
 		statName := stat.ToShortString()
-		statLine := fmt.Sprintf("%s: %s%d[-:-:-]", statName, statCC, statVal)
+
+		statAdjust := " "
+		if len(mods) > 0 {
+			statAdjust = "*"
+		}
+
+		statLine := fmt.Sprintf("%s:%s%s%d[-:-:-]", statName, statAdjust, statCC, statVal)
 
 		if c.mode == ModeCreate {
 			plusButton := cview.Escape(fmt.Sprintf("[+]"))
@@ -350,11 +402,18 @@ func (c *CharsheetViewer) updateUIFromSheet() {
 	skillRows := make([]fxtools.TableRow, special.SkillCount)
 	for i := 0; i < int(special.SkillCount); i++ {
 		skill := (special.Skill)(i)
-		skillVal := c.sheet.GetSkill(skill) + c.getVirtuallySpentSkillPointsFor(skill)
+
+		skillVal, modifiers := c.sheet.GetSkillWithModInfo(skill)
+
+		skillVal += c.getVirtuallySpentSkillPointsFor(skill)
 
 		isTagged := c.sheet.IsTagSkill(skill)
 
 		valueColumn := fmt.Sprintf("%d%%", skillVal)
+
+		if len(modifiers) > 0 {
+			valueColumn = "*" + valueColumn
+		}
 
 		skillColumns := []string{
 			skill.String(),
@@ -374,7 +433,7 @@ func (c *CharsheetViewer) updateUIFromSheet() {
 			plusCC := textiles.RGBAToColorCodes(color.RGBA{R: 255, G: 255, B: 255, A: 255}, color.RGBA{0, 40, 0, 255})
 			divider := " "
 			if c.getVirtuallySpentSkillPointsFor(skill) > 0 {
-				divider = "*"
+				divider = "!"
 			}
 			adjustButtons := fmt.Sprintf(" %s%s[-:-:-]%s%s%s[-:-:-]", minusCC, minusButton, divider, plusCC, plusButton)
 			skillColumns = append(skillColumns, adjustButtons)

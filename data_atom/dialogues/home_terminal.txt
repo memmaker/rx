@@ -1,0 +1,27 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: ** Contractor Client Interface **
++ > Welcome
+effect: None
+#
+o_text: (Job offer) Retrieve an item, Payment: 200 caps.
+o_cond: !HasFlag('JobAccepted(starter_mission_1)')
+o_goto: StarterMission1
+#
+o_text: Leave.
+o_goto: End
+
+name: StarterMission1
+npc: ** Contractor Client Interface **
++ > The item is located in the abandoned building to the east.
+
+name: End
+npc: ** Contractor Client Interface **
++ > Have a nice day.
+effect: EndConversation

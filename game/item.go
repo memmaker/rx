@@ -351,6 +351,7 @@ func (i *Item) LongNameWithColors(colorCode string) string {
 
 func (i *Item) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
+
 	if i.IsWeapon() {
 		weapon := i.weapon
 		line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), weapon.GetDamage().ShortString()))
@@ -361,6 +362,15 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 	if i.IsAmmo() {
 		line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetCharges()))
 	}
+
+	if i.statBonus != 0 {
+		line = fmt.Sprintf("%s [%+d %s]", line, i.statBonus, i.stat.ToShortString())
+	}
+
+	if i.skillBonus != 0 {
+		line = fmt.Sprintf("%s [%+d %s]", line, i.skillBonus, i.skill.ToShortString())
+	}
+
 	return colorCode + line + "[-]"
 }
 
@@ -376,14 +386,6 @@ func (i *Item) Name() string {
 	name := i.description
 	if i.IsGold() {
 		name = fmt.Sprintf("%d gold", i.charges)
-	}
-
-	if i.statBonus != 0 {
-		name = fmt.Sprintf("%s [%+d %s]", name, i.statBonus, i.stat.ToShortString())
-	}
-
-	if i.skillBonus != 0 {
-		name = fmt.Sprintf("%s [%+d %s]", name, i.skillBonus, i.skill.ToShortString())
 	}
 
 	return name

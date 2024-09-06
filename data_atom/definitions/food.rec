@@ -16,3 +16,11 @@ use_effect: satiate_fully
 Description: bobby pin
 Name: bobby_pin
 Category: lockpicks
+skill: lockpick
+skill_bonus: 20
+
+Description: aviator sunglasses
+Name: aviator_sunglasses
+Category: Other
+stat: charisma
+stat_bonus: 1

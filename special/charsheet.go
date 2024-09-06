@@ -476,6 +476,28 @@ func (cs *CharSheet) GobDecode(data []byte) error {
 	return nil
 }
 
+type DefaultModifier struct {
+	Source    string
+	Modifier  int
+	Order     int
+	IsPercent bool
+}
+
+func (d DefaultModifier) Description() string {
+	if d.IsPercent {
+		return fmt.Sprintf("%s: %+d%%", d.Source, d.Modifier)
+	}
+	return fmt.Sprintf("%s: %+d", d.Source, d.Modifier)
+}
+
+func (d DefaultModifier) Apply(i int) int {
+	return i + d.Modifier
+}
+
+func (d DefaultModifier) SortOrder() int {
+	return d.Order
+}
+
 type Modifier interface {
 	Description() string
 	Apply(int) int
@@ -504,6 +526,11 @@ func (cs *CharSheet) GetStat(stat Stat) int {
 	return statValue
 }
 
+func (cs *CharSheet) GetStatWithModInfo(stat Stat) (int, []Modifier) {
+	baseValue := cs.getStatBaseValue(stat)
+	return cs.getModifiedStatWithInfo(stat, baseValue)
+}
+
 func (cs *CharSheet) getStatBaseValue(stat Stat) int {
 	return cs.stats[stat]
 }
@@ -516,6 +543,11 @@ func (cs *CharSheet) GetSkill(skill Skill) int {
 	baseValue := cs.getSkillBase(skill) + cs.getSkillAdjustment(skill) + cs.getTagSkillBonus(skill)
 	skillValue := cs.onRetrieveSkillHook(skill, baseValue)
 	return skillValue
+}
+
+func (cs *CharSheet) GetSkillWithModInfo(skill Skill) (int, []Modifier) {
+	baseValue := cs.getSkillBase(skill) + cs.getSkillAdjustment(skill) + cs.getTagSkillBonus(skill)
+	return cs.getModifiedSkillWithInfo(skill, baseValue)
 }
 
 func (cs *CharSheet) getTagSkillBonus(skill Skill) int {
@@ -665,6 +697,22 @@ func (cs *CharSheet) onRetrieveStatHook(stat Stat, value int) int {
 	return value
 }
 
+func (cs *CharSheet) getModifiedStatWithInfo(stat Stat, value int) (int, []Modifier) {
+	if cs.getStatMods != nil {
+		mods := cs.getStatMods(stat)
+
+		slices.SortStableFunc(mods, func(i, j Modifier) int {
+			return cmp.Compare(i.SortOrder(), j.SortOrder())
+		})
+
+		for _, mod := range mods {
+			value = mod.Apply(value)
+		}
+		return value, mods
+	}
+	return value, nil
+}
+
 func (cs *CharSheet) onRetrieveDerivedStatHook(ds DerivedStat, value int) int {
 	if cs.getDerivedStatMods != nil {
 		mods := cs.getDerivedStatMods(ds)
@@ -695,6 +743,22 @@ func (cs *CharSheet) onRetrieveSkillHook(skill Skill, value int) int {
 		return value
 	}
 	return value
+}
+
+func (cs *CharSheet) getModifiedSkillWithInfo(skill Skill, value int) (int, []Modifier) {
+	if cs.getSkillMods != nil {
+		mods := cs.getSkillMods(skill)
+
+		slices.SortStableFunc(mods, func(i, j Modifier) int {
+			return cmp.Compare(i.SortOrder(), j.SortOrder())
+		})
+
+		for _, mod := range mods {
+			value = mod.Apply(value)
+		}
+		return value, mods
+	}
+	return value, nil
 }
 
 func (cs *CharSheet) GetHitPointsMax() int {
@@ -969,4 +1033,12 @@ func (cs *CharSheet) GetCurrentXP() int {
 
 func (cs *CharSheet) GetXPNeededForNextLevel() int {
 	return cs.GetTotalXPForNextLevel(cs.level) - cs.xp
+}
+
+func (cs *CharSheet) SetSkillModifierHandler(handler func(skill Skill) []Modifier) {
+	cs.getSkillMods = handler
+}
+
+func (cs *CharSheet) SetStatModifierHandler(handler func(stat Stat) []Modifier) {
+	cs.getStatMods = handler
 }

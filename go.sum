@@ -136,6 +136,8 @@ github.com/memmaker/go v0.0.0-20240904143530-ffce0fe65fd9 h1:D7zQ7KzsK33ww3uOnmK
 github.com/memmaker/go v0.0.0-20240904143530-ffce0fe65fd9/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
 github.com/memmaker/go v0.0.0-20240904171817-65e33c6e1eb1 h1:yX5f2W9OdUbgMetNni896yCmIwj3eIG+15qKQOqk348=
 github.com/memmaker/go v0.0.0-20240904171817-65e33c6e1eb1/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
+github.com/memmaker/go v0.0.0-20240906174650-1492331317d0 h1:ztA4cd77CPh1yonowjgu45b76AGk+R6CGheAOyYgvWo=
+github.com/memmaker/go v0.0.0-20240906174650-1492331317d0/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
