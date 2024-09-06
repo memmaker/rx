@@ -290,21 +290,9 @@ func (g *GameState) attachHooksToPlayer() {
 
 	g.Player.GetInventory().SetOnBeforeRemove(equipment.UnEquip)
 
-	g.Player.GetCharSheet().SetSkillModifierHandler(func(skill special.Skill) []special.Modifier {
-		modifiers := g.Player.GetInventory().GetSkillModifier(skill)
-		if modifiers == nil {
-			return nil
-		}
-		return []special.Modifier{modifiers}
-	})
+	g.Player.GetCharSheet().SetSkillModifierHandler(g.Player.GetInventory().GetSkillModifiersFromItems)
 
-	g.Player.GetCharSheet().SetStatModifierHandler(func(stat special.Stat) []special.Modifier {
-		modifier := g.Player.GetInventory().GetStatModifier(stat)
-		if modifier == nil {
-			return nil
-		}
-		return []special.Modifier{modifier}
-	})
+	g.Player.GetCharSheet().SetStatModifierHandler(g.Player.GetInventory().GetStatModifiersFromItems)
 
 	equipment.SetOnChangeHandler(g.updateUIStatus)
 }

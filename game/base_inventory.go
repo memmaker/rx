@@ -435,57 +435,37 @@ func (i *Inventory) GetItemByName(name string) *Item {
 	return nil
 }
 
-func (i *Inventory) getItemWithBestSkillModifier(skill special.Skill) *Item {
-	bestModifier := 0
-	var bestItem *Item
-	for _, invItem := range i.items {
-		if invItem.skill == skill && invItem.skillBonus > bestModifier {
-			bestModifier = invItem.skillBonus
-			bestItem = invItem
+func (i *Inventory) GetSkillModifiersFromItems(skill special.Skill) []special.Modifier {
+	var modifiers []special.Modifier
+	for _, invItem := range i.StackedItems() {
+		if invItem.First().skill == skill && invItem.First().skillBonus != 0 {
+			modifiers = append(modifiers, special.DefaultModifier{
+				Source:    invItem.Name(),
+				Modifier:  invItem.First().GetSkillBonus(skill),
+				Order:     0,
+				IsPercent: true,
+			})
 		}
 	}
-	return bestItem
+	return modifiers
 }
 
-func (i *Inventory) getItemWithBestStatModifier(stat special.Stat) *Item {
-	bestModifier := 0
-	var bestItem *Item
-	for _, invItem := range i.items {
-		if invItem.stat == stat && invItem.statBonus > bestModifier {
-			bestModifier = invItem.statBonus
-			bestItem = invItem
+func (i *Inventory) GetStatModifiersFromItems(stat special.Stat) []special.Modifier {
+	var modifiers []special.Modifier
+	for _, invItem := range i.StackedItems() {
+		if invItem.First().stat == stat && invItem.First().statBonus != 0 {
+			modifiers = append(modifiers, special.DefaultModifier{
+				Source:   invItem.Name(),
+				Modifier: invItem.First().GetStatBonus(stat),
+				Order:    0,
+			})
 		}
 	}
-	return bestItem
-}
-
-func (i *Inventory) GetStatModifier(stat special.Stat) special.Modifier {
-	statItem := i.getItemWithBestStatModifier(stat)
-	if statItem == nil {
-		return nil
-	}
-	return special.DefaultModifier{
-		Source:   statItem.Name(),
-		Modifier: statItem.GetStatBonus(stat),
-		Order:    0,
-	}
-}
-
-func (i *Inventory) GetSkillModifier(skill special.Skill) special.Modifier {
-	skillItem := i.getItemWithBestSkillModifier(skill)
-	if skillItem == nil {
-		return nil
-	}
-	return special.DefaultModifier{
-		Source:    skillItem.Name(),
-		Modifier:  skillItem.GetSkillBonus(skill),
-		Order:     0,
-		IsPercent: true,
-	}
+	return modifiers
 }
 
 func (i *Inventory) HasSkillModifier(skill special.Skill) bool {
-	return i.getItemWithBestSkillModifier(skill) != nil
+	return len(i.GetSkillModifiersFromItems(skill)) > 0
 }
 
 func SortInventory(stacks []*InventoryStack) {
