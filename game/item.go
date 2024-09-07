@@ -17,10 +17,13 @@ import (
 )
 
 type Item struct {
-	description   string
-	internalName  string
-	position      geometry.Point
-	category      foundation.ItemCategory
+	description  string
+	internalName string
+	position     geometry.Point
+	category     foundation.ItemCategory
+
+	qualityInPercent int
+
 	weapon        *WeaponInfo
 	armor         *ArmorInfo
 	ammo          *AmmoInfo
@@ -66,6 +69,10 @@ func (i *Item) GobEncode() ([]byte, error) {
 		return nil, err
 	}
 	if err := encoder.Encode(i.category); err != nil {
+		return nil, err
+	}
+
+	if err := encoder.Encode(i.qualityInPercent); err != nil {
 		return nil, err
 	}
 
@@ -174,6 +181,10 @@ func (i *Item) GobDecode(data []byte) error {
 		return err
 	}
 	if err := decoder.Decode(&i.category); err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(&i.qualityInPercent); err != nil {
 		return err
 	}
 
@@ -371,7 +382,45 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 		line = fmt.Sprintf("%s [%+d %s]", line, i.skillBonus, i.skill.ToShortString())
 	}
 
-	return colorCode + line + "[-]"
+	lineWithColor := colorCode + line + "[-]"
+
+	if i.IsWeapon() || i.IsArmor() {
+		qIcon := getQualityIcon(i.qualityInPercent)
+		lineWithColor = fmt.Sprintf("%s %s", qIcon, lineWithColor)
+	}
+
+	return lineWithColor
+}
+
+func getQualityIcon(quality int) string {
+	colorCode := "[green]"
+	// Lower one eighth block
+	char := ""
+	if quality < 13 {
+		colorCode = "[red]"
+		char = "▁"
+	} else if quality < 25 {
+		colorCode = "[red]"
+		char = "▂"
+	} else if quality < 38 {
+		colorCode = "[red]"
+		char = "▃"
+	} else if quality < 50 {
+		colorCode = "[yellow]"
+		char = "▄"
+	} else if quality < 63 {
+		colorCode = "[yellow]"
+		char = "▅"
+	} else if quality < 75 {
+		colorCode = "[yellow]"
+		char = "▆"
+	} else if quality < 88 {
+		char = "▇"
+	} else {
+		char = "█"
+	}
+
+	return fmt.Sprintf("%s%s[-]", colorCode, char)
 }
 
 func (i *Item) SetPosition(pos geometry.Point) {

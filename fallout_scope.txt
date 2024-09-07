@@ -5,18 +5,21 @@ Fallout Core Features
    - Consumables - Missing: Currently only very basic consumables
  - Containers - DONE
  - Doors
-   - Lockable - DONE
+   - Lockable - re-locking ?
    - Pickable - DONE
    - Breakable - DONE
    - Openable - DONE
  - Skill applications
    - Sneaking (toggle button) - missing
-   - First Aid / Doctor (apply at resting?) - missing
+   - First Aid / Doctor (apply manually) - missing
    - Steal / Plant (context action on actors) - missing
    - Lockpick (context action on doors) - Skill not applied
    - Science (context action on terminals) - Skill not applied
+     - Hacking is possible on all keypads
+     - Can be used on all robots
    - Repair (context action on items/objects) - missing
-   - Barter (apply at trading) - missing
+     - Machinery with states (broken, working, improved)
+     - Armor & Weapons have degradation and need repair
    - Speech (apply at dialogue) - missing
    - Traps (context action on traps)
  - Dialogue
@@ -28,10 +31,10 @@ Fallout Core Features
    - Melee - melee weapons missing
    - Ranged (Aimed/Burst) - DONE
    - Thrown - currently not working?
-   - Explosives - missing
+   - Explosives - Rocket Launcher & Grenades are working, Timed Explosives are missing
    - Traps - missing
    - Critical Hits / Fails - missing
-   - Enemy AI - missing
+   - Enemy AI - very basic
 
   - Mechanics
     - Radiation

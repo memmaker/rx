@@ -636,8 +636,6 @@ func (a *Actor) GetDetailInfo() string {
 		{Columns: []string{"Science:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Science))}},
 		{Columns: []string{"Repair:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Repair))}},
 		{Columns: []string{"Speech:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Speech))}},
-		{Columns: []string{"Barter:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Barter))}},
-		{Columns: []string{"Outdoorsman:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Outdoorsman))}},
 	}
 
 	statLines := fxtools.TableLayout(statRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})

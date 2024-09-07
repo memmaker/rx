@@ -119,7 +119,6 @@ type WeaponInfo struct {
 	skillUsed        special.Skill
 	magazineSize     int
 	loadedInMagazine *Item
-	qualityInPercent int
 	burstRounds      int
 	caliberIndex     int
 	attackModes      []AttackMode
@@ -154,10 +153,6 @@ func (i *WeaponInfo) GobEncode() ([]byte, error) {
 		if err := encoder.Encode(i.loadedInMagazine); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := encoder.Encode(i.qualityInPercent); err != nil {
-		return nil, err
 	}
 
 	if err := encoder.Encode(i.burstRounds); err != nil {
@@ -213,10 +208,6 @@ func (i *WeaponInfo) GobDecode(data []byte) error {
 		if err := decoder.Decode(i.loadedInMagazine); err != nil {
 			return err
 		}
-	}
-
-	if err := decoder.Decode(&i.qualityInPercent); err != nil {
-		return err
 	}
 
 	if err := decoder.Decode(&i.burstRounds); err != nil {

@@ -233,12 +233,6 @@ func (s Skill) ToShortString() string {
 		return "RP"
 	case Speech:
 		return "SP"
-	case Barter:
-		return "BA"
-	case Gambling:
-		return "GA"
-	case Outdoorsman:
-		return "OU"
 	}
 	return ""
 }
@@ -273,12 +267,6 @@ func (s Skill) String() string {
 		return "Repair"
 	case Speech:
 		return "Speech"
-	case Barter:
-		return "Barter"
-	case Gambling:
-		return "Gambling"
-	case Outdoorsman:
-		return "Outdoorsman"
 	}
 	return ""
 }
@@ -298,9 +286,6 @@ const (
 	Science
 	Repair
 	Speech
-	Barter
-	Gambling
-	Outdoorsman
 	SkillCount
 )
 
@@ -335,12 +320,6 @@ func SkillFromString(name string) Skill {
 		return Repair
 	case "speech":
 		return Speech
-	case "barter":
-		return Barter
-	case "gambling":
-		return Gambling
-	case "outdoorsman":
-		return Outdoorsman
 	}
 	panic("invalid skill name")
 	return 0
@@ -648,12 +627,14 @@ func (cs *CharSheet) getSkillBase(skill Skill) int {
 		return 2*cs.GetStat(Intelligence) + cs.GetStat(Luck)
 	case Speech:
 		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Intelligence)
-	case Barter:
-		return 4 * cs.GetStat(Charisma)
-	case Gambling:
-		return 5 * cs.GetStat(Luck)
-	case Outdoorsman:
-		return 5 + cs.GetStat(Endurance) + cs.GetStat(Intelligence) + cs.GetStat(Luck)
+		/*
+			case Barter:
+				return 4 * cs.GetStat(Charisma)
+			case Gambling:
+				return 5 * cs.GetStat(Luck)
+			case Outdoorsman:
+				return 5 + cs.GetStat(Endurance) + cs.GetStat(Intelligence) + cs.GetStat(Luck)
+		*/
 	}
 	panic("invalid skill")
 	return 0
@@ -766,7 +747,7 @@ func (cs *CharSheet) GetHitPointsMax() int {
 }
 
 func (cs *CharSheet) GetHitPoints() int {
-	return cs.hitPointsCurrent
+	return min(cs.hitPointsCurrent, cs.GetHitPointsMax())
 }
 
 func (cs *CharSheet) Heal(amount int) {
@@ -893,9 +874,6 @@ func (cs *CharSheet) ToRecord() recfile.Record {
 		recfile.Field{Name: "Science_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Science))},
 		recfile.Field{Name: "Repair_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Repair))},
 		recfile.Field{Name: "Speech_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Speech))},
-		recfile.Field{Name: "Barter_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Barter))},
-		recfile.Field{Name: "Gambling_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Gambling))},
-		recfile.Field{Name: "Outdoorsman_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Outdoorsman))},
 	}
 }
 
