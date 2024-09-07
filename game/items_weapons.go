@@ -233,7 +233,7 @@ func (i *WeaponInfo) GobDecode(data []byte) error {
 	return nil
 }
 
-func (i *WeaponInfo) GetDamage() fxtools.Interval {
+func (i *WeaponInfo) getRawDamage() fxtools.Interval {
 	return i.damageDice
 }
 
@@ -346,6 +346,16 @@ func (i *WeaponInfo) IsValid() bool {
 func (i *WeaponInfo) GetAmmo() *Item {
 	return i.loadedInMagazine
 
+}
+
+func (i *WeaponInfo) IsLoaded() bool {
+	return i.loadedInMagazine != nil && i.loadedInMagazine.GetCharges() > 0
+}
+
+func (i *WeaponInfo) Unload() *Item {
+	ammo := i.loadedInMagazine
+	i.loadedInMagazine = nil
+	return ammo
 }
 
 type WeaponType int

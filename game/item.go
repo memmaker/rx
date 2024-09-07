@@ -22,7 +22,7 @@ type Item struct {
 	position     geometry.Point
 	category     foundation.ItemCategory
 
-	qualityInPercent int
+	qualityInPercent special.Percentage
 
 	weapon        *WeaponInfo
 	armor         *ArmorInfo
@@ -352,10 +352,10 @@ func (i *Item) LongNameWithColors(colorCode string) string {
 		targetMode := attackMode.String()
 		timeNeeded := attackMode.TUCost
 		bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
-		line = cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, weapon.GetDamage().ShortString(), bullets))
+		line = cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, i.GetWeaponDamage().ShortString(), bullets))
 	}
 	if i.IsArmor() {
-		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
+		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.GetArmorProtectionValueAsString()))
 	}
 	return colorCode + line + "[-]"
 }
@@ -364,11 +364,10 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 
 	if i.IsWeapon() {
-		weapon := i.weapon
-		line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), weapon.GetDamage().ShortString()))
+		line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), i.GetWeaponDamage().ShortString()))
 	}
 	if i.IsArmor() {
-		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.armor.GetProtectionValueAsString()))
+		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.GetArmorProtectionValueAsString()))
 	}
 	if i.IsAmmo() {
 		line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetCharges()))
@@ -392,7 +391,7 @@ func (i *Item) InventoryNameWithColors(colorCode string) string {
 	return lineWithColor
 }
 
-func getQualityIcon(quality int) string {
+func getQualityIcon(quality special.Percentage) string {
 	colorCode := "[green]"
 	// Lower one eighth block
 	char := ""
@@ -449,7 +448,17 @@ func (i *Item) IsUsableOrZappable() bool {
 }
 
 func (i *Item) IsReadable() bool {
+	isRealText := i.IsBook()
+	isSkillBook := i.IsSkillBook()
+	return isRealText || isSkillBook
+}
+
+func (i *Item) IsBook() bool {
 	return i.textFile != "" || i.text != ""
+}
+
+func (i *Item) IsSkillBook() bool {
+	return i.skillBonus != 0 && i.category == foundation.ItemCategoryReadables
 }
 
 func (i *Item) IsUsable() bool {
@@ -687,4 +696,37 @@ func (i *Item) IsLightSource() bool {
 
 func (i *Item) GetCarryWeight() int {
 	return i.weight
+}
+
+func (i *Item) NeedsRepair() bool {
+	if !i.IsWeapon() && !i.IsArmor() {
+		return false
+	}
+	return i.qualityInPercent < 100
+}
+
+func (i *Item) CanBeRepairedWith(other *Item) bool {
+	if !other.NeedsRepair() || i == other {
+		return false
+	}
+	return i.category == other.category && i.internalName == other.internalName
+}
+
+func (i *Item) IsLoadedWeapon() bool {
+	return i.IsWeapon() && i.GetWeapon().IsLoaded()
+}
+
+func (i *Item) GetArmorProtection(damageType special.DamageType) Protection {
+	return i.armor.getRawProtection(damageType).Scaled(i.qualityInPercent.AsFloat())
+}
+
+func (i *Item) GetArmorProtectionValueAsString() string {
+	physical := i.GetArmorProtection(special.DamageTypeNormal)
+	energy := i.GetArmorProtection(special.DamageTypeLaser)
+	return fmt.Sprintf("%s %s", physical.String(), energy.String())
+
+}
+
+func (i *Item) GetWeaponDamage() fxtools.Interval {
+	return i.weapon.getRawDamage().Scaled(i.qualityInPercent.AsFloat())
 }

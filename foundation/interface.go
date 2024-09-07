@@ -77,6 +77,7 @@ type GameForUI interface {
 	// Inventory Management
 	OpenInventory()
 	OpenAmmoInventory()
+	OpenRepairMenu()
 
 	ChooseItemForDrop()
 	ChooseItemForThrow()

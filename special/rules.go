@@ -1,6 +1,7 @@
 package special
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -9,7 +10,15 @@ type CheckResult struct {
 	Crit    bool
 }
 
-type Percentage uint8
+type Percentage int8
+
+func (p Percentage) String() string {
+	return fmt.Sprintf("%d%%", p)
+}
+
+func (p Percentage) AsFloat() float64 {
+	return float64(p) / 100.0
+}
 
 func SuccessRoll(chanceOfSuccess, critChance Percentage) CheckResult {
 	roll := rand.Intn(100)

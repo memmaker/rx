@@ -13,7 +13,7 @@ import (
 
 func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) *Item {
 	item := &Item{
-		qualityInPercent: -1,
+		qualityInPercent: special.Percentage(-1),
 	}
 
 	charges := 1
@@ -28,9 +28,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	var tuCosts [2]int
 	var maxRanges [2]int
 
-	itemArmor := &ArmorInfo{
-		durability: 100,
-	}
+	itemArmor := &ArmorInfo{}
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		// GLOBAL FIELDS
@@ -51,7 +49,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		case "weight":
 			item.weight = field.AsInt()
 		case "quality":
-			item.qualityInPercent = field.AsInt()
+			item.qualityInPercent = special.Percentage(field.AsInt())
 		case "chance_to_break_on_throw":
 			item.chanceToBreakOnThrow = field.AsInt()
 		case "tags":
@@ -181,7 +179,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	}
 
 	if item.qualityInPercent == -1 && (item.IsWeapon() || item.IsArmor()) {
-		item.qualityInPercent = rand.Intn(100) + 1
+		item.qualityInPercent = special.Percentage(rand.Intn(100) + 1)
 	}
 
 	return item

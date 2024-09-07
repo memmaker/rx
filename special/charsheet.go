@@ -20,24 +20,7 @@ import (
 // 5. Environment
 // 6. Status effects
 // 7. Party members
-
-func CostForOnePercentSkill(skillValue int) int {
-	switch {
-	case skillValue <= 100:
-		return 1
-	case skillValue >= 101 && skillValue <= 125:
-		return 2
-	case skillValue >= 126 && skillValue <= 150:
-		return 3
-	case skillValue >= 151 && skillValue <= 175:
-		return 4
-	case skillValue >= 176 && skillValue <= 200:
-		return 5
-	case skillValue >= 201 && skillValue <= 300:
-		return 6
-	}
-	return 1000
-}
+const SkillCap = 200
 
 type Stat int
 
@@ -519,14 +502,20 @@ func (cs *CharSheet) SetStat(stat Stat, value int) {
 }
 
 func (cs *CharSheet) GetSkill(skill Skill) int {
-	baseValue := cs.getSkillBase(skill) + cs.getSkillAdjustment(skill) + cs.getTagSkillBonus(skill)
+	baseValue := cs.GetUnmodifiedSkill(skill)
 	skillValue := cs.onRetrieveSkillHook(skill, baseValue)
 	return skillValue
 }
-
+func (cs *CharSheet) IsSkillAtCap(skill Skill) bool {
+	return cs.GetUnmodifiedSkill(skill) >= SkillCap
+}
 func (cs *CharSheet) GetSkillWithModInfo(skill Skill) (int, []Modifier) {
-	baseValue := cs.getSkillBase(skill) + cs.getSkillAdjustment(skill) + cs.getTagSkillBonus(skill)
+	baseValue := cs.GetUnmodifiedSkill(skill)
 	return cs.getModifiedSkillWithInfo(skill, baseValue)
+}
+
+func (cs *CharSheet) GetUnmodifiedSkill(skill Skill) int {
+	return cs.getSkillBase(skill) + cs.getSkillAdjustment(skill) + cs.getTagSkillBonus(skill)
 }
 
 func (cs *CharSheet) getTagSkillBonus(skill Skill) int {
@@ -948,6 +937,9 @@ func (cs *CharSheet) SpendSkillPoints(skill Skill, points int) {
 	if cs.availableSkillPoints < points {
 		return
 	}
+	if cs.IsSkillAtCap(skill) {
+		return
+	}
 	cs.availableSkillPoints -= points
 	isTagSkill := cs.IsTagSkill(skill)
 	if isTagSkill {
@@ -1019,4 +1011,11 @@ func (cs *CharSheet) SetSkillModifierHandler(handler func(skill Skill) []Modifie
 
 func (cs *CharSheet) SetStatModifierHandler(handler func(stat Stat) []Modifier) {
 	cs.getStatMods = handler
+}
+
+func (cs *CharSheet) AddSkillPointsTo(skill Skill, increase int) {
+	if cs.IsSkillAtCap(skill) {
+		return
+	}
+	cs.skillAdjustments[skill] = cs.skillAdjustments[skill] + increase
 }

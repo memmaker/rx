@@ -261,7 +261,7 @@ func (g *GameState) getMeleeDamage(attacker *Actor, part special.BodyPart) (stri
 
 	if hasItem && itemInHand.IsMeleeWeapon() {
 		weapon := itemInHand.GetWeapon()
-		damage = meleeDamageBonus + weapon.GetDamage().Roll()
+		damage = meleeDamageBonus + itemInHand.GetWeaponDamage().Roll()
 		damageType = weapon.GetDamageType()
 		attackAudioCue = weapon.GetFireAudioCue(special.TargetingModeFireSingle)
 	}
@@ -290,7 +290,7 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, attackM
 
 	chanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
 
-	damageWithSource, drModifier := g.calculateRangedDamage(attacker, weapon, attackMode, bulletsSpent, chanceToHit, bodyPart)
+	damageWithSource, drModifier := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, bodyPart)
 
 	var consequenceOfActorHit []foundation.Animation
 	if weapon.GetDamageType() == special.DamageTypeExplosive {
@@ -320,7 +320,7 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item,
 
 	chanceToHit := 100
 
-	damageWithSource, _ := g.calculateRangedDamage(attacker, weapon, attackMode, bulletsSpent, chanceToHit, special.Body)
+	damageWithSource, _ := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, special.Body)
 
 	var consequenceOfHit []foundation.Animation
 	if weapon.GetDamageType() == special.DamageTypeExplosive {
@@ -348,8 +348,9 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item,
 	}
 }
 
-func (g *GameState) calculateRangedDamage(attacker *Actor, weapon *WeaponInfo, attackMode AttackMode, bulletsSpent int, chanceToHit int, bodyPart special.BodyPart) (SourcedDamage, int) {
-	damage := weapon.GetDamage()
+func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Item, attackMode AttackMode, bulletsSpent int, chanceToHit int, bodyPart special.BodyPart) (SourcedDamage, int) {
+	weapon := weaponItem.GetWeapon()
+	damage := weaponItem.GetWeaponDamage()
 	totalDamage := 0
 	for i := 0; i < bulletsSpent; i++ {
 		damageDone := damage.Roll()

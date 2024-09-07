@@ -17,6 +17,7 @@ Enter -> map_interaction
 = -> inventory
 i -> inventory
 n -> show_ammo
+k -> repair
 
 g -> attack
 h -> quick_attack

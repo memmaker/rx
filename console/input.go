@@ -71,6 +71,7 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["character"] = u.openCharSheet
 	u.commandTable["wizard"] = u.game.OpenWizardMenu
 	u.commandTable["rest"] = u.game.OpenRestMenu
+	u.commandTable["repair"] = u.game.OpenRepairMenu
 	u.commandTable["journal"] = u.game.OpenJournal
 	u.commandTable["log"] = u.ShowLog
 	u.commandTable["monsters"] = u.ShowVisibleEnemies
@@ -159,6 +160,7 @@ func (u *UI) showKeyBindings() {
 		"inventory":         "Inventory",
 		"show_ammo":         "Ammo Inventory",
 		"tactics":           "Tactics Menu",
+		"repair":            "Repair Menu",
 		"rest":              "Rest Menu",
 		"character":         "Character",
 		"wizard":            "Wizard",
@@ -248,6 +250,7 @@ func (u *UI) showKeyBindings() {
 		"show_ammo",
 		"character",
 		"tactics",
+		"repair",
 		"log",
 		"rest",
 		"monsters",

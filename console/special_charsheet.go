@@ -290,8 +290,8 @@ func (c *CharsheetViewer) decreaseSkill(skill special.Skill) {
 }
 
 func (c *CharsheetViewer) increaseSkill(skill special.Skill) {
-	currentSkill := c.sheet.GetSkill(skill) + c.getVirtuallySpentSkillPointsFor(skill)
-	if c.getSkillPointsAvailable() > 0 && currentSkill < 200 {
+	currentSkill := c.sheet.GetUnmodifiedSkill(skill) + c.getVirtuallySpentSkillPointsFor(skill)
+	if c.getSkillPointsAvailable() > 0 && currentSkill < special.SkillCap {
 		c.virtuallySpentSkillPoints[skill]++
 	}
 	c.updateUIFromSheet()

@@ -27,7 +27,6 @@ type ArmorInfo struct {
 	protection         map[special.DamageType]Protection
 	encumbrance        int
 	radiationReduction int
-	durability         int
 }
 
 func (i *ArmorInfo) GobEncode() ([]byte, error) {
@@ -45,10 +44,6 @@ func (i *ArmorInfo) GobEncode() ([]byte, error) {
 	}
 
 	if err := encoder.Encode(i.radiationReduction); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.durability); err != nil {
 		return nil, err
 	}
 
@@ -72,24 +67,12 @@ func (i *ArmorInfo) GobDecode(data []byte) error {
 		return err
 	}
 
-	if err := decoder.Decode(&i.durability); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (i *ArmorInfo) GetProtection(dType special.DamageType) Protection {
-	durabilityAsPercentFloat := float64(i.durability) / 100.0
+func (i *ArmorInfo) getRawProtection(dType special.DamageType) Protection {
 	protection := i.protection[dType]
-	return protection.Scaled(durabilityAsPercentFloat)
-}
-
-func (i *ArmorInfo) GetProtectionValueAsString() string {
-	physical := i.GetProtection(special.DamageTypeNormal)
-	energy := i.GetProtection(special.DamageTypeLaser)
-	return fmt.Sprintf("%s %s", physical.String(), energy.String())
-
+	return protection
 }
 
 func (i *ArmorInfo) GetEncumbrance() int {
@@ -97,8 +80,8 @@ func (i *ArmorInfo) GetEncumbrance() int {
 }
 
 func (i *ArmorInfo) GetProtectionRating() int {
-	physical := i.GetProtection(special.DamageTypeNormal)
-	energy := i.GetProtection(special.DamageTypeLaser)
+	physical := i.getRawProtection(special.DamageTypeNormal)
+	energy := i.getRawProtection(special.DamageTypeLaser)
 
 	return (physical.DamageReduction + energy.DamageReduction) + (physical.DamageThreshold + energy.DamageThreshold)
 }

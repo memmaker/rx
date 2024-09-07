@@ -443,7 +443,7 @@ func (a *Actor) GetListInfo() string {
 	item, hasMainHandItem := a.GetEquipment().GetMainHandItem()
 	damage := "0"
 	if hasMainHandItem && item.IsWeapon() {
-		damage = item.GetWeapon().GetDamage().ShortString()
+		damage = item.GetWeaponDamage().ShortString()
 	}
 	return fmt.Sprintf("%s HP: %d/%d Dmg: %s DR: %d", a.name, hp, hpMax, damage, a.GetDamageResistance())
 }
@@ -728,6 +728,17 @@ func (a *Actor) HasEnergyForActions() bool {
 	return a.timeEnergy >= a.maximalTimeNeededForActions()
 }
 
+func (a *Actor) maximalTimeNeededForActions() int {
+	return max(a.timeNeededForActions(), a.timeNeededForMovement())
+}
+
+func (a *Actor) timeNeededForMeleeAttack() int {
+	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandItem(); hasWeapon {
+		return meleeWeapon.GetCurrentAttackMode().TUCost
+	}
+	return a.timeNeededForActions()
+}
+
 func (a *Actor) timeNeededForActions() int {
 	speed := a.GetBasicSpeed()
 	if a.IsCrippled(special.Arms) {
@@ -739,12 +750,12 @@ func (a *Actor) timeNeededForActions() int {
 	timeNeeded := 100 / speed
 	return timeNeeded
 }
-func (a *Actor) maximalTimeNeededForActions() int {
-	return max(a.timeNeededForActions(), a.timeNeededForMovement())
-}
 func (a *Actor) timeNeededForMovement() int {
 	speed := a.GetBasicSpeed()
 	if a.IsCrippled(special.Legs) {
+		speed = max(1, speed/2)
+	}
+	if a.IsOverEncumbered() {
 		speed = max(1, speed/2)
 	}
 	timeNeeded := 100 / speed
@@ -770,7 +781,7 @@ func (a *Actor) decrementStatusEffectCounters() {
 }
 
 func (a *Actor) GetBasicSpeed() int {
-	return 10 // TODO
+	return a.charSheet.GetDerivedStat(special.Speed)
 }
 
 func (a *Actor) GetCharSheet() *special.CharSheet {
@@ -958,17 +969,16 @@ func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, drModifier int, dtModi
 	}
 
 	armor := a.GetEquipment().GetArmor()
-	armoInfo := armor.GetArmor()
 
 	var reduction int
 	var threshold int
 
 	if damage.DamageType.IsEnergy() {
-		protection := armoInfo.GetProtection(special.DamageTypeLaser)
+		protection := armor.GetArmorProtection(special.DamageTypeLaser)
 		threshold = protection.DamageThreshold
 		reduction = protection.DamageReduction
 	} else {
-		protection := armoInfo.GetProtection(special.DamageTypeNormal)
+		protection := armor.GetArmorProtection(special.DamageTypeNormal)
 		threshold = protection.DamageThreshold
 		reduction = protection.DamageReduction
 	}
@@ -1084,6 +1094,24 @@ func (a *Actor) GetWeaponRange() int {
 	}
 	return 1
 }
+func (a *Actor) GetMaxRepairQuality() special.Percentage {
+	repairSkill := a.GetCharSheet().GetSkill(special.Repair)
+	return special.Percentage(min(100, int(20+(float64(repairSkill)*0.5))))
+}
+
+func (a *Actor) GetRepairQuality(qualityOne, qualityTwo special.Percentage) special.Percentage {
+	var lower, higher float64
+	if qualityOne < qualityTwo {
+		lower = float64(qualityOne)
+		higher = float64(qualityTwo)
+	} else {
+		lower = float64(qualityTwo)
+		higher = float64(qualityOne)
+	}
+	repairSkill := float64(a.GetCharSheet().GetSkill(special.Repair))
+	newQuality := 5 + higher + (0.05 * lower) + (0.15 * repairSkill)
+	return min(a.GetMaxRepairQuality(), special.Percentage(newQuality))
+}
 
 func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point {
 	if a.Position() == pos {
@@ -1147,13 +1175,6 @@ func (a *Actor) GetXP() int {
 	return a.xp
 }
 
-func (a *Actor) timeNeededForMeleeAttack() int {
-	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandItem(); hasWeapon {
-		return meleeWeapon.GetCurrentAttackMode().TUCost
-	}
-	return a.timeNeededForActions()
-}
-
 func (a *Actor) SetNeutral() {
 	a.aiState = Neutral
 }
@@ -1167,6 +1188,12 @@ func (a *Actor) SetHostileTowards(sourceOfTrouble *Actor) {
 	if !a.GetEquipment().HasRangedWeaponInMainHand() {
 		a.tryEquipWeapon()
 	}
+}
+
+func (a *Actor) IsOverEncumbered() bool {
+	carryWeight := a.GetCharSheet().GetDerivedStat(special.CarryWeight)
+	totalWeight := a.GetInventory().GetTotalWeight()
+	return totalWeight > carryWeight
 }
 
 type ActorGoal struct {

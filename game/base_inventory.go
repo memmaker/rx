@@ -355,7 +355,7 @@ func (i *Inventory) GetBestWeapon() *Item {
 	var bestWeapon *Item
 	for _, invItem := range i.items {
 		if invItem.IsWeapon() {
-			damage := invItem.GetWeapon().GetDamage().ExpectedValue()
+			damage := invItem.GetWeaponDamage().ExpectedValue()
 			if damage > maxDamage {
 				maxDamage = damage
 				bestWeapon = invItem
@@ -370,7 +370,7 @@ func (i *Inventory) GetBestRangedWeapon() *Item {
 	var bestWeapon *Item
 	for _, invItem := range i.items {
 		if invItem.IsRangedWeapon() {
-			damage := invItem.GetWeapon().GetDamage().ExpectedValue()
+			damage := invItem.GetWeaponDamage().ExpectedValue()
 			if damage > maxDamage {
 				maxDamage = damage
 				bestWeapon = invItem
@@ -479,9 +479,9 @@ func SortInventory(stacks []*InventoryStack) {
 			if itemI.GetWeapon().GetWeaponType() != itemJ.GetWeapon().GetWeaponType() {
 				return cmp.Compare(itemI.GetWeapon().GetWeaponType(), itemJ.GetWeapon().GetWeaponType())
 			}
-			expectedDamageI := itemI.GetWeapon().GetDamage().ExpectedValue()
-			expectedDamageJ := itemJ.GetWeapon().GetDamage().ExpectedValue()
-			return cmp.Compare(expectedDamageI, expectedDamageJ)
+			expectedDamageI := itemI.GetWeaponDamage().ExpectedValue()
+			expectedDamageJ := itemJ.GetWeaponDamage().ExpectedValue()
+			return cmp.Compare(expectedDamageJ, expectedDamageI)
 		}
 		if itemI.IsArmor() && itemJ.IsArmor() {
 			return cmp.Compare(itemI.GetArmor().GetProtectionRating(), itemJ.GetArmor().GetProtectionRating())

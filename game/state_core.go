@@ -62,9 +62,7 @@ type GameState struct {
 }
 
 func (g *GameState) IsPlayerOverEncumbered() bool {
-	carryWeight := g.Player.GetCharSheet().GetDerivedStat(special.CarryWeight)
-	totalWeight := g.Player.GetInventory().GetTotalWeight()
-	return totalWeight > carryWeight
+	return g.Player.IsOverEncumbered()
 }
 
 func (g *GameState) GetPlayerName() string {

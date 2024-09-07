@@ -14,7 +14,7 @@ func (g *GameState) playerMove(oldPos geometry.Point, newPos geometry.Point) {
 
 	g.ui.AddAnimations(directConsequencesOfMove)
 
-	g.endPlayerTurn(g.Player.timeNeededForActions())
+	g.endPlayerTurn(g.Player.timeNeededForMovement())
 }
 func (g *GameState) actorMoveAnimated(actor *Actor, newPos geometry.Point) []foundation.Animation {
 	oldPos := actor.Position()

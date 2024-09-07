@@ -7,3 +7,9 @@ Description: a key
 Name: key
 Category: Keys
 LockFlag: CHANGEME
+
+Description: Big Book of Skillz
+Name: skillbook
+Category: Books
+skill: CHANGEME
+skill_bonus: 20

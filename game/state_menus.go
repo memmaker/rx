@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/special"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -436,27 +437,6 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 						g.Player.GetInventory().Add(itemForPlayer)
 						g.msg(foundation.HiLite("%s received.", itemForPlayer.Name()))
 					}
-				case "Hacking":
-					terminalID := args.Get(0)
-					difficulty := args.Get(1)
-					flagName := args.Get(2)
-					successNode := args.Get(3)
-					failNode := args.Get(4)
-
-					effectCalls = append(effectCalls, func() {
-						previousGuesses := g.terminalGuesses[terminalID]
-						g.ui.StartHackingGame(fxtools.MurmurHash(flagName), foundation.DifficultyFromString(difficulty), previousGuesses, func(pGuesses []string, result foundation.InteractionResult) {
-							g.terminalGuesses[terminalID] = pGuesses
-							followUpNode := failNode
-							if result == foundation.Success {
-								g.gameFlags.SetFlag(flagName)
-								followUpNode = successNode
-							}
-							nextNode := conversation.GetNodeByName(followUpNode)
-							g.OpenDialogueNode(conversation, nextNode, conversationPartner, isTerminal)
-							return
-						})
-					})
 				default:
 					g.ApplyEffect(name, args)
 				}
@@ -499,6 +479,16 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 	for _, effectCall := range effectCalls {
 		effectCall()
 	}
+}
+
+func (g *GameState) playerHackingRoll(difficulty foundation.Difficulty) special.CheckResult {
+	scienceSkill := g.Player.GetCharSheet().GetSkill(special.Science)
+	luck := g.Player.GetCharSheet().GetStat(special.Luck)
+
+	modifier := difficulty.GetRollModifier()
+	effectiveSkill := scienceSkill + modifier
+	rollResult := special.SuccessRoll(special.Percentage(effectiveSkill), special.Percentage(luck))
+	return rollResult
 }
 
 func (g *GameState) openWizardCreateTrapMenu() {

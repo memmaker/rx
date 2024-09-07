@@ -8,6 +8,8 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"path"
+	"strconv"
+	"time"
 )
 
 var NoModifiers []dice_curve.Modifier
@@ -214,7 +216,82 @@ func (g *GameState) playerUseOrZapItem(item *Item) {
 	}
 }
 
+func (g *GameState) OpenRepairMenu() {
+	inventory := g.GetFilteredInventory(func(item *Item) bool {
+		return item.NeedsRepair() && item.qualityInPercent < g.Player.GetMaxRepairQuality()
+	})
+	if len(inventory) == 0 {
+		g.msg(foundation.Msg("You have nothing to repair"))
+		return
+	}
+	g.ui.OpenInventoryForSelection(inventory, "Repair what?", func(itemStack foundation.ItemForUI) {
+		stack, isStack := itemStack.(*InventoryStack)
+		if !isStack {
+			return
+		}
+		item := stack.First()
+		g.playerRepairItem(item)
+	})
+}
+
+func (g *GameState) playerRepairItem(item *Item) {
+	if !item.NeedsRepair() {
+		g.msg(foundation.Msg("You do not need to repair this item"))
+		return
+	}
+
+	redundantCopiesOfTheItemForRepair := g.GetFilteredInventory(func(i *Item) bool {
+		return item.CanBeRepairedWith(i) && i.qualityInPercent < g.Player.GetMaxRepairQuality()
+	})
+
+	if len(redundantCopiesOfTheItemForRepair) == 0 {
+		g.msg(foundation.Msg("You have nothing to repair this item with"))
+		return
+	}
+
+	g.ui.OpenInventoryForSelection(redundantCopiesOfTheItemForRepair, "Repair with what?", func(uiItem foundation.ItemForUI) {
+		repairStack, isStack := uiItem.(*InventoryStack)
+		if !isStack {
+			return
+		}
+		spareParts := repairStack.First()
+		g.playerRepairItemWith(item, spareParts)
+	})
+}
+
+func (g *GameState) playerRepairItemWith(toRepair *Item, spareParts *Item) {
+	if !toRepair.CanBeRepairedWith(spareParts) {
+		g.msg(foundation.Msg("You cannot repair this item with that"))
+		return
+	}
+	if spareParts.IsLoadedWeapon() {
+		ammo := spareParts.GetWeapon().Unload()
+		g.Player.GetInventory().Add(ammo)
+	}
+
+	g.Player.GetInventory().Remove(spareParts)
+
+	firstQuality := toRepair.qualityInPercent
+	secondQuality := spareParts.qualityInPercent
+
+	newQuality := g.Player.GetRepairQuality(firstQuality, secondQuality)
+
+	toRepair.qualityInPercent = newQuality
+
+	g.msg(foundation.HiLite("You repaired %s to %s", toRepair.Name(), fmt.Sprintf("%d%%", newQuality)))
+
+	g.ui.UpdateInventory()
+}
+
 func (g *GameState) playerReadItem(item *Item) {
+	if item.IsSkillBook() {
+		skill := item.skill
+		increase := item.skillBonus
+		g.advanceTime(2 * time.Duration(time.Hour))
+		g.Player.GetCharSheet().AddSkillPointsTo(skill, increase)
+		g.msg(foundation.HiLite("Your %s skill increased by %s", skill.String(), strconv.Itoa(increase)))
+		return
+	}
 	var lines string
 	if item.GetTextFile() != "" {
 		file := path.Join(g.config.DataRootDir, "text", item.GetTextFile()+".txt")
