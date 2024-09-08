@@ -68,8 +68,10 @@ Cool Ideas to add:
 
 See:
 https://mikesrpgcenter.com/fallout/index.html
+https://falloutmods.fandom.com/wiki/Fallout_engine_calculations
 
 Test Runs:
  - Stealth - Don't fight anyone, don't talk to anyone
  - Combat - Don't talk to anyone, kill everyone
  - Diplomacy - Don't fight anyone, talk to everyone
+

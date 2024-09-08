@@ -545,10 +545,6 @@ func (a *Actor) GetIntrinsicZapEffects() []string {
 func (a *Actor) GetIntrinsicUseEffects() []string {
 	return a.intrinsicUseEffects
 }
-func (a *Actor) AddGold(i int) {
-	a.statusFlags.Increase(special.FlagGold, i)
-}
-
 func (a *Actor) RemoveLevelStatusEffects() {
 	a.statusFlags.Unset(special.FlagSeeFood)
 	a.statusFlags.Unset(special.FlagSeeMagic)
@@ -781,7 +777,7 @@ func (a *Actor) decrementStatusEffectCounters() {
 }
 
 func (a *Actor) GetBasicSpeed() int {
-	return a.charSheet.GetDerivedStat(special.Speed)
+	return max(1, a.charSheet.GetDerivedStat(special.Speed))
 }
 
 func (a *Actor) GetCharSheet() *special.CharSheet {
@@ -1183,7 +1179,9 @@ func (a *Actor) SetHostileTowards(sourceOfTrouble *Actor) {
 	a.aiState = AttackEnemies
 
 	a.AddToEnemyActors(sourceOfTrouble.GetInternalName())
+}
 
+func (a *Actor) TryEquipRangedWeaponFirst() {
 	a.tryEquipRangedWeapon()
 	if !a.GetEquipment().HasRangedWeaponInMainHand() {
 		a.tryEquipWeapon()

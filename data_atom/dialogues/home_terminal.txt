@@ -9,19 +9,58 @@ name: DefaultIntroduction
 npc: ** Contractor Client Interface **
 + > Welcome
 effect: None
-#
-o_text: (Job offer) Retrieve an item, Payment: 200 caps.
-o_cond: !HasFlag('JobAccepted(starter_mission_1)')
-o_goto: StarterMission1
+# Starter Mission
+o_text: (Job offer) Extract money, reward: leather armor.
+o_cond: !HasFlag('JobAccepted(starter)') && !HasFlag('JobDeclined(starter)')
+o_goto: starter_mission
 #
 o_text: Leave.
 o_goto: End
 
-name: StarterMission1
+
+### Starter Mission BEGIN ###
+
+name: starter_mission
 npc: ** Contractor Client Interface **
-+ > The item is located in the abandoned building to the east.
++ > Extract $500 from the Ripperdoc in the northside residential area.
++ > He owes Jacob.
+effect: SetFlag('JobRead(starter)')
+#
+o_text: Accept the job.
+o_goto: starter_accept
+#
+o_text: Decline the job.
+o_goto: starter_decline
+#
+o_text: Go back.
+o_goto: DefaultIntroduction
+
+name: starter_accept
+npc: ** Contractor Client Interface **
++ > Deposit the money in the dead drop, as usual.
++ > You will be rewarded with a leather armor after 6 hours.
+effect: SetFlag('JobAccepted(starter)')
+#
+o_text: Go back.
+o_goto: DefaultIntroduction
+#
+o_text: Leave.
+o_goto: End
+
+name: starter_decline
+npc: ** Contractor Client Interface **
++ > The client has been informed.
+effect: SetFlag('JobDeclined(starter)')
+#
+o_text: Go back.
+o_goto: DefaultIntroduction
+#
+o_text: Leave.
+o_goto: End
 
 name: End
 npc: ** Contractor Client Interface **
 + > Have a nice day.
 effect: EndConversation
+
+### Starter Mission END ###

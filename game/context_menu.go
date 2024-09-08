@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/gridmap"
 	"RogueUI/special"
 	"fmt"
 )
@@ -49,7 +50,24 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 		buffer = append(buffer, foundation.MenuItem{
 			Name: "Wake Up",
 			Action: func() {
+				g.msg(foundation.Msg("You shake the sleeping figure awake."))
 				actor.WakeUp()
+			},
+			CloseMenus: true,
+		})
+	}
+
+	if g.currentMap().IsPositionNextToTileWithFlag(actor.Position(), gridmap.TileFlagWater) {
+		label := "Drown"
+		if !actor.IsSleeping() {
+			drownChanceString := formatContestStSt(g.Player, actor, special.Strength, special.Strength)
+			label = fmt.Sprintf("Drown (%s)", drownChanceString)
+		}
+
+		buffer = append(buffer, foundation.MenuItem{
+			Name: label,
+			Action: func() {
+				g.playerDrown(actor)
 			},
 			CloseMenus: true,
 		})

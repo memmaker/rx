@@ -108,9 +108,9 @@ func (u *UI) GetKeybindingsAsString(command string) string {
 			u.GetKeysForCommandAsString(KeyLayerMain, "south"),
 			u.GetKeysForCommandAsString(KeyLayerMain, "east"),
 		}
-		return strings.Join(allKeys, ", ")
+		return fmt.Sprintf("[%s]", strings.Join(allKeys, ", "))
 	}
-	return u.GetKeysForCommandAsString(KeyLayerMain, command)
+	return u.GetKeysForCommandAsPrettyString(KeyLayerMain, command)
 }
 
 func (u *UI) AskForConfirmation(title, message string, choice func(didConfirm bool)) {
@@ -156,7 +156,7 @@ func (u *UI) SetColors(palette textiles.ColorPalette, colors map[foundation.Item
 	u.setTheme()
 }
 
-func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
+func (u *UI) ShowTakeOnlyContainer(name string, containedItems []foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
 	var menuItems []foundation.MenuItem
 	menuLabels := u.menuLabelsFor(containedItems)
 	for index, i := range containedItems {
@@ -188,6 +188,149 @@ func (u *UI) ShowContainer(name string, containedItems []foundation.ItemForUI, t
 			return nil
 		}
 		return originalCapture(event)
+	})
+}
+func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.ItemForUI, rightName string, rightItems []foundation.ItemForUI, transferToLeft func(itemTaken foundation.ItemForUI), transferToRight func(itemTaken foundation.ItemForUI)) {
+	var leftMenuItems []foundation.MenuItem
+	var rightMenuItems []foundation.MenuItem
+	var leftMenuLabels []string
+	var rightMenuLabels []string
+	if len(leftItems) > 0 {
+		leftMenuLabels = u.menuLabelsFor(leftItems)
+	}
+	if len(rightItems) > 0 {
+		rightMenuLabels = u.menuLabelsFor(rightItems)
+	}
+
+	for index, i := range leftItems {
+		item := i
+		leftMenuItems = append(leftMenuItems, foundation.MenuItem{
+			Name: leftMenuLabels[index],
+			Action: func() {
+				transferToRight(item)
+				u.application.QueueUpdateDraw(u.UpdateLogWindow)
+			},
+			CloseMenus: true,
+		})
+	}
+	for index, i := range rightItems {
+		item := i
+		rightMenuItems = append(rightMenuItems, foundation.MenuItem{
+			Name: rightMenuLabels[index],
+			Action: func() {
+				transferToLeft(item)
+				u.application.QueueUpdateDraw(u.UpdateLogWindow)
+			},
+			CloseMenus: true,
+		})
+	}
+
+	leftMenu, longestItemLeft := u.createSimpleMenu(leftMenuItems)
+	longestItemLeft = max(longestItemLeft, len(leftName))
+	leftWidth := longestItemLeft + 2
+	leftMenu.SetTitle(leftName)
+	leftMenu.SetSelectedFocusOnly(true)
+
+	if len(rightItems) > 0 {
+		keyForTakeAll := u.GetKeysForCommandAsString(KeyLayerMain, "pickup")
+		u.Print(foundation.HiLite("Press %s to take all items", keyForTakeAll))
+	}
+
+	rightMenu, longestItemRight := u.createSimpleMenu(rightMenuItems)
+	longestItemRight = max(longestItemRight, len(rightName))
+	rightWidth := longestItemRight + 2
+	rightMenu.SetTitle(rightName)
+	rightMenu.ShowFocus(true)
+	rightMenu.SetSelectedFocusOnly(true)
+
+	closeContainer := func() {
+		u.pages.RemovePanel("leftModal")
+		u.pages.RemovePanel("rightModal")
+		u.resetFocusToMain()
+	}
+
+	screenWidth, screenHeight := u.application.GetScreen().Size()
+
+	height := min(screenHeight-4, max(len(leftItems)+2, len(rightItems)+2))
+	centerGap := 4
+	//borderPadding := 2
+
+	//screenRemaining := screenWidth - centerGap - (2 * borderPadding)
+	equalWidth := max(leftWidth, rightWidth)
+	leftWidth = equalWidth
+	rightWidth = equalWidth
+
+	halfCenterGap := centerGap / 2
+	centerScreen := screenWidth / 2
+
+	leftListStart := centerScreen - leftWidth - halfCenterGap
+	rightListStart := leftListStart + leftWidth + centerGap
+	leftMenu.ShowFocus(true)
+	leftMenu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEscape {
+			closeContainer()
+			return nil
+		}
+		uiKey := toUIKey(event)
+		command := u.getCommandForKey(uiKey)
+		if command == "west" || command == "east" {
+			u.application.SetFocus(rightMenu)
+			return nil
+		} else if command == "wait" {
+			closeContainer()
+			return nil
+		} else if command == "north" {
+			return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
+		} else if command == "south" {
+			return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+		}
+		return event
+	})
+
+	rightMenu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEscape {
+			closeContainer()
+			return nil
+		}
+		uiKey := toUIKey(event)
+		command := u.getCommandForKey(uiKey)
+		if command == "pickup" {
+			for _, item := range rightItems {
+				transferToLeft(item)
+			}
+			u.application.QueueUpdateDraw(u.UpdateLogWindow)
+			closeContainer()
+			return nil
+		} else if command == "west" || command == "east" {
+			u.application.SetFocus(leftMenu)
+			return nil
+		} else if command == "wait" {
+			closeContainer()
+			return nil
+		} else if command == "north" {
+			return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
+		} else if command == "south" {
+			return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+		}
+		return event
+	})
+
+	// place both lists vertically centered
+	// but side by side
+
+	leftMenu.SetRect(leftListStart, 2, leftWidth, height)
+	rightMenu.SetRect(rightListStart, 2, rightWidth, height)
+
+	u.pages.AddPanel("leftModal", leftMenu, false, true)
+	u.pages.AddPanel("rightModal", rightMenu, false, true)
+
+	u.application.SetBeforeFocusFunc(nil)
+	u.application.SetFocus(rightMenu)
+	u.application.SetBeforeFocusFunc(func(p cview.Primitive) bool {
+		if p == leftMenu || p == rightMenu {
+			return true
+		}
+		return false
 	})
 }
 
@@ -2030,18 +2173,7 @@ func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 }
 
 func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
-	list := cview.NewList()
-	u.applyListStyle(list)
-	list.SetSelectedFunc(func(index int, listItem *cview.ListItem) {
-		action := menuItems[index]
-		if action.CloseMenus {
-			u.closeModal()
-		}
-		action.Action()
-	})
-
-	longestItem := setListItemsFromMenuItems(list, menuItems)
-	u.makeCenteredModal(list, longestItem, len(menuItems))
+	list, longestItem := u.createSimpleMenu(menuItems)
 
 	originalCapture := list.GetInputCapture()
 	list.SetInputCapture(u.directionalWrapper(func(event *tcell.EventKey) *tcell.EventKey {
@@ -2054,7 +2186,24 @@ func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 		}
 		return event
 	}))
+	u.makeCenteredModal(list, longestItem, len(menuItems))
+
 	return list
+}
+
+func (u *UI) createSimpleMenu(menuItems []foundation.MenuItem) (*cview.List, int) {
+	list := cview.NewList()
+	u.applyListStyle(list)
+	list.SetSelectedFunc(func(index int, listItem *cview.ListItem) {
+		action := menuItems[index]
+		if action.CloseMenus {
+			u.closeModal()
+		}
+		action.Action()
+	})
+
+	longestItem := setListItemsFromMenuItems(list, menuItems)
+	return list, longestItem
 }
 func setListItemsFromMenuItemsWithNumbers(list *cview.List, menuItems []foundation.MenuItem) int {
 	list.Clear()
@@ -2486,11 +2635,10 @@ func (u *UI) mapLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 		mapIcon, found := u.visibleLookup(loc)
 		return mapIcon, found
 	} else if u.game.IsExplored(loc) {
-		iconForMap := u.getIconForMap(loc)
-		iconFg, iconBg := u.ApplyLighting(loc, iconForMap.Fg, iconForMap.Bg)
-		iconForMap.Fg = desaturate(iconFg)
-		iconForMap.Bg = desaturate(iconBg)
-		return iconForMap, true
+		mapIcon, found := u.exploredLookup(loc)
+		mapIcon.Fg = desaturate(mapIcon.Fg)
+		mapIcon.Bg = desaturate(mapIcon.Bg)
+		return mapIcon, found
 	}
 	return textiles.TextIcon{}, false
 }
@@ -2510,6 +2658,29 @@ func (u *UI) lightAt(loc geometry.Point) fxtools.HDRColor {
 	}
 	return u.game.LightAt(loc)
 }
+
+func (u *UI) exploredLookup(loc geometry.Point) (textiles.TextIcon, bool) {
+	conditionalBackgroundWrapper := func(i textiles.TextIcon) textiles.TextIcon {
+		if i.HasBackground() {
+			return i
+		}
+		mapIcon := u.getIconForMap(loc)
+		return i.WithBg(mapIcon.Bg)
+	}
+	var icon textiles.TextIcon
+	objectAtLoc := u.game.ObjectAt(loc)
+	switch objectAtLoc != nil {
+	case true:
+		icon = conditionalBackgroundWrapper(objectAtLoc.Icon())
+	default:
+		icon = u.getIconForMap(loc)
+	}
+	fgWithLight, bgWithLight := u.ApplyLighting(loc, icon.Fg, icon.Bg)
+	icon.Fg = fgWithLight
+	icon.Bg = bgWithLight
+	return icon, true
+}
+
 func (u *UI) visibleLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 	conditionalBackgroundWrapper := func(i textiles.TextIcon) textiles.TextIcon {
 		if i.HasBackground() {
@@ -2817,6 +2988,26 @@ func (u *UI) GetKeysForCommandAsString(layer KeyLayer, command string) string {
 	slices.SortStableFunc(keys, func(i, j string) int {
 		return cmp.Compare(i, j)
 	})
+	return strings.Join(keys, ", ")
+}
+
+func (u *UI) GetKeysForCommandAsPrettyString(layer KeyLayer, command string) string {
+	var keys []string
+	for key, c := range u.keyTable[layer] {
+		if c == command && key.name != "" {
+			keys = append(keys, key.name)
+		}
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	slices.SortStableFunc(keys, func(i, j string) int {
+		return cmp.Compare(i, j)
+	})
+
+	for i, k := range keys {
+		keys[i] = fmt.Sprintf("[%s]", k)
+	}
 	return strings.Join(keys, ", ")
 }
 

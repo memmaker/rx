@@ -143,14 +143,14 @@ func (i InventoryStack) GetItems() []*Item {
 	return i.items
 }
 func (i *Inventory) StackedItems() []*InventoryStack {
-	return i.StackedItemsWithFilter(func(item *Item) bool { return true })
+	return StackedItemsWithFilter(i.items, func(item *Item) bool { return true })
 }
-func (i *Inventory) StackedItemsWithFilter(filter func(*Item) bool) []*InventoryStack {
-	if len(i.items) == 0 {
+func StackedItemsWithFilter(items []*Item, filter func(*Item) bool) []*InventoryStack {
+	if len(items) == 0 {
 		return []*InventoryStack{}
 	}
 	stacks := make([]*InventoryStack, 0)
-	for _, item := range i.items {
+	for _, item := range items {
 		found := false
 		for stackIndex, stack := range stacks {
 			if stack.items[0].CanStackWith(item) {
@@ -466,6 +466,10 @@ func (i *Inventory) GetStatModifiersFromItems(stat special.Stat) []special.Modif
 
 func (i *Inventory) HasSkillModifier(skill special.Skill) bool {
 	return len(i.GetSkillModifiersFromItems(skill)) > 0
+}
+
+func (i *Inventory) StackedItemsWithFilter(filter func(item *Item) bool) []*InventoryStack {
+	return StackedItemsWithFilter(i.items, filter)
 }
 
 func SortInventory(stacks []*InventoryStack) {

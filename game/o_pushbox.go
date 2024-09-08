@@ -74,7 +74,7 @@ func (b *PushBox) InitWithGameState(g *GameState) {
 		if g.currentMap().CanPlaceObjectHere(targetPos) {
 			g.currentMap().MoveObject(b, targetPos)
 			g.ui.PlayCue("world/BOX2")
-			if g.currentMap().IsDamagingTileAt(targetPos) { // TODO: maybe ask for specific tile type?
+			if g.currentMap().IsHazardousTileAt(targetPos) { // TODO: maybe ask for specific tile type?
 				b.SetTransparent(true)
 				b.SetWalkable(true)
 			}

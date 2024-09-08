@@ -6,14 +6,19 @@ goto: Start
 %rec: Nodes
 
 name: Start
-npc: So, you are taking over the contracts then?
+npc: I am trying to teach you something here. Pay attention.
 #
 o_text: Cut the crap, Grim. Just give me the keys.
 o_cond: !HasFlag('grimKeysGiven')
 o_goto: GiveKeys
 #
-o_text: Yes, I am. Tell me about the job.
-o_goto: TellJob
+o_text: Never mind.
+o_goto: Goodbye
+#
+# Starter Mission
+o_text: I got this message from a guy named Jacob. What's the deal?
+o_cond: HasFlag('JobRead(starter)')
+o_goto: TellAboutJacob
 
 name: GiveKeys
 npc: In a rush? Fine, here you go.
@@ -23,13 +28,31 @@ effect: StopScript('tutorial')
 effect: GiveItem('home_keys')
 effect: EndConversation
 
-name: TellJob
-npc: I have a few contracts that need to be taken care of. You will be paid well for your services. Check the computer for more information.
-#
-o_text: Okay, I will take a look.
-o_goto: Goodbye
-
 name: Goodbye
 npc: Good luck out there.
 effect: EndConversation
+
+
+### Starter Mission BEGIN ###
+
+name: TellAboutJacob
+npc: Yeah, Jacob Thorne. A new client. I am not sure I like him.
 #
+o_text: I see, thanks.
+o_goto: Goodbye
+#
+o_text: Do you know where I can find him?
+o_goto: TellJacobLocation
+
+
+name: TellJacobLocation
+npc: He lives in a small hut in the woods. You can't miss it.
++ I see you want to re-negotiate the contract? Clever.
++ (He marks the location on your map.)
+effect: SetFlag('LocationKnown(jacobs_home)')
+#
+o_text: Thanks.
+o_goto: Goodbye
+
+### Starter Mission END ###
+

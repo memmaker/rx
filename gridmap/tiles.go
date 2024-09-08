@@ -13,13 +13,31 @@ type ColoredIcon struct {
 	Rune   rune
 	Fg, Bg string
 }
+type TileFlags uint8
+
+const TileNoFlags TileFlags = 0
+
+const ( // bitwise flags
+	TileFlagHazardous TileFlags = 1 << iota
+	TileFlagWater
+	TileFlagRadiated
+)
+
+func (t TileFlags) Has(tag TileFlags) bool {
+	return t&tag != 0
+}
+
+func (t TileFlags) With(tag TileFlags) TileFlags {
+	return t | tag
+}
 
 type Tile struct {
 	Icon               textiles.TextIcon
 	DefinedDescription string
 	IsWalkable         bool // this
 	IsTransparent      bool // this
-	IsDamaging         bool
+
+	Flags TileFlags
 }
 
 func (t Tile) ToBinary(out io.Writer) {
@@ -61,7 +79,7 @@ func (t Tile) ToRecord() recfile.Record {
 		recfile.Field{Name: "Bg", Value: recfile.RGBStr(t.Icon.Bg)},
 		recfile.Field{Name: "IsWalkable", Value: recfile.BoolStr(t.IsWalkable)},
 		recfile.Field{Name: "IsTransparent", Value: recfile.BoolStr(t.IsTransparent)},
-		recfile.Field{Name: "IsDamaging", Value: recfile.BoolStr(t.IsDamaging)},
+		recfile.Field{Name: "Flags", Value: recfile.Int64Str(int64(t.Flags))},
 	}
 }
 
@@ -79,8 +97,8 @@ func NewTileFromRecord(record recfile.Record) Tile {
 			tile.IsWalkable = field.AsBool()
 		case "IsTransparent":
 			tile.IsTransparent = field.AsBool()
-		case "IsDamaging":
-			tile.IsDamaging = field.AsBool()
+		case "Flags":
+			tile.Flags = TileFlags(field.AsInt())
 		}
 	}
 	return tile

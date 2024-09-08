@@ -464,7 +464,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 			option := o
 			if option.CanDisplay() {
 				nodeOptions = append(nodeOptions, foundation.MenuItem{
-					Name: option.playerText,
+					Name: g.fillTemplatedText(option.playerText),
 					Action: func() {
 						nextNode := conversation.GetNextNode(option)
 						g.OpenDialogueNode(conversation, nextNode, conversationPartner, isTerminal)

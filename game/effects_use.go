@@ -31,10 +31,19 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"drain_life":                     endTurn(true, drainLife),
 		"heal":                           endTurn(true, heal),
 		"extra_heal":                     endTurn(true, extraHeal),
+		"show_time":                      endTurn(false, showTime),
 		"raise_level":                    endTurn(true, noAnim(raiseLevel)),
 		"uncloak":                        endTurn(true, uncloak),
 		"satiate_fully":                  endTurn(true, satiateFully),
 	}
+}
+
+func showTime(g *GameState, user *Actor) []foundation.Animation {
+	if user != g.Player {
+		return nil
+	}
+	g.ShowDateTime()
+	return nil
 }
 
 func uncloak(g *GameState, user *Actor) []foundation.Animation {

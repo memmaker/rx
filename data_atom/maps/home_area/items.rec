@@ -1,2 +1,27 @@
 %rec: default
 
+Category: Weapons
+Name: 10mm_pistol
+Description: 10mm Pistol
+LongDescription: A Colt 6520 10mm autoloading pistol. Each pull of the trigger will automatically reload the firearm until the magazine is empty. Single shot only, using the powerful 10mm round. Min ST: 3.
+Size: 2
+Weight: 3
+Cost: 250
+Quality: 80
+weapon_type: Pistol
+weapon_damage: 5-12
+weapon_magazine_size: 12
+weapon_burst_rounds: 1
+weapon_damage_type: Normal
+weapon_min_str: 3
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 5
+weapon_ap_cost_two: 0
+weapon_max_range_one: 25
+weapon_max_range_two: 0
+weapon_uses_ammo: 10mm
+weapon_caliber_index: 8
+weapon_sound_id: 65
+Position: (49,3)
+

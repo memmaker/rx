@@ -1,0 +1,242 @@
+### **Doctor**
+- **Male**:
+  1. Victor Ross
+  2. Ethan Karev
+  3. Logan Faust
+  4. Daniel Harker
+  5. Julian Nox
+
+- **Female**:
+  1. Nadia Thorn
+  2. Elise Voss
+  3. Katrina Lyall
+  4. Mira Sykes
+  5. Ava Krauss
+
+- **Androgynous**:
+  1. Arden Vale
+  2. Quinn Rix
+  3. Alex Stern
+  4. Riley Page
+  5. Morgan Zed
+
+### **Merchant or Vendor**
+- **Male**:
+  1. Aaron Stroud
+  2. Felix Tash
+  3. Owen Koris
+  4. Miles Jaren
+  5. Drake Holloway
+
+- **Female**:
+  1. Tessa Jyn
+  2. Lila Rook
+  3. Violet Zane
+  4. Jenna Royce
+  5. Cara Delmar
+
+- **Androgynous**:
+  1. Kai Frost
+  2. Rowan Lane
+  3. Ash Morrow
+  4. Blake Rand
+  5. Casey Nove
+
+### **Peasant**
+- **Male**:
+  1. Jacob Thorne
+  2. Tobias Finch
+  3. Levi Dunne
+  4. Sam Arden
+  5. Flint Gray
+
+- **Female**:
+  1. Freya Marsh
+  2. Lily Ward
+  3. Nora Dax
+  4. Iris Quinn
+  5. Ruby Vale
+
+- **Androgynous**:
+  1. Sage Callow
+  2. Ren Sable
+  3. Drew Lark
+  4. Joss Tanner
+  5. Ellis Lane
+
+### **Guard**
+- **Male**:
+  1. Marcus Hade
+  2. Cole Vex
+  3. Gunnar Holt
+  4. Braxton Kane
+  5. Rafe Dekker
+
+- **Female**:
+  1. Talia Pryce
+  2. Erika Finn
+  3. Sierra Hunt
+  4. Dani Rogue
+  5. Zara Volt
+
+- **Androgynous**:
+  1. Jaden Torque
+  2. Phoenix Gage
+  3. Cam Rook
+  4. Alex Ion
+  5. River Locke
+
+### **Mercenary**
+- **Male**:
+  1. Jax Mercer
+  2. Darius Steele
+  3. Rex Black
+  4. Kade Marlow
+  5. Thorn Brax
+
+- **Female**:
+  1. Raven Knox
+  2. Juno Viper
+  3. Zara Blight
+  4. Nyx Kade
+  5. Sloane Riggs
+
+- **Androgynous**:
+  1. Blade Vox
+  2. Quin Haze
+  3. Rip Torrent
+  4. Zion Shade
+  5. Storm Ash
+
+### **Corporate Employee**
+- **Male**:
+  1. Vincent Troy
+  2. Clark Vane
+  3. Lewis Arden
+  4. Max Voss
+  5. Adrian Flint
+
+- **Female**:
+  1. Cora Linton
+  2. Olivia Hearn
+  3. Sasha Volt
+  4. Brooke Ashby
+  5. Iris Fane
+
+- **Androgynous**:
+  1. Hayden Noir
+  2. Emery Cross
+  3. Quinn Fane
+  4. Lennox Vale
+  5. Riley Storm
+
+### **Rural Citizen**
+- **Male**:
+  1. Jesse Lorne
+  2. Jack Kline
+  3. Abram Jones
+  4. Toby Nash
+  5. Eli Morland
+
+- **Female**:
+  1. Anna Greene
+  2. Daisy Quinn
+  3. Sarah Harper
+  4. Rose Finch
+  5. Mia Wren
+
+- **Androgynous**:
+  1. Gray Joss
+  2. Reese Grove
+  3. Wren Arden
+  4. Jace Fallon
+  5. Taylor Dale
+
+### **Hacker**
+- **Male**:
+  1. Zane Cipher
+  2. Dex Byte
+  3. Miles Code
+  4. Orion Steel
+  5. Asher Glitch
+
+- **Female**:
+  1. Vira Trace
+  2. Lex Cipher
+  3. Rhea Flux
+  4. Piper Nova
+  5. Ivy Matrix
+
+- **Androgynous**:
+  1. Zero Flux
+  2. Syn Storm
+  3. Zion Byte
+  4. Kade Hack
+  5. Rune Nova
+
+### **Elite Special Forces Fighter**
+- **Male**:
+  1. Axel Kade
+  2. Talon Cross
+  3. Wyatt Dray
+  4. Dorian Vex
+  5. Rook Talon
+
+- **Female**:
+  1. Lyra Blaze
+  2. Aria Talon
+  3. Nova Rex
+  4. Cassia Drax
+  5. Vix Hunt
+
+- **Androgynous**:
+  1. Steele Rook
+  2. Roan Vex
+  3. Phoenix Trace
+  4. Ryker Talon
+  5. Echo Blaze
+
+### **Loiterer & Beggar**
+- **Male**:
+  1. Benny Slag
+  2. Jay Wretch
+  3. Lenny Spade
+  4. Vic Rust
+  5. Terry Jank
+
+- **Female**:
+  1. Iris Grime
+  2. Nina Dust
+  3. Mae Scrap
+  4. Zoe Rags
+  5. Faye Slum
+
+- **Androgynous**:
+  1. Skye Rag
+  2. Quinn Junk
+  3. Ash Slag
+  4. Rowan Dirt
+  5. Kit Rust
+
+### **Gangster**
+- **Male**:
+  1. Vito Rage
+  2. Luca Graves
+  3. Saul Dark
+  4. Niko Slash
+  5. Rico Blade
+
+- **Female**:
+  1. Lexa Fire
+  2. Mia Vex
+  3. Sasha Rage
+  4. Zara Blight
+  5. Juno Slay
+
+- **Androgynous**:
+  1. Ace Shade
+  2. Vex Riot
+  3. Jax Graves
+  4. Lux Slash
+  5. Rip Venom
+

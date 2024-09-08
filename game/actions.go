@@ -349,11 +349,8 @@ func (g *GameState) PlayerPickupItemAt(itemPos geometry.Point) {
 
 	if item, exists := g.currentMap().TryGetItemAt(itemPos); exists {
 		g.currentMap().RemoveItem(item)
-		if item.IsGold() {
-			g.Player.AddGold(item.GetCharges())
-		} else {
-			inventory.Add(item)
-		}
+		inventory.Add(item)
+
 		g.ui.PlayCue("world/pickup")
 		g.msg(foundation.HiLite("You picked up %s", item.Name()))
 

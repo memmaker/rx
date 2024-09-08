@@ -1,0 +1,51 @@
+%rec: default
+
+Name: jacob_thorne
+Icon: J
+Foreground: light_gray_2
+Description: Jacob Thorne
+Dialogue: jacob_thorne
+LongDescription: 
+Age: 25
+BodyType: 0
+XP: 120
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 80
+ActionPoints: 8
+ArmorClass: 16
+MeleeDamage: 2
+CarryWeight: 200
+Sequence: 8
+HealingRate: 3
+CriticalChance: 7
+Strength: 7
+Perception: 4
+Endurance: 9
+Charisma: 3
+Intelligence: 3
+Agility: 6
+Luck: 7
+SkillBonusSmallGuns: 34
+SkillBonusBigGuns: 29
+SkillBonusEnergyWeapons: 9
+SkillBonusUnarmed: 9
+SkillBonusMelee: 15
+SkillBonusThrowing: 29
+DTNormal: 4
+DTLaser: 6
+DTFire: 4
+DTPlasma: 4
+DTExplosive: 4
+DRNormal: 30
+DRLaser: 75
+DRFire: 10
+DRPlasma: 20
+DREMP: 500
+DRExplosive: 25
+DRRadiation: 18
+DRPoison: 45
+SourceFile: 00000040.pro
+Position: (50,9)
+

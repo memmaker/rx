@@ -245,6 +245,6 @@ func toGridMapTile(tile textiles.TextTile) Tile {
 		DefinedDescription: tile.Name,
 		IsWalkable:         tile.IsWalkable,
 		IsTransparent:      tile.IsTransparent,
-		IsDamaging:         false,
+		Flags:              TileFlags(tile.Flags),
 	}
 }

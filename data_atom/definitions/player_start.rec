@@ -8,4 +8,5 @@ mapLocation: spawn
 #item: 1 | 10mm_pistol
 item: 7 | bobby_pin
 item: 1 | aviator_sunglasses
+item: 1 | watch
 #item: 1 | note('doctors_referral', 'referral to Dr. Winters')

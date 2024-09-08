@@ -111,6 +111,34 @@ func (g *GameState) QuickThrow() {
 	g.actorThrowItem(g.Player, weapon, g.Player.Position(), preselectedTarget)
 }
 
+func (g *GameState) playerDrown(defender *Actor) {
+	attackerLuckChance := special.Percentage(g.Player.GetCharSheet().GetStat(special.Luck))
+	defenderLuckChance := special.Percentage(defender.GetCharSheet().GetStat(special.Luck))
+
+	attackerStrength := special.Percentage(g.Player.GetCharSheet().GetStat(special.Strength) * 10)
+	defenderStrength := special.Percentage(defender.GetCharSheet().GetStat(special.Strength) * 10)
+
+	contestResult := special.SkillContest(attackerStrength, attackerLuckChance, defenderStrength, defenderLuckChance)
+
+	if defender.IsSleeping() || contestResult == 0 {
+		sourcedDamage := SourcedDamage{
+			NameOfThing:     "drowning",
+			Attacker:        g.Player,
+			IsObviousAttack: true,
+			AttackMode:      special.TargetingModeFireSingle,
+			DamageType:      special.DamageTypeNormal,
+			DamageAmount:    defender.GetHitPointsMax(),
+			BodyPart:        special.Body,
+		}
+		g.msg(foundation.HiLite("You drown %s", defender.Name()))
+		g.ui.AddAnimations(g.damageActor(sourcedDamage, defender))
+		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
+	} else {
+		g.msg(foundation.HiLite("You fail to sneak up on %s", defender.Name()))
+		g.playerMeleeAttack(defender)
+	}
+}
+
 func (g *GameState) playerBackstab(defender *Actor) {
 	attackerLuckChance := special.Percentage(g.Player.GetCharSheet().GetStat(special.Luck))
 	defenderLuckChance := special.Percentage(defender.GetCharSheet().GetStat(special.Luck))
@@ -132,7 +160,7 @@ func (g *GameState) playerBackstab(defender *Actor) {
 		}
 		g.msg(foundation.HiLite("You stab %s in the back", defender.Name()))
 		g.ui.AddAnimations(g.damageActor(sourcedDamage, defender))
-		g.endPlayerTurn(10)
+		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	} else {
 		g.msg(foundation.HiLite("You fail to sneak up on %s", defender.Name()))
 		g.playerMeleeAttack(defender)
@@ -151,7 +179,7 @@ func (g *GameState) playerNonLethalTakedown(victim *Actor) {
 	if contestResult == 0 {
 		victim.SetSleeping()
 		g.msg(foundation.HiLite("You knock out %s", victim.Name()))
-		g.endPlayerTurn(10)
+		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	} else {
 		g.msg(foundation.HiLite("%s is able to resist your attempt", victim.Name()))
 		g.playerMeleeAttack(victim)
@@ -180,7 +208,7 @@ func (g *GameState) playerMeleeAttack(defender *Actor) {
 			defender.GetFlags().Set(special.FlagAwareOfPlayer)
 		}
 		g.ui.AddAnimations(consequences)
-		g.endPlayerTurn(10)
+		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	}
 
 	mainhandItem, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
@@ -223,6 +251,11 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part spec
 		evade := g.ui.GetAnimEvade(defender, nil)
 		evade.SetAudioCue(defender.GetDodgedAudioCue())
 		afterAttackAnimations = append(afterAttackAnimations, evade)
+		if attacker == g.Player {
+			g.msg(foundation.Msg("You miss"))
+		} else {
+			g.msg(foundation.Msg(fmt.Sprintf("%s misses", attacker.Name())))
+		}
 	}
 
 	if damageWithSource.IsObviousAttack {
@@ -422,6 +455,11 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Item
 		})
 		evade.SetAudioCue(defender.GetDodgedAudioCue())
 		damageAnims = []foundation.Animation{evade}
+		if attacker == g.Player {
+			g.msg(foundation.Msg("You miss"))
+		} else {
+			g.msg(foundation.Msg(fmt.Sprintf("%s misses", attacker.Name())))
+		}
 	}
 	return damageAnims
 }
@@ -510,6 +548,6 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 	g.ui.AddAnimations([]foundation.Animation{throwAnim})
 
 	if thrower == g.Player {
-		g.endPlayerTurn(10)
+		g.endPlayerTurn(g.Player.timeNeededForActions())
 	}
 }

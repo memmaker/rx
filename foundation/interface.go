@@ -159,7 +159,8 @@ type GameUI interface {
 	OpenKeypad(correctSequence []rune, onCompletion func(success bool))
 	OpenVendorMenu(itemsForSale []fxtools.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
-	ShowContainer(name string, containedItems []ItemForUI, transfer func(ui ItemForUI))
+	ShowTakeOnlyContainer(name string, containedItems []ItemForUI, transfer func(ui ItemForUI))
+	ShowGiveAndTakeContainer(leftName string, leftItems []ItemForUI, rightName string, rightItems []ItemForUI, transferToLeft func(itemTaken ItemForUI), transferToRight func(itemTaken ItemForUI))
 	OpenAimedShotPicker(actorAt ActorForUI, previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
 
 	// Auto Move Callback

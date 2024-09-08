@@ -299,6 +299,7 @@ func (g *GameState) fillTemplatedText(text string) string {
 	replaceValues := map[string]string{
 		"pcname":         g.Player.Name(), // use as {{ .pcname }}
 		"keys_move":      g.ui.GetKeybindingsAsString("move"),
+		"keys_wait":      g.ui.GetKeybindingsAsString("wait"),
 		"keys_look":      g.ui.GetKeybindingsAsString("look"),
 		"keys_action":    g.ui.GetKeybindingsAsString("map_interaction"),
 		"keys_inventory": g.ui.GetKeybindingsAsString("inventory"),

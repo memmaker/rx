@@ -20,11 +20,16 @@ func (p Percentage) AsFloat() float64 {
 	return float64(p) / 100.0
 }
 
-func SuccessRoll(chanceOfSuccess, critChance Percentage) CheckResult {
-	roll := rand.Intn(100)
+func SuccessRoll(chanceOfSuccess, critModifier Percentage) CheckResult {
 	var result CheckResult
-	result.Success = roll < int(chanceOfSuccess)
-	result.Crit = roll < int(critChance)
+	result.Success = rand.Intn(100) < int(chanceOfSuccess)
+
+	critChance := Percentage(10)
+	if result.Success {
+		critChance += critModifier
+	}
+
+	result.Crit = rand.Intn(100) < int(critChance)
 	return result
 }
 

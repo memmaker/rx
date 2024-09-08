@@ -19,7 +19,7 @@ do: AddChatter(WINTERS, 'Damn you, Jeff. What did I ever do to you?')
 
 %rec: cancel
 
-if: Turns() > 180 && !InCombat(JEFF) && !InCombat(WINTERS)
+if: Turns() > 180 && !IsInCombat(JEFF) && !IsInCombat(WINTERS)
 do: AddChatter(JEFF, 'I\'m out of here.")
 do: AddChatter(WINTERS, 'Better luck next time, Jeff.')
 do: SetGoalMoveToNamedLocation(JEFF, 'jeffs_hideout')

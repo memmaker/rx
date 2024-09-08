@@ -59,12 +59,13 @@ func (g *GameState) addItemToMap(item *Item, mapPos geometry.Point) {
 }
 
 func (g *GameState) NewGold(amount int) *Item {
+	icon := g.iconForItem(foundation.ItemCategoryGold)
 	gold := &Item{
 		description:  "gold",
 		internalName: "gold",
 		category:     foundation.ItemCategoryGold,
 		charges:      amount,
-		icon:         g.iconForItem(foundation.ItemCategoryGold),
+		icon:         icon,
 	}
 	return gold
 }

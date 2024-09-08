@@ -282,6 +282,7 @@ func (i *Item) GobDecode(data []byte) error {
 
 func (g *GameState) NewItemFromString(itemShortString string) *Item {
 	charges := 1
+	setCharges := false
 	if fxtools.LooksLikeAFunction(itemShortString) {
 		var item *Item
 		name, args := fxtools.GetNameAndArgs(itemShortString)
@@ -296,15 +297,27 @@ func (g *GameState) NewItemFromString(itemShortString string) *Item {
 		parts := strings.Split(itemShortString, "|")
 		itemShortString = strings.TrimSpace(parts[0])
 		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
+		setCharges = true
+	}
+
+	if itemShortString == "gold" {
+		return g.NewGold(charges)
 	}
 
 	itemDef := g.getItemTemplateByName(itemShortString)
+
+	if len(itemDef) == 0 {
+		panic(fmt.Sprintf("Item not found: %s", itemShortString))
+	}
+
 	newItem := NewItemFromRecord(itemDef, g.iconForItem)
 
 	if newItem == nil {
 		panic(fmt.Sprintf("Item not found: %s", itemShortString))
 	}
-	newItem.SetCharges(charges)
+	if setCharges {
+		newItem.SetCharges(charges)
+	}
 
 	return newItem
 }
@@ -495,6 +508,10 @@ func (i *Item) CanStackWith(other *Item) bool {
 
 	if i.useEffectName != other.useEffectName || i.zapEffectName != other.zapEffectName {
 		return false
+	}
+
+	if i.category == foundation.ItemCategoryGold && other.category == foundation.ItemCategoryGold {
+		return true
 	}
 
 	if i.IsAmmo() && other.IsAmmo() && i.GetAmmo().Equals(other.GetAmmo()) {

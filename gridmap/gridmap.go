@@ -5,7 +5,6 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
-	"io"
 	"math"
 	"math/rand"
 	"sort"
@@ -867,7 +866,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsWalkable(p geometry.Point) 
 	return cellAt.TileType.IsWalkable
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsObviousHazardAt(p geometry.Point) bool {
-	return m.IsDamagingTileAt(p)
+	return m.IsHazardousTileAt(p)
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsWalkableFor(p geometry.Point, person ActorType) bool {
 	if !m.Contains(p) {
@@ -1246,11 +1245,13 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) RemoveNamedLocation(namedLoca
 	delete(m.namedLocations, namedLocation)
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsDamagingTileAt(p geometry.Point) bool {
-	tileType := m.CellAt(p).TileType
-	return tileType.IsDamaging
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsHazardousTileAt(p geometry.Point) bool {
+	return m.IsTileWithFlagAt(p, TileFlagHazardous)
 }
-
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsTileWithFlagAt(p geometry.Point, flag TileFlags) bool {
+	tileType := m.CellAt(p).TileType
+	return tileType.Flags.Has(flag)
+}
 func (m *GridMap[ActorType, ItemType, ObjectType]) RandomPosAround(pos geometry.Point) geometry.Point {
 	neighbors := m.NeighborsAll(pos, func(p geometry.Point) bool {
 		return m.Contains(p)
@@ -1380,12 +1381,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetTransitionAt(pos geometry.
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetName() string {
 	return m.name
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) WriteTiles(out io.Writer) {
-	for _, cell := range m.cells {
-		cell.TileType.ToBinary(out)
-	}
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) Transitions() map[geometry.Point]Transition {
@@ -1944,6 +1939,26 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetCells(cells []MapCell[Acto
 	m.allActors = allActors
 	m.allDownedActors = allDownedActors
 	m.cells = cells
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsPositionNextToTileWithFlag(position geometry.Point, flagWater TileFlags) bool {
+	if m.cardinalMovementOnly {
+		neighbors := m.NeighborsCardinal(position, m.Contains)
+		for _, neighbor := range neighbors {
+			if m.IsTileWithFlagAt(neighbor, flagWater) {
+				return true
+			}
+		}
+		return false
+	} else {
+		neighbors := m.NeighborsAll(position, m.Contains)
+		for _, neighbor := range neighbors {
+			if m.IsTileWithFlagAt(neighbor, flagWater) {
+				return true
+			}
+		}
+		return false
+	}
 }
 
 type JumpOverInfo struct {

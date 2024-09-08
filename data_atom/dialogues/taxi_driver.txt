@@ -39,6 +39,14 @@ npc: Where to, stranger?
 o_text: Just drive.
 o_goto: Drive
 #
+o_text: Take me home.
+o_goto: DriveHome
+#
+# Starter Mission
+o_text: I want to do some hiking in the woods. (Home of Jacob Thorne)
+o_cond: HasFlag('LocationKnown(jacobs_home)') && !IsMap('jacobs_home')
+o_goto: JacobsHome
+#
 o_text: Get me to this location here (Cryo Facility).
 o_cond: HasFlag('LocationKnown(cryolab)') && !IsMap('cryolab')
 o_goto: CryoFacility
@@ -51,8 +59,8 @@ o_text: Get me to the BioPharmaceuticals lab.
 o_cond: HasFlag('LocationKnown(zombies)') && !IsMap('zombies')
 o_goto: ZombieLab
 #
-o_text: Just take me back to Kelso.
-o_cond: !IsMap('town')
+o_text: Take me to Kelso.
+o_cond: HasFlag('LocationKnown(town)') && !IsMap('town')
 o_goto: Kelso
 #
 o_text: Nevermind.
@@ -67,6 +75,18 @@ npc: Sure thing.
 #
 o_text: (Wait)
 o_goto: DefaultIntroduction
+
+# Home
+name: DriveHome
+npc: Home sweet home.
+effect: DriverTransition('home_area', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+# Starter Mission
+name: JacobsHome
+npc: I like the calmness of the woods.
+effect: DriverTransition('jacobs_home', 'taxi_stand')
+effect: AdvanceTimeByMinutes(25)
 
 name: Kelso
 npc: There you go.

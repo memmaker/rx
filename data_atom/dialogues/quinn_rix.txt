@@ -1,0 +1,153 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: What do you want?
+#
+o_text: I am new in the neighborhood. And like to introduce myself. I am {{ .pcname }}.
+o_goto: Introduction
+#
+o_text: What can you tell me about this neighborhood?
+o_goto: Neighborhood
+#
+o_text: I might have a job for you.
+o_cond: HasFlag('JobRead(starter)') && HasFlag('KnowsAbout(quinns_job)')
+o_goto: JobOffer
+#
+o_text: I noticed you keep a nice collection of handguns. All in good condition.
+o_goto: GunCollection
+#
+o_text: I just wanted to issue a warning: Keep the fuck out of my way.
+o_test: RollSkill('Speech', 10)
+o_succ: Intimidated
+o_fail: LaughedAt
+
+name: GunCollection
+npc: What's it to you?
++ (He stares intensely at you)
+#
+o_text: Nothing. I guess it's good to stay safe around here.
+o_goto: DefaultIntroduction
+#
+o_text: Let's say someone would drop some money in front of you in exchange for using these beauties..
+o_goto: AskingForGunForHire
+#
+o_text: I thought I'd mention how unprofessional it is to not keep them on you while you are being assassinated.
+o_goto: Attack
+
+name: Introduction
+npc: Nice to meet you, {{ .pcname }}. This neighborhood has its quirks, but you'll get used to it.
+#
+o_text: Thanks for the information.
+o_goto: DefaultIntroduction
+#
+o_text: Do you need any help with something?
+o_goto: OfferHelp
+#
+o_text: I have to go now.
+o_goto: End
+
+name: Neighborhood
+npc: I feel perfectly safe around here.
+#
+o_text: Thanks for the heads up.
+o_goto: DefaultIntroduction
+#
+o_text: Any good places to eat around here?
+o_goto: FoodPlaces
+#
+o_text: I have to go now.
+o_goto: End
+
+name: Intimidated
+npc: Alright, alright. I'll stay out of your way.
+effect: SetFlag('Intimidated(quinn_rix)')
+effect: EndConversation
+
+name: LaughedAt
+npc: Ha! You think you can scare me? Good luck with that.
+effect: SetFlag('NotImpressed(quinn_rix)')
+effect: EndConversation
+
+name: OfferHelp
+npc: I am fine.
+#
+o_text: Alright.
+o_goto: DefaultIntroduction
+
+name: AskingForGunForHire
+npc: Go on.
+#
+o_text: I need someone dead.
+o_goto: ExplainJob
+#
+o_text: I need someone to disappear.
+o_goto: ExplainJob
+#
+o_text: I need a hitman.
+o_goto: ExplainJob
+
+name: ExplainJob
+npc: You came to the right place. For the right price, I can make it happen.
+effect: SetFlag('KnowsAbout(quinns_job)')
+#
+o_text: Perfect, let's talk about the details.
+o_goto: JobOffer
+#
+o_text: Good to know, I will keep you in mind.
+o_goto: DefaultIntroduction
+
+name: JobOffer
+npc: What do you have in mind?
+#
+o_text: There is this guys named Jacob Thorne. I need him dead.
+o_goto: JacobJob
+#
+o_text: There is a Doctor named Daniel. I need him dead.
+o_goto: DanielJob
+#
+o_text: Nothing at the moment.
+o_goto: DefaultIntroduction
+
+name: JacobJob
+npc: I know where he lives. I can take care of it.
++ For $500, he won't see the next sunrise.
+effect: SetFlag('JacobJobOffered')
+#
+o_text: I will think about it.
+o_goto: DefaultIntroduction
+#
+o_text: We have a deal.
+o_goto: AcceptJacobJob
+
+name: AcceptJacobJob
+npc: Consider it done.
+effect: GiveMoneyToNPC(500)
+effect: RunScript('quinn_kills_jacob')
+effect: EndConversation
+
+name: DanielJob
+npc: I know where he works. I can take care of it.
++ For $500, he won't be cutting anyone open anymore.
+effect: SetFlag('DanielJobOffered')
+#
+o_text: I will think about it.
+o_goto: DefaultIntroduction
+#
+o_text: We have a deal.
+o_goto: AcceptDanielJob
+
+name: AcceptDanielJob
+npc: Will do.
+effect: GiveMoneyToNPC(500)
+effect: RunScript('quinn_kills_daniel')
+effect: EndConversation
+
+
+name: End
+npc: See you around.
+effect: EndConversation

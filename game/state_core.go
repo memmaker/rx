@@ -5,6 +5,7 @@ import (
 	"RogueUI/gridmap"
 	"RogueUI/special"
 	"fmt"
+	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -17,14 +18,15 @@ import (
 
 type GameState struct {
 	// Global State (Needs to be saved)
-	TurnsTaken      int
-	gameTime        time.Time
-	gameFlags       *fxtools.StringFlags
-	logBuffer       []foundation.HiLiteString
-	terminalGuesses map[string][]string
-	journal         *Journal
-	rewardTracker   *RewardTracker
-	showEverything  bool
+	TurnsTaken           int
+	gameTime             time.Time
+	gameFlags            *fxtools.StringFlags
+	logBuffer            []foundation.HiLiteString
+	terminalGuesses      map[string][]string
+	journal              *Journal
+	rewardTracker        *RewardTracker
+	showEverything       bool
+	flagsChangedThisTurn bool
 
 	// Player State (Needs to be saved)
 	Player            *Actor
@@ -173,6 +175,7 @@ func (g *GameState) setIconsForObjects(iconsForObjects map[string]textiles.TextI
 	g.iconsForObjects = iconsForObjects
 }
 func (g *GameState) init() {
+	g.iconsForItems, g.inventoryColors = loadIconsForItems(path.Join(g.config.DataRootDir, "definitions"), g.palette)
 
 	g.mapLoader = gridmap.NewRecMapLoader(
 		path.Join(g.config.DataRootDir, "maps"),
@@ -182,8 +185,6 @@ func (g *GameState) init() {
 		g.NewItem,
 		g.NewObject,
 	)
-
-	g.iconsForItems, g.inventoryColors = loadIconsForItems(path.Join(g.config.DataRootDir, "definitions"), g.palette)
 
 	g.TurnsTaken = 0
 	g.gameTime = time.Date(2077, 2, 5, 16, 20, 23, 0, time.UTC)
@@ -208,12 +209,7 @@ func (g *GameState) hookupJournalAndFlags() {
 		g.msg(foundation.HiLite(">>> Journal updated <<<"))
 	})
 	g.gameFlags.SetChangeHandler(func(flagName string, value int) {
-		g.journal.OnFlagsChanged()
-
-		rewards := g.rewardTracker.GetNewRewards(nil)
-		for _, reward := range rewards {
-			g.awardXP(reward.XP, reward.Text)
-		}
+		g.flagsChangedThisTurn = true
 	})
 }
 
@@ -368,6 +364,17 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	}
 	g.afterAnimationActions = nil
 
+	if g.flagsChangedThisTurn {
+		g.journal.OnFlagsChanged()
+
+		rewards := g.rewardTracker.GetNewRewards(nil)
+		for _, reward := range rewards {
+			g.awardXP(reward.XP, reward.Text)
+		}
+
+		g.flagsChangedThisTurn = false
+	}
+
 	g.updateUIStatus()
 
 	g.checkPlayerCanAct()
@@ -407,10 +414,10 @@ func (g *GameState) canActorSee(victim *Actor, position geometry.Point) bool {
 }
 
 func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
-	if g.canPlayerSee(actor.Position()) {
+	if actor.IsAlive() && !actor.IsSleeping() && g.canPlayerSee(actor.Position()) {
 		text = g.fillTemplatedText(text)
 		if g.ui.TryAddChatter(actor, text) {
-			g.msg(foundation.HiLite("%s: \"%s\"", actor.Name(), text))
+			g.msg(foundation.HiLite("%s: \"%s\"", actor.Name(), cview.Escape(text)))
 			return true
 		}
 	}
@@ -419,52 +426,66 @@ func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
 
 func (g *GameState) StartPickpocket(actor *Actor) {
 	actorEquipment := actor.GetEquipment()
-	stealableItems := actor.GetInventory().StackedItemsWithFilter(actorEquipment.IsNotEquipped)
+	stealableItems := itemStacksForUI(actor.GetInventory().StackedItemsWithFilter(actorEquipment.IsNotEquipped))
 
-	var menuItems []foundation.MenuItem
-
-	for _, i := range stealableItems {
-		item := i
-		itemStealModifier := 0
-		if item.GetCategory().IsEasySteal() {
-			itemStealModifier = 10
-		} else if item.GetCategory().IsHardSteal() {
-			itemStealModifier = -10
-		}
-		if actor.IsSleeping() {
-			itemStealModifier += 75
-		}
-		chance := max(0, min(95, g.Player.GetCharSheet().GetSkill(special.Steal)+itemStealModifier))
-		menuItems = append(menuItems, foundation.MenuItem{
-			Name: fmt.Sprintf("Steal %s (%d%%)", item.Name(), chance),
-			Action: func() {
-				g.PlayerStealItem(actor, item.First(), itemStealModifier)
-			},
-			CloseMenus: true,
-		})
+	rightToLeft := func(itemUI foundation.ItemForUI) {
+		itemStack := itemUI.(*InventoryStack)
+		g.PlayerStealOrPlantItem(actor, itemStack.First(), true)
 	}
 
-	g.ui.OpenMenu(menuItems)
+	leftToRight := func(itemUI foundation.ItemForUI) {
+		itemStack := itemUI.(*InventoryStack)
+		g.PlayerStealOrPlantItem(actor, itemStack.First(), false)
+	}
+
+	leftName := g.Player.Name()
+	rightName := actor.Name()
+	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
+
+	g.ui.ShowGiveAndTakeContainer(leftName, playerItems, rightName, stealableItems, rightToLeft, leftToRight)
 }
 
-func (g *GameState) PlayerStealItem(victim *Actor, item *Item, itemStealModifier int) {
-	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Steal, itemStealModifier)
-	if skillRoll.Success {
-		victim.GetInventory().Remove(item)
-		g.Player.GetInventory().Add(item)
-		g.msg(foundation.HiLite("You steal %s", item.Name()))
-		g.ui.PlayCue("world/pickup")
-		if victim.HasStealableItems() {
-			g.StartPickpocket(victim)
+func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item *Item, isSteal bool) {
+	itemStealModifier := 0
+	if item.GetCategory().IsEasySteal() {
+		itemStealModifier = 10
+	} else if item.GetCategory().IsHardSteal() {
+		itemStealModifier = -10
+	}
+	if victim.IsSleeping() {
+		itemStealModifier += 75
+	}
+
+	var transferFunc func(*Item)
+	if isSteal {
+		transferFunc = func(itemTaken *Item) {
+			victim.GetInventory().Remove(item)
+			g.Player.GetInventory().Add(item)
+			g.msg(foundation.HiLite("You steal %s", item.Name()))
+			g.ui.PlayCue("world/pickup")
 		}
 	} else {
-		g.msg(foundation.HiLite("%s notices you trying to steal %s", victim.Name(), item.Name()))
+		transferFunc = func(itemTaken *Item) {
+			g.Player.GetInventory().Remove(item)
+			victim.GetInventory().Add(item)
+			g.msg(foundation.HiLite("You plant %s", item.Name()))
+			g.ui.PlayCue("world/drop")
+		}
+	}
+
+	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Steal, itemStealModifier)
+	if skillRoll.Success {
+		transferFunc(item)
+		g.StartPickpocket(victim)
+	} else {
+		g.msg(foundation.HiLite("%s notices your hands in his pockets", victim.Name()))
 		if victim.IsSleeping() {
 			victim.WakeUp()
 		}
 		g.trySetHostile(victim, g.Player)
 	}
 }
+
 func (g *GameState) ShowDateTime() {
 	// full date
 	g.msg(foundation.HiLite("The time is %s", g.gameTime.Format("2006-01-02 15:04")))

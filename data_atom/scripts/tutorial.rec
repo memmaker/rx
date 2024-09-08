@@ -8,6 +8,12 @@ set: ActorWithName('grim_beard')
 if: IsDead(OLDMAN)
 do: AddChatter(OLDMAN, 'You\'ll regret this.')
 
+if: IsInCombatWithPlayer(OLDMAN)
+do: AddChatter(OLDMAN, 'Really? You want to fight me now?')
+
+if: IsInCombat(OLDMAN)
+do: AddChatter(OLDMAN, 'Just let me finish this here, real quick.')
+
 %rec: cancel
 
 if: true

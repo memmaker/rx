@@ -256,3 +256,7 @@ Char: ≥
 Fg: light_blue_3
 Bg: dark_gray_5
 
+Char: ♣
+Fg: bright_green_2
+Bg: tan_10
+

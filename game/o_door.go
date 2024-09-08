@@ -18,11 +18,12 @@ type Door struct {
 	lockDiff              foundation.Difficulty
 	lockStrengthRemaining int
 	numberLock            []rune
-	hitpoints             int
-	damageThreshold       int
-	audioCueBaseName      string
-	player                foundation.AudioCuePlayer
-	onBump                func(actor *Actor)
+
+	hitpoints        int
+	damageThreshold  int
+	audioCueBaseName string
+	player           foundation.AudioCuePlayer
+	onBump           func(actor *Actor)
 }
 
 func (b *Door) InitWithGameState(g *GameState) {
@@ -84,6 +85,11 @@ func (b *Door) InitWithGameState(g *GameState) {
 					}
 					luckPercent := special.Percentage(g.Player.GetCharSheet().GetStat(special.Luck))
 					rollResult := special.SuccessRoll(special.Percentage(chance), luckPercent)
+					if !rollResult.Success && rollResult.Crit {
+						g.Player.GetInventory().RemoveLockpick()
+						g.msg(foundation.Msg("Your lockpick broke!"))
+						return
+					}
 					lockPickResult(rollResult.Success)
 				}
 

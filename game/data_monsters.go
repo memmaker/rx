@@ -20,7 +20,11 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 
 	charSheet := special.NewCharSheet()
 
-	var dodge, hitpoints, actionpoints, speed int
+	dodge := -1
+	hitpoints := -1
+	actionpoints := -1
+	speed := -1
+
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		case "name":
@@ -93,10 +97,18 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 
 	actor.GetFlags().Init(flags.UnderlyingCopy())
 
-	charSheet.SetDerivedStatAbsoluteValue(special.HitPoints, hitpoints)
-	charSheet.SetDerivedStatAbsoluteValue(special.ActionPoints, actionpoints)
-	charSheet.SetDerivedStatAbsoluteValue(special.Speed, speed)
-	charSheet.SetDerivedStatAbsoluteValue(special.Dodge, dodge)
+	if hitpoints != -1 {
+		charSheet.SetDerivedStatAbsoluteValue(special.HitPoints, hitpoints)
+	}
+	if actionpoints != -1 {
+		charSheet.SetDerivedStatAbsoluteValue(special.ActionPoints, actionpoints)
+	}
+	if speed != -1 {
+		charSheet.SetDerivedStatAbsoluteValue(special.Speed, speed)
+	}
+	if dodge != -1 {
+		charSheet.SetDerivedStatAbsoluteValue(special.Dodge, dodge)
+	}
 
 	charSheet.HealCompletely()
 

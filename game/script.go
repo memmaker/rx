@@ -56,9 +56,19 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			actor := args[0].(*Actor)
 			return !actor.IsAlive(), nil
 		},
-		"InCombat": func(args ...interface{}) (interface{}, error) {
+		"IsInCombat": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
-			return actor.IsInCombat(), nil
+			if actor.IsInCombat() {
+				return true, nil
+			}
+			return false, nil
+		},
+		"IsInCombatWithPlayer": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			if actor.IsHostileTowards(g.Player) {
+				return true, nil
+			}
+			return false, nil
 		},
 		// Actions
 		"AddChatter": func(args ...interface{}) (interface{}, error) {

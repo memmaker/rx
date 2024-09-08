@@ -98,10 +98,6 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	if actorAt, exists := g.currentMap().TryGetActorAt(newPos); exists {
 		if actorAt.IsHostileTowards(g.Player) {
 			g.playerMeleeAttack(actorAt)
-		} else if !actorAt.IsSleeping() && actorAt.HasDialogue() {
-			g.StartDialogue(actorAt.GetDialogueFile(), actorAt, false)
-		} else if actorAt.IsSleeping() && actorAt.HasStealableItems() {
-			g.StartPickpocket(actorAt)
 		} else {
 			g.OpenContextMenuFor(actorAt.Position())
 		}
@@ -125,16 +121,16 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 func (g *GameState) openInventoryOf(actor *Actor) {
 	inventory := actor.GetInventory()
 
-	stackRef := itemStacksForUI(inventory.StackedItemsWithFilter(func(item *Item) bool {
+	actorItems := itemStacksForUI(inventory.StackedItemsWithFilter(func(item *Item) bool {
 		return !item.HasTag(foundation.TagNoLoot)
 	}))
 
-	if inventory.IsEmpty() || len(stackRef) == 0 {
+	if (inventory.IsEmpty() || len(actorItems) == 0) && !actor.IsAlive() {
 		g.msg(foundation.Msg("There is nothing to pick up"))
 		return
 	}
 
-	transfer := func(itemUI foundation.ItemForUI) {
+	rightToLeft := func(itemUI foundation.ItemForUI) {
 		itemStack := itemUI.(*InventoryStack)
 		for _, item := range itemStack.GetItems() {
 			inventory.Remove(item)
@@ -143,12 +139,27 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 
 		g.ui.PlayCue("world/pickup")
 
-		if !inventory.IsEmpty() {
-			g.openInventoryOf(actor)
-		}
+		g.openInventoryOf(actor)
 	}
-	g.ui.ShowContainer(actor.Name(), stackRef, transfer)
 
+	if !actor.IsAlive() {
+		g.ui.ShowTakeOnlyContainer(actor.Name(), actorItems, rightToLeft)
+		return
+	}
+
+	leftToRight := func(itemUI foundation.ItemForUI) {
+		itemStack := itemUI.(*InventoryStack)
+		for _, item := range itemStack.GetItems() {
+			g.Player.GetInventory().Remove(item)
+			inventory.Add(item)
+		}
+
+		g.ui.PlayCue("world/drop")
+
+		g.openInventoryOf(actor)
+	}
+	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
+	g.ui.ShowGiveAndTakeContainer(g.Player.Name(), playerItems, actor.Name(), actorItems, rightToLeft, leftToRight)
 }
 func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition bool) {
 	// explore the map

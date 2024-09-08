@@ -29,6 +29,14 @@ o_goto: Bye
 name: UseTaxi
 npc: (Where do you want to go?)
 #
+o_text: Home
+o_goto: HeadQuarters
+#
+# Starter Mission
+o_text: Jacob Thorne's home
+o_cond: HasFlag('LocationKnown(jacobs_home)') && !IsMap('jacobs_home')
+o_goto: JacobsHome
+#
 o_text: Cryo Facility
 o_cond: HasFlag('LocationKnown(cryolab)') && !IsMap('cryolab')
 o_goto: CryoFacility
@@ -42,7 +50,7 @@ o_cond: HasFlag('LocationKnown(zombies)') && !IsMap('zombies')
 o_goto: ZombieLab
 #
 o_text: Kelso
-o_cond: !IsMap('town')
+o_cond: HasFlag('LocationKnown(town)') && !IsMap('town')
 o_goto: Kelso
 #
 o_text: Leave
@@ -57,6 +65,11 @@ npc: Sure thing.
 #
 o_text: (Wait)
 o_goto: DefaultIntroduction
+
+name: HeadQuarters
+npc: Alright, let's go.
+effect: Transition('home_area', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
 
 name: Kelso
 npc: Alright, let's go.
@@ -77,3 +90,8 @@ name: Mansion
 npc: You got it.
 effect: Transition('mansion', 'taxi_stand')
 effect: AdvanceTimeByMinutes(15)
+
+name: JacobsHome
+npc: (You arrive at Jacob Thorne's home.)
+effect: Transition('jacobs_home', 'taxi_stand')
+effect: AdvanceTimeByMinutes(25)

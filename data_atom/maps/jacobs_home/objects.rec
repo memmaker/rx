@@ -1,0 +1,29 @@
+%rec: default
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (8,21)
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (11,20)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (63,4)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (56,3)
+
+Category: OpenDoor
+Description: a door
+Position: (45,11)
+
+Category: Terminal
+Name: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (6,21)
+

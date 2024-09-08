@@ -78,7 +78,6 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["items"] = u.ShowVisibleItems
 	u.commandTable["help"] = u.ShowHelpScreen
 	u.commandTable["log"] = u.ShowLog
-	u.commandTable["show_datetime"] = u.game.ShowDateTime
 
 	u.commandTable["north"] = func() { u.game.ManualMovePlayer(geometry.North) }
 	u.commandTable["south"] = func() { u.game.ManualMovePlayer(geometry.South) }
@@ -206,7 +205,6 @@ func (u *UI) showKeyBindings() {
 		"reload_weapon":     "Reload Weapon",
 		"switch_weapons":    "Switch Weapons",
 		"apply":             "Apply",
-		"show_datetime":     "Show Date/Time",
 	}
 
 	leftColCommands := []string{
@@ -257,7 +255,6 @@ func (u *UI) showKeyBindings() {
 		"overlay_monsters",
 		"items",
 		"overlay_items",
-		"show_datetime",
 		"wizard",
 	}
 

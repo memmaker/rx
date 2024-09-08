@@ -17,6 +17,7 @@ type Container struct {
 	containedItems []*Item
 	show           func()
 	isPlayer       func(actor *Actor) bool
+	lockFlag       string
 }
 
 func (b *Container) GobEncode() ([]byte, error) {
@@ -97,8 +98,8 @@ func (b *Container) AddItem(item *Item) {
 func (g *GameState) NewContainer(rec recfile.Record) Object {
 	container := &Container{
 		BaseObject: &BaseObject{
-			category:      foundation.ObjectUnknownContainer,
-			isAlive:       true,
+			category: foundation.ObjectUnknownContainer,
+			isAlive:  true,
 		},
 	}
 	container.SetWalkable(false)
@@ -112,7 +113,11 @@ func (g *GameState) NewContainer(rec recfile.Record) Object {
 			container.position, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "item":
 			item := g.NewItemFromString(field.Value)
-			container.AddItem(item)
+			if item != nil {
+				container.AddItem(item)
+			}
+		case "lockflag":
+			container.lockFlag = field.Value
 		}
 	}
 	container.InitWithGameState(g)
@@ -123,27 +128,33 @@ func (b *Container) InitWithGameState(g *GameState) {
 	b.iconForObject = g.iconForObject
 	b.isPlayer = func(actor *Actor) bool { return actor == g.Player }
 	b.show = func() {
-		if !b.ContainsItems() {
-			g.msg(foundation.HiLite("The %s is empty", b.Name()))
-			return
-		}
 		g.openContainer(b)
 	}
 }
 
 func (g *GameState) openContainer(container *Container) {
-	itemsUI := itemsForUI(container.containedItems)
-	transferItem := func(itemTaken foundation.ItemForUI) {
-		item := itemTaken.(*Item)
+	containerItems := itemStacksForUI(StackedItemsWithFilter(container.containedItems, func(item *Item) bool { return true }))
+	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
+
+	transferToPlayer := func(itemTaken foundation.ItemForUI) {
+		item := itemTaken.(*InventoryStack).First()
 		container.RemoveItem(item)
 		g.Player.GetInventory().Add(item)
 
 		g.ui.PlayCue("world/pickup")
-
-		if container.ContainsItems() {
-			g.openContainer(container)
-		}
+		g.msg(foundation.HiLite("You take %s from %s.", item.Name(), container.Name()))
+		g.openContainer(container)
 	}
-	g.msg(foundation.HiLite("You search %s", container.Name()))
-	g.ui.ShowContainer(container.Name(), itemsUI, transferItem)
+	transferToContainer := func(itemTaken foundation.ItemForUI) {
+		item := itemTaken.(*InventoryStack).First()
+		g.Player.GetInventory().Remove(item)
+		container.AddItem(item)
+
+		g.ui.PlayCue("world/drop")
+
+		g.msg(foundation.HiLite("You place %s in %s.", item.Name(), container.Name()))
+
+		g.openContainer(container)
+	}
+	g.ui.ShowGiveAndTakeContainer(g.Player.Name(), playerItems, container.Name(), containerItems, transferToPlayer, transferToContainer)
 }

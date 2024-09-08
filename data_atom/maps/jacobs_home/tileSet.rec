@@ -1,0 +1,58 @@
+%rec: default
+
+Name: Wasteland
+Char: ·
+Foreground: tan_12
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: Wooden Wall
+Char: #
+Foreground: brown_1
+Background: orange_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: dense tree
+Char: ♣
+Foreground: bright_green_2
+Background: tan_10
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: Chair
+Char: ∙
+Foreground: light_gray_3
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: Table
+Char: ■
+Foreground: light_gray_3
+Background: tan_10
+IsWalkable: false
+IsTransparent: true
+Flags: 0
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+

@@ -1,0 +1,7 @@
+%rec: default
+
+Name: jacobs_home
+MusicFile: 
+IsOutdoor: false
+IndoorAmbientLight: (1.0, 1.0, 1.0)
+
