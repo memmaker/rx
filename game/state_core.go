@@ -428,12 +428,12 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 	actorEquipment := actor.GetEquipment()
 	stealableItems := itemStacksForUI(actor.GetInventory().StackedItemsWithFilter(actorEquipment.IsNotEquipped))
 
-	rightToLeft := func(itemUI foundation.ItemForUI) {
+	rightToLeft := func(itemUI foundation.ItemForUI, amount int) {
 		itemStack := itemUI.(*InventoryStack)
 		g.PlayerStealOrPlantItem(actor, itemStack.First(), true)
 	}
 
-	leftToRight := func(itemUI foundation.ItemForUI) {
+	leftToRight := func(itemUI foundation.ItemForUI, amount int) {
 		itemStack := itemUI.(*InventoryStack)
 		g.PlayerStealOrPlantItem(actor, itemStack.First(), false)
 	}

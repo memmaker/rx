@@ -130,9 +130,13 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 		return
 	}
 
-	rightToLeft := func(itemUI foundation.ItemForUI) {
+	rightToLeft := func(itemUI foundation.ItemForUI, amount int) {
 		itemStack := itemUI.(*InventoryStack)
-		for _, item := range itemStack.GetItems() {
+
+		items := itemStack.GetItems()
+		amountToTake := min(amount, len(items))
+		for i := 0; i < amountToTake; i++ {
+			item := items[i]
 			inventory.Remove(item)
 			g.Player.GetInventory().Add(item)
 		}
@@ -143,11 +147,13 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 	}
 
 	if !actor.IsAlive() {
-		g.ui.ShowTakeOnlyContainer(actor.Name(), actorItems, rightToLeft)
+		g.ui.ShowTakeOnlyContainer(actor.Name(), actorItems, func(uiItem foundation.ItemForUI) {
+			rightToLeft(uiItem, uiItem.GetStackSize())
+		})
 		return
 	}
 
-	leftToRight := func(itemUI foundation.ItemForUI) {
+	leftToRight := func(itemUI foundation.ItemForUI, amount int) {
 		itemStack := itemUI.(*InventoryStack)
 		for _, item := range itemStack.GetItems() {
 			g.Player.GetInventory().Remove(item)

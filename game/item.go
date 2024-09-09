@@ -53,6 +53,19 @@ type Item struct {
 	cost                   int
 }
 
+func (i *Item) IsMultipleStacks() bool {
+	return i.charges > 1 &&
+		(i.category == foundation.ItemCategoryGold ||
+			i.category == foundation.ItemCategoryAmmo)
+}
+
+func (i *Item) GetStackSize() int {
+	if i.IsMultipleStacks() {
+		return i.charges
+	}
+	return 1
+}
+
 // GobEncode encodes the Item struct into a byte slice.
 func (i *Item) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer

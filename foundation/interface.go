@@ -160,7 +160,7 @@ type GameUI interface {
 	OpenVendorMenu(itemsForSale []fxtools.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
 	ShowTakeOnlyContainer(name string, containedItems []ItemForUI, transfer func(ui ItemForUI))
-	ShowGiveAndTakeContainer(leftName string, leftItems []ItemForUI, rightName string, rightItems []ItemForUI, transferToLeft func(itemTaken ItemForUI), transferToRight func(itemTaken ItemForUI))
+	ShowGiveAndTakeContainer(leftName string, leftItems []ItemForUI, rightName string, rightItems []ItemForUI, transferToLeft func(itemTaken ItemForUI, amount int), transferToRight func(itemTaken ItemForUI, amount int))
 	OpenAimedShotPicker(actorAt ActorForUI, previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
 
 	// Auto Move Callback

@@ -21,6 +21,8 @@ type ItemForUI interface {
 	LongNameWithColors(colorCode string) string
 	GetIcon() textiles.TextIcon
 	GetCarryWeight() int
+	IsMultipleStacks() bool
+	GetStackSize() int
 }
 
 type ItemCategory int
