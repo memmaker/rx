@@ -1,0 +1,85 @@
+%rec: default
+
+Category: Ammo
+Name: 12_ga_shotgun_shells
+Description: 12 ga. Shotgun Shells
+LongDescription: Shotgun ammunition. This particular ammo is marked: "12-gauge shells, not for use by children under the age of 3."
+Size: 0
+Weight: 1
+Cost: 225
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: -10
+ammo_dr_modifier: 0
+ammo_rounds_in_magazine: 20
+ammo_caliber_index: 11
+ammo_caliber_name: 12-gauge
+Position: (24,7)
+
+Category: Ammo
+Name: 12_ga_shotgun_shells
+Description: 12 ga. Shotgun Shells
+LongDescription: Shotgun ammunition. This particular ammo is marked: "12-gauge shells, not for use by children under the age of 3."
+Size: 0
+Weight: 1
+Cost: 225
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: -10
+ammo_dr_modifier: 0
+ammo_rounds_in_magazine: 20
+ammo_caliber_index: 11
+ammo_caliber_name: 12-gauge
+Position: (26,7)
+
+Category: Armor
+Name: leather_armor
+Description: leather armor
+slot: torso
+armor_physical: 0, 5
+armor_energy: 0, 0
+armor_radiation_reduction: 0
+armor_encumbrance: 0
+chance: 75
+Position: (30,7)
+
+Category: Weapons
+Name: sawed-off_shotgun
+Description: Sawed-Off Shotgun
+LongDescription: Someone took the time to chop the last few inches off the barrel and stock of this shotgun. Now, the wide spread of this hand-cannon's short-barreled shots makes it perfect for short-range crowd control. Min ST: 4.
+Size: 3
+Weight: 4
+Cost: 800
+weapon_type: Rifle
+weapon_damage: 12-24
+weapon_magazine_size: 2
+weapon_burst_rounds: 0
+weapon_damage_type: Normal
+weapon_min_str: 4
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 5
+weapon_ap_cost_two: 0
+weapon_max_range_one: 7
+weapon_max_range_two: 0
+weapon_uses_ammo: 12-gauge
+weapon_caliber_index: 11
+weapon_sound_id: 82
+Position: (28,7)
+
+Category: Ammo
+Name: 12_ga_shotgun_shells
+Description: 12 ga. Shotgun Shells
+LongDescription: Shotgun ammunition. This particular ammo is marked: "12-gauge shells, not for use by children under the age of 3."
+Size: 0
+Weight: 1
+Cost: 225
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: -10
+ammo_dr_modifier: 0
+ammo_rounds_in_magazine: 20
+ammo_caliber_index: 11
+ammo_caliber_name: 12-gauge
+Position: (25,7)
+

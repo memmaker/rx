@@ -1,0 +1,34 @@
+%rec: OpeningBranch
+
+cond: true
+goto: Start
+
+%rec: Nodes
+
+name: Start
+npc: Welcome to Shop-Mart, how can I help you?
+#
+o_text: This is a robbery, put the money in the bag!
+o_cond: !HasFlag('moneyGiven')
+o_goto: RobSuccess
+#
+o_text: I really, reaaally need that key to the back room.
+o_goto: RequestedKey
+
+name: RobSuccess
+npc: Please don't hurt me! Here's everything in the cash register!
++ (The shopkeeper empties the register into your bag.)
+effect: SetFlag('moneyGiven')
+effect: EndConversation
+
+name: RequestedKey
+npc: Sure, here you go.
+effect: GiveItem('storeBackRoom')
+#
+o_text: Thanks for the key!
+o_goto: Goodbye
+
+name: Goodbye
+npc: Bye.
+effect: EndConversation
+#

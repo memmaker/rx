@@ -63,6 +63,10 @@ o_text: Take me to Kelso.
 o_cond: HasFlag('LocationKnown(town)') && !IsMap('town')
 o_goto: Kelso
 #
+o_text: Rob a store
+o_cond: !IsMap('store_robbery')
+o_goto: StoreRobbery
+#
 o_text: Nevermind.
 o_goto: Bye
 
@@ -106,4 +110,9 @@ effect: AdvanceTimeByMinutes(15)
 name: Mansion
 npc: Nice place.
 effect: DriverTransition('mansion', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+name: StoreRobbery
+npc: You got it.
+effect: Transition('store_robbery', 'taxi_stand')
 effect: AdvanceTimeByMinutes(15)

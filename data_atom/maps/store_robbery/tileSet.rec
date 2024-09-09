@@ -1,0 +1,58 @@
+%rec: default
+
+Name: Ground
+Char: ∙
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: Wooden Wall
+Char: #
+Foreground: brown_1
+Background: orange_6
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: Floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+IsDamaging: false
+
+Name: Shelf
+Char: ▬
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: Counter
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+IsDamaging: false
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+IsDamaging: false
+

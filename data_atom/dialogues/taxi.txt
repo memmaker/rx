@@ -53,6 +53,10 @@ o_text: Kelso
 o_cond: HasFlag('LocationKnown(town)') && !IsMap('town')
 o_goto: Kelso
 #
+o_text: Rob a store
+o_cond: !IsMap('store_robbery')
+o_goto: StoreRobbery
+#
 o_text: Leave
 o_goto: Bye
 
@@ -95,3 +99,8 @@ name: JacobsHome
 npc: (You arrive at Jacob Thorne's home.)
 effect: Transition('jacobs_home', 'taxi_stand')
 effect: AdvanceTimeByMinutes(25)
+
+name: StoreRobbery
+npc: You got it.
+effect: Transition('store_robbery', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)

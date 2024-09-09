@@ -1,0 +1,43 @@
+%rec: default
+
+Category: LockedDoor
+Description: a door
+LockFlag: storeBackRoom
+LockDifficulty: Easy
+Position: (23,3)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Icon: T
+Dialogue: taxi_driver
+Position: (33,20)
+
+Category: NamedLocation
+Identifier: spawn
+Position: (50,16)
+
+Category: Terminal
+Name: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (33,21)
+
+Category: OpenDoor
+Description: a door
+Position: (50,14)
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (35,19)
+
+Category: LockedDoor
+Description: a door
+LockFlag: storeBackRoom
+LockDifficulty: VeryEasy
+Position: (35,5)
+
+Category: OpenDoor
+Description: a door
+Position: (51,14)
+
