@@ -706,20 +706,27 @@ const (
 	StairsBoth
 )
 
-func (g *GameState) PlayerInteractWithMap() {
+func (g *GameState) CheckTransition() {
 	pos := g.Player.Position()
-
 	transition, transitionExists := g.currentMap().GetTransitionAt(pos)
+
+	doTransition := func() {
+		title := "Move to another area"
+		message := fmt.Sprintf("Do you want to move to leave %s?", g.currentMap().GetDisplayName())
+		g.ui.AskForConfirmation(title, message, func(didConfirm bool) {
+			currentMapName := g.currentMap().GetName()
+			location := g.currentMap().GetNamedLocationByPos(pos)
+			lockFlagName := fmt.Sprintf("lock(%s/%s)", currentMapName, location)
+			if g.gameFlags.HasFlag(lockFlagName) {
+				g.msg(foundation.Msg("The way is blocked"))
+				return
+			}
+			g.GotoNamedLevel(transition.TargetMap, transition.TargetLocation)
+		})
+	}
+
 	if transitionExists {
-		currentMapName := g.currentMap().GetName()
-		location := g.currentMap().GetNamedLocationByPos(pos)
-		lockFlagName := fmt.Sprintf("lock(%s/%s)", currentMapName, location)
-		if g.gameFlags.HasFlag(lockFlagName) {
-			g.msg(foundation.Msg("The way is blocked"))
-			return
-		}
-		g.GotoNamedLevel(transition.TargetMap, transition.TargetLocation)
-		return
+		g.QueueActionAfterAnimation(doTransition)
 	}
 }
 

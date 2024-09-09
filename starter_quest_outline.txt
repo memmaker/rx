@@ -98,3 +98,4 @@ NOTE: This is a very elaborate example, and we will only dedicate these resource
 Missing Engine Features:
  - Split Items (Need to be able to split money for depositing)
  - Locked Containers (The secret stash of the doc)
+ - Talk to people who are not right next to you

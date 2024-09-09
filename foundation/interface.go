@@ -38,7 +38,7 @@ type GameForUI interface {
 	CycleTargetMode()
 	PlayerApplySkill()
 
-	PlayerInteractWithMap() // up/down stairs..
+	CheckTransition() // up/down stairs..
 	PlayerInteractInDirection(direction geometry.CompassDirection)
 
 	OpenContextMenuFor(pos geometry.Point)
@@ -211,6 +211,7 @@ type GameUI interface {
 	TryAddChatter(victim ChatterSource, text string) bool
 	FadeToBlack()
 	FadeFromBlack()
+	AskForConfirmation(title string, message string, onConfirm func(didConfirm bool))
 }
 
 type Animation interface {

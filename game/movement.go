@@ -57,6 +57,19 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 		return
 	}
 
+	positionBehind := newPos.Add(direction.ToPoint())
+
+	if !g.currentMap().IsTileWalkable(newPos) &&
+		g.currentMap().IsTransparent(newPos) &&
+		!g.currentMap().IsObjectAt(newPos) &&
+		g.currentMap().IsActorAt(positionBehind) {
+		actorBehindCounter := g.currentMap().ActorAt(positionBehind)
+		if actorBehindCounter.IsAlive() && actorBehindCounter.HasDialogue() {
+			g.OpenContextMenuFor(positionBehind)
+			return
+		}
+	}
+
 	if !g.currentMap().Contains(newPos) || !g.currentMap().IsTileWalkable(newPos) {
 		if !g.config.WallSlide {
 			return
@@ -200,6 +213,9 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 			}
 		}
 	}
+
+	// check transition
+	g.CheckTransition()
 }
 
 func (g *GameState) updateDijkstraMap() {

@@ -8,7 +8,9 @@ import (
 )
 
 func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, actor *Actor) []foundation.MenuItem {
-	if actor.HasDialogue() && !actor.IsSleeping() {
+	distance := g.currentMap().MoveDistance(g.Player.Position(), actor.Position())
+
+	if actor.HasDialogue() && !actor.IsSleeping() && distance <= 4 {
 		buffer = append(buffer, foundation.MenuItem{
 			Name:       "Talk To",
 			Action:     func() { g.StartDialogue(actor.GetDialogueFile(), actor, false) },
@@ -16,7 +18,7 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 		})
 	}
 
-	if actor.IsHostileTowards(g.Player) {
+	if actor.IsHostileTowards(g.Player) || distance > 1 {
 		return buffer
 	}
 

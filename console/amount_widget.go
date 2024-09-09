@@ -46,8 +46,11 @@ func NewAmountWidget(maxAmount int, close func(confirmed bool, amount int)) *Amo
 }
 
 func (a *AmountWidget) SetAmount(amount int) {
-	a.textEntered = strconv.Itoa(amount)
-
+	a.textEntered = strconv.Itoa(min(max(amount, 0), a.maxAmount))
+}
+func (a *AmountWidget) SetAmountAsText(text string) {
+	atoi, _ := strconv.Atoi(text)
+	a.SetAmount(atoi)
 }
 
 func (a *AmountWidget) SetRect(x, y, width, height int) {
@@ -100,28 +103,26 @@ func (a *AmountWidget) handleInput(event *tcell.EventKey) *tcell.EventKey {
 	case tcell.KeyEscape:
 		a.close(false, 0)
 	case tcell.KeyUp:
-		amount, err := strconv.Atoi(a.textEntered)
-		if err == nil {
-			amount++
-			if amount > a.maxAmount {
-				amount = a.maxAmount
-			}
-			a.textEntered = strconv.Itoa(amount)
-		}
+		amount := a.GetAmount()
+		amount++
+		a.SetAmount(amount)
 	case tcell.KeyDown:
-		amount, err := strconv.Atoi(a.textEntered)
-		if err == nil {
-			amount--
-			if amount < 0 {
-				amount = 0
-			}
-			a.textEntered = strconv.Itoa(amount)
-		}
+		amount := a.GetAmount()
+		amount--
+		a.SetAmount(amount)
 	case tcell.KeyRune:
 		switch event.Rune() {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			a.textEntered += string(event.Rune())
+			a.SetAmountAsText(a.textEntered + string(event.Rune()))
 		}
 	}
 	return event
+}
+
+func (a *AmountWidget) GetAmount() int {
+	amount, err := strconv.Atoi(a.textEntered)
+	if err != nil {
+		return 0
+	}
+	return amount
 }

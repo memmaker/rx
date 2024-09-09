@@ -192,10 +192,14 @@ func (u *UI) ShowTakeOnlyContainer(name string, containedItems []foundation.Item
 }
 
 func (u *UI) openAmountWidget(maxAmount int, onAmountSelected func(amount int)) {
+	previousFocusHandler := u.application.GetBeforeFocusFunc()
+	previousFocus := u.application.GetFocus()
+
 	closeAmount := func() {
 		u.pages.RemovePanel("amountWidget")
-		u.pages.SetCurrentPanel("main")
-		u.resetFocusToMain()
+		u.application.SetBeforeFocusFunc(nil)
+		u.application.SetFocus(previousFocus)
+		u.application.SetBeforeFocusFunc(previousFocusHandler)
 	}
 	amountWidget := NewAmountWidget(maxAmount, func(confirmed bool, amount int) {
 		closeAmount()
@@ -208,6 +212,7 @@ func (u *UI) openAmountWidget(maxAmount int, onAmountSelected func(amount int)) 
 	amountWidget.SetRect(screenWidth/2-20, screenHeight/2-5, 40, 10)
 
 	u.pages.AddPanel("amountWidget", amountWidget, false, true)
+	u.lockFocusToPrimitive(amountWidget)
 }
 
 func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.ItemForUI, rightName string, rightItems []foundation.ItemForUI, transferToLeft func(itemTaken foundation.ItemForUI, stackCount int), transferToRight func(itemTaken foundation.ItemForUI, stackCount int)) {
@@ -1424,13 +1429,10 @@ func (u *UI) ChooseDirectionForRun() {
 }
 
 func (u *UI) GenericInteraction() {
-	if u.game.IsInteractionAt(u.game.GetPlayerPosition()) {
-		u.game.PlayerInteractWithMap()
-	} else {
-		u.SelectDirection(func(direction geometry.CompassDirection) {
-			u.game.PlayerInteractInDirection(direction)
-		})
-	}
+	u.SelectDirection(func(direction geometry.CompassDirection) {
+		u.game.PlayerInteractInDirection(direction)
+	})
+
 }
 
 func (u *UI) startAutoRun(direction geometry.CompassDirection) {
