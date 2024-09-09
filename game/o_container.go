@@ -136,23 +136,34 @@ func (g *GameState) openContainer(container *Container) {
 	containerItems := itemStacksForUI(StackedItemsWithFilter(container.containedItems, func(item *Item) bool { return true }))
 	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
 
-	transferToPlayer := func(itemTaken foundation.ItemForUI) {
-		item := itemTaken.(*InventoryStack).First()
-		container.RemoveItem(item)
-		g.Player.GetInventory().Add(item)
+	transferToPlayer := func(itemTaken foundation.ItemForUI, amount int) {
+		inventoryStack := itemTaken.(*InventoryStack)
+		itemName := inventoryStack.First().Name()
+		items := inventoryStack.GetItems()
+		itemCount := min(amount, len(items))
+		for i := 0; i < itemCount; i++ {
+			item := items[i]
+			container.RemoveItem(item)
+			g.Player.GetInventory().Add(item)
+		}
 
 		g.ui.PlayCue("world/pickup")
-		g.msg(foundation.HiLite("You take %s from %s.", item.Name(), container.Name()))
+		g.msg(foundation.HiLite("You take %s from %s.", itemName, container.Name()))
 		g.openContainer(container)
 	}
-	transferToContainer := func(itemTaken foundation.ItemForUI) {
-		item := itemTaken.(*InventoryStack).First()
-		g.Player.GetInventory().Remove(item)
-		container.AddItem(item)
-
+	transferToContainer := func(itemTaken foundation.ItemForUI, amount int) {
+		inventoryStack := itemTaken.(*InventoryStack)
+		itemName := inventoryStack.First().Name()
+		items := inventoryStack.GetItems()
+		itemCount := min(amount, len(items))
+		for i := 0; i < itemCount; i++ {
+			item := items[i]
+			g.Player.GetInventory().Remove(item)
+			container.AddItem(item)
+		}
 		g.ui.PlayCue("world/drop")
 
-		g.msg(foundation.HiLite("You place %s in %s.", item.Name(), container.Name()))
+		g.msg(foundation.HiLite("You place %s in %s.", itemName, container.Name()))
 
 		g.openContainer(container)
 	}

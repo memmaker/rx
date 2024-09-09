@@ -68,6 +68,14 @@ type InventoryStack struct {
 	invIndex int
 }
 
+func (i InventoryStack) IsMultipleStacks() bool {
+	return len(i.items) > 1
+}
+
+func (i InventoryStack) GetStackSize() int {
+	return len(i.items)
+}
+
 func (i InventoryStack) GetCarryWeight() int {
 	return i.First().GetCarryWeight() * len(i.items)
 }

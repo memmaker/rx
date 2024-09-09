@@ -190,7 +190,27 @@ func (u *UI) ShowTakeOnlyContainer(name string, containedItems []foundation.Item
 		return originalCapture(event)
 	})
 }
-func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.ItemForUI, rightName string, rightItems []foundation.ItemForUI, transferToLeft func(itemTaken foundation.ItemForUI), transferToRight func(itemTaken foundation.ItemForUI)) {
+
+func (u *UI) openAmountWidget(maxAmount int, onAmountSelected func(amount int)) {
+	closeAmount := func() {
+		u.pages.RemovePanel("amountWidget")
+		u.pages.SetCurrentPanel("main")
+		u.resetFocusToMain()
+	}
+	amountWidget := NewAmountWidget(maxAmount, func(confirmed bool, amount int) {
+		closeAmount()
+		if confirmed {
+			onAmountSelected(amount)
+		}
+	})
+
+	screenWidth, screenHeight := u.application.GetScreen().Size()
+	amountWidget.SetRect(screenWidth/2-20, screenHeight/2-5, 40, 10)
+
+	u.pages.AddPanel("amountWidget", amountWidget, false, true)
+}
+
+func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.ItemForUI, rightName string, rightItems []foundation.ItemForUI, transferToLeft func(itemTaken foundation.ItemForUI, stackCount int), transferToRight func(itemTaken foundation.ItemForUI, stackCount int)) {
 	var leftMenuItems []foundation.MenuItem
 	var rightMenuItems []foundation.MenuItem
 	var leftMenuLabels []string
@@ -207,7 +227,13 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 		leftMenuItems = append(leftMenuItems, foundation.MenuItem{
 			Name: leftMenuLabels[index],
 			Action: func() {
-				transferToRight(item)
+				if item.IsMultipleStacks() {
+					u.openAmountWidget(item.GetStackSize(), func(amount int) {
+						transferToRight(item, amount)
+					})
+				} else {
+					transferToRight(item, 1)
+				}
 				u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			},
 			CloseMenus: true,
@@ -218,7 +244,13 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 		rightMenuItems = append(rightMenuItems, foundation.MenuItem{
 			Name: rightMenuLabels[index],
 			Action: func() {
-				transferToLeft(item)
+				if item.IsMultipleStacks() {
+					u.openAmountWidget(item.GetStackSize(), func(amount int) {
+						transferToRight(item, amount)
+					})
+				} else {
+					transferToLeft(item, 1)
+				}
 				u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			},
 			CloseMenus: true,
@@ -296,7 +328,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 		command := u.getCommandForKey(uiKey)
 		if command == "pickup" {
 			for _, item := range rightItems {
-				transferToLeft(item)
+				transferToLeft(item, item.GetStackSize())
 			}
 			u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			closeContainer()
