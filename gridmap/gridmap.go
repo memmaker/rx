@@ -626,7 +626,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) MoveActorFrom(actor ActorType
 	if !m.Contains(to) {
 		return
 	}
-	if !m.IsWalkableFor(to, actor) {
+	if !m.IsWalkableFor(to, actor) && !m.IsTileWithFlagAt(to, TileFlagMountable) && !m.IsTileWithFlagAt(to, TileFlagCrawlable) {
 		return
 	}
 	if m.Contains(from) {
@@ -1959,6 +1959,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsPositionNextToTileWithFlag(
 		}
 		return false
 	}
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsCurrentlyMountable(pos geometry.Point) bool {
+	return m.IsTileWithFlagAt(pos, TileFlagMountable) && !m.IsActorAt(pos) && !m.IsObjectAt(pos)
 }
 
 type JumpOverInfo struct {

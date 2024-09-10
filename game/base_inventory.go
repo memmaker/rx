@@ -69,10 +69,13 @@ type InventoryStack struct {
 }
 
 func (i InventoryStack) IsMultipleStacks() bool {
-	return len(i.items) > 1
+	return len(i.items) > 1 || i.First().IsMultipleStacks()
 }
 
 func (i InventoryStack) GetStackSize() int {
+	if len(i.items) == 1 && i.First().IsMultipleStacks() {
+		return i.First().GetStackSize()
+	}
 	return len(i.items)
 }
 
@@ -189,7 +192,7 @@ func StackedItemsWithFilter(items []*Item, filter func(*Item) bool) []*Inventory
 	return stacks
 }
 
-func (i *Inventory) Remove(item *Item) {
+func (i *Inventory) RemoveItem(item *Item) {
 	defer i.changed()
 	for idx, invItem := range i.items {
 		if invItem == item {
@@ -209,9 +212,9 @@ func (i *Inventory) Has(item *Item) bool {
 	return false
 }
 
-func (i *Inventory) Add(item *Item) {
+func (i *Inventory) AddItem(item *Item) {
 	defer i.changed()
-	if item.IsAmmo() {
+	if item.IsStackingWithCharges() {
 		for _, invItem := range i.items {
 			if invItem.CanStackWith(item) {
 				invItem.SetCharges(invItem.GetCharges() + item.GetCharges())
@@ -249,7 +252,7 @@ func (i *Inventory) beforeRemove(item *Item) {
 }
 
 func (i *Inventory) RemoveAndGetNextInStack(item *Item) *Item {
-	i.Remove(item)
+	i.RemoveItem(item)
 	for _, invItem := range i.items {
 		if invItem.CanStackWith(item) {
 			return invItem
@@ -276,7 +279,7 @@ func (i *Inventory) RemoveAmmoByCaliber(ammo int, neededBullets int) *Item {
 				invItem.SetCharges(availableBullets - neededBullets)
 				return splitBullets
 			} else {
-				i.Remove(invItem)
+				i.RemoveItem(invItem)
 				return invItem
 			}
 			break
@@ -294,7 +297,7 @@ func (i *Inventory) RemoveAmmoByName(name string, amount int) *Item {
 				invItem.SetCharges(availableBullets - amount)
 				return splitBullets
 			} else {
-				i.Remove(invItem)
+				i.RemoveItem(invItem)
 				return invItem
 			}
 			break
@@ -332,7 +335,7 @@ func (i *Inventory) RemoveLockpick() {
 		if invItem.IsLockpick() {
 			invItem.ConsumeCharge()
 			if invItem.GetCharges() == 0 {
-				i.Remove(invItem)
+				i.RemoveItem(invItem)
 			}
 			break
 		}
@@ -351,7 +354,7 @@ func (i *Inventory) HasKey(identifier string) bool {
 func (i *Inventory) RemoveItemByName(itemName string) *Item {
 	for _, invItem := range i.items {
 		if invItem.GetInternalName() == itemName {
-			i.Remove(invItem)
+			i.RemoveItem(invItem)
 			return invItem
 		}
 	}
@@ -478,6 +481,15 @@ func (i *Inventory) HasSkillModifier(skill special.Skill) bool {
 
 func (i *Inventory) StackedItemsWithFilter(filter func(item *Item) bool) []*InventoryStack {
 	return StackedItemsWithFilter(i.items, filter)
+}
+
+func (i *Inventory) HasWeapon() bool {
+	for _, invItem := range i.items {
+		if invItem.IsWeapon() {
+			return true
+		}
+	}
+	return false
 }
 
 func SortInventory(stacks []*InventoryStack) {

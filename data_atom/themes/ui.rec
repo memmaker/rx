@@ -8,6 +8,8 @@ UIForegroundHighlighted: neon_green_1
 #
 BorderBackground: black
 BorderForeground: neon_green_5
+#
+BorderForegroundFocus: neon_green_3
 
 %rec: borders
 

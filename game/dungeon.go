@@ -37,7 +37,7 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 		g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", levelName), g.palette)
 	}
 
-	if g.currentMap() != nil && g.Player != nil { // Remove Player from Old Map
+	if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
 		g.currentMap().RemoveActor(g.Player)
 		g.Player.RemoveLevelStatusEffects()
 	}
@@ -167,14 +167,14 @@ func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, 
     // decorate walls & light up the rooms
     for _, room := range dungeon.AllRooms() {
         for _, pos := range room.GetWalls() {
-            eastN := pos.Add(geometry.East.ToPoint())
-            westN := pos.Add(geometry.West.ToPoint())
+            eastN := pos.AddItem(geometry.East.ToPoint())
+            westN := pos.AddItem(geometry.West.ToPoint())
             if room.FloorContains(eastN) || room.FloorContains(westN) {
                 newMap.SetTile(pos, vertWallTile)
                 continue
             }
-            northN := pos.Add(geometry.North.ToPoint())
-            southN := pos.Add(geometry.South.ToPoint())
+            northN := pos.AddItem(geometry.North.ToPoint())
+            southN := pos.AddItem(geometry.South.ToPoint())
             if room.FloorContains(northN) || room.FloorContains(southN) {
                 newMap.SetTile(pos, horizWallTile)
                 continue

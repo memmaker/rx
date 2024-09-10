@@ -433,13 +433,13 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 					if isActor {
 						itemForPlayer = actor.GetInventory().GetItemByName(itemName)
 						if itemForPlayer != nil {
-							actor.GetInventory().Remove(itemForPlayer)
+							actor.GetInventory().RemoveItem(itemForPlayer)
 						}
 					} else {
 						itemForPlayer = g.NewItemFromString(itemName)
 					}
 					if itemForPlayer != nil {
-						g.Player.GetInventory().Add(itemForPlayer)
+						g.Player.GetInventory().AddItem(itemForPlayer)
 						g.msg(foundation.HiLite("%s received.", itemForPlayer.Name()))
 					}
 				default:

@@ -2,7 +2,9 @@ package game
 
 import (
 	"RogueUI/foundation"
+	"RogueUI/gridmap"
 	"RogueUI/special"
+	"fmt"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
@@ -70,7 +72,27 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 		}
 	}
 
-	if !g.currentMap().Contains(newPos) || !g.currentMap().IsTileWalkable(newPos) {
+	if !g.currentMap().IsTileWalkable(newPos) &&
+		g.currentMap().IsCurrentlyMountable(newPos) &&
+		!g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagMountable) {
+		message := fmt.Sprintf("Do you want to climb onto the %s?", g.currentMap().GetCell(newPos).TileType.Description())
+		g.ui.AskForConfirmation("Confirm", message, func(confirmed bool) {
+			if confirmed {
+				g.msg(foundation.Msg(fmt.Sprintf("You climb onto the %s", g.currentMap().GetCell(newPos).TileType.Description())))
+				g.gameFlags.Increment("playerClimbs")
+				g.playerMove(oldPos, newPos)
+				g.ui.AfterPlayerMoved(foundation.MoveInfo{
+					Direction: direction,
+					OldPos:    oldPos,
+					NewPos:    newPos,
+					Mode:      foundation.PlayerMoveModeManual,
+				})
+			}
+		})
+		return
+	}
+
+	if !g.currentMap().Contains(newPos) || (!g.currentMap().IsTileWalkable(newPos) && !g.currentMap().IsCurrentlyMountable(newPos)) {
 		if !g.config.WallSlide {
 			return
 		}
@@ -144,17 +166,13 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 	}
 
 	rightToLeft := func(itemUI foundation.ItemForUI, amount int) {
-		itemStack := itemUI.(*InventoryStack)
+		if amount > 0 {
+			itemStack := itemUI.(*InventoryStack)
 
-		items := itemStack.GetItems()
-		amountToTake := min(amount, len(items))
-		for i := 0; i < amountToTake; i++ {
-			item := items[i]
-			inventory.Remove(item)
-			g.Player.GetInventory().Add(item)
+			g.stackTransfer(inventory, g.Player.GetInventory(), itemStack, amount)
+
+			g.ui.PlayCue("world/pickup")
 		}
-
-		g.ui.PlayCue("world/pickup")
 
 		g.openInventoryOf(actor)
 	}
@@ -167,13 +185,12 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 	}
 
 	leftToRight := func(itemUI foundation.ItemForUI, amount int) {
-		itemStack := itemUI.(*InventoryStack)
-		for _, item := range itemStack.GetItems() {
-			g.Player.GetInventory().Remove(item)
-			inventory.Add(item)
-		}
 
-		g.ui.PlayCue("world/drop")
+		if amount > 0 {
+			itemStack := itemUI.(*InventoryStack)
+			g.stackTransfer(g.Player.GetInventory(), inventory, itemStack, amount)
+			g.ui.PlayCue("world/drop")
+		}
 
 		g.openInventoryOf(actor)
 	}

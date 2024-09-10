@@ -297,8 +297,8 @@ func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
 		armorItem := item.(*InventoryStack).First()
 
 		//wasEquipped := playerEquipment.IsEquipped(armorItem)
-		//playerInventory.Remove(armorItem)
-		//playerInventory.Add(armorItem)
+		//playerInventory.RemoveItem(armorItem)
+		//playerInventory.AddItem(armorItem)
 		//if wasEquipped {playerEquipment.Equip(armorItem)}
 		g.msg(foundation.HiLite("Your %s glows silver for a moment.", armorItem.Name()))
 
@@ -329,9 +329,9 @@ func playerEnchantWeapon(g *GameState, actor *Actor) []foundation.Animation {
 		weaponItem := item.(*InventoryStack).First()
 
 		//wasEquipped := playerEquipment.IsEquipped(armorItem)
-		//playerInventory.Remove(armorItem)
+		//playerInventory.RemoveItem(armorItem)
 		//weaponItem.GetWeapon().AddEnchantment()
-		//playerInventory.Add(armorItem)
+		//playerInventory.AddItem(armorItem)
 		//if wasEquipped {playerEquipment.Equip(armorItem)}
 		g.msg(foundation.HiLite("Your %s glows blue for a moment.", weaponItem.Name()))
 

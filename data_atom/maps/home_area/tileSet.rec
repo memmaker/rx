@@ -78,7 +78,7 @@ Foreground: light_gray_2
 Background: dark_gray_5
 IsWalkable: false
 IsTransparent: true
-Flags: 0
+Flags: 8
 
 Name: sink
 Char: ▬

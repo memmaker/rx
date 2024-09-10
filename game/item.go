@@ -293,12 +293,12 @@ func (i *Item) GobDecode(data []byte) error {
 	return nil
 }
 
-func (g *GameState) NewItemFromString(itemShortString string) *Item {
+func (g *GameState) NewItemFromString(itemName string) *Item {
 	charges := 1
 	setCharges := false
-	if fxtools.LooksLikeAFunction(itemShortString) {
+	if fxtools.LooksLikeAFunction(itemName) {
 		var item *Item
-		name, args := fxtools.GetNameAndArgs(itemShortString)
+		name, args := fxtools.GetNameAndArgs(itemName)
 		switch name {
 		case "key":
 			item = NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
@@ -306,32 +306,37 @@ func (g *GameState) NewItemFromString(itemShortString string) *Item {
 			item = NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
 		}
 		return item
-	} else if strings.Contains(itemShortString, "|") {
-		parts := strings.Split(itemShortString, "|")
-		itemShortString = strings.TrimSpace(parts[0])
+	} else if strings.Contains(itemName, "|") {
+		parts := strings.Split(itemName, "|")
+		itemName = strings.TrimSpace(parts[0])
 		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
 		setCharges = true
 	}
 
-	if itemShortString == "gold" {
-		return g.NewGold(charges)
+	newItem := g.newItemFromName(itemName)
+	if setCharges {
+		newItem.SetCharges(charges)
 	}
 
-	itemDef := g.getItemTemplateByName(itemShortString)
+	return newItem
+}
+
+func (g *GameState) newItemFromName(itemName string) *Item {
+	if itemName == "gold" {
+		return g.NewGold(1)
+	}
+
+	itemDef := g.getItemTemplateByName(itemName)
 
 	if len(itemDef) == 0 {
-		panic(fmt.Sprintf("Item not found: %s", itemShortString))
+		panic(fmt.Sprintf("Item not found: %s", itemName))
 	}
 
 	newItem := NewItemFromRecord(itemDef, g.iconForItem)
 
 	if newItem == nil {
-		panic(fmt.Sprintf("Item not found: %s", itemShortString))
+		panic(fmt.Sprintf("Item not found: %s", itemName))
 	}
-	if setCharges {
-		newItem.SetCharges(charges)
-	}
-
 	return newItem
 }
 func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Item {
@@ -459,7 +464,7 @@ func (i *Item) Position() geometry.Point {
 func (i *Item) Name() string {
 	name := i.description
 	if i.IsGold() {
-		name = fmt.Sprintf("%d gold", i.charges)
+		name = fmt.Sprintf("$%d", i.charges)
 	}
 
 	return name
@@ -759,4 +764,8 @@ func (i *Item) GetArmorProtectionValueAsString() string {
 
 func (i *Item) GetWeaponDamage() fxtools.Interval {
 	return i.weapon.getRawDamage().Scaled(i.qualityInPercent.AsFloat())
+}
+
+func (i *Item) IsStackingWithCharges() bool {
+	return i.IsAmmo() || i.IsGold()
 }

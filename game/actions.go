@@ -85,7 +85,7 @@ func (g *GameState) actorReloadMainHandWeapon(actor *Actor) bool {
 	}
 	unloadedAmmo := weaponPart.LoadAmmo(ammo)
 	if unloadedAmmo != nil {
-		inventory.Add(unloadedAmmo)
+		inventory.AddItem(unloadedAmmo)
 	}
 
 	g.ui.PlayCue(weaponPart.GetReloadAudioCue())
@@ -266,10 +266,10 @@ func (g *GameState) playerRepairItemWith(toRepair *Item, spareParts *Item) {
 	}
 	if spareParts.IsLoadedWeapon() {
 		ammo := spareParts.GetWeapon().Unload()
-		g.Player.GetInventory().Add(ammo)
+		g.Player.GetInventory().AddItem(ammo)
 	}
 
-	g.Player.GetInventory().Remove(spareParts)
+	g.Player.GetInventory().RemoveItem(spareParts)
 
 	firstQuality := toRepair.qualityInPercent
 	secondQuality := spareParts.qualityInPercent
@@ -349,7 +349,7 @@ func (g *GameState) PlayerPickupItemAt(itemPos geometry.Point) {
 
 	if item, exists := g.currentMap().TryGetItemAt(itemPos); exists {
 		g.currentMap().RemoveItem(item)
-		inventory.Add(item)
+		inventory.AddItem(item)
 
 		g.ui.PlayCue("world/pickup")
 		g.msg(foundation.HiLite("You picked up %s", item.Name()))
@@ -507,15 +507,6 @@ func (g *GameState) OpenAmmoInventory() {
 	if len(inventory) == 0 {
 		g.msg(foundation.Msg("You are not carrying anything."))
 		return
-	}
-	if len(inventory) == 1 {
-		stack, isStack := inventory[0].(*InventoryStack)
-		if !isStack {
-			return
-		}
-		g.dropItemFromUI(stack)
-		return
-
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Drop what?", func(itemStack foundation.ItemForUI) {
 		g.dropItemFromUI(itemStack)

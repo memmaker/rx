@@ -4,10 +4,10 @@ Category: OpenDoor
 Description: a door
 
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 
 Category: LockedDoor
-Description: a locked door
+Description: a door
 LockFlag: CHANGEME
 
 Category: BrokenDoor

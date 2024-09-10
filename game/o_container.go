@@ -92,6 +92,15 @@ func (b *Container) ContainsItems() bool {
 }
 
 func (b *Container) AddItem(item *Item) {
+	if item.IsStackingWithCharges() {
+		for _, containedItem := range b.containedItems {
+			if containedItem.CanStackWith(item) {
+				containedItem.SetCharges(containedItem.GetCharges() + item.GetCharges())
+				return
+			}
+		}
+	}
+
 	b.containedItems = append(b.containedItems, item)
 }
 
@@ -137,35 +146,69 @@ func (g *GameState) openContainer(container *Container) {
 	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
 
 	transferToPlayer := func(itemTaken foundation.ItemForUI, amount int) {
-		inventoryStack := itemTaken.(*InventoryStack)
-		itemName := inventoryStack.First().Name()
-		items := inventoryStack.GetItems()
-		itemCount := min(amount, len(items))
-		for i := 0; i < itemCount; i++ {
-			item := items[i]
-			container.RemoveItem(item)
-			g.Player.GetInventory().Add(item)
+		itemName := itemTaken.Name()
+
+		if amount > 0 {
+			g.stackTransfer(container, g.Player.GetInventory(), itemTaken.(*InventoryStack), amount)
+
+			g.ui.PlayCue("world/pickup")
+
+			g.msg(foundation.HiLite("You take %s from %s.", itemName, container.Name()))
 		}
 
-		g.ui.PlayCue("world/pickup")
-		g.msg(foundation.HiLite("You take %s from %s.", itemName, container.Name()))
 		g.openContainer(container)
 	}
 	transferToContainer := func(itemTaken foundation.ItemForUI, amount int) {
-		inventoryStack := itemTaken.(*InventoryStack)
-		itemName := inventoryStack.First().Name()
-		items := inventoryStack.GetItems()
-		itemCount := min(amount, len(items))
-		for i := 0; i < itemCount; i++ {
-			item := items[i]
-			g.Player.GetInventory().Remove(item)
-			container.AddItem(item)
-		}
-		g.ui.PlayCue("world/drop")
+		itemName := itemTaken.Name()
 
-		g.msg(foundation.HiLite("You place %s in %s.", itemName, container.Name()))
+		if amount > 0 {
+			g.stackTransfer(g.Player.GetInventory(), container, itemTaken.(*InventoryStack), amount)
+
+			g.ui.PlayCue("world/drop")
+
+			g.msg(foundation.HiLite("You place %s in %s.", itemName, container.Name()))
+		}
 
 		g.openContainer(container)
 	}
 	g.ui.ShowGiveAndTakeContainer(g.Player.Name(), playerItems, container.Name(), containerItems, transferToPlayer, transferToContainer)
+}
+
+type ItemContainer interface {
+	AddItem(item *Item)
+	RemoveItem(item *Item)
+}
+
+func (g *GameState) stackTransfer(from ItemContainer, to ItemContainer, item *InventoryStack, splitAmount int) {
+	if splitAmount == 0 {
+		return
+	}
+	if len(item.GetItems()) == 1 && item.First().IsMultipleStacks() {
+		multiItem := item.First()
+		totalAmount := multiItem.GetStackSize()
+
+		splitAmount = min(splitAmount, totalAmount)
+
+		if splitAmount == totalAmount {
+			from.RemoveItem(multiItem)
+			to.AddItem(multiItem)
+			return
+		}
+
+		itemName := multiItem.GetInternalName()
+
+		splitItem := g.newItemFromName(itemName)
+		splitItem.SetCharges(splitAmount)
+
+		multiItem.SetCharges(totalAmount - splitAmount)
+
+		to.AddItem(splitItem)
+	} else {
+		splitAmount = min(splitAmount, len(item.GetItems()))
+		for i := 0; i < splitAmount; i++ {
+			itemToMove := item.GetItems()[i]
+			from.RemoveItem(itemToMove)
+			to.AddItem(itemToMove)
+		}
+	}
 }

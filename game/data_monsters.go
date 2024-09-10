@@ -124,7 +124,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	for _, itemName := range equipment {
 		item := newItemFromString(itemName)
 		if item != nil {
-			actor.GetInventory().Add(item)
+			actor.GetInventory().AddItem(item)
 		}
 	}
 	return actor

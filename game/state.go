@@ -35,7 +35,7 @@ func (g *GameState) ApplyEffect(name string, args []string) {
 }
 
 func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
-	actor.GetInventory().Add(item)
+	actor.GetInventory().AddItem(item)
 	if item.IsEquippable() {
 		actor.GetEquipment().Equip(item)
 	}
@@ -82,7 +82,7 @@ func (g *GameState) removeItemFromInventory(holder *Actor, item *Item) {
 			equipment.Equip(nextInStack)
 		}
 	} else {
-		inventory.Remove(item)
+		inventory.RemoveItem(item)
 	}
 }
 
@@ -239,7 +239,7 @@ func (g *GameState) buyItemFromVendor(item foundation.ItemForUI, price int) {
 	}
 	player.RemoveGold(price)
 	i := item.(*Item)
-	player.GetInventory().Add(i)
+	player.GetInventory().AddItem(i)
 }
 
 func (g *GameState) newLevelReached(level int) {

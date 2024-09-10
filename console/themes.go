@@ -80,7 +80,7 @@ const (
 	UIColorUIForeground
 	UIColorBorderBackground
 	UIColorBorderForeground
-
+	UIColorBorderForegroundFocus
 	UIColorTextForegroundHighlighted
 )
 
@@ -97,6 +97,8 @@ func UIColorFromString(s string) UIColor {
 		return UIColorBorderBackground
 	case "borderforeground":
 		return UIColorBorderForeground
+	case "borderforegroundfocus":
+		return UIColorBorderForegroundFocus
 	}
 	println("WARNING: Unknown color: ", s)
 	return UIColorUIForeground

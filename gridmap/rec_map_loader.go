@@ -217,12 +217,12 @@ func tryHandleAsPseudoObject[ActorType interface {
 		newMap.AddBakedLightSource(pos, light)
 		return true
 	case "transition":
-		// Add a named location
+		// AddItem a named location
 		name := rec.FindValueForKeyIgnoreCase("Location")
 		pos, _ := geometry.NewPointFromEncodedString(rec.FindValueForKeyIgnoreCase("position"))
 		newMap.AddNamedLocation(name, pos)
 
-		// Add the transition
+		// AddItem the transition
 		targetMap := rec.FindValueForKeyIgnoreCase("TargetMap")
 		targetLocation := rec.FindValueForKeyIgnoreCase("TargetLocation")
 		newMap.AddTransitionAt(pos, Transition{

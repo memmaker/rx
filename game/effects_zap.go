@@ -615,12 +615,19 @@ func (g *GameState) damageActorWithFollowUp(
 }
 
 func (g *GameState) trySetHostile(affected *Actor, sourceOfTrouble *Actor) {
-	if affected.IsAlive() && !affected.IsPanicking() && g.canActorSee(affected, sourceOfTrouble.Position()) {
+	if affected.IsAlive() &&
+		!affected.IsPanicking() &&
+		!affected.IsHostileTowards(sourceOfTrouble) &&
+		g.canActorSee(affected, sourceOfTrouble.Position()) {
 		affected.SetHostileTowards(sourceOfTrouble)
 		affected.SetGoal(g.getKillGoal(affected, sourceOfTrouble))
 		if affected != g.Player {
-			affected.TryEquipRangedWeaponFirst()
-			g.actorReloadMainHandWeapon(affected)
+			if !affected.GetEquipment().HasWeaponEquipped() && affected.GetInventory().HasWeapon() {
+				affected.TryEquipRangedWeaponFirst()
+				g.actorReloadMainHandWeapon(affected)
+			} else if weapon, hasWeapon := affected.GetEquipment().GetRangedWeapon(); hasWeapon {
+				g.ui.PlayCue(weapon.GetWeapon().GetReloadAudioCue())
+			}
 		}
 	}
 }

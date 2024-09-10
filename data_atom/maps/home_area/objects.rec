@@ -1,69 +1,9 @@
 %rec: default
 
-Category: Terminal
-Description: a terminal
-Dialogue: home_terminal
-Position: (48,7)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (73,5)
-
 Category: LockedDoor
-Description: a locked door
-LockFlag: home_keys
-Position: (62,9)
-
-Category: LockedDoor
-Description: a locked door
-LockFlag: CHANGEME
-Position: (11,19)
-
-Category: Terminal
-Name: Taxi
-Description: a taxi
-Dialogue: taxi
-Tags: No_Sound
-Position: (57,21)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (7,15)
-
-Category: LockedDoor
-Description: a locked door
-LockFlag: CHANGEME
-Position: (37,15)
-
-Category: NamedLocation
-Identifier: taxi_driver
-Position: (57,20)
-
-Category: NamedLocation
-Identifier: taxi_stand
-Position: (59,20)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (11,13)
-
-Category: LockedDoor
-Description: a locked door
-LockFlag: CHANGEME
-Position: (37,5)
-
-Category: OpenDoor
 Description: a door
-Position: (58,3)
-
-Category: LockedDoor
-Description: a locked door
 LockFlag: CHANGEME
 Position: (20,3)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (58,7)
 
 Category: UnknownContainer
 Description: doctor's stash
@@ -74,16 +14,76 @@ Category: NamedLocation
 Identifier: spawn
 Position: (62,14)
 
-Category: ClosedDoor
-Description: a closed door
-Position: (10,5)
+Category: Terminal
+Name: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (57,21)
 
 Category: ClosedDoor
 Description: a closed door
-Position: (75,6)
+Position: (11,13)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (57,20)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (37,5)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (37,15)
 
 Category: UnknownContainer
 Description: CONTRACTOR dead drop
 item: 10mm_jhp | 24
 Position: (76,17)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (11,19)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (10,5)
+
+Category: Terminal
+Description: a terminal
+Dialogue: home_terminal
+Position: (48,7)
+
+Category: OpenDoor
+Description: a door
+Position: (58,3)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (58,7)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (7,15)
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (59,20)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (75,6)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (73,5)
+
+Category: LockedDoor
+Description: a door
+LockFlag: home_keys
+Position: (62,9)
 

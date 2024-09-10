@@ -21,6 +21,8 @@ const ( // bitwise flags
 	TileFlagHazardous TileFlags = 1 << iota
 	TileFlagWater
 	TileFlagRadiated
+	TileFlagMountable
+	TileFlagCrawlable
 )
 
 func (t TileFlags) Has(tag TileFlags) bool {

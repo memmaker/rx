@@ -1,5 +1,94 @@
 %rec: default
 
+Name: taxi_driver
+Icon: T
+Foreground: yellow_2
+Description: a friendly looking taxi driver
+Dialogue: taxi_driver
+LongDescription: 
+Age: 25
+BodyType: 0
+XP: 250
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 94
+ActionPoints: 10
+ArmorClass: 27
+MeleeDamage: 2
+CarryWeight: 200
+Sequence: 14
+HealingRate: 2
+CriticalChance: 10
+Strength: 7
+Perception: 7
+Endurance: 6
+Charisma: 5
+Intelligence: 4
+Agility: 7
+Luck: 5
+SkillBonusSmallGuns: 82
+SkillBonusBigGuns: 101
+SkillBonusEnergyWeapons: 101
+SkillBonusUnarmed: 27
+SkillBonusMelee: 42
+SkillBonusThrowing: 42
+DTNormal: 8
+DTLaser: 8
+DTFire: 7
+DTPlasma: 7
+DTElectrical: 6
+DTExplosive: 8
+DRNormal: 40
+DRLaser: 70
+DRFire: 50
+DRPlasma: 60
+DRElectrical: 60
+DREMP: 500
+DRExplosive: 40
+DRRadiation: 12
+DRPoison: 30
+SourceFile: 00000137.pro
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
+Position: (57,20)
+
+Name: duck
+Icon: D
+Foreground: light_gray_2
+Description: a duck
+Flags: Is_Animal
+LongDescription: 
+Age: 25
+BodyType: 1
+XP: 25
+KillType: 17
+DamageType: 0
+TeamNum: 1
+HitPoints: 6
+ActionPoints: 3
+ArmorClass: 4
+MeleeDamage: 2
+CarryWeight: 50
+Sequence: 9
+HealingRate: 1
+CriticalChance: 1
+Strength: 1
+Perception: 2
+Endurance: 1
+Charisma: 1
+Intelligence: 1
+Agility: 4
+Luck: 1
+SkillBonusUnarmed: 0
+SkillBonusMelee: 0
+DREMP: 500
+DRRadiation: 2
+DRPoison: 5
+SourceFile: 00000382.pro
+Position: (59,16)
+
 Name: daniel_harker
 Icon: H
 Foreground: light_gray_2
@@ -135,93 +224,4 @@ equipment: 10mm_pistol
 equipment: 10mm_jhp | 24
 equipment: stimpak
 Position: (61,14)
-
-Name: taxi_driver
-Icon: T
-Foreground: yellow_2
-Description: a friendly looking taxi driver
-Dialogue: taxi_driver
-LongDescription: 
-Age: 25
-BodyType: 0
-XP: 250
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 94
-ActionPoints: 10
-ArmorClass: 27
-MeleeDamage: 2
-CarryWeight: 200
-Sequence: 14
-HealingRate: 2
-CriticalChance: 10
-Strength: 7
-Perception: 7
-Endurance: 6
-Charisma: 5
-Intelligence: 4
-Agility: 7
-Luck: 5
-SkillBonusSmallGuns: 82
-SkillBonusBigGuns: 101
-SkillBonusEnergyWeapons: 101
-SkillBonusUnarmed: 27
-SkillBonusMelee: 42
-SkillBonusThrowing: 42
-DTNormal: 8
-DTLaser: 8
-DTFire: 7
-DTPlasma: 7
-DTElectrical: 6
-DTExplosive: 8
-DRNormal: 40
-DRLaser: 70
-DRFire: 50
-DRPlasma: 60
-DRElectrical: 60
-DREMP: 500
-DRExplosive: 40
-DRRadiation: 12
-DRPoison: 30
-SourceFile: 00000137.pro
-equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
-equipment: stimpak
-Position: (57,20)
-
-Name: duck
-Icon: D
-Foreground: light_gray_2
-Description: a duck
-Flags: Is_Animal
-LongDescription: 
-Age: 25
-BodyType: 1
-XP: 25
-KillType: 17
-DamageType: 0
-TeamNum: 1
-HitPoints: 6
-ActionPoints: 3
-ArmorClass: 4
-MeleeDamage: 2
-CarryWeight: 50
-Sequence: 9
-HealingRate: 1
-CriticalChance: 1
-Strength: 1
-Perception: 2
-Endurance: 1
-Charisma: 1
-Intelligence: 1
-Agility: 4
-Luck: 1
-SkillBonusUnarmed: 0
-SkillBonusMelee: 0
-DREMP: 500
-DRRadiation: 2
-DRPoison: 5
-SourceFile: 00000382.pro
-Position: (59,16)
 

@@ -429,11 +429,17 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 	stealableItems := itemStacksForUI(actor.GetInventory().StackedItemsWithFilter(actorEquipment.IsNotEquipped))
 
 	rightToLeft := func(itemUI foundation.ItemForUI, amount int) {
+		if amount == 0 {
+			return
+		}
 		itemStack := itemUI.(*InventoryStack)
 		g.PlayerStealOrPlantItem(actor, itemStack.First(), true)
 	}
 
 	leftToRight := func(itemUI foundation.ItemForUI, amount int) {
+		if amount == 0 {
+			return
+		}
 		itemStack := itemUI.(*InventoryStack)
 		g.PlayerStealOrPlantItem(actor, itemStack.First(), false)
 	}
@@ -459,15 +465,15 @@ func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item *Item, isSteal bo
 	var transferFunc func(*Item)
 	if isSteal {
 		transferFunc = func(itemTaken *Item) {
-			victim.GetInventory().Remove(item)
-			g.Player.GetInventory().Add(item)
+			victim.GetInventory().RemoveItem(item)
+			g.Player.GetInventory().AddItem(item)
 			g.msg(foundation.HiLite("You steal %s", item.Name()))
 			g.ui.PlayCue("world/pickup")
 		}
 	} else {
 		transferFunc = func(itemTaken *Item) {
-			g.Player.GetInventory().Remove(item)
-			victim.GetInventory().Add(item)
+			g.Player.GetInventory().RemoveItem(item)
+			victim.GetInventory().AddItem(item)
 			g.msg(foundation.HiLite("You plant %s", item.Name()))
 			g.ui.PlayCue("world/drop")
 		}

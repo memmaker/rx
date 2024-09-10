@@ -114,7 +114,14 @@ func (u *UI) GetKeybindingsAsString(command string) string {
 }
 
 func (u *UI) AskForConfirmation(title, message string, choice func(didConfirm bool)) {
-	OpenConfirmDialogue(u.application, u.pages, title, message, choice)
+	dialogue := OpenConfirmDialogue(u.application, u.pages, title, message, choice)
+	buttonOne := dialogue.GetForm().GetButton(0)
+	oldBlurOne := buttonOne.GetInputCapture()
+	buttonOne.SetInputCapture(u.directionalWrapper(oldBlurOne))
+
+	buttonTwo := dialogue.GetForm().GetButton(1)
+	oldBlurTwo := buttonTwo.GetInputCapture()
+	buttonTwo.SetInputCapture(u.directionalWrapper(oldBlurTwo))
 }
 
 func (u *UI) AskForString(prompt string, prefill string, result func(entered string)) {
@@ -191,7 +198,7 @@ func (u *UI) ShowTakeOnlyContainer(name string, containedItems []foundation.Item
 	})
 }
 
-func (u *UI) openAmountWidget(maxAmount int, onAmountSelected func(amount int)) {
+func (u *UI) openAmountWidget(itemName string, maxAmount int, onAmountSelected func(amount int)) {
 	previousFocusHandler := u.application.GetBeforeFocusFunc()
 	previousFocus := u.application.GetFocus()
 
@@ -201,18 +208,25 @@ func (u *UI) openAmountWidget(maxAmount int, onAmountSelected func(amount int)) 
 		u.application.SetFocus(previousFocus)
 		u.application.SetBeforeFocusFunc(previousFocusHandler)
 	}
-	amountWidget := NewAmountWidget(maxAmount, func(confirmed bool, amount int) {
+	amountWidget := NewAmountWidget(itemName, maxAmount, func(amount int) {
 		closeAmount()
-		if confirmed {
-			onAmountSelected(amount)
-		}
-	})
+		onAmountSelected(amount)
+	}, u.application.SetFocus)
 
-	screenWidth, screenHeight := u.application.GetScreen().Size()
-	amountWidget.SetRect(screenWidth/2-20, screenHeight/2-5, 40, 10)
+	screenWidth, _ := u.application.GetScreen().Size()
+	amountWidget.SetRect(screenWidth/2-12, 4, 24, 7)
 
 	u.pages.AddPanel("amountWidget", amountWidget, false, true)
-	u.lockFocusToPrimitive(amountWidget)
+
+	u.application.SetBeforeFocusFunc(nil)
+	u.application.SetFocus(amountWidget)
+	u.application.SetBeforeFocusFunc(func(p cview.Primitive) bool {
+		if p == amountWidget || p == amountWidget.cancelButton || p == amountWidget.doneButton {
+			return true
+		}
+		return false
+	})
+
 }
 
 func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.ItemForUI, rightName string, rightItems []foundation.ItemForUI, transferToLeft func(itemTaken foundation.ItemForUI, stackCount int), transferToRight func(itemTaken foundation.ItemForUI, stackCount int)) {
@@ -233,7 +247,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 			Name: leftMenuLabels[index],
 			Action: func() {
 				if item.IsMultipleStacks() {
-					u.openAmountWidget(item.GetStackSize(), func(amount int) {
+					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
 						transferToRight(item, amount)
 					})
 				} else {
@@ -250,8 +264,8 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 			Name: rightMenuLabels[index],
 			Action: func() {
 				if item.IsMultipleStacks() {
-					u.openAmountWidget(item.GetStackSize(), func(amount int) {
-						transferToRight(item, amount)
+					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
+						transferToLeft(item, amount)
 					})
 				} else {
 					transferToLeft(item, 1)
@@ -362,7 +376,13 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 	u.pages.AddPanel("rightModal", rightMenu, false, true)
 
 	u.application.SetBeforeFocusFunc(nil)
-	u.application.SetFocus(rightMenu)
+
+	if len(rightItems) > 0 {
+		u.application.SetFocus(rightMenu)
+	} else {
+		u.application.SetFocus(leftMenu)
+	}
+
 	u.application.SetBeforeFocusFunc(func(p cview.Primitive) bool {
 		if p == leftMenu || p == rightMenu {
 			return true
@@ -2412,6 +2432,8 @@ func (u *UI) applyListStyle(list *cview.List) {
 	fg := u.uiTheme.GetUIColorForTcell(UIColorUIForeground)
 	bg := u.uiTheme.GetUIColorForTcell(UIColorUIBackground)
 
+	borderFgFocus := u.uiTheme.GetUIColorForTcell(UIColorBorderForegroundFocus)
+
 	list.SetBorder(true)
 	list.SetWrapAround(true)
 	list.SetHover(true)
@@ -2425,14 +2447,16 @@ func (u *UI) applyListStyle(list *cview.List) {
 	list.SetSecondaryTextColor(fg)
 
 	list.SetBorderColor(fg)
+	list.SetBorderColorFocused(borderFgFocus)
 
 	list.SetBackgroundColor(bg)
 
 	list.SetShortcutColor(fg)
 
-	list.SetSelectedTextColor(fg)
-	list.SetSelectedBackgroundColor(bg)
-	list.SetSelectedTextAttributes(tcell.AttrReverse)
+	list.SetSelectedTextColor(bg)
+	list.SetSelectedBackgroundColor(fg)
+	list.SetForceSelectedTextColor(true)
+	//list.SetSelectedTextAttributes(tcell.AttrReverse)
 }
 
 func (u *UI) ShowLog() {
