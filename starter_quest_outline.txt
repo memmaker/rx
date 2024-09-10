@@ -97,5 +97,4 @@ NOTE: This is a very elaborate example, and we will only dedicate these resource
 
 Missing Engine Features:
  - Locked Containers (The secret stash of the doc)
- - Weight display + Overencumbered on the GiveAndTake Screen
- - Mount & Crawl Flags for Tiles
+ - Nice to have: Weight display + Overencumbered on the GiveAndTake Screen

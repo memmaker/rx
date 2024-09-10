@@ -63,6 +63,32 @@ type GameState struct {
 	mapItemTemplates    map[string]recfile.Record
 }
 
+func (g *GameState) PlayerInteractAtPosition(pos geometry.Point) {
+	isContextAvailable := g.OpenContextMenuFor(pos)
+
+	if !isContextAvailable {
+		moveDistance := g.currentMap().MoveDistance(g.Player.Position(), pos)
+		if moveDistance == 1 {
+			direction := pos.Sub(g.Player.Position())
+			g.ManualMovePlayer(direction.ToDirection())
+			return
+		}
+		if g.currentMap().IsCurrentlyPassable(pos) {
+			g.Player.RemoveGoal()
+			g.Player.SetGoal(ActorGoal{
+				Action: func(g *GameState, a *Actor) int {
+					return moveTowards(g, a, pos)
+				},
+				Achieved: func(g *GameState, a *Actor) bool {
+					return a.Position() == pos
+				},
+			})
+			g.RunPlayerPath()
+		}
+		// assume movement to this position..
+	}
+}
+
 func (g *GameState) IsPlayerOverEncumbered() bool {
 	return g.Player.IsOverEncumbered()
 }

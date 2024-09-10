@@ -37,6 +37,15 @@ func PlayerRelationFromString(str string) AIState {
 	return Neutral
 }
 
+type ActorStance uint8
+
+const (
+	Standing ActorStance = iota
+	Crawling
+	Mounted
+	KnockedDown
+)
+
 type Actor struct {
 	internalName string
 	name         string
@@ -47,6 +56,8 @@ type Actor struct {
 	equipment *Equipment
 
 	statusFlags *special.ActorFlags
+
+	stance ActorStance
 
 	intrinsicZapEffects []string
 	intrinsicUseEffects []string
@@ -1192,6 +1203,14 @@ func (a *Actor) IsOverEncumbered() bool {
 	carryWeight := a.GetCharSheet().GetDerivedStat(special.CarryWeight)
 	totalWeight := a.GetInventory().GetTotalWeight()
 	return totalWeight > carryWeight
+}
+
+func (a *Actor) SetStance(stance ActorStance) {
+	a.stance = stance
+}
+
+func (a *Actor) RemoveGoal() {
+	a.activeGoal = NoGoal
 }
 
 type ActorGoal struct {

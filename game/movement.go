@@ -81,6 +81,28 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 				g.msg(foundation.Msg(fmt.Sprintf("You climb onto the %s", g.currentMap().GetCell(newPos).TileType.Description())))
 				g.gameFlags.Increment("playerClimbs")
 				g.playerMove(oldPos, newPos)
+				g.Player.SetStance(Mounted)
+				g.ui.AfterPlayerMoved(foundation.MoveInfo{
+					Direction: direction,
+					OldPos:    oldPos,
+					NewPos:    newPos,
+					Mode:      foundation.PlayerMoveModeManual,
+				})
+			}
+		})
+		return
+	}
+
+	if !g.currentMap().IsTileWalkable(newPos) &&
+		g.currentMap().IsCurrentlyCrawlable(newPos) &&
+		!g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagCrawlable) {
+		message := fmt.Sprintf("Do you want to crawl under the %s?", g.currentMap().GetCell(newPos).TileType.Description())
+		g.ui.AskForConfirmation("Confirm", message, func(confirmed bool) {
+			if confirmed {
+				g.msg(foundation.Msg(fmt.Sprintf("You crawl under the %s", g.currentMap().GetCell(newPos).TileType.Description())))
+				g.gameFlags.Increment("playerCrawls")
+				g.playerMove(oldPos, newPos)
+				g.Player.SetStance(Crawling)
 				g.ui.AfterPlayerMoved(foundation.MoveInfo{
 					Direction: direction,
 					OldPos:    oldPos,

@@ -24,11 +24,13 @@ type Door struct {
 	audioCueBaseName string
 	player           foundation.AudioCuePlayer
 	onBump           func(actor *Actor)
+	updatePlayerFoV  func()
 }
 
 func (b *Door) InitWithGameState(g *GameState) {
 	b.iconForObject = g.iconForObject
 	b.player = g.ui
+	b.updatePlayerFoV = g.updatePlayerFoVAndApplyExploration
 	b.onBump = func(actor *Actor) {
 		if actor == g.Player && b.GetCategory() == foundation.ObjectLockedDoor {
 			if b.lockedFlag != "" && actor.HasKey(b.lockedFlag) {
@@ -242,6 +244,7 @@ func (b *Door) Close() {
 	}
 	b.category = foundation.ObjectClosedDoor
 	b.PlayCloseSfx()
+	b.updatePlayerFoV()
 }
 
 func (b *Door) PlayCloseSfx() {
@@ -254,6 +257,7 @@ func (b *Door) Open() {
 	}
 	b.category = foundation.ObjectOpenDoor
 	b.PlayOpenSfx()
+	b.updatePlayerFoV()
 }
 
 func (b *Door) PlayOpenSfx() {

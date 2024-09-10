@@ -120,13 +120,13 @@ func (a *AmountWidget) handleInput(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	case tcell.KeyEscape:
 		a.close(0)
-	case tcell.KeyUp:
-		amount := a.GetAmount()
-		amount++
-		a.SetAmount(amount)
-	case tcell.KeyDown:
+	case tcell.KeyLeft:
 		amount := a.GetAmount()
 		amount--
+		a.SetAmount(amount)
+	case tcell.KeyRight:
+		amount := a.GetAmount()
+		amount++
 		a.SetAmount(amount)
 	case tcell.KeyRune:
 		if !a.madeFirstKeyboardInput {

@@ -1965,6 +1965,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsCurrentlyMountable(pos geom
 	return m.IsTileWithFlagAt(pos, TileFlagMountable) && !m.IsActorAt(pos) && !m.IsObjectAt(pos)
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsCurrentlyCrawlable(pos geometry.Point) bool {
+	return m.IsTileWithFlagAt(pos, TileFlagMountable) && !m.IsActorAt(pos) && !m.IsObjectAt(pos)
+}
+
 type JumpOverInfo struct {
 	Sprint     []geometry.Point
 	Jump       []geometry.Point

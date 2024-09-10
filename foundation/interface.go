@@ -21,7 +21,7 @@ type GameForUI interface {
 	ManualMovePlayer(direction geometry.CompassDirection)
 	// RunPlayer Start or continue running in a direction
 	RunPlayer(direction geometry.CompassDirection, isStarting bool) bool
-
+	RunPlayerPath()
 	// Do stuff
 
 	PlayerPickupItem()
@@ -40,8 +40,9 @@ type GameForUI interface {
 
 	CheckTransition() // up/down stairs..
 	PlayerInteractInDirection(direction geometry.CompassDirection)
+	PlayerInteractAtPosition(pos geometry.Point)
 
-	OpenContextMenuFor(pos geometry.Point)
+	OpenContextMenuFor(pos geometry.Point) bool
 	OpenTacticsMenu()
 	OpenJournal()
 	OpenRestMenu()
@@ -119,6 +120,7 @@ type PlayerMoveMode int
 const (
 	PlayerMoveModeManual PlayerMoveMode = iota
 	PlayerMoveModeRun
+	PlayerMoveModePath
 )
 
 type MoveInfo struct {

@@ -42,15 +42,18 @@ func (g *GameState) ChooseItemForThrow() {
 }
 
 // TODO: ContextMenu Actions don't take up any time!
-func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) {
+func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) bool {
 	var menuItems []foundation.MenuItem
 	distance := g.currentMap().MoveDistance(g.Player.Position(), mapPos)
 	if distance > 1 {
 		if g.canPlayerSee(mapPos) && g.currentMap().IsActorAt(mapPos) {
 			menuItems = g.appendContextActionsForActor(menuItems, g.currentMap().ActorAt(mapPos))
-			g.ui.OpenMenu(menuItems)
+			if len(menuItems) > 0 {
+				g.ui.OpenMenu(menuItems)
+				return true
+			}
 		}
-		return
+		return false
 	}
 	if g.currentMap().IsActorAt(mapPos) {
 		actor := g.currentMap().ActorAt(mapPos)
@@ -65,9 +68,10 @@ func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) {
 		menuItems = object.AppendContextActions(menuItems, g)
 	}
 	if len(menuItems) == 0 {
-		return
+		return false
 	}
 	g.ui.OpenMenu(menuItems)
+	return true
 }
 
 func (g *GameState) OpenHitLocationMenu() {
