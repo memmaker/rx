@@ -183,7 +183,12 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			defender := args[1].(*Actor)
 			return g.IsInShootingRange(attacker, defender), nil
 		},
-
+		"IsAtNamedLocation": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			locName := args[1].(string)
+			loc := g.currentMap().GetNamedLocation(locName)
+			return actor.Position() == loc, nil
+		},
 		"IsDead": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			return !actor.IsAlive(), nil
