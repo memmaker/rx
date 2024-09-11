@@ -1,5 +1,21 @@
 %rec: default
 
+Text: Grim, your old friend and fellow contractor, wants to retire.
++ He promised to leave you his apartment keys.
+Cond: !HasItem('home_keys')
+Viewed: false
+Active: false
+
+Text: You should check out Grim's apartment.
+Cond: HasItem('home_keys')
+Viewed: false
+Active: true
+
+Text: Jacob wants you to extract $500 from the Ripperdoc in the northside residential area.
+Cond: HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
+Viewed: false
+Active: true
+
 Text: You have a referral from your Doctor to see Dr. Winters.
 + Head to the hospital in the north part of town and look for him there.
 Cond: !HasFlag('TalkedTo(dr_winters)')
@@ -15,7 +31,7 @@ Text: You learned about the BioPharmaceuticals Inc. lab at the outskirts of town
 + There might be something useful there.
 Cond: HasFlag('LocationKnown(zombies)')
 Viewed: false
-Active: true
+Active: false
 
 Text: You know where the mansion of the rich old man is.
 + Maybe you should pay him a visit?
@@ -30,7 +46,7 @@ Viewed: false
 Active: false
 
 Text: Survive the apocalypse.
-Cond: true
+Cond: HasFlag('KnowsAbout(apocalypse)')
 Viewed: false
-Active: true
+Active: false
 

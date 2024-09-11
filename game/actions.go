@@ -388,8 +388,9 @@ func (g *GameState) actorDropItem(holder *Actor, item *Item) {
 
 	g.removeItemFromInventory(holder, item)
 	g.addItemToMap(item, holder.Position())
-	g.msg(foundation.HiLite("You dropped %s", item.Name()))
+
 	if holder == g.Player {
+		g.msg(foundation.HiLite("You dropped %s", item.Name()))
 		if item.DropFlag() != "" {
 			g.gameFlags.Increment(item.DropFlag())
 		}

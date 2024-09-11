@@ -13,11 +13,11 @@ If done correctly, the client will retrieve the money and leave a reward for the
 Now the player should have these options:
 
 - Get the money from the Ripperdoc
-  - by force
-    - non-lethal
-    - lethal
-  - by persuasion
-  - by stealing from his secret stash
+  - by stealing from his secret stash - POSSIBLE
+  - by force - POSSIBLE
+    - non-lethal - POSSIBLE
+    - lethal - POSSIBLE
+  - by persuasion - POSSIBLE
 - Negotiate with the Ripperdoc
   - to pay you double
   - to pay you at least half

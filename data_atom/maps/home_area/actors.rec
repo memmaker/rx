@@ -125,6 +125,11 @@ SkillBonusSpeech: 30
 DREMP: 500
 DRRadiation: 8
 DRPoison: 20
+Equipment: street_wear
+equipment: 10mm_pistol
+equipment: 10mm_jhp | 24
+equipment: stimpak
+equipment: gold | 1000
 SourceFile: 00000088.pro
 Position: (29,3)
 
@@ -220,6 +225,8 @@ DRRadiation: 8
 DRPoison: 20
 SourceFile: 00000144.pro
 Equipment: key('home_keys','apartment keys')
+Equipment: street_wear
+Equipment: street_wear
 equipment: 10mm_pistol
 equipment: 10mm_jhp | 24
 equipment: stimpak

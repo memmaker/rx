@@ -1,3 +1,15 @@
+cond: !HasItem('home_keys')
+text:
++ Grim, your old friend and fellow contractor, wants to retire.
++ He promised to leave you his apartment keys.
+
+cond: HasItem('home_keys')
+text:
++ You should check out Grim's apartment.
+
+cond: HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
+text: Jacob wants you to extract $500 from the Ripperdoc in the northside residential area.
+
 
 cond: !HasFlag('TalkedTo(dr_winters)')
 text:
@@ -23,6 +35,6 @@ text:
 + You know where the cryolab is.
 + Time to find yourself a place to sleep.
 
-cond: true
+cond: HasFlag('KnowsAbout(apocalypse)')
 text:
 + Survive the apocalypse.

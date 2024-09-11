@@ -55,8 +55,7 @@ type Item struct {
 
 func (i *Item) IsMultipleStacks() bool {
 	return i.charges > 1 &&
-		(i.category == foundation.ItemCategoryGold ||
-			i.category == foundation.ItemCategoryAmmo)
+		(i.IsStackingWithCharges())
 }
 
 func (i *Item) GetStackSize() int {
@@ -84,7 +83,6 @@ func (i *Item) GobEncode() ([]byte, error) {
 	if err := encoder.Encode(i.category); err != nil {
 		return nil, err
 	}
-
 	if err := encoder.Encode(i.qualityInPercent); err != nil {
 		return nil, err
 	}
@@ -196,7 +194,6 @@ func (i *Item) GobDecode(data []byte) error {
 	if err := decoder.Decode(&i.category); err != nil {
 		return err
 	}
-
 	if err := decoder.Decode(&i.qualityInPercent); err != nil {
 		return err
 	}
@@ -768,4 +765,8 @@ func (i *Item) GetWeaponDamage() fxtools.Interval {
 
 func (i *Item) IsStackingWithCharges() bool {
 	return i.IsAmmo() || i.IsGold()
+}
+
+func (i *Item) IsWatch() bool {
+	return i.useEffectName == "show_time"
 }

@@ -116,6 +116,8 @@ func (g *GameState) NewContainer(rec recfile.Record) Object {
 	container.SetTransparent(true)
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
+		case "name":
+			container.internalName = field.Value
 		case "description":
 			container.displayName = field.Value
 		case "position":
@@ -138,6 +140,34 @@ func (b *Container) InitWithGameState(g *GameState) {
 	b.isPlayer = func(actor *Actor) bool { return actor == g.Player }
 	b.show = func() {
 		g.openContainer(b)
+	}
+}
+
+func (b *Container) HasItemsWithName(name string, stackSize int) bool {
+	for _, item := range b.containedItems {
+		if item.GetInternalName() == name {
+			stackSize -= item.GetStackSize()
+			if stackSize <= 0 {
+				return true
+			}
+		}
+	}
+	return stackSize <= 0
+}
+
+func (b *Container) RemoveItemsWithName(name string, count int) {
+	for i := 0; i < len(b.containedItems); i++ {
+		item := b.containedItems[i]
+		if item.GetInternalName() == name {
+			if item.GetStackSize() <= count {
+				b.containedItems = append(b.containedItems[:i], b.containedItems[i+1:]...)
+				count -= item.GetStackSize()
+				i--
+			} else {
+				item.SetCharges(item.GetStackSize() - count)
+				return
+			}
+		}
 	}
 }
 

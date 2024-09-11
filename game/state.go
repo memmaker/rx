@@ -22,11 +22,12 @@ type MapLoader interface {
 	LoadMap(mapName string) gridmap.MapLoadResult[*Actor, *Item, Object]
 }
 
-func (g *GameState) ApplyEffect(name string, args []string) {
+func (g *GameState) ApplyDialogueEffect(name string, args []string) {
 	switch name {
 	case "SetFlag":
 		flagName := strings.Trim(args[0], "'\" ")
 		g.gameFlags.SetFlag(flagName)
+		g.checkJournalAndRewards()
 	case "ClearFlag":
 		flagName := strings.Trim(args[0], "'\" ")
 		g.gameFlags.ClearFlag(flagName)
@@ -118,6 +119,7 @@ func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 		killedByPlayerFlag := fmt.Sprintf("KilledByPlayer(%s)", victim.GetInternalName())
 		g.gameFlags.SetFlag(killedByPlayerFlag)
 		g.awardXP(victim.GetXP(), fmt.Sprintf("for killing %s", victim.Name()))
+		g.gameFlags.Increment("PlayerKillCount")
 	}
 
 	//g.dropInventory(victim)
@@ -152,7 +154,7 @@ func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
 func (g *GameState) updatePlayerFoVAndApplyExploration() {
 	g.currentMap().UpdateFieldOfView(g.playerFoV, g.Player.Position(), g.visionRange)
 	g.playerFoV.RemoveFromVisibles(func(p geometry.Point) bool {
-		return g.currentMap().IsDarknessAt(g.gameTime, p) && g.Player.Position() != p
+		return g.currentMap().IsDarknessAt(g.gameTime.Time, p) && g.Player.Position() != p
 	})
 
 	for _, pos := range g.playerFoV.Visibles {

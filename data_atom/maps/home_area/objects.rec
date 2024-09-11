@@ -7,7 +7,8 @@ Position: (20,3)
 
 Category: UnknownContainer
 Description: doctor's stash
-item: gold | 1000
+item: gold | 750
+item: stimpak | 3
 Position: (3,2)
 
 Category: NamedLocation
@@ -40,6 +41,7 @@ LockFlag: CHANGEME
 Position: (37,15)
 
 Category: UnknownContainer
+Name: dead_drop
 Description: CONTRACTOR dead drop
 item: 10mm_jhp | 24
 Position: (76,17)

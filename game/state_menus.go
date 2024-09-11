@@ -112,8 +112,10 @@ func (g *GameState) OpenHitLocationMenu() {
 
 func (g *GameState) PlayerRest(duration time.Duration) {
 	g.ui.FadeToBlack()
-	g.gameTime = g.gameTime.Add(duration)
-	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Format("15:04"))))
+	g.advanceTime(duration)
+	if g.Player.GetInventory().HasWatch() {
+		g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Time.Format("15:04"))))
+	}
 	g.ui.FadeFromBlack()
 }
 
@@ -179,7 +181,7 @@ func (g *GameState) OpenRestMenu() {
 		{
 			Name: "Rest until morning (0600)",
 			Action: func() {
-				now := g.gameTime
+				now := g.gameTime.Time
 				morning := time.Date(now.Year(), now.Month(), now.Day(), 6, 0, 0, 0, now.Location())
 				if now.After(morning) {
 					morning = morning.AddDate(0, 0, 1)
@@ -191,7 +193,7 @@ func (g *GameState) OpenRestMenu() {
 		{
 			Name: "Rest until noon (1200)",
 			Action: func() {
-				now := g.gameTime
+				now := g.gameTime.Time
 				noon := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, now.Location())
 				if now.After(noon) {
 					noon = noon.AddDate(0, 0, 1)
@@ -203,7 +205,7 @@ func (g *GameState) OpenRestMenu() {
 		{
 			Name: "Rest until evening (1800)",
 			Action: func() {
-				now := g.gameTime
+				now := g.gameTime.Time
 				evening := time.Date(now.Year(), now.Month(), now.Day(), 18, 0, 0, 0, now.Location())
 				if now.After(evening) {
 					evening = evening.AddDate(0, 0, 1)
@@ -215,7 +217,7 @@ func (g *GameState) OpenRestMenu() {
 		{
 			Name: "Rest until midnight (0000)",
 			Action: func() {
-				now := g.gameTime
+				now := g.gameTime.Time
 				midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 				if now.After(midnight) {
 					midnight = midnight.AddDate(0, 0, 1)
@@ -387,6 +389,9 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 			if fxtools.LooksLikeAFunction(effect) {
 				name, args := fxtools.GetNameAndArgs(effect)
 				switch name {
+				case "SaveTimeNow":
+					timeName := args.Get(0)
+					g.SaveTimeNow(timeName)
 				case "AdvanceTimeByMinutes":
 					minutes, err := strconv.Atoi(args.Get(0))
 					if err != nil {
@@ -432,22 +437,33 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 					g.scriptRunner.StopScript(scriptName)
 				case "GiveItem":
 					itemName := args.Get(0)
-					actor, isActor := conversationPartner.(*Actor)
-					var itemForPlayer *Item
-					if isActor {
-						itemForPlayer = actor.GetInventory().GetItemByName(itemName)
-						if itemForPlayer != nil {
-							actor.GetInventory().RemoveItem(itemForPlayer)
-						}
-					} else {
-						itemForPlayer = g.NewItemFromString(itemName)
+					count := 1
+					if len(args) > 1 {
+						count = args.GetInt(1)
 					}
-					if itemForPlayer != nil {
-						g.Player.GetInventory().AddItem(itemForPlayer)
-						g.msg(foundation.HiLite("%s received.", itemForPlayer.Name()))
+					actor, isActor := conversationPartner.(*Actor)
+					var itemsForPlayer []*Item
+					if isActor {
+						itemsForPlayer = actor.GetInventory().RemoveItemsByNameAndCount(itemName, count)
+					} else {
+						oneItem := g.newItemFromName(itemName)
+						if oneItem.IsStackingWithCharges() {
+							oneItem.SetCharges(count)
+						} else {
+							for i := 0; i < count; i++ {
+								itemsForPlayer = append(itemsForPlayer, oneItem)
+								oneItem = g.newItemFromName(itemName)
+							}
+						}
+					}
+					if len(itemsForPlayer) > 0 {
+						first := itemsForPlayer[0]
+						itemStackName := first.Name()
+						g.Player.GetInventory().AddItems(itemsForPlayer)
+						g.msg(foundation.HiLite("%s received.", itemStackName))
 					}
 				default:
-					g.ApplyEffect(name, args)
+					g.ApplyDialogueEffect(name, args)
 				}
 			}
 		}

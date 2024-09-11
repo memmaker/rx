@@ -15,8 +15,8 @@ func (g *GameState) Save(directory string) error {
 	// Global game state
 	globalRecord := recfile.Record{
 		recfile.Field{Name: "CurrentMap", Value: g.currentMapName},
-		recfile.Field{Name: "TurnsTaken", Value: recfile.IntStr(g.TurnsTaken)},
-		recfile.Field{Name: "GameTime", Value: recfile.TimeStr(g.gameTime)},
+		recfile.Field{Name: "TurnsTaken", Value: recfile.IntStr(g.TurnsTaken())},
+		recfile.Field{Name: "GameTime", Value: recfile.TimeStr(g.gameTime.Time)},
 		recfile.Field{Name: "ShowEverything", Value: recfile.BoolStr(g.showEverything)},
 		recfile.Field{Name: "RewardsReceived", Value: strings.Join(fxtools.MapSlice(g.rewardTracker.GetRewardsReceived(), func(intVal int) string {
 			return recfile.IntStr(intVal)
@@ -75,9 +75,9 @@ func (g *GameState) Load(directory string) {
 		case "currentmap":
 			g.currentMapName = field.Value
 		case "turnstaken":
-			g.TurnsTaken = recfile.StrInt(field.Value)
+			g.gameTime = g.gameTime.WithTurns(recfile.StrInt(field.Value))
 		case "gametime":
-			g.gameTime = recfile.StrTime(field.Value)
+			g.gameTime = g.gameTime.WithTime(recfile.StrTime(field.Value))
 		case "showeverything":
 			g.showEverything = recfile.StrBool(field.Value)
 		case "rewardsreceived":
@@ -136,7 +136,7 @@ func (g *GameState) Load(directory string) {
 	g.hookupJournalAndFlags()
 	g.attachHooksToPlayer()
 
-	// OnTurn lights & player position
+	// CheckAndRunFrames lights & player position
 	g.currentMap().UpdateBakedLights()
 	g.afterPlayerMoved(geometry.Point{}, true)
 

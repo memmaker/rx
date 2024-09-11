@@ -39,7 +39,11 @@ name: starter_accept
 npc: ** Contractor Client Interface **
 + > Deposit the money in the dead drop, as usual.
 + > You will be rewarded with a leather armor after 6 hours.
+#
 effect: SetFlag('JobAccepted(starter)')
+#
+# This will script wait for the player to deposit the money in the dead drop.
+effect: RunScript('dead_drop_01')
 #
 o_text: Go back.
 o_goto: DefaultIntroduction

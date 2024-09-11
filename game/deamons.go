@@ -36,7 +36,7 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 
 	g.Player.decrementStatusEffectCounters()
 
-	if !g.Player.HasFlag(special.FlagSlowDigestion) || g.TurnsTaken%2 == 0 {
+	if !g.Player.HasFlag(special.FlagSlowDigestion) || g.TurnsTaken()%2 == 0 {
 		g.Player.GetFlags().Increment(special.FlagTurnsSinceEating)
 	}
 
@@ -54,7 +54,7 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 		//g.Player.LooseActionPoints(1)
 	}
 
-	if !g.Player.IsHungry() && g.TurnsTaken%healInterval == 0 && len(g.playerVisibleEnemiesByDistance()) == 0 {
+	if !g.Player.IsHungry() && g.TurnsTaken()%healInterval == 0 && len(g.playerVisibleEnemiesByDistance()) == 0 {
 		if g.Player.NeedsHealing() {
 			g.Player.Heal(1)
 		} else {

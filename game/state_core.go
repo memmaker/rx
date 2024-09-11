@@ -16,11 +16,62 @@ import (
 	"time"
 )
 
+type PointInTime struct {
+	Turns int
+	Time  time.Time
+}
+
+func (t PointInTime) AddDuration(duration time.Duration) PointInTime {
+	return PointInTime{
+		Turns: t.Turns,
+		Time:  t.Time.Add(duration),
+	}
+}
+
+func (t PointInTime) AddDurationAndTurn(duration time.Duration) PointInTime {
+	return PointInTime{
+		Turns: t.Turns + 1,
+		Time:  t.Time.Add(duration),
+	}
+}
+
+func (t PointInTime) WithTurns(turns int) PointInTime {
+	return PointInTime{
+		Turns: turns,
+		Time:  t.Time,
+	}
+}
+
+func (t PointInTime) WithTime(time time.Time) PointInTime {
+	return PointInTime{
+		Turns: t.Turns,
+		Time:  time,
+	}
+}
+
+func (t PointInTime) TurnsSince(inTime PointInTime) int {
+	return t.Turns - inTime.Turns
+}
+
+func (t PointInTime) MinutesSince(inTime PointInTime) int {
+	return int(t.Time.Sub(inTime.Time).Minutes())
+}
+
+func (t PointInTime) HoursSince(inTime PointInTime) int {
+	return int(t.Time.Sub(inTime.Time).Hours())
+}
+
+func (t PointInTime) DaysSince(inTime PointInTime) int {
+	return int(t.Time.Sub(inTime.Time).Hours() / 24)
+}
+
+type TimeTracker map[string]PointInTime
+
 type GameState struct {
 	// Global State (Needs to be saved)
-	TurnsTaken           int
-	gameTime             time.Time
+	gameTime             PointInTime
 	gameFlags            *fxtools.StringFlags
+	timeTracker          TimeTracker
 	logBuffer            []foundation.HiLiteString
 	terminalGuesses      map[string][]string
 	journal              *Journal
@@ -110,12 +161,12 @@ func (g *GameState) currentMap() *gridmap.GridMap[*Actor, *Item, Object] {
 }
 
 func (g *GameState) WizardAdvanceTime() {
-	g.gameTime = g.gameTime.Add(time.Minute * 30)
-	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Format("15:04"))))
+	g.gameTime = g.gameTime.AddDuration(time.Minute * 30)
+	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Time.Format("15:04"))))
 }
 
 func (g *GameState) LightAt(p geometry.Point) fxtools.HDRColor {
-	return g.currentMap().LightAt(p, g.gameTime)
+	return g.currentMap().LightAt(p, g.gameTime.Time)
 }
 
 func (g *GameState) PlayerInteractInDirection(direction geometry.CompassDirection) {
@@ -153,6 +204,7 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 			Color:        fxtools.HDRColor{R: 1, G: 1, B: 1, A: 1},
 			MaxIntensity: 1,
 		},
+		timeTracker:         make(TimeTracker),
 		visionRange:         80,
 		palette:             palette,
 		globalItemTemplates: loadItemTemplates(config.DataRootDir),
@@ -187,7 +239,6 @@ func (g *GameState) NewItem(rec recfile.Record) (*Item, geometry.Point) {
 	panic(fmt.Sprintf("Could not create item from record: %v", rec))
 	return nil, geometry.Point{}
 }
-
 func (g *GameState) NewObject(rec recfile.Record, newMap *gridmap.GridMap[*Actor, *Item, Object]) (Object, geometry.Point) {
 	object := g.NewObjectFromRecord(rec, g.palette, newMap)
 	if object != nil {
@@ -212,8 +263,11 @@ func (g *GameState) init() {
 		g.NewObject,
 	)
 
-	g.TurnsTaken = 0
-	g.gameTime = time.Date(2077, 2, 5, 16, 20, 23, 0, time.UTC)
+	g.gameTime = PointInTime{
+		Turns: 0,
+		Time:  time.Date(2077, 2, 5, 16, 20, 23, 0, time.UTC),
+	}
+
 	g.logBuffer = []foundation.HiLiteString{}
 	g.showEverything = false
 
@@ -223,7 +277,6 @@ func (g *GameState) init() {
 
 	g.rewardTracker = NewRewardTracker(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec")), g.getConditionFuncs())
 	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getConditionFuncs())
-	g.journal.OnFlagsChanged()
 	g.hookupJournalAndFlags()
 
 	g.scriptRunner = NewScriptRunner()
@@ -296,6 +349,8 @@ func (g *GameState) initPlayerAndMap() {
 	}
 
 	g.attachHooksToPlayer()
+
+	g.journal.OnFlagsChanged()
 }
 func (g *GameState) attachHooksToPlayer() {
 	equipment := g.Player.GetEquipment()
@@ -333,7 +388,7 @@ func (g *GameState) UIReady() {
 	g.moveIntoDungeon()
 	// ADD Banner
 	//g.ui.ShowTextFileFullscreen(path.Join("data","banner.txt"), g.moveIntoDungeon)
-	g.scriptRunner.OnTurn()
+	g.scriptRunner.CheckAndRunFrames()
 }
 
 // moveIntoDungeon requires the UI to be available. It will request a dungeon crawl UI
@@ -368,12 +423,11 @@ func (g *GameState) QueueActionAfterAnimation(action func()) {
 // - check if the player can act
 func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	// player has changed the game state..
-	g.TurnsTaken++
-	g.gameTime = g.gameTime.Add(time.Second * time.Duration(float64(playerTimeTakenForTurn)/10))
+	g.gameTime = g.gameTime.AddDurationAndTurn(time.Second * time.Duration(float64(playerTimeTakenForTurn)/10))
 
 	didCancel := g.ui.AnimatePending() // animate player actions..
 
-	g.scriptRunner.OnTurn()
+	g.scriptRunner.CheckAndRunFrames()
 
 	g.enemyMovement(playerTimeTakenForTurn)
 
@@ -391,19 +445,22 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	g.afterAnimationActions = nil
 
 	if g.flagsChangedThisTurn {
-		g.journal.OnFlagsChanged()
-
-		rewards := g.rewardTracker.GetNewRewards(nil)
-		for _, reward := range rewards {
-			g.awardXP(reward.XP, reward.Text)
-		}
-
+		g.checkJournalAndRewards()
 		g.flagsChangedThisTurn = false
 	}
 
 	g.updateUIStatus()
 
 	g.checkPlayerCanAct()
+}
+
+func (g *GameState) checkJournalAndRewards() {
+	g.journal.OnFlagsChanged()
+
+	rewards := g.rewardTracker.GetNewRewards(nil)
+	for _, reward := range rewards {
+		g.awardXP(reward.XP, reward.Text)
+	}
 }
 
 func (g *GameState) calculateTotalNetWorth() int {
@@ -520,7 +577,7 @@ func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item *Item, isSteal bo
 
 func (g *GameState) ShowDateTime() {
 	// full date
-	g.msg(foundation.HiLite("The time is %s", g.gameTime.Format("2006-01-02 15:04")))
+	g.msg(foundation.HiLite("The time is %s", g.gameTime.Time.Format("2006-01-02 15:04")))
 }
 func (g *GameState) getItemTemplateByName(shortString string) recfile.Record {
 	if record, ok := g.mapItemTemplates[shortString]; ok {
@@ -574,7 +631,8 @@ func (g *GameState) getShootingRangePosition(attacker *Actor, weaponRange int, v
 }
 
 func (g *GameState) advanceTime(duration time.Duration) {
-	g.gameTime = g.gameTime.Add(duration)
+	g.gameTime = g.gameTime.AddDuration(duration)
+	g.scriptRunner.CheckAndRunFrames()
 }
 
 func (g *GameState) awardXP(xp int, text string) {
@@ -615,4 +673,8 @@ func (g *GameState) playerHitMessage(damage SourcedDamage, cripple bool) {
 	}
 
 	g.msg(foundation.Msg(baseMessage))
+}
+
+func (g *GameState) TurnsTaken() int {
+	return g.gameTime.Turns
 }

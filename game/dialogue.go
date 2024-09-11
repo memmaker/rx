@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/special"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/recfile"
 	"os"
@@ -170,72 +169,4 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 	}
 	conversation.nodes = allNodes
 	return conversation, nil
-}
-
-func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction {
-	// NO INTEGERS..ONLY FLOATS
-	conditionFuncs := map[string]govaluate.ExpressionFunction{
-		"PlayerNeedsHealing": func(args ...interface{}) (interface{}, error) {
-			return g.Player.NeedsHealing(), nil
-		},
-		"NeedsHealing": func(args ...interface{}) (interface{}, error) {
-			actorName := args[0].(string)
-			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
-				return actor.GetInternalName() == actorName
-			})
-			if len(actors) == 0 {
-				return false, nil
-			}
-			actor := actors[0]
-			return actor.NeedsHealing(), nil
-		},
-		"HasFlag": func(args ...interface{}) (interface{}, error) {
-			flagName := args[0].(string)
-			return g.gameFlags.HasFlag(flagName), nil
-		},
-		"HasItem": func(args ...interface{}) (interface{}, error) {
-			itemName := args[0].(string)
-			return g.Player.GetInventory().HasItemWithName(itemName), nil
-		},
-		"GetSkill": func(args ...interface{}) (interface{}, error) {
-			skillName := args[0].(string)
-			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromString(skillName))
-			return (float64)(skillValue), nil
-		},
-		"RollSkill": func(args ...interface{}) (interface{}, error) {
-			skillName := args[0].(string)
-			modifier := args[1].(float64)
-			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromString(skillName), int(modifier))
-			return (bool)(result.Success), nil
-		},
-		"IsMap": func(args ...interface{}) (interface{}, error) {
-			mapName := args[0].(string)
-			return g.currentMap().GetName() == mapName, nil
-		},
-		"IsInCombat": func(args ...interface{}) (interface{}, error) {
-			npcName := args[0].(string)
-			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
-				return actor.GetInternalName() == npcName
-			})
-			for _, actor := range actors {
-				if actor.IsInCombat() {
-					return true, nil
-				}
-			}
-			return false, nil
-		},
-		"IsInCombatWithPlayer": func(args ...interface{}) (interface{}, error) {
-			npcName := args[0].(string)
-			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
-				return actor.GetInternalName() == npcName
-			})
-			for _, actor := range actors {
-				if actor.IsHostileTowards(g.Player) {
-					return true, nil
-				}
-			}
-			return false, nil
-		},
-	}
-	return conditionFuncs
 }

@@ -214,6 +214,10 @@ func (i *Inventory) Has(item *Item) bool {
 
 func (i *Inventory) AddItem(item *Item) {
 	defer i.changed()
+	i.addItemInternally(item)
+}
+
+func (i *Inventory) addItemInternally(item *Item) {
 	if item.IsStackingWithCharges() {
 		for _, invItem := range i.items {
 			if invItem.CanStackWith(item) {
@@ -224,7 +228,6 @@ func (i *Inventory) AddItem(item *Item) {
 	}
 
 	i.items = append(i.items, item)
-
 }
 
 func (i *Inventory) IsEmpty() bool {
@@ -490,6 +493,45 @@ func (i *Inventory) HasWeapon() bool {
 		}
 	}
 	return false
+}
+
+func (i *Inventory) HasWatch() bool {
+	for _, invItem := range i.items {
+		if invItem.IsWatch() {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []*Item {
+	itemsToRemove := make([]*Item, 0)
+	splitItems := make([]*Item, 0)
+	for _, invItem := range i.items {
+		if invItem.GetInternalName() == name {
+			if invItem.IsMultipleStacks() && invItem.GetStackSize() > count {
+				splitItems = append(splitItems, invItem.Split(count))
+				count = 0
+			} else {
+				itemsToRemove = append(itemsToRemove, invItem)
+				count -= invItem.GetStackSize()
+			}
+			if count <= 0 {
+				break
+			}
+		}
+	}
+	for _, item := range itemsToRemove {
+		i.RemoveItem(item)
+	}
+	return append(itemsToRemove, splitItems...)
+}
+
+func (i *Inventory) AddItems(player []*Item) {
+	for _, item := range player {
+		i.addItemInternally(item)
+	}
+	i.changed()
 }
 
 func SortInventory(stacks []*InventoryStack) {

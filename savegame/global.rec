@@ -1,32 +1,41 @@
 %rec: global
 
-CurrentMap: zombies
-TurnsTaken: 110
-GameTime: 2077-02-05T16:37:10Z
+CurrentMap: home_area
+TurnsTaken: 127
+GameTime: 2077-02-05T16:22:30Z
 ShowEverything: false
-RewardsReceived: 1
+RewardsReceived: 
 
 %rec: flags
 
-Key: WasAttackedByPlayer(zombie)
+Key: playerSteps
+Value: 56
+
+Key: WasHurt(duck)
 Value: 1
 
-Key: WasHurt(zombie)
+Key: WasAttacked(duck)
 Value: 1
 
-Key: WasHurtByPlayer(zombie)
+Key: Killed(duck)
 Value: 1
 
-Key: LocationKnown(zombies)
+Key: JobRead(starter)
 Value: 1
 
-Key: TalkedTo(taxi_driver)
+Key: JobAccepted(starter)
 Value: 1
 
-Key: PlayerVisited(zombies)
+Key: TalkedTo(grim_beard)
 Value: 1
 
-Key: WasAttacked(zombie)
+Key: grimKeysGiven
+Value: 1
+
+Key: playerRunSteps
+Value: 71
+
+Key: WasHurt(grim_beard)
 Value: 1
 
 %rec: terminal_guesses

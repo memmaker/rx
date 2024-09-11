@@ -132,7 +132,9 @@ func NewObject(icon foundation.ObjectCategory, iconForObject func(objectType str
 		isAlive:       true,
 	}
 }
-
+func (b *BaseObject) GetInternalName() string {
+	return b.internalName
+}
 func (b *BaseObject) Position() geometry.Point {
 	return b.position
 }
@@ -230,4 +232,5 @@ type Object interface {
 	AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem
 	SetIconResolver(object func(objectType string) textiles.TextIcon)
 	InitWithGameState(g *GameState)
+	GetInternalName() string
 }

@@ -66,6 +66,9 @@ func (i *ScriptInstance) SetDone() {
 }
 
 func (i *ScriptInstance) RunCancelFrame() {
+	if i.script.CancelFrame.IsEmpty() {
+		return
+	}
 	i.Run(i.script.CancelFrame)
 }
 
@@ -88,7 +91,7 @@ func (s *ScriptRunner) RunScript(dataDir string, scriptName string, condFuncs ma
 	s.runningScripts = append(s.runningScripts, runningScript)
 }
 
-func (s *ScriptRunner) OnTurn() {
+func (s *ScriptRunner) CheckAndRunFrames() {
 	s.runningScripts = fxtools.FilterSlice(s.runningScripts, func(instance *ScriptInstance) bool {
 		return !instance.IsDone()
 	})

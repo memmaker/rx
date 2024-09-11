@@ -1,3 +1,13 @@
+Description: street wear
+Name: street_wear
+Category: Armor
+slot: torso
+armor_physical: 0, 0
+armor_energy: 0, 0
+armor_radiation_reduction: 0
+armor_encumbrance: 0
+chance: 20
+
 Description: vault suit
 Name: vault_suit
 Category: Armor

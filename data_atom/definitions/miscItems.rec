@@ -8,6 +8,12 @@ Name: key
 Category: Keys
 LockFlag: CHANGEME
 
+
+Description: loose money
+Name: gold
+Category: Gold
+Charges: CHANGEME
+
 Description: Big Book of Skillz
 Name: skillbook
 Category: Books

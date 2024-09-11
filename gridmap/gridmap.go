@@ -796,14 +796,18 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddItemWithDisplacement(a Ite
 	if !m.Contains(targetPos) {
 		return
 	}
-	if m.CanPlaceItemHere(targetPos) {
-		m.AddItem(a, targetPos)
-		return
-	}
+
 	free := m.GetFreeCellsForDistribution(targetPos, 1, func(p geometry.Point) bool {
 		return m.CanPlaceItemHere(p)
 	})
+	filterSlice(free, func(p geometry.Point) bool {
+		return p != targetPos
+	})
 	if len(free) == 0 {
+		if m.CanPlaceItemHere(targetPos) {
+			m.AddItem(a, targetPos)
+			return
+		}
 		println("WARNING: Could not find a free spot for item")
 		return
 	}
@@ -1969,6 +1973,17 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsCurrentlyCrawlable(pos geom
 	return m.IsTileWithFlagAt(pos, TileFlagMountable) && !m.IsActorAt(pos) && !m.IsObjectAt(pos)
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredObjects(keep func(object ObjectType) bool) []ObjectType {
+	var result []ObjectType
+	for _, object := range m.allObjects {
+		if keep(object) {
+			result = append(result, object)
+		}
+	}
+	return result
+
+}
+
 type JumpOverInfo struct {
 	Sprint     []geometry.Point
 	Jump       []geometry.Point
@@ -1980,4 +1995,14 @@ type SprintToInfo struct {
 	Sprint         []geometry.Point
 	SprintEndPos   geometry.Point
 	EmptyTileFound bool
+}
+
+func filterSlice[T any](s []T, f func(T) bool) []T {
+	result := make([]T, 0)
+	for _, v := range s {
+		if f(v) {
+			result = append(result, v)
+		}
+	}
+	return result
 }

@@ -325,3 +325,8 @@ func (e *Equipment) GetRangedWeapon() (*Item, bool) {
 func (e *Equipment) IsNotEquipped(item *Item) bool {
 	return !e.IsEquipped(item)
 }
+
+func (e *Equipment) HasArmorWithNameEquipped(name string) bool {
+	armor := e.GetArmor()
+	return armor != nil && armor.GetInternalName() == name
+}

@@ -1,11 +1,14 @@
 package game
 
 import (
+	"RogueUI/foundation"
+	"RogueUI/special"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +18,11 @@ type ScriptFrame struct {
 	// The actions for the frame.
 	Actions []*govaluate.EvaluableExpression
 }
+
+func (f ScriptFrame) IsEmpty() bool {
+	return f.Condition == nil && len(f.Actions) == 0
+}
+
 type ActionScript struct {
 	Name string
 
@@ -27,8 +35,118 @@ type ActionScript struct {
 	CancelFrame ScriptFrame
 }
 
-func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
+func mergeMaps(maps ...map[string]govaluate.ExpressionFunction) map[string]govaluate.ExpressionFunction {
+	result := make(map[string]govaluate.ExpressionFunction)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+func (g *GameState) getCommonFuncs() map[string]govaluate.ExpressionFunction {
 	return map[string]govaluate.ExpressionFunction{
+		"PlayerNeedsHealing": func(args ...interface{}) (interface{}, error) {
+			return g.Player.NeedsHealing(), nil
+		},
+		"NeedsHealing": func(args ...interface{}) (interface{}, error) {
+			actorName := args[0].(string)
+			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
+				return actor.GetInternalName() == actorName
+			})
+			if len(actors) == 0 {
+				return false, nil
+			}
+			actor := actors[0]
+			return actor.NeedsHealing(), nil
+		},
+		"HasFlag": func(args ...interface{}) (interface{}, error) {
+			flagName := args[0].(string)
+			return g.gameFlags.HasFlag(flagName), nil
+		},
+		"HasItem": func(args ...interface{}) (interface{}, error) {
+			itemName := args[0].(string)
+			return g.Player.GetInventory().HasItemWithName(itemName), nil
+		},
+		"HasArmorEquipped": func(args ...interface{}) (interface{}, error) {
+			armorName := args[0].(string)
+			return g.Player.GetEquipment().HasArmorWithNameEquipped(armorName), nil
+		},
+		"GetSkill": func(args ...interface{}) (interface{}, error) {
+			skillName := args[0].(string)
+			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromString(skillName))
+			return (float64)(skillValue), nil
+		},
+		"RollSkill": func(args ...interface{}) (interface{}, error) {
+			skillName := args[0].(string)
+			modifier := args[1].(float64)
+			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromString(skillName), int(modifier))
+			return (bool)(result.Success), nil
+		},
+		"IsMap": func(args ...interface{}) (interface{}, error) {
+			mapName := args[0].(string)
+			return g.currentMap().GetName() == mapName, nil
+		},
+		"Turns": func(args ...interface{}) (interface{}, error) {
+			return (float64)(g.TurnsTaken()), nil
+		},
+		"IsTurnsAfter": func(args ...interface{}) (interface{}, error) {
+			namedTime := args[0].(string)
+			turns := args[1].(float64)
+			return g.IsTurnsAfter(namedTime, int(turns)), nil
+		},
+		"IsMinutesAfter": func(args ...interface{}) (interface{}, error) {
+			namedTime := args[0].(string)
+			minutes := args[1].(float64)
+			return g.IsMinutesAfter(namedTime, int(minutes)), nil
+		},
+		"IsHoursAfter": func(args ...interface{}) (interface{}, error) {
+			namedTime := args[0].(string)
+			hours := args[1].(float64)
+			return g.IsHoursAfter(namedTime, int(hours)), nil
+		},
+		"IsDaysAfter": func(args ...interface{}) (interface{}, error) {
+			namedTime := args[0].(string)
+			days := args[1].(float64)
+			return g.IsDaysAfter(namedTime, int(days)), nil
+		},
+	}
+}
+
+func (g *GameState) getConditionFuncs() map[string]govaluate.ExpressionFunction {
+	// NO INTEGERS..ONLY FLOATS
+	conditionFuncs := map[string]govaluate.ExpressionFunction{
+		"IsInCombat": func(args ...interface{}) (interface{}, error) {
+			npcName := args[0].(string)
+			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
+				return actor.GetInternalName() == npcName
+			})
+			for _, actor := range actors {
+				if actor.IsInCombat() {
+					return true, nil
+				}
+			}
+			return false, nil
+		},
+		"IsInCombatWithPlayer": func(args ...interface{}) (interface{}, error) {
+			npcName := args[0].(string)
+			actors := g.currentMap().GetFilteredActors(func(actor *Actor) bool {
+				return actor.GetInternalName() == npcName
+			})
+			for _, actor := range actors {
+				if actor.IsHostileTowards(g.Player) {
+					return true, nil
+				}
+			}
+			return false, nil
+		},
+	}
+	return mergeMaps(g.getCommonFuncs(), conditionFuncs)
+}
+
+func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
+	return mergeMaps(g.getCommonFuncs(), map[string]govaluate.ExpressionFunction{
 		// Queries
 		"HasFlag": func(args ...interface{}) (interface{}, error) {
 			flagName := args[0].(string)
@@ -44,14 +162,28 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			return nil, nil
 		},
-		"Turns": func(args ...interface{}) (interface{}, error) {
-			return (float64)(g.TurnsTaken), nil
+		"ContainerWithName": func(args ...interface{}) (interface{}, error) {
+			containerName := args[0].(string)
+			containers := g.currentMap().GetFilteredObjects(func(c Object) bool {
+				return c.GetInternalName() == containerName
+			})
+			if len(containers) > 0 {
+				return containers[0], nil
+			}
+			return nil, nil
+		},
+
+		"IsInContainer": func(args ...interface{}) (interface{}, error) {
+			container := args[0].(*Container)
+			itemName, count := itemStringParse(args[1].(string))
+			return container.HasItemsWithName(itemName, count), nil
 		},
 		"IsInShootingRange": func(args ...interface{}) (interface{}, error) {
 			attacker := args[0].(*Actor)
 			defender := args[1].(*Actor)
 			return g.IsInShootingRange(attacker, defender), nil
 		},
+
 		"IsDead": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			return !actor.IsAlive(), nil
@@ -70,11 +202,35 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			return false, nil
 		},
+
 		// Actions
+		"SaveTimeNow": func(args ...interface{}) (interface{}, error) {
+			nameForTime := args[0].(string)
+			g.SaveTimeNow(nameForTime)
+			return nil, nil
+		},
+		"DropItem": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			count := 1
+			itemName := args[1].(string)
+			if len(args) > 2 {
+				count = int(args[2].(float64))
+			}
+			removedItems := actor.GetInventory().RemoveItemsByNameAndCount(itemName, count)
+			for _, item := range removedItems {
+				g.addItemToMap(item, actor.Position())
+			}
+			return nil, nil
+		},
 		"AddChatter": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			chatter := args[1].(string)
 			g.tryAddChatter(actor, chatter)
+			return nil, nil
+		},
+		"Hilite": func(args ...interface{}) (interface{}, error) {
+			text := args[0].(string)
+			g.msg(foundation.HiLite(text))
 			return nil, nil
 		},
 		"SetFlag": func(args ...interface{}) (interface{}, error) {
@@ -129,7 +285,29 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			actor.SetGoal(g.getKillGoal(actor, target))
 			return nil, nil
 		},
+		"RemoveFromContainer": func(args ...interface{}) (interface{}, error) {
+			container := args[0].(*Container)
+			itemName, count := itemStringParse(args[1].(string))
+			container.RemoveItemsWithName(itemName, count)
+			return nil, nil
+		},
+		"AddToContainer": func(args ...interface{}) (interface{}, error) {
+			container := args[0].(*Container)
+			newItem := g.NewItemFromString(args[1].(string))
+			container.AddItem(newItem)
+			return nil, nil
+		},
+	})
+}
+
+func itemStringParse(itemString string) (string, int) {
+	count := 1
+	if strings.Contains(itemString, "|") {
+		parts := strings.Split(itemString, "|")
+		itemString = strings.TrimSpace(parts[0])
+		count, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
 	}
+	return itemString, count
 }
 
 func (g *GameState) getKillGoal(attacker *Actor, victim *Actor) ActorGoal {
@@ -195,10 +373,13 @@ func NewActionScript(name string, records map[string][]recfile.Record, condFuncs
 	frames := FramesFromRecords(records["frames"], condFuncs)
 
 	script := ActionScript{
-		Name:        name,
-		Frames:      frames,
-		Variables:   make(map[string]interface{}),
-		CancelFrame: NewScriptFrameFromRecord(records["cancel"][0], condFuncs),
+		Name:      name,
+		Frames:    frames,
+		Variables: make(map[string]interface{}),
+	}
+	if len(records["cancel"]) > 0 {
+		cancelRecord := records["cancel"][0]
+		script.CancelFrame = NewScriptFrameFromRecord(cancelRecord, condFuncs)
 	}
 
 	if len(records["outcomes"]) > 0 {

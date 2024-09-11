@@ -72,6 +72,29 @@ https://falloutmods.fandom.com/wiki/Fallout_engine_calculations
 
 Test Runs:
  - Stealth - Don't fight anyone, don't talk to anyone
+   - Acquire Tools, Keys, Codes, Maps, Intel
+   - Break into places silently
+   - Sneak past enemies
  - Combat - Don't talk to anyone, kill everyone
+   - Find strategic weaknesses
+   - Gear up
  - Diplomacy - Don't fight anyone, talk to everyone
+   - Acquire Evidence, Gossip, Intimidate, Seduce, Lie, Uncover Lies
 
+
+Speech Skill:
+ - Divide into multiple skills?
+   - Persuade (Int), Lie (Per), Intimidate (Str)
+   -> Should act differently in different situations
+   -> Should have different effects on different NPCs
+ - Don't just skip content, but alter it
+ - Don't make it just solve all problems
+ - Replace with Reputation / Knowledge?
+ -
+
+Lockpicking:
+ - DX Style - Resource Spending
+
+Hacking:
+ - DX Style - Resource Spending
+ - RL Style - Shells & SSH

@@ -193,7 +193,7 @@ func (g *GameState) GetHudStats() map[foundation.HudValue]int {
 	}
 	//g.Player.stats
 
-	uiStats[foundation.HudTurnsTaken] = g.TurnsTaken
+	uiStats[foundation.HudTurnsTaken] = g.TurnsTaken()
 	uiStats[foundation.HudGold] = g.Player.GetGold()
 
 	uiStats[foundation.HudHitPoints] = max(0, g.Player.GetHitPoints())
@@ -353,4 +353,30 @@ func (g *GameState) IsFoodAt(loc geometry.Point) bool {
 
 func (g *GameState) IsBlockingRay(point geometry.Point) bool {
 	return !g.currentMap().IsCurrentlyPassable(point)
+}
+
+func (g *GameState) SaveTimeNow(name string) {
+	g.timeTracker[name] = g.gameTime
+}
+func (g *GameState) GetNamedTime(name string) PointInTime {
+	if pointInTime, ok := g.timeTracker[name]; ok {
+		return pointInTime
+	}
+	return PointInTime{}
+}
+func (g *GameState) IsTurnsAfter(name string, turns int) bool {
+	pointInTime := g.GetNamedTime(name)
+	return g.gameTime.TurnsSince(pointInTime) >= turns
+}
+func (g *GameState) IsMinutesAfter(name string, minutes int) bool {
+	pointInTime := g.GetNamedTime(name)
+	return g.gameTime.MinutesSince(pointInTime) >= minutes
+}
+func (g *GameState) IsHoursAfter(name string, hours int) bool {
+	pointInTime := g.GetNamedTime(name)
+	return g.gameTime.HoursSince(pointInTime) >= hours
+}
+func (g *GameState) IsDaysAfter(name string, days int) bool {
+	pointInTime := g.GetNamedTime(name)
+	return g.gameTime.DaysSince(pointInTime) >= days
 }
