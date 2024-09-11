@@ -111,6 +111,22 @@ func (g *GameState) getCommonFuncs() map[string]govaluate.ExpressionFunction {
 			days := args[1].(float64)
 			return g.IsDaysAfter(namedTime, int(days)), nil
 		},
+		"RunScript": func(args ...interface{}) (interface{}, error) {
+			scriptName := args[0].(string)
+			g.RunScript(scriptName)
+			return nil, nil
+		},
+		"StopScript": func(args ...interface{}) (interface{}, error) {
+			scriptName := args[0].(string)
+			g.scriptRunner.StopScript(scriptName)
+			return nil, nil
+		},
+		"RestartScript": func(args ...interface{}) (interface{}, error) {
+			scriptName := args[0].(string)
+			g.scriptRunner.StopScript(scriptName)
+			g.RunScript(scriptName)
+			return nil, nil
+		},
 	}
 }
 
