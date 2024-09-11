@@ -54,7 +54,7 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 		//g.Player.LooseActionPoints(1)
 	}
 
-	if !g.Player.IsHungry() && g.TurnsTaken()%healInterval == 0 && len(g.playerVisibleEnemiesByDistance()) == 0 {
+	if !g.Player.IsHungry() && g.TurnsTaken()%healInterval == 0 && len(g.playerVisibleActorsByDistance()) == 0 {
 		if g.Player.NeedsHealing() {
 			g.Player.Heal(1)
 		} else {

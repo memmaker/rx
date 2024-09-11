@@ -173,8 +173,14 @@ func (g *GameState) IsEquipped(items foundation.ItemForUI) bool {
 	return g.Player.GetEquipment().IsEquipped(itemStack.First())
 }
 
-func (g *GameState) GetVisibleEnemies() []foundation.ActorForUI {
-	return actorsForUI(g.playerVisibleEnemiesByDistance())
+func (g *GameState) GetVisibleActors() []foundation.ActorForUI {
+	return actorsForUI(g.playerVisibleActorsByDistance())
+}
+
+func (g *GameState) GetVisibleEnemies() []*Actor {
+	return fxtools.FilterSlice(g.playerVisibleActorsByDistance(), func(actor *Actor) bool {
+		return actor.IsHostileTowards(g.Player)
+	})
 }
 
 func (g *GameState) GetHudFlags() map[special.ActorFlag]int {
@@ -297,14 +303,14 @@ func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 	return foundation.EntityTypeWorldTile
 }
 
-func (g *GameState) playerVisibleEnemiesByDistance() []*Actor {
+func (g *GameState) playerVisibleActorsByDistance() []*Actor {
 	var enemies []*Actor
 	if g.Player == nil || g.currentMap() == nil {
 		return enemies
 	}
 	playerPos := g.Player.Position()
 	for _, actor := range g.currentMap().Actors() {
-		if actor == g.Player || !actor.IsInCombat() {
+		if actor == g.Player {
 			continue
 		}
 		if g.canPlayerSee(actor.Position()) && g.couldPlayerSeeActor(actor) {

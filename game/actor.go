@@ -12,6 +12,7 @@ import (
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"math/rand"
+	"strconv"
 	"strings"
 )
 
@@ -451,12 +452,17 @@ func (a *Actor) Icon() textiles.TextIcon {
 func (a *Actor) GetListInfo() string {
 	hp := a.charSheet.GetHitPoints()
 	hpMax := a.charSheet.GetHitPointsMax()
+	damage := a.GetMainHandDamageAsString()
+	return fmt.Sprintf("%s HP: %d/%d Dmg: %s DR: %d", a.name, hp, hpMax, damage, a.GetDamageResistance())
+}
+
+func (a *Actor) GetMainHandDamageAsString() string {
 	item, hasMainHandItem := a.GetEquipment().GetMainHandItem()
-	damage := "0"
+	damage := strconv.Itoa(a.GetMeleeDamageBonus())
 	if hasMainHandItem && item.IsWeapon() {
 		damage = item.GetWeaponDamage().ShortString()
 	}
-	return fmt.Sprintf("%s HP: %d/%d Dmg: %s DR: %d", a.name, hp, hpMax, damage, a.GetDamageResistance())
+	return damage
 }
 
 func (a *Actor) IsStunned() bool {

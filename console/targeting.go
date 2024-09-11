@@ -84,7 +84,7 @@ func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point)) {
 }
 
 func (u *UI) beginTargeting(onSelected func(targetPos geometry.Point, hitZone int)) {
-	listOfVisibleEnemies := u.game.GetVisibleEnemies()
+	listOfVisibleEnemies := u.game.GetVisibleActors()
 	preselected := u.game.GetPlayerPosition()
 	if len(listOfVisibleEnemies) > 0 {
 		preselected = listOfVisibleEnemies[0].Position()

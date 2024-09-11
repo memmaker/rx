@@ -69,7 +69,7 @@ func (g *GameState) PlayerRangedAttack() {
 }
 
 func (g *GameState) PlayerQuickRangedAttack() {
-	enemies := g.playerVisibleEnemiesByDistance()
+	enemies := g.playerVisibleActorsByDistance()
 	equipment := g.Player.GetEquipment()
 	mainHandItem, hasWeapon := equipment.GetMainHandItem()
 
@@ -95,7 +95,7 @@ func (g *GameState) PlayerQuickRangedAttack() {
 }
 
 func (g *GameState) QuickThrow() {
-	enemies := g.playerVisibleEnemiesByDistance()
+	enemies := g.playerVisibleActorsByDistance()
 	preselectedTarget := g.Player.Position()
 	equipment := g.Player.GetEquipment()
 	weapon, hasWeapon := equipment.GetMainHandItem()

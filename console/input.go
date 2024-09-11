@@ -74,7 +74,7 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["repair"] = u.game.OpenRepairMenu
 	u.commandTable["journal"] = u.game.OpenJournal
 	u.commandTable["log"] = u.ShowLog
-	u.commandTable["monsters"] = u.ShowVisibleEnemies
+	u.commandTable["monsters"] = u.ShowVisibleActors
 	u.commandTable["items"] = u.ShowVisibleItems
 	u.commandTable["help"] = u.ShowHelpScreen
 	u.commandTable["log"] = u.ShowLog
@@ -100,7 +100,7 @@ func (u *UI) setupCommandTable() {
 
 	u.commandTable["look"] = u.LookTargeting
 
-	u.commandTable["overlay_monsters"] = u.ShowEnemyOverlay
+	u.commandTable["overlay_monsters"] = u.ShowActorOverlay
 	u.commandTable["overlay_items"] = u.ShowItemOverlay
 
 	u.commandTable["gamma_up"] = func() {

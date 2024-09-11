@@ -19,9 +19,9 @@ Now the player should have these options:
     - lethal - POSSIBLE
   - by persuasion - POSSIBLE
 - Negotiate with the Ripperdoc
-  - to pay you double
-  - to pay you at least half
-  - to reward you for going after the client
+  - to pay you double - POSSIBLE
+  - to pay you at least half - POSSIBLE
+  - to reward you for going after the client - POSSIBLE
 - Find the old ripperdoc, locked away in the cellar of the hospital
   - to kill him
   - to free him
@@ -29,7 +29,7 @@ Now the player should have these options:
 - Pay out of his own pocket, or with money stolen from someone else
 - Ignore the job
 - Find out more about the client and go after him (from either the doc or grim)
-  - to kill him
+  - to kill him - POSSIBLE
   - to get more payment
   - to intimidate him into leaving the Doc alone
   - to steal money from him

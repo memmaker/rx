@@ -424,7 +424,7 @@ func revealMap(g *GameState, user *Actor) []foundation.Animation {
 	return []foundation.Animation{waveEffect}
 }
 func holdAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
-	affectedMonsters := g.playerVisibleEnemiesByDistance()
+	affectedMonsters := g.playerVisibleActorsByDistance()
 
 	for _, actor := range affectedMonsters {
 		if actor == g.Player {
@@ -446,7 +446,7 @@ func holdAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 	return animations
 }
 func sleepAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
-	affectedMonsters := g.playerVisibleEnemiesByDistance()
+	affectedMonsters := g.playerVisibleActorsByDistance()
 
 	for _, actor := range affectedMonsters {
 		if actor == g.Player {
@@ -469,7 +469,7 @@ func sleepAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 }
 
 func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
-	affectedMonsters := g.playerVisibleEnemiesByDistance()
+	affectedMonsters := g.playerVisibleActorsByDistance()
 
 	for _, actor := range affectedMonsters {
 		if actor == g.Player {

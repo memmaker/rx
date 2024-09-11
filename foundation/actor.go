@@ -21,4 +21,6 @@ type ActorForUI interface {
 	IsAlive() bool
 	GetBodyPart(index int) special.BodyPart
 	GetBodyPartIndex(aim special.BodyPart) int
+	GetDamageResistance() int
+	GetMainHandDamageAsString() string
 }

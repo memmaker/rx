@@ -40,8 +40,11 @@ z -> rest
 m -> monsters
 I -> items
 
-U -> overlay_monsters
-O -> overlay_items
+/ -> overlay_monsters
+* -> monsters
+
+- -> overlay_items
++ -> items
 
 Q -> quit
 

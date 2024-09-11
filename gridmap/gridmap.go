@@ -1253,6 +1253,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsHazardousTileAt(p geometry.
 	return m.IsTileWithFlagAt(p, TileFlagHazardous)
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsTileWithFlagAt(p geometry.Point, flag TileFlags) bool {
+	if !m.Contains(p) {
+		return false
+	}
 	tileType := m.CellAt(p).TileType
 	return tileType.Flags.Has(flag)
 }

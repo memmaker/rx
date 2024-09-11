@@ -65,7 +65,7 @@ type GameForUI interface {
 
 	GetInventoryForUI() []ItemForUI
 
-	GetVisibleEnemies() []ActorForUI
+	GetVisibleActors() []ActorForUI
 	GetVisibleItems() []ItemForUI
 	GetLog() []HiLiteString
 
@@ -145,7 +145,7 @@ type GameUI interface {
 	UpdateStats()
 	UpdateInventory()
 	UpdateLogWindow()
-	UpdateVisibleEnemies()
+	UpdateVisibleActors()
 
 	// Targeting
 	SelectTarget(onSelected func(targetPos geometry.Point))

@@ -7,11 +7,13 @@ cond: HasItem('home_keys')
 text:
 + You should check out Grim's apartment.
 
-cond: HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
+cond: !HasFlag('Killed(jacob_thorne)') && HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
 text: Jacob wants you to extract $500 from the Ripperdoc in the northside residential area.
 
+cond: HasFlag('Killed(jacob_thorne)')
+text: Jacob is dead. Daniel Harker, the Ripperdoc, will be pleased to hear about it.
 
-cond: !HasFlag('TalkedTo(dr_winters)')
+cond: false && !HasFlag('TalkedTo(dr_winters)')
 text:
 + You have a referral from your Doctor to see Dr. Winters.
 + Head to the hospital in the north part of town and look for him there.

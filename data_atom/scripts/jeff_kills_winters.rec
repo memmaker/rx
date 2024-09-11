@@ -34,3 +34,14 @@ if: IsInShootingRange(JEFF, WINTERS)
 do: AddChatter(JEFF, 'This is for Lucy!')
 do: SetGoalKill(JEFF, WINTERS)
 
+
+%rec: frames
+
+if: IsAtLocation(GUARD, 'waypoint_b')
+do: SetGoalMoveToNamedLocation(GUARD, 'waypoint_a')
+
+if: IsAtLocation(GUARD, 'waypoint_a')
+do: SetGoalMoveToNamedLocation(GUARD, 'waypoint_b')
+
+if: IsAtLocation(GUARD, 'waypoint_b')
+do: RestartScript('walk_between_waypoints')

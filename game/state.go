@@ -43,7 +43,7 @@ func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
 }
 
 func (g *GameState) updateUIStatus() {
-	g.ui.UpdateVisibleEnemies()
+	g.ui.UpdateVisibleActors()
 	g.ui.UpdateStats()
 	g.ui.UpdateLogWindow()
 	g.ui.UpdateInventory()

@@ -241,6 +241,11 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			for _, item := range removedItems {
 				g.addItemToMap(item, actor.Position())
 			}
+			if len(removedItems) > 0 {
+				first := removedItems[0]
+				displayName := first.Name()
+				g.msg(foundation.HiLite("%s dropped %s.", actor.Name(), displayName))
+			}
 			return nil, nil
 		},
 		"AddChatter": func(args ...interface{}) (interface{}, error) {

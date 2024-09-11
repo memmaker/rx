@@ -396,6 +396,8 @@ func (g *GameState) actorDropItem(holder *Actor, item *Item) {
 		}
 		g.endPlayerTurn(g.Player.timeNeededForActions() / 2)
 		g.ui.PlayCue("world/drop")
+	} else {
+		g.msg(foundation.HiLite("%s dropped %s", holder.Name(), item.Name()))
 	}
 }
 
