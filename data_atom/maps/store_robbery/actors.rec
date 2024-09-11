@@ -1,5 +1,56 @@
 %rec: default
 
+Name: store_robbery_innerGuard
+Icon: G
+Foreground: light_gray_2
+Description: Gun Guard
+equipment: 10mm_pistol
+equipment: 10mm_jhp
+dialogue: store_robbery_innerGuard
+LongDescription: 
+Age: 25
+BodyType: 0
+XP: 95
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 67
+ActionPoints: 8
+ArmorClass: 16
+MeleeDamage: 1
+CarryWeight: 175
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 6
+Perception: 6
+Endurance: 5
+Charisma: 3
+Intelligence: 4
+Agility: 6
+Luck: 6
+SkillBonusSmallGuns: 43
+SkillBonusBigGuns: 42
+SkillBonusEnergyWeapons: 19
+SkillBonusUnarmed: 4
+SkillBonusMelee: 9
+SkillBonusThrowing: 19
+DTNormal: 4
+DTLaser: 6
+DTFire: 4
+DTPlasma: 4
+DTExplosive: 4
+DRNormal: 30
+DRLaser: 75
+DRFire: 10
+DRPlasma: 20
+DREMP: 500
+DRExplosive: 25
+DRRadiation: 10
+DRPoison: 25
+SourceFile: 00000046.pro
+Position: (37,6)
+
 Name: gun_guard
 Icon: G
 Foreground: light_gray_2
@@ -153,6 +204,7 @@ Foreground: light_gray_2
 Description: Master Trader
 Dialogue: store_robbery_merchant
 Equipment: key('storeBackRoom', 'Store key')
+Equipment: gold | 500
 LongDescription: 
 Age: 25
 BodyType: 0

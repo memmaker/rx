@@ -6,10 +6,29 @@ LockFlag: storeBackRoom
 LockDifficulty: Easy
 Position: (23,3)
 
+Category: OpenDoor
+Description: a door
+Position: (50,14)
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (35,19)
+
+Category: OpenDoor
+Description: a door
+Position: (51,14)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (64,12)
+
+Category: NamedLocation
+Identifier: innerGuard_distract_spot
+Position: (29,11)
+
 Category: NamedLocation
 Identifier: taxi_driver
-Icon: T
-Dialogue: taxi_driver
 Position: (33,20)
 
 Category: NamedLocation
@@ -23,21 +42,9 @@ Dialogue: taxi
 Tags: No_Sound
 Position: (33,21)
 
-Category: OpenDoor
-Description: a door
-Position: (50,14)
-
-Category: NamedLocation
-Identifier: taxi_stand
-Position: (35,19)
-
 Category: LockedDoor
 Description: a door
 LockFlag: storeBackRoom
 LockDifficulty: VeryEasy
 Position: (35,5)
-
-Category: OpenDoor
-Description: a door
-Position: (51,14)
 

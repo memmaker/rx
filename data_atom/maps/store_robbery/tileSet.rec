@@ -1,12 +1,12 @@
 %rec: default
 
-Name: Ground
-Char: ∙
-Foreground: dark_gray_4
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
 Background: dark_gray_5
 IsWalkable: true
 IsTransparent: true
-IsDamaging: false
+Flags: 0
 
 Name: Wooden Wall
 Char: #
@@ -14,7 +14,7 @@ Foreground: brown_1
 Background: orange_6
 IsWalkable: false
 IsTransparent: false
-IsDamaging: false
+Flags: 0
 
 Name: Floor
 Char: ░
@@ -22,7 +22,15 @@ Foreground: dark_gray_4
 Background: dark_gray_5
 IsWalkable: true
 IsTransparent: true
-IsDamaging: false
+Flags: 0
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
 
 Name: Shelf
 Char: ▬
@@ -30,7 +38,23 @@ Foreground: light_blue_3
 Background: dark_gray_5
 IsWalkable: false
 IsTransparent: false
-IsDamaging: false
+Flags: 0
+
+Name: Ground
+Char: ∙
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: synthetic tree
+Char: ♣
+Foreground: bright_green_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 0
 
 Name: Counter
 Char: █
@@ -38,7 +62,23 @@ Foreground: light_gray_5
 Background: dark_gray_5
 IsWalkable: false
 IsTransparent: true
-IsDamaging: false
+Flags: 0
+
+Name: bench
+Char: π
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: street
+Char:  
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
 
 Name: a taxi
 Char:  
@@ -46,7 +86,7 @@ Foreground: dark_gray_7
 Background: yellow_3
 IsWalkable: false
 IsTransparent: false
-IsDamaging: false
+Flags: 0
 
 Name: a taxi
 Char: ⌂
@@ -54,5 +94,5 @@ Foreground: dark_gray_7
 Background: yellow_3
 IsWalkable: false
 IsTransparent: false
-IsDamaging: false
+Flags: 0
 

@@ -1,36 +1,140 @@
 %rec: default
 
-Name: Low Hills
-Char: ^
-Foreground: tan_12
-Background: tan_10
-IsWalkable: true
-IsTransparent: true
-IsDamaging: false
-
-Name: High Hills
-Char: ▲
-Foreground: tan_12
-Background: tan_10
-IsWalkable: false
-IsTransparent: false
-IsDamaging: false
-
-Name: Wasteland
+Name: sidewalk
 Char: ·
-Foreground: tan_12
-Background: tan_10
+Foreground: dark_gray_3
+Background: dark_gray_5
 IsWalkable: true
 IsTransparent: true
-IsDamaging: false
+Flags: 0
 
-Name: Wooden Wall
-Char: #
-Foreground: brown_1
-Background: orange_6
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
 IsWalkable: false
 IsTransparent: false
-IsDamaging: false
+Flags: 0
+
+Name: street
+Char:  
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: street
+Char: |
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: stove
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: shower
+Char: ⌠
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: bed
+Char: ▓
+Foreground: rust_3
+Background: orange_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: shower
+Char: ≈
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: table
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 8
+
+Name: sink
+Char: ▬
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: toilet
+Char: σ
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: bench
+Char: π
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: chair
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: synthetic tree
+Char: ♣
+Foreground: bright_green_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 0
+
+Name: city pond
+Char: ≈
+Foreground: light_blue
+Background: steel_blue_9
+IsWalkable: true
+IsTransparent: true
+Flags: 2
+
+Name: street
+Char: ─
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
 
 Name: a taxi
 Char:  
@@ -38,7 +142,7 @@ Foreground: dark_gray_7
 Background: yellow_3
 IsWalkable: false
 IsTransparent: false
-IsDamaging: false
+Flags: 0
 
 Name: a taxi
 Char: ⌂
@@ -46,45 +150,5 @@ Foreground: dark_gray_7
 Background: yellow_3
 IsWalkable: false
 IsTransparent: false
-IsDamaging: false
-
-Name: Table
-Char: ■
-Foreground: light_gray_3
-Background: tan_10
-IsWalkable: false
-IsTransparent: true
-IsDamaging: false
-
-Name: Chair
-Char: ∙
-Foreground: light_gray_3
-Background: tan_10
-IsWalkable: true
-IsTransparent: true
-IsDamaging: false
-
-Name: Stairs
-Char: ≡
-Foreground: orange_5
-Background: tan_10
-IsWalkable: true
-IsTransparent: true
-IsDamaging: false
-
-Name: a puddle of water
-Char: •
-Foreground: green_2
-Background: tan_10
-IsWalkable: true
-IsTransparent: true
-IsDamaging: false
-
-Name: Radiated Water
-Char: ≈
-Foreground: green_2
-Background: green_5
-IsWalkable: true
-IsTransparent: true
-IsDamaging: false
+Flags: 0
 

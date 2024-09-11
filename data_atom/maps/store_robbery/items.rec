@@ -1,6 +1,53 @@
 %rec: default
 
 Category: Ammo
+Name: explosive_rocket
+Description: Explosive Rocket
+LongDescription: A rocket with a large explosive warhead.
+Size: 0
+Weight: 3
+Cost: 200
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: 0
+ammo_dr_modifier: -25
+ammo_rounds_in_magazine: 1
+ammo_caliber_index: 1
+ammo_caliber_name: Rocket
+Position: (32,2)
+
+Category: Gold
+Name: gold
+Description: loose money
+Charges: 100
+Position: (23,6)
+
+Category: Weapons
+Name: rocket_launcher
+Description: Rocket Launcher
+LongDescription: A Rockwell BigBazooka rocket launcher. With the deluxe 3 lb. trigger. Fires AP or Explosive Rockets. Min ST: 6.
+Size: 6
+Weight: 15
+Cost: 2300
+tags: no_aim
+weapon_type: RocketLauncher
+weapon_damage: 35-100
+weapon_magazine_size: 1
+weapon_burst_rounds: 0
+weapon_damage_type: Explosive
+weapon_min_str: 6
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 6
+weapon_ap_cost_two: 0
+weapon_max_range_one: 40
+weapon_max_range_two: 0
+weapon_uses_ammo: rocket
+weapon_caliber_index: 1
+weapon_sound_id: 78
+Position: (30,2)
+
+Category: Ammo
 Name: 12_ga_shotgun_shells
 Description: 12 ga. Shotgun Shells
 LongDescription: Shotgun ammunition. This particular ammo is marked: "12-gauge shells, not for use by children under the age of 3."
@@ -15,6 +62,44 @@ ammo_rounds_in_magazine: 20
 ammo_caliber_index: 11
 ammo_caliber_name: 12-gauge
 Position: (24,7)
+
+Category: Ammo
+Name: explosive_rocket
+Description: Explosive Rocket
+LongDescription: A rocket with a large explosive warhead.
+Size: 0
+Weight: 3
+Cost: 200
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: 0
+ammo_dr_modifier: -25
+ammo_rounds_in_magazine: 1
+ammo_caliber_index: 1
+ammo_caliber_name: Rocket
+Position: (33,2)
+
+Category: Ammo
+Name: 12_ga_shotgun_shells
+Description: 12 ga. Shotgun Shells
+LongDescription: Shotgun ammunition. This particular ammo is marked: "12-gauge shells, not for use by children under the age of 3."
+Size: 0
+Weight: 1
+Cost: 225
+ammo_dmg_multiplier: 1
+ammo_dmg_divisor: 1
+ammo_ac_modifier: -10
+ammo_dr_modifier: 0
+ammo_rounds_in_magazine: 20
+ammo_caliber_index: 11
+ammo_caliber_name: 12-gauge
+Position: (25,7)
+
+Category: Gold
+Name: gold
+Description: loose money
+Charges: 100
+Position: (22,6)
 
 Category: Ammo
 Name: 12_ga_shotgun_shells
@@ -68,18 +153,18 @@ weapon_sound_id: 82
 Position: (28,7)
 
 Category: Ammo
-Name: 12_ga_shotgun_shells
-Description: 12 ga. Shotgun Shells
-LongDescription: Shotgun ammunition. This particular ammo is marked: "12-gauge shells, not for use by children under the age of 3."
+Name: explosive_rocket
+Description: Explosive Rocket
+LongDescription: A rocket with a large explosive warhead.
 Size: 0
-Weight: 1
-Cost: 225
+Weight: 3
+Cost: 200
 ammo_dmg_multiplier: 1
 ammo_dmg_divisor: 1
-ammo_ac_modifier: -10
-ammo_dr_modifier: 0
-ammo_rounds_in_magazine: 20
-ammo_caliber_index: 11
-ammo_caliber_name: 12-gauge
-Position: (25,7)
+ammo_ac_modifier: 0
+ammo_dr_modifier: -25
+ammo_rounds_in_magazine: 1
+ammo_caliber_index: 1
+ammo_caliber_name: Rocket
+Position: (34,2)
 

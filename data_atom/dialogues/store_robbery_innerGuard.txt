@@ -1,0 +1,19 @@
+%rec: OpeningBranch
+
+cond: true
+goto: Start
+
+%rec: Nodes
+
+name: Start
+npc: I watch the back room door so nobody can lockpick it. What's up?
+#
+o_text: Some crazy guy is attacking the guards outside! They need your help!
+o_goto: GuardGoOutside
+#
+
+name: GuardGoOutside
+npc: Shit! I gotta go help them!
+// this is where he would 'effect: RunScript('guard_go_outside')' but I can't get it to work yet
+effect: EndConversation
+#

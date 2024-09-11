@@ -1,0 +1,16 @@
+%rec: definitions
+
+var: GUARD
+set: ActorWithName('store_robbery_innerGuard')
+
+%rec: outcomes
+
+do: SetGoalMoveToNamedLocation(GUARD, 'innerGuard_distract_spot')
+
+%rec: cancel
+
+do: SetGoalMoveToNamedLocation(GUARD, 'innerGuard_distract_spot')
+
+%rec: frames
+
+do: SetGoalMoveToNamedLocation(GUARD, 'innerGuard_distract_spot')
