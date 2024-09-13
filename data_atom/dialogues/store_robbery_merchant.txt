@@ -1,5 +1,8 @@
 %rec: OpeningBranch
 
+cond: HasFlag('robberyAttempted')
+goto: GoodbyeRobbed
+
 cond: true
 goto: Start
 
@@ -9,26 +12,53 @@ name: Start
 npc: Welcome to Shop-Mart, how can I help you?
 #
 o_text: This is a robbery, put the money in the bag!
-o_cond: !HasFlag('moneyGiven')
+o_cond: !HasFlag('robberyAttempted') && GetSkill('Small_Guns') >= 50 || GetSkill('Big_Guns') >= 50
 o_goto: RobSuccess
 #
 o_text: I really, reaaally need that key to the back room.
-o_goto: RequestedKey
+o_cond: !HasFlag('keyAttempted') && GetSkill('Speech') >= 50
+o_goto: KeySuccess
+#
+o_text: Just browsing for now.
+o_goto: GoodbyeBrowsing
 
 name: RobSuccess
 npc: Please don't hurt me! Here's everything in the cash register!
-+ (The shopkeeper empties the register into your bag.)
-effect: SetFlag('moneyGiven')
++ (The shopkeeper empties the register into a plastic bag and hands it to you.)
++ >You receive $500.
+effect: GiveItem('gold', 500)
+effect: SetFlag('robberyAttempted')
 effect: EndConversation
 
-name: RequestedKey
+name: RobFailure
+npc: I'm not afraid of you. Get out of my store!
+effect: SetFlag('robberyAttempted')
+effect: EndConversation
+
+name: KeySuccess
 npc: Sure, here you go.
 effect: GiveItem('storeBackRoom')
+effect: SetFlag('keyAttempted')
 #
 o_text: Thanks for the key!
 o_goto: Goodbye
 
+name: KeyFailure
+npc: No way, employees only.
+effect: SetFlag('keyAttempted')
+#
+o_text: Oh alright.
+o_goto: Goodbye
+
 name: Goodbye
-npc: Bye.
+npc: Bye now.
+effect: EndConversation
+
+name: GoodbyeBrowsing
+npc: Let me know if you need anything.
+effect: EndConversation
+
+name: GoodbyeRobbed
+npc: I want nothing to do with you!
 effect: EndConversation
 #
