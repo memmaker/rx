@@ -88,6 +88,10 @@ func (t TargetingMode) IsAimable() bool {
 	return t == TargetingModeFireSingle || t == TargetingModePunch || t == TargetingModeKick || t == TargetingModeSwing || t == TargetingModeThrust || t == TargetingModeThrow
 }
 
+func (t TargetingMode) IsBurstOrFullAuto() bool {
+	return t == TargetingModeFireBurst || t == TargetingModeFireFullAuto
+}
+
 type AmmoType int
 
 const (

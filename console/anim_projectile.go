@@ -14,16 +14,10 @@ type BaseAnimation struct {
 	calledDone          bool
 	requestMapUpdate    bool
 	audioCue            string
-
-	light *gridmap.LightSource
 }
 
-func (p *BaseAnimation) GetLight() *gridmap.LightSource {
-	return p.light
-}
-
-func (p *BaseAnimation) SetLightSource(light *gridmap.LightSource) {
-	p.light = light
+func (p *BaseAnimation) GetLights() []*gridmap.LightSource {
+	return nil
 }
 func (p *BaseAnimation) Cancel() {
 	p.onFinishedOrCancelled()
@@ -71,6 +65,7 @@ type ProjectileAnimation struct {
 	currentPathIndex int
 	lookup           func(loc geometry.Point) (textiles.TextIcon, bool)
 	trail            []textiles.TextIcon
+	light            *gridmap.LightSource
 }
 
 func NewProjectileAnimation(path []geometry.Point, icon textiles.TextIcon, lookup func(loc geometry.Point) (textiles.TextIcon, bool), done func()) *ProjectileAnimation {
@@ -116,6 +111,7 @@ func (p *ProjectileAnimation) NextFrame() {
 		}
 	}
 	p.drawables[currentPathPosition] = drawIcon
+
 	if p.light != nil {
 		p.light.Pos = currentPathPosition
 	}
@@ -146,4 +142,15 @@ func (p *ProjectileAnimation) IsDone() bool {
 
 func (p *ProjectileAnimation) SetTrail(icons []textiles.TextIcon) {
 	p.trail = icons
+}
+
+func (p *ProjectileAnimation) AddLightSource(g *gridmap.LightSource) {
+	p.light = g
+}
+
+func (p *ProjectileAnimation) GetLights() []*gridmap.LightSource {
+	if p.light != nil {
+		return []*gridmap.LightSource{p.light}
+	}
+	return nil
 }

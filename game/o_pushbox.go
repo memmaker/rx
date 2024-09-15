@@ -78,6 +78,7 @@ func (b *PushBox) InitWithGameState(g *GameState) {
 				b.SetTransparent(true)
 				b.SetWalkable(true)
 			}
+			g.endPlayerTurn(g.Player.timeNeededForActions())
 		}
 	}
 	b.onDamage = func(dmg SourcedDamage) []foundation.Animation {

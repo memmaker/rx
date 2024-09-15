@@ -10,7 +10,7 @@ require (
 	github.com/gopxl/beep v1.4.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-runewidth v0.0.16
-	github.com/memmaker/go v0.0.0-20240911105727-f5d90bd9b9f8
+	github.com/memmaker/go v0.0.0-20240913181835-7234104d8787
 	github.com/rivo/uniseg v0.4.7
 	golang.org/x/term v0.24.0
 )

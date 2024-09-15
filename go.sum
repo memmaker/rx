@@ -156,6 +156,14 @@ github.com/memmaker/go v0.0.0-20240909215700-c31e81924805 h1:rIX1lFV2m9e2DdMavlI
 github.com/memmaker/go v0.0.0-20240909215700-c31e81924805/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
 github.com/memmaker/go v0.0.0-20240911105727-f5d90bd9b9f8 h1:RC7Ez3YdhPhG26UI3Q/Gk40WYnsKGVMRy193zBDhlco=
 github.com/memmaker/go v0.0.0-20240911105727-f5d90bd9b9f8/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
+github.com/memmaker/go v0.0.0-20240913174128-4e8790d710fa h1:f93jqYxvPIfbirlr6dRJsyBwGaNSb1+b1fjS95eOja4=
+github.com/memmaker/go v0.0.0-20240913174128-4e8790d710fa/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
+github.com/memmaker/go v0.0.0-20240913175906-76127edf7f74 h1:HBdgIkBOWnITcBG3mGHr9mjMScxAO1nAz+1xsPyQA88=
+github.com/memmaker/go v0.0.0-20240913175906-76127edf7f74/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
+github.com/memmaker/go v0.0.0-20240913180115-60817f3d3181 h1:gvnh7wkHO7AwehL7I+nhxEdSJecKeGMoOEJRSUIpIQs=
+github.com/memmaker/go v0.0.0-20240913180115-60817f3d3181/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
+github.com/memmaker/go v0.0.0-20240913181835-7234104d8787 h1:6h11VRpaZfpaP/SqOh+1Xk5DHDMfGvS4kJY5PBV1PUw=
+github.com/memmaker/go v0.0.0-20240913181835-7234104d8787/go.mod h1:EfQr4g4zth0UrPvz9kn0zBfeShWCAUDdK01pd3GioRo=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

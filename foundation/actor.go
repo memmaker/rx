@@ -5,6 +5,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"image/color"
+	"strings"
 )
 
 type ActorForUI interface {
@@ -16,6 +17,7 @@ type ActorForUI interface {
 	GetHitPoints() int
 	GetHitPointsMax() int
 	HasFlag(held special.ActorFlag) bool
+	GetState() AIState
 	GetDetailInfo() string
 	GetInternalName() string
 	IsAlive() bool
@@ -23,4 +25,50 @@ type ActorForUI interface {
 	GetBodyPartIndex(aim special.BodyPart) int
 	GetDamageResistance() int
 	GetMainHandDamageAsString() string
+}
+
+type ChatterType int
+
+const (
+	ChatterOnTheWayToAKill ChatterType = iota
+	ChatterKillOneLiner
+	ChatterBeingDamaged
+	ChatterBeingAroundPlayer
+)
+
+func NewChatterTypeFromString(str string) ChatterType {
+	str = strings.ToLower(str)
+	switch str {
+	case "way_to_kill":
+		return ChatterOnTheWayToAKill
+	case "kill_one_liner":
+		return ChatterKillOneLiner
+	case "being_damaged":
+		return ChatterBeingDamaged
+	case "being_around_player":
+		return ChatterBeingAroundPlayer
+	}
+	return ChatterOnTheWayToAKill
+}
+
+type AIState uint8
+
+const (
+	Neutral AIState = iota
+	AttackEverything
+	AttackEnemies
+	Panic
+)
+
+func AIStateFromString(str string) AIState {
+	str = strings.ToLower(str)
+	switch str {
+	case "neutral":
+		return Neutral
+	case "hostile":
+		return AttackEverything
+	case "ally":
+		return Panic
+	}
+	return Neutral
 }

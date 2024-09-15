@@ -1,58 +1,71 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
-	"bufio"
-	"fmt"
-	"github.com/memmaker/go/geometry"
-	"os"
-	"path"
+    "RogueUI/foundation"
+    "RogueUI/gridmap"
+    "bufio"
+    "fmt"
+    "github.com/memmaker/go/geometry"
+    "os"
+    "path"
 )
 
 func (g *GameState) GotoNamedLevel(levelName string, location string) {
-	var loadedMap *gridmap.GridMap[*Actor, *Item, Object]
-	var ok bool
-	if loadedMap, ok = g.activeMaps[levelName]; !ok {
-		result := g.mapLoader.LoadMap(levelName)
-		loadedMap = result.Map
 
-		if loadedMap == nil {
-			g.msg(foundation.Msg("It's impossible to move there.."))
-			return
-		}
+    if g.metronome.LeavingMapEvents() {
+        g.ui.AnimatePending()
+    }
 
-		flags := result.FlagsOfMap
-		for flagName, flagValue := range flags {
-			g.gameFlags.Set(flagName, flagValue)
-		}
+    var loadedMap *gridmap.GridMap[*Actor, *Item, Object]
+    var ok bool
+    var firstTimeInit func()
+    if loadedMap, ok = g.activeMaps[levelName]; !ok {
+        result := g.mapLoader.LoadMap(levelName)
+        loadedMap = result.Map
 
-		scripts := result.ScriptsToRun
-		for _, script := range scripts {
-			g.RunScript(script)
-		}
+        if loadedMap == nil {
+            g.msg(foundation.Msg("It's impossible to move there.."))
+            return
+        }
 
-		g.iconsForObjects = result.IconsForObjects
-	} else {
-		g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", levelName), g.palette)
-	}
+        g.iconsForObjects = result.IconsForObjects
 
-	if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
-		g.currentMap().RemoveActor(g.Player)
-		g.Player.RemoveLevelStatusEffects()
-	}
+        firstTimeInit = func() {
+            flags := result.FlagsOfMap
+            for flagName, flagValue := range flags {
+                g.gameFlags.Set(flagName, flagValue)
+            }
 
-	namedLocation := loadedMap.GetNamedLocation(location)
-	loadedMap.AddActor(g.Player, namedLocation)
+            scripts := result.ScriptsToRun
+            for _, script := range scripts {
+                g.RunScriptByName(script)
+            }
+        }
 
-	mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
-	g.gameFlags.Increment(mapVisited)
+    } else {
+        g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", levelName), g.palette)
+    }
 
-	g.setCurrentMap(loadedMap)
+    if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
+        g.currentMap().RemoveActor(g.Player)
+        g.Player.RemoveLevelStatusEffects()
+    }
 
-	g.afterPlayerMoved(geometry.Point{}, true)
+    namedLocation := loadedMap.GetNamedLocation(location)
+    loadedMap.AddActor(g.Player, namedLocation)
 
-	g.updateUIStatus()
+    mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
+    g.gameFlags.Increment(mapVisited)
+
+    g.setCurrentMap(loadedMap)
+
+    g.afterPlayerMoved(geometry.Point{}, true)
+
+    if firstTimeInit != nil {
+        firstTimeInit()
+    }
+
+    g.updateUIStatus()
 }
 
 /*
@@ -207,15 +220,15 @@ func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, 
 }
 */
 func ReadFileAsOneStringWithoutNewLines(filename string) string {
-	file, err := os.Open(filename)
-	if err != nil {
-		return ""
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	var result string
-	for scanner.Scan() {
-		result += scanner.Text()
-	}
-	return result
+    file, err := os.Open(filename)
+    if err != nil {
+        return ""
+    }
+    defer file.Close()
+    scanner := bufio.NewScanner(file)
+    var result string
+    for scanner.Scan() {
+        result += scanner.Text()
+    }
+    return result
 }

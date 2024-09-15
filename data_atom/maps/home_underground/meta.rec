@@ -1,0 +1,7 @@
+%rec: default
+
+Name: Northside residential underground
+MusicFile:
+IsOutdoor: false
+IndoorAmbientLight: (0.3, 0.3, 0.3)
+

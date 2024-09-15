@@ -138,6 +138,11 @@ func (c *CharsheetViewer) setupUI() {
 			i := y
 			isOnlyInfo := x < 6
 			isPlus := x > 10
+
+			if i < 0 || i >= int(special.StatCount) {
+				return action, event
+			}
+
 			stat := (special.Stat)(i)
 
 			_, mods := c.sheet.GetStatWithModInfo(stat)
@@ -183,6 +188,11 @@ func (c *CharsheetViewer) setupUI() {
 				i := y
 				// the last four characters are the plus button
 				isPlus := x > width-6
+
+				if i < 0 || i >= int(special.SkillCount) {
+					return action, event
+				}
+
 				skill := (special.Skill)(i)
 
 				isOnlyInfo := x < 10
@@ -213,6 +223,11 @@ func (c *CharsheetViewer) setupUI() {
 				y -= startY
 				// to list item index
 				i := y
+
+				if i < 0 || i >= int(special.SkillCount) {
+					return action, event
+				}
+
 				skill := (special.Skill)(i)
 
 				_, mods := c.sheet.GetSkillWithModInfo(skill)

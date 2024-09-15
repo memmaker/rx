@@ -68,6 +68,7 @@ const (
 	TagNoAim
 	TagNoSound
 	TagLightSource
+	TagTimed
 )
 
 func ItemTagFromString(s string) ItemTags {
@@ -81,6 +82,8 @@ func ItemTagFromString(s string) ItemTags {
 		return TagNoSound
 	case "light_source":
 		return TagLightSource
+	case "timed":
+		return TagTimed
 	}
 	panic("Unknown item tag: " + s)
 	return TagNone

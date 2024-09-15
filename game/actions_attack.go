@@ -125,7 +125,7 @@ func (g *GameState) playerDrown(defender *Actor) {
 			NameOfThing:     "drowning",
 			Attacker:        g.Player,
 			IsObviousAttack: true,
-			AttackMode:      special.TargetingModeFireSingle,
+			TargetingMode:   special.TargetingModeFireSingle,
 			DamageType:      special.DamageTypeNormal,
 			DamageAmount:    defender.GetHitPointsMax(),
 			BodyPart:        special.Body,
@@ -153,7 +153,7 @@ func (g *GameState) playerBackstab(defender *Actor) {
 			NameOfThing:     "backstab",
 			Attacker:        g.Player,
 			IsObviousAttack: true,
-			AttackMode:      special.TargetingModeFireSingle,
+			TargetingMode:   special.TargetingModeFireSingle,
 			DamageType:      special.DamageTypeNormal,
 			DamageAmount:    defender.GetHitPointsMax(),
 			BodyPart:        special.Body,
@@ -234,7 +234,7 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part spec
 	mainHandItem, _ := attacker.GetEquipment().GetMainHandItem()
 
 	chanceToHit := g.getMeleeChanceToHit(attacker, mainHandItem, defender)
-	if damageWithSource.AttackMode == special.TargetingModeKick {
+	if damageWithSource.TargetingMode == special.TargetingModeKick {
 		chanceToHit = max(1, chanceToHit-10)
 	}
 	chanceToHit += part.AimPenalty()
@@ -303,7 +303,7 @@ func (g *GameState) getMeleeDamage(attacker *Actor, part special.BodyPart) (stri
 		NameOfThing:     "melee",
 		Attacker:        attacker,
 		IsObviousAttack: true,
-		AttackMode:      targetingMode,
+		TargetingMode:   targetingMode,
 		DamageType:      damageType,
 		DamageAmount:    damage,
 		BodyPart:        part,
@@ -319,29 +319,30 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, attackM
 
 	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
 
-	attackAnim, isProjectileAnimation := g.getWeaponAttackAnim(attacker, defender.Position(), weaponItem, attackMode, bulletsSpent)
+	attackAnimations, isProjectileAnimation := g.getWeaponAttackAnim(attacker, defender.Position(), weaponItem, attackMode, bulletsSpent)
 
 	chanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
 
 	damageWithSource, drModifier := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, bodyPart)
 
-	var consequenceOfActorHit []foundation.Animation
+	var hitAnimations []foundation.Animation
 	if weapon.GetDamageType() == special.DamageTypeExplosive {
 		weaponEffectParams := map[string]string{
 			"radius": "3",
 			"damage": "35-100",
 		}
-		explosionAnim := explosion(g, attacker, defender.Position(), NewParams(weaponEffectParams))
-		consequenceOfActorHit = append(consequenceOfActorHit, explosionAnim...)
+		hitAnimations = explosion(g, attacker, defender.Position(), NewParams(weaponEffectParams))
+	} else if weapon.GetDamageType() == special.DamageTypeFire && attackMode.Mode == special.TargetingModeFlame {
+		hitAnimations = fireBreath(g, attacker, defender.Position())
 	} else {
-		consequenceOfActorHit = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender, drModifier)
+		hitAnimations = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender, drModifier)
 	}
 
 	if isProjectileAnimation {
-		attackAnim.SetFollowUp(consequenceOfActorHit)
-		return []foundation.Animation{attackAnim}
+		attackAnimations.SetFollowUp(hitAnimations)
+		return []foundation.Animation{attackAnimations}
 	} else {
-		return append(consequenceOfActorHit, attackAnim)
+		return append(hitAnimations, attackAnimations)
 	}
 }
 
@@ -405,7 +406,7 @@ func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Item, att
 		NameOfThing:     "",
 		Attacker:        attacker,
 		IsObviousAttack: true,
-		AttackMode:      attackMode.Mode,
+		TargetingMode:   attackMode.Mode,
 		DamageType:      weapon.GetDamageType(),
 		DamageAmount:    int(float64(totalDamage) * damageFactor),
 		BodyPart:        bodyPart,
@@ -488,7 +489,7 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 		if origin.X == x && origin.Y == y {
 			return true
 		}
-		return g.currentMap().IsCurrentlyPassable(geometry.Point{X: x, Y: y})
+		return !g.IsSomethingBlockingTargetingAtLoc(geometry.Point{X: x, Y: y})
 	})
 	if len(pathOfFlight) > 1 {
 		// remove start
@@ -508,29 +509,18 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 
 	throwAnim, _ := g.ui.GetAnimThrow(missile, origin, targetPos)
 
-	if g.currentMap().IsActorAt(targetPos) {
-		defender := g.currentMap().ActorAt(targetPos)
-		//isLaunch := thrower.IsLaunching(missile) // otherwise it's a throw
-		attackMode := AttackMode{
-			Mode:     special.TargetingModeFireSingle,
-			TUCost:   thrower.timeNeededForActions(),
-			MaxRange: thrower.GetMaxThrowRange(),
-			IsAimed:  false,
-		}
-		consequenceOfActorHit := g.actorRangedAttack(thrower, missile, attackMode, defender, 0)
-		onHitAnimations = append(onHitAnimations, consequenceOfActorHit...)
-	} else if g.currentMap().IsObjectAt(targetPos) {
-		object := g.currentMap().ObjectAt(targetPos)
-		consequenceOfObjectHit := object.OnDamage(SourcedDamage{
-			NameOfThing:     "",
-			Attacker:        thrower,
-			IsObviousAttack: true,
-			AttackMode:      special.TargetingModeThrow,
-			DamageType:      special.DamageTypeNormal,
-			DamageAmount:    missile.GetThrowDamage().Roll(),
-		})
-		onHitAnimations = append(onHitAnimations, consequenceOfObjectHit...)
+	attackMode := missile.GetCurrentAttackMode()
+
+	damage := SourcedDamage{
+		NameOfThing:     "throw",
+		Attacker:        thrower,
+		IsObviousAttack: true,
+		TargetingMode:   attackMode.Mode,
+		DamageType:      missile.GetWeapon().GetDamageType(),
+		DamageAmount:    missile.GetThrowDamage().Roll(),
+		BodyPart:        special.Body,
 	}
+	onHitAnimations = append(onHitAnimations, g.damageLocation(damage, targetPos)...)
 	// explosion/fragmentation
 	// fire
 	// emp

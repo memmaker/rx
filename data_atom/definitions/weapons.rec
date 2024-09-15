@@ -491,6 +491,7 @@ Category: Weapons
 Size: 1
 Weight: 1
 Cost: 300
+zap_effect: plasma_explode
 chance_to_break_on_throw: 100
 weapon_type: Energy
 weapon_damage: 40-90

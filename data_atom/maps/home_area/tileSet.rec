@@ -112,6 +112,14 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
+Name: man-hole
+Char: Θ
+Foreground: light_gray_6
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
 Name: synthetic tree
 Char: ♣
 Foreground: bright_green_2

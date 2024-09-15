@@ -74,7 +74,7 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 
 	if !g.currentMap().IsTileWalkable(newPos) &&
 		g.currentMap().IsCurrentlyMountable(newPos) &&
-		!g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagMountable) {
+		(!g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagMountable) && !g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagCrawlable)) {
 		message := fmt.Sprintf("Do you want to climb onto the %s?", g.currentMap().GetCell(newPos).TileType.Description())
 		g.ui.AskForConfirmation("Confirm", message, func(confirmed bool) {
 			if confirmed {
@@ -95,7 +95,7 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 
 	if !g.currentMap().IsTileWalkable(newPos) &&
 		g.currentMap().IsCurrentlyCrawlable(newPos) &&
-		!g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagCrawlable) {
+		(!g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagMountable) && !g.currentMap().IsTileWithFlagAt(oldPos, gridmap.TileFlagCrawlable)) {
 		message := fmt.Sprintf("Do you want to crawl under the %s?", g.currentMap().GetCell(newPos).TileType.Description())
 		g.ui.AskForConfirmation("Confirm", message, func(confirmed bool) {
 			if confirmed {
@@ -232,7 +232,6 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 		g.playerLightSource.MaxIntensity = 0
 	}
 	g.msg(g.GetMapInfoForMovement(g.Player.Position()))
-	g.updatePlayerFoVAndApplyExploration()
 	g.updateDijkstraMap()
 
 	if g.Player.HasFlag(special.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
@@ -254,7 +253,9 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	}
 
 	// check transition
-	g.CheckTransition()
+	if !wasMapTransition {
+		g.CheckTransition()
+	}
 }
 
 func (g *GameState) updateDijkstraMap() {

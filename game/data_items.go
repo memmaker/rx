@@ -14,6 +14,7 @@ import (
 func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) *Item {
 	item := &Item{
 		qualityInPercent: special.Percentage(-1),
+		alive:            true,
 	}
 
 	charges := 1
@@ -179,7 +180,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	}
 
 	if item.qualityInPercent == -1 && (item.IsWeapon() || item.IsArmor()) {
-		item.qualityInPercent = special.Percentage(rand.Intn(100) + 1)
+		item.qualityInPercent = max(10, special.Percentage(rand.Intn(100)+1))
 	}
 
 	return item

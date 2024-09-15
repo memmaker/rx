@@ -26,8 +26,8 @@ Now the player should have these options:
   - to kill him
   - to free him
   - to get information from him about the secret stash
-- Pay out of his own pocket, or with money stolen from someone else
-- Ignore the job
+- Pay out of his own pocket, or with money stolen from someone else - POSSIBLE
+- Ignore the job - POSSIBLE
 - Find out more about the client and go after him (from either the doc or grim)
   - to kill him - POSSIBLE
   - to get more payment

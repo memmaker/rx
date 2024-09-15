@@ -23,6 +23,7 @@ const ( // bitwise flags
 	TileFlagRadiated
 	TileFlagMountable
 	TileFlagCrawlable
+	TileFlagDestroyable
 )
 
 func (t TileFlags) Has(tag TileFlags) bool {
@@ -38,8 +39,14 @@ type Tile struct {
 	DefinedDescription string
 	IsWalkable         bool // this
 	IsTransparent      bool // this
+	Flags              TileFlags
+}
 
-	Flags TileFlags
+func (t Tile) Destroyed() Tile {
+	t.IsWalkable = true
+	t.IsTransparent = true
+	t.Icon = t.Icon.WithRune('*').Reversed()
+	return t
 }
 
 func (t Tile) ToBinary(out io.Writer) {

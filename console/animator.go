@@ -19,7 +19,7 @@ type TextAnimation interface {
 	Cancel()
 	IsRequestingMapStateUpdate() bool
 	GetAudioCue() string
-	GetLight() *gridmap.LightSource
+	GetLights() []*gridmap.LightSource
 }
 type Animator struct {
 	animationState    map[geometry.Point]textiles.TextIcon
@@ -83,8 +83,8 @@ func (a *Animator) Tick() (shouldUpdateMapState bool) {
 		for pos, icon := range animation.GetDrawables() {
 			a.animationState[pos] = icon
 		}
-		if animation.GetLight() != nil {
-			a.updateDynamicLight(animation.GetLight())
+		if animation.GetLights() != nil {
+			a.updateDynamicLight(animation.GetLights())
 		}
 		animation.NextFrame()
 	}
@@ -99,18 +99,20 @@ func (a *Animator) CancelAll() {
 	clear(a.animationState)
 }
 
-func (a *Animator) updateDynamicLight(light *gridmap.LightSource) {
-	radius := light.Radius
-	for x := -radius; x <= radius; x++ {
-		for y := -radius; y <= radius; y++ {
-			if x*x+y*y > radius*radius {
-				continue
+func (a *Animator) updateDynamicLight(lights []*gridmap.LightSource) {
+	for _, light := range lights {
+		radius := light.Radius
+		for x := -radius; x <= radius; x++ {
+			for y := -radius; y <= radius; y++ {
+				if x*x+y*y > radius*radius {
+					continue
+				}
+				pos := geometry.Point{X: x, Y: y}.Add(light.Pos)
+				existingLight := a.lightAt(pos)
+				thisLight := light.Color.MultiplyWithScalar(light.MaxIntensity)
+				mixedLight := existingLight.Add(thisLight)
+				a.lightState[pos] = mixedLight
 			}
-			pos := geometry.Point{X: x, Y: y}.Add(light.Pos)
-			existingLight := a.lightAt(pos)
-			thisLight := light.Color.MultiplyWithScalar(light.MaxIntensity)
-			mixedLight := existingLight.Add(thisLight)
-			a.lightState[pos] = mixedLight
 		}
 	}
 }

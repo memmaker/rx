@@ -12,15 +12,46 @@ import (
 	"strings"
 )
 
-type ScriptFrame struct {
-	// The condition for the frame.
-	Condition *govaluate.EvaluableExpression
-	// The actions for the frame.
-	Actions []*govaluate.EvaluableExpression
+type ScriptFrame interface {
+	IsEmpty() bool
+	Condition(map[string]interface{}) bool
+	ExecuteActions(map[string]interface{})
+	String() string
 }
 
-func (f ScriptFrame) IsEmpty() bool {
-	return f.Condition == nil && len(f.Actions) == 0
+type UserScriptFrame struct {
+	// The condition for the frame.
+	condition *govaluate.EvaluableExpression
+	// The actions for the frame.
+	actions []*govaluate.EvaluableExpression
+}
+
+func (f UserScriptFrame) String() string {
+	return f.condition.String()
+}
+
+func (f UserScriptFrame) Condition(vars map[string]interface{}) bool {
+	if f.condition == nil {
+		return true
+	}
+	condition, err := f.condition.Evaluate(vars)
+	if err != nil {
+		panic(err)
+	}
+	return condition.(bool)
+}
+
+func (f UserScriptFrame) ExecuteActions(vars map[string]interface{}) {
+	for _, action := range f.actions {
+		_, err := action.Evaluate(vars)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (f UserScriptFrame) IsEmpty() bool {
+	return f.condition == nil && len(f.actions) == 0
 }
 
 type ActionScript struct {
@@ -33,6 +64,10 @@ type ActionScript struct {
 	Outcomes []ScriptFrame
 
 	CancelFrame ScriptFrame
+}
+
+func (s ActionScript) CanRunFrame(frame ScriptFrame) bool {
+	return frame.Condition(s.Variables)
 }
 
 func mergeMaps(maps ...map[string]govaluate.ExpressionFunction) map[string]govaluate.ExpressionFunction {
@@ -111,9 +146,9 @@ func (g *GameState) getCommonFuncs() map[string]govaluate.ExpressionFunction {
 			days := args[1].(float64)
 			return g.IsDaysAfter(namedTime, int(days)), nil
 		},
-		"RunScript": func(args ...interface{}) (interface{}, error) {
+		"RunScriptByName": func(args ...interface{}) (interface{}, error) {
 			scriptName := args[0].(string)
-			g.RunScript(scriptName)
+			g.RunScriptByName(scriptName)
 			return nil, nil
 		},
 		"StopScript": func(args ...interface{}) (interface{}, error) {
@@ -124,7 +159,7 @@ func (g *GameState) getCommonFuncs() map[string]govaluate.ExpressionFunction {
 		"RestartScript": func(args ...interface{}) (interface{}, error) {
 			scriptName := args[0].(string)
 			g.scriptRunner.StopScript(scriptName)
-			g.RunScript(scriptName)
+			g.RunScriptByName(scriptName)
 			return nil, nil
 		},
 	}
@@ -216,6 +251,11 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			return false, nil
 		},
+		"IsInTalkingRange": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			target := args[1].(*Actor)
+			return g.IsInTalkingRange(actor, target), nil
+		},
 		"IsInCombatWithPlayer": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			if actor.IsHostileTowards(g.Player) {
@@ -268,47 +308,25 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			actor := args[0].(*Actor)
 			locName := args[1].(string)
 			loc := g.currentMap().GetNamedLocation(locName)
-			actor.SetGoal(ActorGoal{
-				Action: func(g *GameState, a *Actor) int {
-					return moveTowards(g, a, loc)
-				},
-				Achieved: func(g *GameState, a *Actor) bool {
-					return a.Position() == loc
-				},
-			})
+			actor.SetGoal(GoalMoveToLocation(loc))
 			return nil, nil
 		},
 		"SetGoalMoveToSpawn": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
-			actor.SetGoal(ActorGoal{
-				Action: func(g *GameState, a *Actor) int {
-					targetPos := a.SpawnPosition
-					return moveTowards(g, a, targetPos)
-				},
-				Achieved: func(g *GameState, a *Actor) bool {
-					return a.Position() == a.SpawnPosition
-				},
-			})
+			actor.SetGoal(GoalMoveToSpawn())
 			return nil, nil
 		},
 		"SetGoalMoveIntoShootingRange": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			target := args[1].(*Actor)
 			actor.tryEquipRangedWeapon()
-			actor.SetGoal(ActorGoal{
-				Action: func(g *GameState, a *Actor) int {
-					return moveIntoShootingRange(g, a, target)
-				},
-				Achieved: func(g *GameState, a *Actor) bool {
-					return g.IsInShootingRange(a, target)
-				},
-			})
+			actor.SetGoal(GoalMoveIntoShootingRange(target))
 			return nil, nil
 		},
 		"SetGoalKill": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			target := args[1].(*Actor)
-			actor.SetGoal(g.getKillGoal(actor, target))
+			actor.SetGoal(GoalKillActor(actor, target))
 			return nil, nil
 		},
 		"RemoveFromContainer": func(args ...interface{}) (interface{}, error) {
@@ -336,16 +354,6 @@ func itemStringParse(itemString string) (string, int) {
 	return itemString, count
 }
 
-func (g *GameState) getKillGoal(attacker *Actor, victim *Actor) ActorGoal {
-	return ActorGoal{
-		Action: func(g *GameState, a *Actor) int {
-			return tryKill(g, a, victim)
-		},
-		Achieved: func(g *GameState, a *Actor) bool {
-			return !victim.IsAlive() || !attacker.IsAlive()
-		},
-	}
-}
 func tryKill(g *GameState, a *Actor, target *Actor) int {
 	if !g.IsInShootingRange(a, target) {
 		return moveIntoShootingRange(g, a, target)
@@ -380,7 +388,7 @@ func moveTowards(g *GameState, a *Actor, targetPos geometry.Point) int {
 		return a.timeEnergy
 	}
 
-	if !g.currentMap().IsCurrentlyPassable(nextMovePos) {
+	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
 		return a.timeEnergy
 	}
 
@@ -411,7 +419,7 @@ func NewActionScript(name string, records map[string][]recfile.Record, condFuncs
 	if len(records["outcomes"]) > 0 {
 		for _, outcome := range records["outcomes"] {
 			outcomeFrame := NewScriptFrameFromRecord(outcome, condFuncs)
-			if outcomeFrame.Condition != nil {
+			if outcomeFrame.condition != nil {
 				script.Outcomes = append(script.Outcomes, outcomeFrame)
 			}
 		}
@@ -438,8 +446,8 @@ func NewActionScript(name string, records map[string][]recfile.Record, condFuncs
 	return script
 }
 
-func NewScriptFrameFromRecord(outcome recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) ScriptFrame {
-	outcomeFrame := ScriptFrame{}
+func NewScriptFrameFromRecord(outcome recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) UserScriptFrame {
+	outcomeFrame := UserScriptFrame{}
 	for _, f := range outcome {
 		switch strings.ToLower(f.Name) {
 		case "if":
@@ -447,14 +455,14 @@ func NewScriptFrameFromRecord(outcome recfile.Record, condFuncs map[string]goval
 			if parseErr != nil {
 				panic(parseErr)
 			} else {
-				outcomeFrame.Condition = cond
+				outcomeFrame.condition = cond
 			}
 		case "do":
 			action, parseErr := govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
 			if parseErr != nil {
 				panic(parseErr)
 			} else {
-				outcomeFrame.Actions = append(outcomeFrame.Actions, action)
+				outcomeFrame.actions = append(outcomeFrame.actions, action)
 			}
 		}
 	}
@@ -469,8 +477,8 @@ func FramesFromRecords(records []recfile.Record, condFuncs map[string]govaluate.
 	return frames
 }
 
-func NewScriptFrame(record recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) ScriptFrame {
-	frame := ScriptFrame{}
+func NewScriptFrame(record recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) UserScriptFrame {
+	frame := UserScriptFrame{}
 	for _, f := range record {
 		switch strings.ToLower(f.Name) {
 		case "if":
@@ -478,14 +486,14 @@ func NewScriptFrame(record recfile.Record, condFuncs map[string]govaluate.Expres
 			if parseErr != nil {
 				panic(parseErr)
 			} else {
-				frame.Condition = cond
+				frame.condition = cond
 			}
 		case "do":
 			action, parseErr := govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
 			if parseErr != nil {
 				panic(parseErr)
 			} else {
-				frame.Actions = append(frame.Actions, action)
+				frame.actions = append(frame.actions, action)
 			}
 		}
 	}

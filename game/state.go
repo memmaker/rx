@@ -118,12 +118,14 @@ func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 	if causeOfDeath.IsActor() && causeOfDeath.Attacker == g.Player {
 		killedByPlayerFlag := fmt.Sprintf("KilledByPlayer(%s)", victim.GetInternalName())
 		g.gameFlags.SetFlag(killedByPlayerFlag)
-		g.awardXP(victim.GetXP(), fmt.Sprintf("for killing %s", victim.Name()))
+		//g.awardXP(victim.GetXP(), fmt.Sprintf("for killing %s", victim.Name()))
 		g.gameFlags.Increment("PlayerKillCount")
 	}
 
 	//g.dropInventory(victim)
 	g.currentMap().SetActorToDowned(victim)
+
+	delete(g.chatterCache, victim)
 }
 
 func (g *GameState) revealAll() {
@@ -329,8 +331,11 @@ func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Poin
 		flightPath := g.getFlightPath(sourcePos, targetPos)
 		attackAnim, _ = g.ui.GetAnimProjectileWithLight('°', "white", flightPath, nil)
 		isProjectile = true
+	case special.DamageTypeLaser:
+		flightPath := g.getFlightPath(sourcePos, targetPos)
+		attackAnim = g.ui.GetAnimLaser(flightPath, fxtools.NewColorFromRGBA(g.palette.Get("red_8")).MultiplyWithScalar(2), nil)
 	default:
-		attackAnim = g.ui.GetAnimMuzzleFlash(sourcePos, fxtools.NewColorFromRGBA(g.palette.Get("White")).MultiplyWithScalar(5), 4, bulletCount, nil)
+		attackAnim = g.ui.GetAnimMuzzleFlash(sourcePos, fxtools.NewColorFromRGBA(g.palette.Get("White")).MultiplyWithScalar(0.7), 2, bulletCount, nil)
 	}
 
 	attackAnim.SetAudioCue(weapon.GetFireAudioCue(attackMode.Mode))
@@ -342,7 +347,7 @@ func (g *GameState) getFlightPath(sourcePos geometry.Point, targetPos geometry.P
 		if x == sourcePos.X && y == sourcePos.Y {
 			return true
 		}
-		return g.currentMap().IsCurrentlyPassable(geometry.Point{X: x, Y: y})
+		return !g.IsSomethingBlockingTargetingAtLoc(geometry.Point{X: x, Y: y})
 	})
 	return flightPath
 }

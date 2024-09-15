@@ -21,7 +21,7 @@ type GameForUI interface {
 	ManualMovePlayer(direction geometry.CompassDirection)
 	// RunPlayer Start or continue running in a direction
 	RunPlayer(direction geometry.CompassDirection, isStarting bool) bool
-	RunPlayerPath()
+	RunPlayerPath(isStarting bool)
 	// Do stuff
 
 	PlayerPickupItem()
@@ -48,7 +48,11 @@ type GameForUI interface {
 	OpenRestMenu()
 	ShowDateTime()
 
+	LoadGame(fromDir string)
+	SaveGame(toDir string)
+
 	// State Queries
+	IsPlayerAndMapInitialized() bool
 	GetPlayerName() string
 	GetPlayerCharSheet() *special.CharSheet
 	GetPlayerPosition() geometry.Point
@@ -68,6 +72,9 @@ type GameForUI interface {
 	GetVisibleActors() []ActorForUI
 	GetVisibleItems() []ItemForUI
 	GetLog() []HiLiteString
+
+	IsActorHostileTowardsPlayer(enemy ActorForUI) bool
+	IsActorAlliedWithPlayer(ally ActorForUI) bool
 
 	GetItemInMainHand() (ItemForUI, bool)
 	GetMapDisplayName() string
@@ -140,6 +147,7 @@ type GameUI interface {
 	// Basics / Debug
 	AskForString(prompt string, prefill string, result func(entered string))
 	GetKeybindingsAsString(command string) string
+	QuitGame()
 
 	// Notification of state changes
 	UpdateStats()
@@ -158,6 +166,7 @@ type GameUI interface {
 	OpenTextWindow(description string)
 	ShowTextFileFullscreen(filename string, onClose func())
 	OpenMenu(actions []MenuItem)
+	OpenMenuWithTitle(title string, actions []MenuItem)
 	OpenKeypad(correctSequence []rune, onCompletion func(success bool))
 	OpenVendorMenu(itemsForSale []fxtools.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
@@ -165,6 +174,8 @@ type GameUI interface {
 	ShowGiveAndTakeContainer(leftName string, leftItems []ItemForUI, rightName string, rightItems []ItemForUI, transferToLeft func(itemTaken ItemForUI, amount int), transferToRight func(itemTaken ItemForUI, amount int))
 	OpenAimedShotPicker(actorAt ActorForUI, previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
 
+	SaveGame()
+	LoadGame()
 	// Auto Move Callback
 	AfterPlayerMoved(moveInfo MoveInfo)
 
@@ -177,7 +188,7 @@ type GameUI interface {
 	AnimatePending() (cancelled bool)
 	SkipAnimations()
 	GetAnimThrow(item ItemForUI, origin geometry.Point, target geometry.Point) (Animation, int)
-	GetAnimDamage(spreadBlood func(mapPos geometry.Point), actorPos geometry.Point, damage int, done func()) Animation
+	GetAnimDamage(spreadBlood func(mapPos geometry.Point), actorPos geometry.Point, damage int, bullets int, done func()) Animation
 	GetAnimMove(actor ActorForUI, old geometry.Point, new geometry.Point) Animation
 	GetAnimQuickMove(actor ActorForUI, path []geometry.Point) Animation
 	GetAnimAttack(attacker, defender ActorForUI) Animation
@@ -193,15 +204,17 @@ type GameUI interface {
 	GetAnimRadialAlert(position geometry.Point, dijkstra map[geometry.Point]int, done func()) Animation
 	GetAnimUncloakAtPosition(actor ActorForUI, position geometry.Point) (Animation, int)
 	GetAnimExplosion(points []geometry.Point, done func()) Animation
+	GetAnimRadialExplosion(points map[geometry.Point]int, lightColor fxtools.HDRColor, done func()) Animation
 	GetAnimEnchantArmor(actor ActorForUI, position geometry.Point, done func()) Animation
 	GetAnimEnchantWeapon(actor ActorForUI, position geometry.Point, done func()) Animation
 	GetAnimVorpalizeWeapon(origin geometry.Point, done func()) []Animation
 	GetAnimConfuse(position geometry.Point, done func()) Animation
-	GetAnimBreath(flight []geometry.Point, done func()) Animation
+	GetAnimBreath(flight []geometry.Point, done func()) []Animation
 	GetAnimBackgroundColor(position geometry.Point, colorName string, frameCount int, done func()) Animation
 	GetAnimAppearance(actor ActorForUI, position geometry.Point, done func()) Animation
 	GetAnimWakeUp(position geometry.Point, done func()) Animation
 	GetAnimEvade(defender ActorForUI, done func()) Animation
+	GetAnimLaser(path []geometry.Point, lightColor fxtools.HDRColor, done func()) Animation
 
 	PlayMusic(fileName string)
 	PlayCue(cue string)

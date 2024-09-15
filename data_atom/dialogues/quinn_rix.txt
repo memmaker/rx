@@ -127,7 +127,7 @@ o_goto: AcceptJacobJob
 name: AcceptJacobJob
 npc: Consider it done.
 effect: GiveMoneyToNPC(500)
-effect: RunScript('quinn_kills_jacob')
+effect: RunScriptKill('quinn_rix', 'jacob_thorne')
 effect: EndConversation
 
 name: DanielJob
@@ -144,7 +144,7 @@ o_goto: AcceptDanielJob
 name: AcceptDanielJob
 npc: Will do.
 effect: GiveMoneyToNPC(500)
-effect: RunScript('quinn_kills_daniel')
+effect: RunScriptKill('quinn_rix','daniel_harker')
 effect: EndConversation
 
 

@@ -22,15 +22,13 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 		return buffer
 	}
 
-	if actor.HasStealableItems() {
-		buffer = append(buffer, foundation.MenuItem{
-			Name: "Pickpocket",
-			Action: func() {
-				g.StartPickpocket(actor)
-			},
-			CloseMenus: true,
-		})
-	}
+	buffer = append(buffer, foundation.MenuItem{
+		Name: "Pickpocket",
+		Action: func() {
+			g.StartPickpocket(actor)
+		},
+		CloseMenus: true,
+	})
 
 	if !actor.IsSleeping() {
 		buffer = append(buffer, foundation.MenuItem{

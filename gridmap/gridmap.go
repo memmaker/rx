@@ -815,11 +815,15 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddItemWithDisplacement(a Ite
 	m.AddItem(a, freePos)
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetJPSPath(start geometry.Point, end geometry.Point, isWalkable func(geometry.Point) bool) []geometry.Point {
-	if !isWalkable(end) {
-		end = m.getNearestFreeNeighbor(start, end, isWalkable)
+	calcPath := m.pathfinder.JPSPath([]geometry.Point{}, start, end, func(point geometry.Point) bool {
+		return isWalkable(point) || point == start
+	}, !m.cardinalMovementOnly)
+
+	if len(calcPath) > 1 {
+		calcPath = calcPath[1:]
 	}
-	//println(fmt.Sprintf("JPS from %v to %v", start, end))
-	return m.pathfinder.JPSPath([]geometry.Point{}, start, end, isWalkable, !m.cardinalMovementOnly)
+
+	return calcPath
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) getNearestFreeNeighbor(origin, pos geometry.Point, isFree func(geometry.Point) bool) geometry.Point {
@@ -1838,7 +1842,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) HasWalkableNeighbor(point geo
 	return len(neighbors) > 0
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsLineOfSightClear(source geometry.Point, dest geometry.Point) bool {
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsLineOfSightClear(source geometry.Point, dest geometry.Point, isPosBlocked func(pos geometry.Point) bool) bool {
 	direction := dest.Sub(source).ToCenteredPointF()
 	hitInfo := m.RayCast(source.ToCenteredPointF(), direction, func(point geometry.Point) bool {
 		if point == source {
@@ -1847,7 +1851,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsLineOfSightClear(source geo
 		if point == dest {
 			return true
 		}
-		return !m.IsCurrentlyPassable(point)
+		return isPosBlocked(point)
 	})
 	return int(hitInfo.ColliderGridPosition[0]) == dest.X && int(hitInfo.ColliderGridPosition[1]) == dest.Y
 }
@@ -1985,6 +1989,13 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredObjects(keep func(
 	}
 	return result
 
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) TryGetTileAt(pos geometry.Point) (Tile, bool) {
+	if !m.Contains(pos) {
+		return Tile{}, false
+	}
+	return m.cells[pos.Y*m.mapWidth+pos.X].TileType, true
 }
 
 type JumpOverInfo struct {

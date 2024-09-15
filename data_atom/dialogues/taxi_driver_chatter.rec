@@ -1,0 +1,24 @@
+
+s: being_around_player
+#
+t: So, you are new in town?
+t: I've been driving for a while now.
+t: I've seen a lot of things.
+
+s: being_damaged
+#
+t: Damn, that was close.
+t: That hurt.
+t: I'm not sure I can take another hit like that.
+t: I'm sure I can take another hit like that.
+t: You bastard!
+
+s: kill_one_liner
+#
+t: Another one bites the dust.
+t: You're in for a rough ride.
+
+s: way_to_kill
+#
+t: Gotta ride.
+t: As fast as I can.

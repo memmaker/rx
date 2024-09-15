@@ -25,3 +25,15 @@ Name: watch
 Category: Other
 Use_Effect: show_time
 Charges: -1
+
+Name: dynamite
+Description: a stick of dynamite
+LongDescription: A stick of dynamite. It's a powerful explosive, but it's also very unstable. Handle with care.
+Category: Other
+Size: 1
+Weight: 1
+Cost: 350
+zap_effect: explode
+tags: timed
+chance_to_break_on_throw: 100
+###

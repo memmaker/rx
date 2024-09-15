@@ -30,6 +30,7 @@ name: UseTaxi
 npc: (Where do you want to go?)
 #
 o_text: Home
+o_cond: !IsMap('home_area')
 o_goto: HeadQuarters
 #
 # Starter Mission

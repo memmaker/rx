@@ -51,6 +51,8 @@ Q -> quit
 F1 -> help
 F2 -> show_key_bindings
 
+F5 -> system_menu
+
 F8 -> show_datetime
 F9 -> wiz_advance_time
 F10 -> wizard

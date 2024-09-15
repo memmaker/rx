@@ -1,6 +1,7 @@
 package console
 
 import (
+	"RogueUI/gridmap"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 )
@@ -11,6 +12,7 @@ type TilesAnimation struct {
 	frames       []textiles.TextIcon
 	drawables    map[geometry.Point]textiles.TextIcon
 	currentFrame int
+	light        *gridmap.LightSource
 }
 
 func NewTilesAnimation(positions []geometry.Point, icons []textiles.TextIcon, done func()) *TilesAnimation {
@@ -31,7 +33,17 @@ func NewTilesAnimation(positions []geometry.Point, icons []textiles.TextIcon, do
 func (p *TilesAnimation) GetPriority() int {
 	return 1
 }
-
+func (p *TilesAnimation) GetLights() []*gridmap.LightSource {
+	var lights []*gridmap.LightSource
+	if p.light != nil {
+		for _, pos := range p.positions {
+			light := *p.light
+			light.Pos = pos
+			lights = append(lights, &light)
+		}
+	}
+	return lights
+}
 func (p *TilesAnimation) GetDrawables() map[geometry.Point]textiles.TextIcon {
 	return p.drawables
 }
@@ -55,4 +67,8 @@ func (p *TilesAnimation) NextFrame() {
 
 func (p *TilesAnimation) IsDone() bool {
 	return p.currentFrame > len(p.frames)-1 || p.finishedOrCancelled
+}
+
+func (p *TilesAnimation) SetLightsOnAllTiles(lightSource *gridmap.LightSource) {
+	p.light = lightSource
 }

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"RogueUI/foundation"
 	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -80,12 +81,14 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		case "equipment":
 			equipment = append(equipment, field.Value)
 		case "default_relation":
-			actor.SetAIState(PlayerRelationFromString(field.Value))
+			actor.SetAIState(foundation.AIStateFromString(field.Value))
 		case "position":
 			pos, _ := geometry.NewPointFromEncodedString(field.Value)
 			actor.SetPosition(pos)
 		case "dialogue":
 			actor.SetDialogueFile(field.Value)
+		case "chatter":
+			actor.SetChatterFile(field.Value)
 		case "flags":
 			for _, mFlag := range field.AsList("|") {
 				flags.Set(special.ActorFlagFromString(mFlag.Value))

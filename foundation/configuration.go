@@ -21,6 +21,7 @@ type Configuration struct {
 	PlayerName                 string
 	WallSlide                  bool
 	DataRootDir                string
+	SaveGameDir                string
 	DefaultToAdvancedTargeting bool
 	PlayerChar                 rune
 	PlayerColor                string
@@ -66,6 +67,8 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.WallSlide = field.AsBool()
 		case "DataRootDir":
 			configuration.DataRootDir = field.Value
+		case "SaveGameDir":
+			configuration.SaveGameDir = field.Value
 		case "DefaultToAdvancedTargeting":
 			configuration.DefaultToAdvancedTargeting = field.AsBool()
 		case "PlayerName":
@@ -101,6 +104,7 @@ func NewDefaultConfiguration() *Configuration {
 		AutoPickup:                  true,
 		WallSlide:                   true,
 		DataRootDir:                 "data_atom",
+		SaveGameDir:                 "save",
 		DefaultToAdvancedTargeting:  true,
 		PlayerName:                  "Rogue",
 		PlayerChar:                  '@',
@@ -134,6 +138,7 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "PlayerChar", Value: string(c.PlayerChar)},
 			recfile.Field{Name: "PlayerColor", Value: c.PlayerColor},
 			recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
+			recfile.Field{Name: "SaveGameDir", Value: c.SaveGameDir},
 			recfile.Field{Name: "DefaultToAdvancedTargeting", Value: recfile.BoolStr(c.DefaultToAdvancedTargeting)},
 			recfile.Field{Name: "KeyMap", Value: c.KeyMap},
 			recfile.Field{Name: "DialogueShortcutsAreNumbers", Value: recfile.BoolStr(c.DialogueShortcutsAreNumbers)},

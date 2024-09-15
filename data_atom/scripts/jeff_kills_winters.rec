@@ -11,18 +11,19 @@ set: ActorWithName('dr_winters')
 # jeff kills winters
 if: IsDead(WINTERS) && !IsDead(JEFF)
 do: AddChatter(JEFF, 'You had it coming, Winters.')
-do: SetGoalMoveToNamedLocation(JEFF, 'jeffs_hideout')
+do: SetGoalMoveToSpawn(JEFF)
 
 # jeff dies during combat
 if: IsDead(JEFF) && !IsDead(WINTERS)
 do: AddChatter(WINTERS, 'Damn you, Jeff. What did I ever do to you?')
+do: SetGoalMoveToSpawn(WINTERS)
 
 %rec: cancel
 
 if: Turns() > 180 && !IsInCombat(JEFF) && !IsInCombat(WINTERS)
 do: AddChatter(JEFF, 'I\'m out of here.")
 do: AddChatter(WINTERS, 'Better luck next time, Jeff.')
-do: SetGoalMoveToNamedLocation(JEFF, 'jeffs_hideout')
+do: SetGoalMoveToSpawn(JEFF)
 do: SetGoalMoveToSpawn(WINTERS)
 
 %rec: frames
@@ -34,14 +35,3 @@ if: IsInShootingRange(JEFF, WINTERS)
 do: AddChatter(JEFF, 'This is for Lucy!')
 do: SetGoalKill(JEFF, WINTERS)
 
-
-%rec: frames
-
-if: IsAtLocation(GUARD, 'waypoint_b')
-do: SetGoalMoveToNamedLocation(GUARD, 'waypoint_a')
-
-if: IsAtLocation(GUARD, 'waypoint_a')
-do: SetGoalMoveToNamedLocation(GUARD, 'waypoint_b')
-
-if: IsAtLocation(GUARD, 'waypoint_b')
-do: RestartScript('walk_between_waypoints')

@@ -1,0 +1,43 @@
+%rec: transitions
+
+Location: (47,12)
+TransitionToMap: home_underground
+TransitionToLocation: man_hole_east
+
+Location: (9,9)
+TransitionToMap: home_underground
+TransitionToLocation: man_hole_west
+
+Location: (19,6)
+TransitionToMap: home_underground
+TransitionToLocation: secret_ladder
+
+%rec: meta
+
+mapWidth: 80
+mapHeight: 23
+isOutdoor: true
+friendlyName: Northside residential area
+indoorAmbientLight: (1.00, 1.00, 1.00)
+musicFile: 
+
+%rec: locations
+
+Name: man_hole_east
+Location: (47,12)
+
+Name: man_hole_west
+Location: (9,9)
+
+Name: ripperdoc_toilet
+Location: (19,6)
+
+Name: taxi_driver
+Location: (57,20)
+
+Name: taxi_stand
+Location: (59,20)
+
+Name: spawn
+Location: (62,14)
+

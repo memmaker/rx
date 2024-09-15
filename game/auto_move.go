@@ -65,7 +65,7 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 	return true
 }
 
-func (g *GameState) RunPlayerPath() {
+func (g *GameState) RunPlayerPath(isStarting bool) {
 	player := g.Player
 	if player.HasFlag(special.FlagConfused) {
 		g.Player.RemoveGoal()
@@ -79,13 +79,18 @@ func (g *GameState) RunPlayerPath() {
 		return
 	}
 
-	if !g.Player.HasActiveGoal() {
+	if !g.Player.HasActiveGoal() || g.Player.cannotFindPath() {
 		return
 	}
 
 	oldPos := g.Player.Position()
 	g.Player.ActOnGoal(g)
 	newPos := g.Player.Position()
+
+	if oldPos == newPos {
+		return
+	}
+
 	direction := newPos.Sub(oldPos).ToDirection()
 	g.afterPlayerMoved(oldPos, false)
 	g.endPlayerTurn(g.Player.timeNeededForMovement())

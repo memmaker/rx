@@ -11,12 +11,14 @@ MapHeight: 23
 DiagonalMovementEnabled: true
 AutoPickup: true
 WallSlide: true
-PlayerName: Player
+PlayerName: Felix
 PlayerChar: @
 PlayerColor: white
 DataRootDir: data_atom
+SaveGameDir: savegames
 DefaultToAdvancedTargeting: false
 KeyMap: numpad
-UseLockpickingDX: false
+DialogueShortcutsAreNumbers: false
 UseLockpickingMiniGame: false
+UseLockpickingDX: false
 

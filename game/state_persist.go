@@ -1,6 +1,7 @@
 package game
 
 import (
+	"RogueUI/foundation"
 	"RogueUI/gridmap"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -94,7 +95,7 @@ func (g *GameState) Load(directory string) {
 	if len(flagRecords) > 0 {
 		g.gameFlags = fxtools.NewStringFlagsFromRecord(flagRecords)
 	}
-
+	g.logBuffer = make([]foundation.HiLiteString, 0)
 	g.terminalGuesses = g.terminalGuessesFromRecords(globalRecords["terminal_guesses"])
 
 	// Journal

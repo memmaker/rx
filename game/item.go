@@ -51,6 +51,20 @@ type Item struct {
 	size                   int
 	weight                 int
 	cost                   int
+	posHandler             func() geometry.Point
+	alive                  bool
+}
+
+func (i *Item) String() string {
+	return fmt.Sprintf("Item: %s(%d)", i.internalName, i.charges)
+}
+
+func (i *Item) ShouldActivate(tickCount int) bool {
+	return i.charges == tickCount
+}
+
+func (i *Item) IsAlive(tickCount int) bool {
+	return tickCount <= i.charges && i.alive
 }
 
 func (i *Item) IsMultipleStacks() bool {
@@ -173,6 +187,10 @@ func (i *Item) GobEncode() ([]byte, error) {
 		return nil, err
 	}
 
+	if err := encoder.Encode(i.alive); err != nil {
+		return nil, err
+	}
+
 	return buf.Bytes(), nil
 }
 
@@ -284,6 +302,10 @@ func (i *Item) GobDecode(data []byte) error {
 		return err
 	}
 	if err := decoder.Decode(&i.cost); err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(&i.alive); err != nil {
 		return err
 	}
 
@@ -455,6 +477,9 @@ func (i *Item) SetPosition(pos geometry.Point) {
 }
 
 func (i *Item) Position() geometry.Point {
+	if i.posHandler != nil {
+		return i.posHandler()
+	}
 	return i.position
 }
 
@@ -769,4 +794,12 @@ func (i *Item) IsStackingWithCharges() bool {
 
 func (i *Item) IsWatch() bool {
 	return i.useEffectName == "show_time"
+}
+
+func (i *Item) SetPositionHandler(handler func() geometry.Point) {
+	i.posHandler = handler
+}
+
+func (i *Item) SetAlive(value bool) {
+	i.alive = value
 }

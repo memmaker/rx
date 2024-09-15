@@ -23,4 +23,5 @@ Description: aviator sunglasses
 Name: aviator_sunglasses
 Category: Other
 stat: charisma
-stat_bonus: -1
+stat_bonus: 1
+Text: These make you look ridiculously cool.

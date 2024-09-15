@@ -315,7 +315,8 @@ func (i *WeaponInfo) NeedsAmmo() bool {
 
 func (i *WeaponInfo) GetFireAudioCue(mode special.TargetingMode) string {
 	strMode := "single"
-	if mode == special.TargetingModeFireBurst || mode == special.TargetingModeFireFullAuto {
+	if (mode == special.TargetingModeFireBurst || mode == special.TargetingModeFireFullAuto) &&
+		len(i.attackModes) > 1 {
 		strMode = "burst"
 	}
 	return fmt.Sprintf("weapons/%d_%s", i.soundID, strMode)

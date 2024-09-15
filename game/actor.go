@@ -2,6 +2,7 @@ package game
 
 import (
 	"RogueUI/dice_curve"
+	"RogueUI/foundation"
 	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
@@ -15,28 +16,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-type AIState uint8
-
-const (
-	Neutral AIState = iota
-	AttackEverything
-	AttackEnemies
-	Panic
-)
-
-func PlayerRelationFromString(str string) AIState {
-	str = strings.ToLower(str)
-	switch str {
-	case "neutral":
-		return Neutral
-	case "hostile":
-		return AttackEverything
-	case "ally":
-		return Panic
-	}
-	return Neutral
-}
 
 type ActorStance uint8
 
@@ -57,8 +36,9 @@ type Actor struct {
 	equipment *Equipment
 
 	statusFlags *special.ActorFlags
-
-	stance ActorStance
+	activeGoal  ActorGoal
+	aiState     foundation.AIState
+	stance      ActorStance
 
 	intrinsicZapEffects []string
 	intrinsicUseEffects []string
@@ -70,6 +50,7 @@ type Actor struct {
 	bodyDamage   map[special.BodyPart]int
 
 	dialogueFile string
+	chatterFile  string
 	teamName     string
 
 	enemyActors map[string]bool
@@ -77,13 +58,14 @@ type Actor struct {
 
 	xp int
 
-	activeGoal ActorGoal
-
 	SpawnPosition           geometry.Point
 	currentPathBlockedCount int
 	currentPath             []geometry.Point
 	currentPathIndex        int
-	aiState                 AIState
+}
+
+func (a *Actor) GetState() foundation.AIState {
+	return a.aiState
 }
 
 func (a *Actor) GetBodyPartIndex(aim special.BodyPart) int {
@@ -170,6 +152,12 @@ func (a *Actor) GobEncode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = encoder.Encode(a.chatterFile)
+	if err != nil {
+		return nil, err
+	}
+
 	err = encoder.Encode(a.teamName)
 	if err != nil {
 		return nil, err
@@ -260,6 +248,11 @@ func (a *Actor) GobDecode(data []byte) error {
 	if err != nil {
 		return err
 	}
+	err = decoder.Decode(&a.chatterFile)
+	if err != nil {
+		return err
+	}
+
 	err = decoder.Decode(&a.teamName)
 	if err != nil {
 		return err
@@ -290,6 +283,7 @@ func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet
 	player.SetDisplayName(name)
 	player.SetIcon(icon)
 	player.SetInternalName("player")
+	player.teamName = "player"
 	return player
 }
 
@@ -305,17 +299,17 @@ func NewActor() *Actor {
 			Fg:   color.RGBA{255, 255, 255, 255},
 			Bg:   color.RGBA{0, 0, 0, 255},
 		},
-		inventory:   NewInventory(23),
 		equipment:   NewEquipment(),
 		charSheet:   sheet,
 		body:        special.HumanBodyParts,
 		bodyDamage:  make(map[special.BodyPart]int),
-		aiState:     Neutral,
+		aiState:     foundation.Neutral,
 		statusFlags: special.NewActorFlags(),
 		enemyActors: make(map[string]bool),
 		enemyTeams:  make(map[string]bool),
 		activeGoal:  NoGoal,
 	}
+	a.inventory = NewInventory(23, a.Position)
 	return a
 }
 
@@ -814,10 +808,10 @@ func (a *Actor) HasKey(identifier string) bool {
 }
 
 func (a *Actor) IsInCombat() bool {
-	return a.HasActiveGoal() && (a.aiState == AttackEverything || a.aiState == AttackEnemies)
+	return a.HasActiveGoal() && (a.aiState == foundation.AttackEverything || a.aiState == foundation.AttackEnemies)
 }
 
-func (a *Actor) SetAIState(relation AIState) {
+func (a *Actor) SetAIState(relation foundation.AIState) {
 	a.aiState = relation
 }
 
@@ -830,7 +824,7 @@ func (a *Actor) GetDialogueFile() string {
 }
 
 func (a *Actor) SetHostile() {
-	a.aiState = AttackEverything
+	a.aiState = foundation.AttackEverything
 	a.tryEquipWeapon()
 }
 
@@ -941,10 +935,10 @@ func (a *Actor) AddToEnemyTeams(name string) {
 }
 
 func (a *Actor) IsHostileTowards(attacker *Actor) bool {
-	if a.aiState == Neutral || a.aiState == Panic || !a.HasActiveGoal() {
+	if a.aiState == foundation.Neutral || a.aiState == foundation.Panic || !a.HasActiveGoal() {
 		return false
 	}
-	if a.aiState == AttackEverything {
+	if a.aiState == foundation.AttackEverything {
 		return true
 	}
 	if _, exists := a.enemyActors[attacker.GetInternalName()]; exists {
@@ -957,7 +951,7 @@ func (a *Actor) IsHostileTowards(attacker *Actor) bool {
 }
 
 func (a *Actor) IsPanicking() bool {
-	return a.aiState == Panic
+	return a.aiState == foundation.Panic
 }
 
 func (a *Actor) LookInfo() string {
@@ -1144,7 +1138,7 @@ func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point 
 	}
 	nextStep := a.currentPath[a.currentPathIndex]
 
-	if !g.currentMap().IsCurrentlyPassable(nextStep) {
+	if !g.currentMap().IsWalkableFor(nextStep, a) {
 		a.currentPathBlockedCount++
 		if a.currentPathBlockedCount <= 3 {
 			return a.Position()
@@ -1156,20 +1150,27 @@ func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point 
 			nextStep = a.currentPath[a.currentPathIndex]
 		}
 	}
-
+	a.currentPathBlockedCount = 0
+	a.currentPathIndex++
 	return nextStep
 }
 
 func (a *Actor) calcAndSetPath(g *GameState, pos geometry.Point) {
+	a.currentPath = nil
+	a.currentPathBlockedCount = 0
 	calcPath := g.currentMap().GetJPSPath(a.Position(), pos, func(point geometry.Point) bool {
 		return g.currentMap().IsWalkableFor(point, a)
 	})
-	if len(calcPath) > 1 {
-		a.currentPath = calcPath[1:]
+	if len(calcPath) == 0 || (len(calcPath) == 1 && calcPath[0] == a.Position()) {
+		a.currentPathIndex = -1
+	} else {
+		a.currentPathIndex = 0
+		a.currentPath = calcPath
 	}
-	a.currentPathIndex = 0
 }
-
+func (a *Actor) cannotFindPath() bool {
+	return a.currentPathIndex == -1
+}
 func (a *Actor) hasPathTo(pos geometry.Point) bool {
 	if a.currentPath == nil || len(a.currentPath) == 0 {
 		return false
@@ -1189,11 +1190,11 @@ func (a *Actor) GetXP() int {
 }
 
 func (a *Actor) SetNeutral() {
-	a.aiState = Neutral
+	a.aiState = foundation.Neutral
 }
 
 func (a *Actor) SetHostileTowards(sourceOfTrouble *Actor) {
-	a.aiState = AttackEnemies
+	a.aiState = foundation.AttackEnemies
 
 	a.AddToEnemyActors(sourceOfTrouble.GetInternalName())
 }
@@ -1219,6 +1220,14 @@ func (a *Actor) RemoveGoal() {
 	a.activeGoal = NoGoal
 }
 
+func (a *Actor) IsAlliedWith(player *Actor) bool {
+	return a.teamName == player.teamName
+}
+
+func (a *Actor) SetChatterFile(value string) {
+	a.chatterFile = value
+}
+
 type ActorGoal struct {
 	Action   func(g *GameState, a *Actor) int
 	Achieved func(g *GameState, a *Actor) bool
@@ -1226,4 +1235,49 @@ type ActorGoal struct {
 
 func (g ActorGoal) IsEmpty() bool {
 	return g.Action == nil && g.Achieved == nil
+}
+
+func GoalMoveToSpawn() ActorGoal {
+	return ActorGoal{
+		Action: func(g *GameState, a *Actor) int {
+			targetPos := a.SpawnPosition
+			return moveTowards(g, a, targetPos)
+		},
+		Achieved: func(g *GameState, a *Actor) bool {
+			return a.Position() == a.SpawnPosition
+		},
+	}
+}
+
+func GoalMoveIntoShootingRange(target *Actor) ActorGoal {
+	return ActorGoal{
+		Action: func(g *GameState, a *Actor) int {
+			return moveIntoShootingRange(g, a, target)
+		},
+		Achieved: func(g *GameState, a *Actor) bool {
+			return g.IsInShootingRange(a, target)
+		},
+	}
+}
+
+func GoalKillActor(attacker *Actor, victim *Actor) ActorGoal {
+	return ActorGoal{
+		Action: func(g *GameState, a *Actor) int {
+			return tryKill(g, a, victim)
+		},
+		Achieved: func(g *GameState, a *Actor) bool {
+			return !victim.IsAlive() || !attacker.IsAlive()
+		},
+	}
+}
+
+func GoalMoveToLocation(loc geometry.Point) ActorGoal {
+	return ActorGoal{
+		Action: func(g *GameState, a *Actor) int {
+			return moveTowards(g, a, loc)
+		},
+		Achieved: func(g *GameState, a *Actor) bool {
+			return a.Position() == loc
+		},
+	}
 }

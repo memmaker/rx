@@ -100,7 +100,7 @@ func (b *Container) AddItem(item *Item) {
 			}
 		}
 	}
-
+	item.SetPosition(b.position)
 	b.containedItems = append(b.containedItems, item)
 }
 
@@ -169,6 +169,15 @@ func (b *Container) RemoveItemsWithName(name string, count int) {
 			}
 		}
 	}
+}
+
+func (b *Container) Has(item *Item) bool {
+	for _, containedItem := range b.containedItems {
+		if containedItem == item {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *GameState) openContainer(container *Container) {

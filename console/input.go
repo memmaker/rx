@@ -63,13 +63,14 @@ func directionFromCommand(command string) (geometry.CompassDirection, bool) {
 func (u *UI) setupCommandTable() {
 	u.commandTable = make(map[string]func())
 
-	u.commandTable["quit"] = u.application.Stop
+	u.commandTable["quit"] = u.QuitGame
 
 	u.commandTable["inventory"] = u.game.OpenInventory
 	u.commandTable["tactics"] = u.game.OpenTacticsMenu
 	//u.commandTable["character"] = u.ShowCharacterSheet // OLD
 	u.commandTable["character"] = u.openCharSheet
 	u.commandTable["wizard"] = u.game.OpenWizardMenu
+	u.commandTable["system_menu"] = u.OpenSystemMenu
 	u.commandTable["rest"] = u.game.OpenRestMenu
 	u.commandTable["repair"] = u.game.OpenRepairMenu
 	u.commandTable["journal"] = u.game.OpenJournal
@@ -190,6 +191,7 @@ func (u *UI) showKeyBindings() {
 		"overlay_items":     "Overlay Items",
 		"gamma_up":          "Gamma Up",
 		"gamma_down":        "Gamma Down",
+		"system_menu":       "System Menu",
 		"throw":             "Throw",
 		"use":               "Use",
 		"drop":              "Drop",
@@ -229,6 +231,7 @@ func (u *UI) showKeyBindings() {
 		"run_southwest",
 		"run_southeast",
 		"run_direction",
+		"system_menu",
 		"quit",
 	}
 

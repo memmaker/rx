@@ -1,8 +1,10 @@
 package game
 
 import (
+	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
+	"strings"
 )
 
 type ScriptInstance struct {
@@ -20,11 +22,8 @@ func (i *ScriptInstance) CanRunCurrentFrame() bool {
 		return false
 	}
 	frame := i.GetCurrentFrame()
-	condition, err := frame.Condition.Evaluate(i.script.Variables)
-	if err != nil {
-		panic(err)
-	}
-	return condition.(bool)
+
+	return i.script.CanRunFrame(frame)
 }
 
 func (i *ScriptInstance) RunCurrentFrame() {
@@ -36,25 +35,17 @@ func (i *ScriptInstance) RunCurrentFrame() {
 }
 
 func (i *ScriptInstance) Run(frame ScriptFrame) {
-	for _, action := range frame.Actions {
-		_, err := action.Evaluate(i.script.Variables)
-		if err != nil {
-			panic(err)
-		}
-	}
+	frame.ExecuteActions(i.script.Variables)
 }
 
 func (i *ScriptInstance) HasReachedOutcome() (ScriptFrame, bool) {
 	for _, outcomeFrame := range i.script.Outcomes {
-		condition, err := outcomeFrame.Condition.Evaluate(i.script.Variables)
-		if err != nil {
-			panic(err)
-		}
-		if condition.(bool) {
+		condition := outcomeFrame.Condition(i.script.Variables)
+		if condition {
 			return outcomeFrame, true
 		}
 	}
-	return ScriptFrame{}, false
+	return UserScriptFrame{}, false
 }
 
 func (i *ScriptInstance) IsDone() bool {
@@ -82,8 +73,12 @@ func NewScriptRunner() *ScriptRunner {
 	}
 }
 
-func (s *ScriptRunner) RunScript(dataDir string, scriptName string, condFuncs map[string]govaluate.ExpressionFunction) {
+func (s *ScriptRunner) RunScriptByName(dataDir string, scriptName string, condFuncs map[string]govaluate.ExpressionFunction) {
 	script := LoadScript(dataDir, scriptName, condFuncs)
+	s.RunScript(script)
+}
+
+func (s *ScriptRunner) RunScript(script ActionScript) {
 	runningScript := &ScriptInstance{
 		script:       script,
 		currentFrame: 0,
@@ -120,4 +115,14 @@ func (s *ScriptRunner) StopScript(name string) {
 		scripToStop.RunCancelFrame()
 		s.runningScripts = append(s.runningScripts[:scriptIndex], s.runningScripts[scriptIndex+1:]...)
 	}
+}
+func (s *ScriptRunner) String() string {
+	if len(s.runningScripts) == 0 {
+		return "No running scripts"
+	}
+	out := make([]string, len(s.runningScripts))
+	for i, instance := range s.runningScripts {
+		out[i] = fmt.Sprintf("%s @ %d: %s", instance.script.Name, instance.currentFrame, instance.GetCurrentFrame().String())
+	}
+	return "Running scripts:\n" + strings.Join(out, "\n")
 }

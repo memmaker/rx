@@ -46,6 +46,7 @@ const (
 	NoIntro IntroState = iota
 	Fading
 	TitleScreen
+	MainMenu
 	InGame
 )
 
@@ -99,6 +100,71 @@ type UI struct {
 	shouldPlayIntro    bool
 
 	stateOfIntro IntroState
+}
+
+func (u *UI) GetAnimMuzzleFlash(position geometry.Point, flashColor fxtools.HDRColor, radius int, bulletCount int, done func()) foundation.Animation {
+	return NewMuzzleAnimation(position, flashColor, radius, bulletCount, done)
+}
+
+func (u *UI) ChooseSaveDir(savegameBaseDirectory string, onSubDirConfirmed func(savegameSubdir string)) {
+	menuItems := chooseSubDirMenuItems(savegameBaseDirectory, func(savegameSubdir string) {
+		u.AskForConfirmation("Overwrite?", fmt.Sprintf("Overwrite savegame %s?", savegameSubdir), func(didConfirm bool) {
+			if didConfirm {
+				onSubDirConfirmed(savegameSubdir)
+			}
+		})
+	})
+	if len(menuItems) == 0 {
+		u.AskForString("Enter new savegame name", "", func(entered string) {
+			onSubDirConfirmed(entered)
+		})
+		return
+	}
+	newEntryItem := foundation.MenuItem{
+		Name: "<New Savegame..>",
+		Action: func() {
+			u.AskForString("Enter new savegame name", "", func(entered string) {
+				onSubDirConfirmed(entered)
+			})
+		},
+		CloseMenus: true,
+	}
+	menuItems = append([]foundation.MenuItem{newEntryItem}, menuItems...)
+	u.OpenMenu(menuItems)
+}
+
+func (u *UI) ChooseLoadDir(savegameBaseDirectory string, onSubDirConfirmed func(savegameSubdir string)) {
+	menuItems := chooseSubDirMenuItems(savegameBaseDirectory, onSubDirConfirmed)
+	if len(menuItems) == 0 {
+		u.OpenTextWindow("No savegames found in the savegame directory.")
+	} else {
+		u.OpenMenu(menuItems)
+	}
+}
+
+func chooseSubDirMenuItems(savegameBaseDirectory string, onSubDirConfirmed func(savegameSubdir string)) []foundation.MenuItem {
+	entries, readErr := os.ReadDir(savegameBaseDirectory)
+	if readErr != nil {
+		return nil
+	}
+	var menuItems []foundation.MenuItem
+	for _, entry := range entries {
+		if entry.IsDir() {
+			subDir := entry.Name()
+			menuItems = append(menuItems, foundation.MenuItem{
+				Name: subDir,
+				Action: func() {
+					onSubDirConfirmed(path.Join(savegameBaseDirectory, subDir))
+				},
+				CloseMenus: true,
+			})
+		}
+	}
+	return menuItems
+}
+
+func (u *UI) QuitGame() {
+	u.application.Stop()
 }
 
 func (u *UI) GetKeybindingsAsString(command string) string {
@@ -245,11 +311,18 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 		rightMenuLabels = u.menuLabelsFor(rightItems)
 	}
 
+	closeContainer := func() {
+		u.pages.RemovePanel("leftModal")
+		u.pages.RemovePanel("rightModal")
+		u.resetFocusToMain()
+	}
+
 	for index, i := range leftItems {
 		item := i
 		leftMenuItems = append(leftMenuItems, foundation.MenuItem{
 			Name: leftMenuLabels[index],
 			Action: func() {
+				closeContainer()
 				if item.IsMultipleStacks() {
 					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
 						transferToRight(item, amount)
@@ -259,7 +332,6 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 				}
 				u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			},
-			CloseMenus: true,
 		})
 	}
 	for index, i := range rightItems {
@@ -267,6 +339,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 		rightMenuItems = append(rightMenuItems, foundation.MenuItem{
 			Name: rightMenuLabels[index],
 			Action: func() {
+				closeContainer()
 				if item.IsMultipleStacks() {
 					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
 						transferToLeft(item, amount)
@@ -276,7 +349,6 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 				}
 				u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			},
-			CloseMenus: true,
 		})
 	}
 
@@ -297,12 +369,6 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 	rightMenu.SetTitle(rightName)
 	rightMenu.ShowFocus(true)
 	rightMenu.SetSelectedFocusOnly(true)
-
-	closeContainer := func() {
-		u.pages.RemovePanel("leftModal")
-		u.pages.RemovePanel("rightModal")
-		u.resetFocusToMain()
-	}
 
 	screenWidth, screenHeight := u.application.GetScreen().Size()
 
@@ -436,6 +502,13 @@ func (u *UI) OpenVendorMenu(itemsForSale []fxtools.Tuple[foundation.ItemForUI, i
 	u.OpenMenu(menuItems)
 }
 
+func (u *UI) GetAnimLaser(path []geometry.Point, lightColor fxtools.HDRColor, done func()) foundation.Animation {
+	if !u.settings.AnimationsEnabled || !u.settings.AnimateEffects {
+		return nil
+	}
+	return NewLaserAnimation(path, lightColor, done)
+}
+
 func (u *UI) GetAnimBackgroundColor(position geometry.Point, colorName string, frameCount int, done func()) foundation.Animation {
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateEffects {
 		return nil
@@ -450,6 +523,7 @@ func (u *UI) HighlightStatChange(stat dice_curve.Stat) {
 }
 
 func (u *UI) ShowGameOver(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
+	time.Sleep(3 * time.Second)
 	u.animator.CancelAll()
 	u.gameIsOver = true
 	cview.FadeToBlack(u.application, u.settings.AnimationDelay, 10, false)
@@ -538,7 +612,7 @@ func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []founda
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
 	u.lockFocusToPrimitive(textView)
-	textView.SetInputCapture(u.yesNoReceiver(u.reset, u.application.Stop))
+	textView.SetInputCapture(u.yesNoReceiver(u.reset, u.QuitGame))
 }
 
 func (u *UI) reset() {
@@ -570,7 +644,7 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
 	u.application.SetFocus(textView)
-	textView.SetInputCapture(u.yesNoReceiver(u.reset, u.application.Stop))
+	textView.SetInputCapture(u.yesNoReceiver(u.reset, u.QuitGame))
 }
 
 func toLinesOfText(highScores []foundation.ScoreInfo) []string {
@@ -608,7 +682,7 @@ func (u *UI) ShowHighScoresOnly(highScores []foundation.ScoreInfo) {
 		panelName = "fullscreen"
 	}
 
-	textView.SetInputCapture(u.popOnAnyKeyWithNotification(panelName, u.application.Stop))
+	textView.SetInputCapture(u.popOnAnyKeyWithNotification(panelName, u.QuitGame))
 	u.pages.AddPanel(panelName, textView, true, true)
 	u.pages.ShowPanel(panelName)
 	u.application.SetFocus(textView)
@@ -649,8 +723,8 @@ func (u *UI) GetMapWindowGridSize() geometry.Point {
 }
 func (u *UI) AfterPlayerMoved(moveInfo foundation.MoveInfo) {
 	if moveInfo.Mode == foundation.PlayerMoveModePath {
-		u.application.QueueEvent(tcell.NewEventKey(tcell.KeyF40, ' ', 128))
 		u.autoRun = true
+		u.application.QueueEvent(tcell.NewEventKey(tcell.KeyF40, ' ', 128))
 	} else if moveInfo.Mode == foundation.PlayerMoveModeRun && u.autoRun {
 		u.application.QueueEvent(tcell.NewEventKey(tcell.KeyRune, directionToRune(moveInfo.Direction), 64))
 	}
@@ -721,7 +795,7 @@ func (u *UI) GetAnimAttack(attacker, defender foundation.ActorForUI) foundation.
 	return nil
 }
 
-func (u *UI) GetAnimDamage(spreadBlood func(mapPos geometry.Point), defenderPos geometry.Point, damage int, done func()) foundation.Animation {
+func (u *UI) GetAnimDamage(spreadBlood func(mapPos geometry.Point), defenderPos geometry.Point, damage int, bullets int, done func()) foundation.Animation {
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateDamage {
 		return nil
 	}
@@ -738,7 +812,7 @@ func (u *UI) GetAnimDamage(spreadBlood func(mapPos geometry.Point), defenderPos 
 		u.uiTheme.palette.Get("red_14"),
 		u.uiTheme.palette.Get("red_15"),
 	}
-	animation := NewDamageAnimation(spreadBlood, defenderPos, u.game.GetPlayerPosition(), damage, bloodColors)
+	animation := NewDamageAnimation(spreadBlood, defenderPos, u.game.GetPlayerPosition(), damage, bullets, bloodColors)
 	animation.SetDoneCallback(done)
 	return animation
 }
@@ -947,17 +1021,67 @@ func (u *UI) GetAnimConfuse(location geometry.Point, done func()) foundation.Ani
 	}
 	return rootAnim
 }
-func (u *UI) GetAnimBreath(path []geometry.Point, done func()) foundation.Animation {
-	projAnim := u.GetAnimTiles(path, []textiles.TextIcon{
-		{Char: '.', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Black")},
-		{Char: '∙', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Black")},
-		{Char: '*', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Black")},
-		{Char: '*', Fg: u.uiTheme.GetColorByName("Yellow"), Bg: u.uiTheme.GetColorByName("Black")},
-		{Char: '*', Fg: u.uiTheme.GetColorByName("Red"), Bg: u.uiTheme.GetColorByName("Black")},
-		{Char: '*', Fg: u.uiTheme.GetColorByName("light_gray_5"), Bg: u.uiTheme.GetColorByName("Black")},
+func (u *UI) GetAnimBreath(path []geometry.Point, done func()) []foundation.Animation {
+	var randomAroundPath []geometry.Point
+	dest := path[len(path)-1]
+	prevToLast := dest
+	if len(path) > 1 {
+		prevToLast = path[len(path)-2]
+	}
+	neigh := geometry.Neighbors{}
+	aroundDest := neigh.Cardinal(dest, func(point geometry.Point) bool {
+		return point != prevToLast
+	})
+	pathWithoutDest := path[:len(path)-1]
+	aroundDest = append(aroundDest, dest)
+
+	for _, point := range path {
+		randomAroundPath = append(randomAroundPath, point.Add(geometry.Point{X: rand.Intn(3) - 1, Y: rand.Intn(3) - 1}))
+		randomAroundPath = append(randomAroundPath, point.Add(geometry.Point{X: rand.Intn(3) - 1, Y: rand.Intn(3) - 1}))
+	}
+
+	smokeAnim := u.GetAnimTiles(randomAroundPath, []textiles.TextIcon{
+		{Char: ' ', Fg: u.uiTheme.GetColorByName("Black"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: ' ', Fg: u.uiTheme.GetColorByName("Black"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("dark_gray_3"), Bg: u.uiTheme.GetColorByName("Black")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("dark_gray_3")},
+		{Char: '.', Fg: u.uiTheme.GetColorByName("light_gray_5")},
+		{Char: '.', Fg: u.uiTheme.GetColorByName("light_gray_5")},
+	}, nil)
+
+	projAnim := NewTilesAnimation(pathWithoutDest, []textiles.TextIcon{
+		{Char: '.', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Yellow_2")},
+		{Char: '∙', Fg: u.uiTheme.GetColorByName("White"), Bg: u.uiTheme.GetColorByName("Yellow_2")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Orange_4"), Bg: u.uiTheme.GetColorByName("Yellow_1")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Yellow"), Bg: u.uiTheme.GetColorByName("Orange_4")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Red"), Bg: u.uiTheme.GetColorByName("Orange_6")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("light_gray_5"), Bg: u.uiTheme.GetColorByName("Orange_8")},
 		{Char: '*', Fg: u.uiTheme.GetColorByName("dark_gray_3"), Bg: u.uiTheme.GetColorByName("Black")},
 	}, done)
-	return projAnim
+	projAnim.SetLightsOnAllTiles(&gridmap.LightSource{
+		Pos:          geometry.Point{},
+		Radius:       2,
+		Color:        fxtools.NewColorFromRGBA(u.uiTheme.GetColorByName("Orange_4")),
+		MaxIntensity: 0.9,
+	})
+	projAnim.SetFollowUp([]foundation.Animation{smokeAnim})
+
+	ballAnim := NewTilesAnimation(aroundDest, []textiles.TextIcon{
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Yellow_2"), Bg: u.uiTheme.GetColorByName("Yellow_1")},
+		{Char: '∙', Fg: u.uiTheme.GetColorByName("Yellow_2"), Bg: u.uiTheme.GetColorByName("Yellow_1")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Yellow_1"), Bg: u.uiTheme.GetColorByName("Orange_4")},
+		{Char: '∙', Fg: u.uiTheme.GetColorByName("Yellow"), Bg: u.uiTheme.GetColorByName("Orange_6")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Red"), Bg: u.uiTheme.GetColorByName("Orange_8")},
+		{Char: '∙', Fg: u.uiTheme.GetColorByName("Orange_6"), Bg: u.uiTheme.GetColorByName("Yellow_1")},
+		{Char: '*', Fg: u.uiTheme.GetColorByName("Black"), Bg: u.uiTheme.GetColorByName("Yellow_1")},
+	}, nil)
+	ballAnim.SetLightsOnAllTiles(&gridmap.LightSource{
+		Pos:          geometry.Point{},
+		Radius:       2,
+		Color:        fxtools.NewColorFromRGBA(u.uiTheme.GetColorByName("Orange_4")),
+		MaxIntensity: 0.9,
+	})
+	return []foundation.Animation{ballAnim, projAnim}
 }
 func (u *UI) GetAnimVorpalizeWeapon(origin geometry.Point, done func()) []foundation.Animation {
 	effectIcon := textiles.TextIcon{
@@ -1130,7 +1254,7 @@ func (u *UI) GetAnimProjectileWithLight(leadIcon rune, lightColorName string, pa
 	}
 
 	animation := NewProjectileAnimation(pathOfFlight, leadTextIcon, u.mapLookup, done)
-	animation.SetLightSource(&gridmap.LightSource{
+	animation.AddLightSource(&gridmap.LightSource{
 		Pos:          pathOfFlight[0],
 		Radius:       1,
 		Color:        fxtools.NewColorFromRGBA(lightColor),
@@ -1214,7 +1338,7 @@ func (u *UI) ShowTextFileFullscreen(filename string, onClose func()) {
 func (u *UI) openTextModal(description string) *cview.TextView {
 	textView := u.newTextModal(description)
 	w, h := widthAndHeightFromString(description)
-	u.makeCenteredModal(textView, w, h)
+	u.makeCenteredModal("modal", textView, w, h)
 
 	originalInputCapture := textView.GetInputCapture()
 	textView.SetInputCapture(u.directionalWrapper(func(event *tcell.EventKey) *tcell.EventKey {
@@ -1335,7 +1459,7 @@ func (u *UI) initCoreUI() {
 	u.application.SetUnknownEventCapture(u.handleUnknownEvent)
 	u.application.SetAfterResizeFunc(u.onTerminalResized)
 	u.application.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if u.stateOfIntro == Fading {
+		if u.stateOfIntro == Fading || u.stateOfIntro == MainMenu {
 			return event
 		}
 		if u.stateOfIntro == TitleScreen {
@@ -1343,10 +1467,12 @@ func (u *UI) initCoreUI() {
 			u.endIntro()
 		}
 		u.animator.CancelAll()
-		if frontName, frontPanel := u.pages.GetFrontPanel(); frontName == "inventory" && event.Key() == tcell.KeyCtrlC {
-			inventory := frontPanel.(*TextInventory)
-			inventory.handleInput(event)
-			return nil // don't forward, or else we will quit
+		if event.Key() == tcell.KeyCtrlC {
+			_, frontPanel := u.pages.GetFrontPanel()
+			if inventory, isInventory := frontPanel.(*TextInventory); isInventory {
+				inventory.handleInput(event)
+				return nil // don't forward, or else we will quit
+			}
 		}
 		return event
 	})
@@ -1436,7 +1562,7 @@ func (u *UI) handleMainInput(ev *tcell.EventKey) *tcell.EventKey {
 	u.mapOverlay.ClearAll()
 	if u.autoRun && mod == 128 && ev.Key() == tcell.KeyF40 {
 		time.Sleep(64 * time.Millisecond)
-		u.game.RunPlayerPath()
+		u.game.RunPlayerPath(false)
 		return nil
 	}
 	if mod == 64 && u.autoRun && strings.ContainsRune("12346789", ch) {
@@ -1513,7 +1639,7 @@ func (u *UI) setTheme() {
 }
 
 func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (int, int, int, int) {
-	if !u.sentUIReady {
+	if !u.game.IsPlayerAndMapInitialized() {
 		return x, y, width, height
 	}
 	defaultMapStyle := u.uiTheme.GetMapDefaultStyle()
@@ -1668,8 +1794,14 @@ func (u *UI) UpdateVisibleActors() {
 	var asString []string
 	for _, enemy := range visibleEnemies {
 		icon := u.getIconForActor(enemy)
-		iconColor := textiles.RGBAToFgColorCode(icon.Fg)
-		iconString := fmt.Sprintf("%s%s[-]", iconColor, string(icon.Char))
+		iconBackground := color.RGBA{A: 255}
+		if u.game.IsActorHostileTowardsPlayer(enemy) {
+			iconBackground = u.uiTheme.GetColorByName("Red_13")
+		} else if u.game.IsActorAlliedWithPlayer(enemy) {
+			iconBackground = u.uiTheme.GetColorByName("Green_6")
+		}
+		iconColor := textiles.RGBAToColorCodes(icon.Fg, iconBackground)
+		iconString := fmt.Sprintf("%s%s[-:-]", iconColor, string(icon.Char))
 		hp, hpMax := enemy.GetHitPoints(), enemy.GetHitPointsMax()
 		asPercent := float64(hp) / float64(hpMax)
 
@@ -1727,11 +1859,11 @@ func (u *UI) RuneBarWithColor(icon rune, fgColorName, bgColorName string, curren
 
 func (u *UI) RuneBarFromPercent(icon rune, percent float64, width int) string {
 	repeats := int(math.Round(percent * float64(width)))
-	colorCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Green_1"))
+	colorCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Green_4"))
 	if percent < 0.50 {
-		colorCode = textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Red_1"))
+		colorCode = textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Red_4"))
 	} else if percent < 0.75 {
-		colorCode = textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Yellow_1"))
+		colorCode = textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Yellow_4"))
 	}
 	return colorCode + strings.Repeat(string(icon), repeats) + "[-]" + strings.Repeat(" ", width-repeats)
 }
@@ -1753,6 +1885,8 @@ func (u *UI) UpdateStats() {
 	if isEquipped {
 		itemName = "| " + equippedItem.LongNameWithColors(textiles.RGBAToFgColorCode(u.uiTheme.GetInventoryItemColor(equippedItem.GetCategory()))) + " |"
 	}
+
+	turns := statusValues[foundation.HudTurnsTaken]
 
 	multiLine := u.isStatusBarMultiLine()
 
@@ -1778,7 +1912,7 @@ func (u *UI) UpdateStats() {
 
 		mapFriendlyName := u.game.GetMapDisplayName()
 
-		lineTwo := fmt.Sprintf("%s %s %s %s", hpBarStr, fpBarStr, longFlags, mapFriendlyName)
+		lineTwo := fmt.Sprintf("%s %s %s %s | T: %d", hpBarStr, fpBarStr, longFlags, mapFriendlyName, turns)
 
 		if cview.TaggedStringWidth(lineTwo) > width {
 			shortFlags := FlagStringShort(flags)
@@ -1896,7 +2030,7 @@ func (u *UI) openCharSheet() {
 	originalInputCapture := charSheet.GetInputCapture()
 	charSheet.SetInputCapture(u.directionalWrapper(originalInputCapture))
 
-	u.makeCenteredModal(charSheet, 80, 25)
+	u.makeCenteredModal("modal", charSheet, 80, 25)
 }
 func (u *UI) openInventory(items []foundation.ItemForUI) *TextInventory {
 	inventory := NewTextInventory(u.game.IsPlayerOverEncumbered)
@@ -1955,7 +2089,7 @@ type InputPrimitive interface {
 
 func (u *UI) closeModal() {
 	u.pages.RemovePanel("modal")
-	u.pages.SetCurrentPanel("main")
+	//u.pages.SetCurrentPanel("main")
 	u.resetFocusToMain()
 }
 
@@ -1966,7 +2100,7 @@ func (u *UI) defaultFocusHandler(p cview.Primitive) bool {
 	return false
 }
 
-func (u *UI) makeCenteredModal(modal InputPrimitive, w, h int) {
+func (u *UI) makeCenteredModal(panelName string, modal InputPrimitive, w, h int) {
 	w = w + 2
 	h = h + 2
 	screenW, screenH := u.application.GetScreen().Size()
@@ -1990,7 +2124,7 @@ func (u *UI) makeCenteredModal(modal InputPrimitive, w, h int) {
 		})
 
 	*/
-	u.pages.AddPanel("modal", modal, false, true)
+	u.pages.AddPanel(panelName, modal, false, true)
 	u.lockFocusToPrimitive(modal)
 }
 func (u *UI) makeSideBySideModal(primitive, qPrimitive cview.Primitive, contentHeight int, contentWidth int) {
@@ -2196,17 +2330,17 @@ func (u *UI) directionalWrapper(originalCapture func(event *tcell.EventKey) *tce
 
 		if command == "wait" {
 			event = tcell.NewEventKey(tcell.KeyEscape, ' ', tcell.ModNone)
-			return originalCapture(event)
-		}
-
-		if command == "map_interaction" {
+		} else if command == "map_interaction" {
 			event = tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone)
-			return originalCapture(event)
 		}
 
 		direction, possible := directionFromCommand(command)
 		if !possible {
-			return originalCapture(event)
+			if originalCapture != nil {
+				return originalCapture(event)
+			} else {
+				return event
+			}
 		}
 		if direction == geometry.North {
 			event = tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone)
@@ -2217,8 +2351,11 @@ func (u *UI) directionalWrapper(originalCapture func(event *tcell.EventKey) *tce
 		} else if direction == geometry.East {
 			event = tcell.NewEventKey(tcell.KeyRight, ' ', tcell.ModNone)
 		}
-
-		return originalCapture(event)
+		if originalCapture != nil {
+			return originalCapture(event)
+		} else {
+			return event
+		}
 	}
 }
 
@@ -2233,13 +2370,17 @@ func (u *UI) CloseConversation() {
 	u.dialogueIsTerminal = false
 }
 
+func (u *UI) OpenMenuWithTitle(title string, actions []foundation.MenuItem) {
+	menu := u.openSimpleMenu(actions)
+	menu.SetTitle(title)
+}
+
 func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 	u.openSimpleMenu(actions)
 }
 
 func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
-	list, longestItem := u.createSimpleMenu(menuItems)
-
+	list := u.openSimpleMenuNotClosable(menuItems)
 	originalCapture := list.GetInputCapture()
 	list.SetInputCapture(u.directionalWrapper(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEscape {
@@ -2251,7 +2392,13 @@ func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem) *cview.List {
 		}
 		return event
 	}))
-	u.makeCenteredModal(list, longestItem, len(menuItems))
+	return list
+}
+
+func (u *UI) openSimpleMenuNotClosable(menuItems []foundation.MenuItem) *cview.List {
+	list, longestItem := u.createSimpleMenu(menuItems)
+
+	u.makeCenteredModal("modal", list, longestItem, len(menuItems))
 
 	return list
 }
@@ -2956,22 +3103,40 @@ func RightPadColored(s string, pLen int) string {
 	return s + strings.Repeat(" ", pLen-cview.TaggedStringWidth(s))
 }
 
+func (u *UI) GetAnimRadialExplosion(hitPositions map[geometry.Point]int, lightColor fxtools.HDRColor, done func()) foundation.Animation {
+	if !u.settings.AnimationsEnabled {
+		return nil
+	}
+
+	return NewRadialExplosionAnimation(hitPositions, lightColor, done)
+}
+
 func (u *UI) GetAnimExplosion(hitPositions []geometry.Point, done func()) foundation.Animation {
+	if !u.settings.AnimationsEnabled {
+		return nil
+	}
 	white := u.uiTheme.GetColorByName("white")
 	yellow := u.uiTheme.GetColorByName("yellow_3")
 	red := u.uiTheme.GetColorByName("red_8")
-	lightGray := u.uiTheme.GetColorByName("light_gray_5")
+	orange := u.uiTheme.GetColorByName("orange_4")
 	darkGray := u.uiTheme.GetColorByName("dark_gray_3")
+	black := u.uiTheme.GetColorByName("Black")
 	frames := []textiles.TextIcon{
-		{Char: '.', Fg: white},
-		{Char: '∙', Fg: white},
-		{Char: '*', Fg: white},
-		{Char: '*', Fg: yellow},
-		{Char: '*', Fg: red},
-		{Char: '☼', Fg: lightGray},
-		{Char: '☼', Fg: darkGray},
+		{Char: '.', Fg: white, Bg: yellow},
+		{Char: '∙', Fg: yellow, Bg: orange},
+		{Char: '*', Fg: orange, Bg: orange},
+		{Char: '*', Fg: orange, Bg: red},
+		{Char: '*', Fg: red, Bg: orange},
+		{Char: '☼', Fg: darkGray, Bg: black},
 	}
-	return u.GetAnimTiles(hitPositions, frames, done)
+
+	animation := NewTilesAnimation(hitPositions, frames, done)
+	animation.SetLightsOnAllTiles(&gridmap.LightSource{
+		Radius:       2,
+		Color:        fxtools.NewColorFromRGBA(orange),
+		MaxIntensity: 0.9,
+	})
+	return animation
 }
 
 func (u *UI) GetAnimUncloakAtPosition(actor foundation.ActorForUI, uncloakLocation geometry.Point) (foundation.Animation, int) {
@@ -3241,8 +3406,110 @@ func (u *UI) startIntro() {
 	u.application.Draw(backGroundOverlay)
 }
 
+func (u *UI) saveGamesExist() bool {
+	return fxtools.DirExists(u.settings.SaveGameDir) && fxtools.DirHasSubDirs(u.settings.SaveGameDir)
+}
+func (u *UI) showMainMenu() {
+	var items []foundation.MenuItem
+	if u.saveGamesExist() {
+		loadGame := foundation.MenuItem{
+			Name: "Continue",
+			Action: func() {
+				loadMenu := u.openSimpleMenuNotClosable(chooseSubDirMenuItems(u.settings.SaveGameDir, func(savegameSubdir string) {
+					u.pages.RemovePanel("modal")
+					u.mapOverlay.ClearAll()
+					u.game.LoadGame(savegameSubdir)
+					u.moveInGame()
+				}))
+				loadMenu.SetInputCapture(u.directionalWrapper(func(event *tcell.EventKey) *tcell.EventKey {
+					if event.Key() == tcell.KeyEscape {
+						u.pages.RemovePanel("modal")
+						_, prim := u.pages.GetFrontPanel()
+						u.lockFocusToPrimitive(prim)
+					}
+					return event
+				}))
+				offsetVertically(loadMenu, 6)
+			},
+			CloseMenus: false,
+		}
+		items = append(items, loadGame)
+	}
+
+	newGame := foundation.MenuItem{
+		Name:       "New Game",
+		Action:     u.newGame,
+		CloseMenus: true,
+	}
+	items = append(items, newGame)
+
+	quitGame := foundation.MenuItem{
+		Name:       "Quit Game",
+		Action:     u.QuitGame,
+		CloseMenus: true,
+	}
+	items = append(items, quitGame)
+	mainMenu, longestItem := u.createSimpleMenu(items)
+
+	mainMenu.SetInputCapture(u.directionalWrapper(mainMenu.GetInputCapture()))
+
+	u.makeCenteredModal("mainMenu", mainMenu, longestItem, len(items))
+
+	// move 6 lines down
+	offsetVertically(mainMenu, 6)
+}
+
+func (u *UI) newGame() {
+	modeDialogue := OpenChoiceDialogue(u.application, u.pages, "Mode?", "Choose game mode", []string{"Save anytime", "Ironman"}, func(index int, choice string) {
+		if index == 0 || index == 1 {
+			u.moveInGame()
+		} else {
+			_, frontPanel := u.pages.GetFrontPanel()
+			u.lockFocusToPrimitive(frontPanel)
+		}
+	})
+	for i := 0; i < modeDialogue.GetForm().GetButtonCount(); i++ {
+		button := modeDialogue.GetForm().GetButton(i)
+		button.SetInputCapture(u.directionalWrapper(button.GetInputCapture()))
+	}
+}
+
+func offsetVertically(primitive cview.Primitive, amount int) {
+	x, y, w, h := primitive.GetRect()
+	primitive.SetRect(x, y+amount, w, h)
+}
+
+func (u *UI) OpenSystemMenu() {
+	u.OpenMenu([]foundation.MenuItem{
+		{
+			Name:   "Save Game",
+			Action: u.SaveGame,
+		},
+		{
+			Name:   "Load Game",
+			Action: u.LoadGame,
+		},
+		{
+			Name: "Quit Game",
+			Action: func() {
+				u.AskForConfirmation("Really?", "Do you want to quit this game?", func(confirmed bool) {
+					if confirmed {
+						u.QuitGame()
+					}
+				})
+			},
+		},
+	})
+}
+
 func (u *UI) endIntro() {
+	u.stateOfIntro = MainMenu
+	u.showMainMenu()
+}
+
+func (u *UI) moveInGame() {
 	u.stateOfIntro = InGame
+	u.pages.RemovePanel("mainMenu")
 	u.pages.RemovePanel("fullscreen")
 	u.resetFocusToMain()
 }
@@ -3263,6 +3530,17 @@ func (u *UI) addFullScreenTextOverlay() *cview.TextView {
 	u.pages.AddPanel("fullscreen", textView, true, true)
 	u.lockFocusToPrimitive(textView)
 	return textView
+}
+
+func (u *UI) LoadGame() {
+	u.ChooseLoadDir(u.settings.SaveGameDir, func(savegameSubdir string) {
+		u.mapOverlay.ClearAll()
+		u.game.LoadGame(savegameSubdir)
+	})
+}
+
+func (u *UI) SaveGame() {
+	u.ChooseSaveDir(u.settings.SaveGameDir, u.game.SaveGame)
 }
 
 func FadeToWhite(app *cview.Application, animDelay time.Duration, stepSize int) {

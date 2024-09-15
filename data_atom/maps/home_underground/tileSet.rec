@@ -1,0 +1,42 @@
+%rec: default
+
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: cracked wall
+Char: ,
+Foreground: gray
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 32
+
+Name: cracked wall
+Char: `
+Foreground: gray
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 32
+
+Name: man-hole
+Char: Θ
+Foreground: light_gray_6
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+

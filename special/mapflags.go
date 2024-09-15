@@ -172,6 +172,7 @@ const (
 	FlagKnockedDown
 	FlagZombie
 	FlagAnimal
+	FlagTurnsSinceLastIdleChatter
 )
 
 func AllFlagsExceptGoldOrdered() []ActorFlag {

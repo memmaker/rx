@@ -7,6 +7,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"strings"
+	"time"
 )
 
 type ElevatorButton struct {
@@ -33,6 +34,7 @@ func (b *Elevator) InitWithGameState(g *GameState) {
 	transitionTo := func(levelName, location string) {
 		g.ui.PlayCue("world/elevator")
 		g.GotoNamedLevel(levelName, location)
+		g.advanceTime(1 * time.Minute)
 	}
 	b.activate = func() {
 		var elevatorActions = make([]foundation.MenuItem, len(b.levels))

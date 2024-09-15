@@ -47,9 +47,10 @@ func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) bool {
 	distance := g.currentMap().MoveDistance(g.Player.Position(), mapPos)
 	if distance > 1 {
 		if g.canPlayerSee(mapPos) && g.currentMap().IsActorAt(mapPos) {
-			menuItems = g.appendContextActionsForActor(menuItems, g.currentMap().ActorAt(mapPos))
+			actorAt := g.currentMap().ActorAt(mapPos)
+			menuItems = g.appendContextActionsForActor(menuItems, actorAt)
 			if len(menuItems) > 0 {
-				g.ui.OpenMenu(menuItems)
+				g.ui.OpenMenuWithTitle(actorAt.Name(), menuItems)
 				return true
 			}
 		}
@@ -61,6 +62,10 @@ func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) bool {
 			// TODO: Self actions..
 		} else {
 			menuItems = g.appendContextActionsForActor(menuItems, actor)
+			if len(menuItems) > 0 {
+				g.ui.OpenMenuWithTitle(actor.Name(), menuItems)
+				return true
+			}
 		}
 	}
 	if g.currentMap().IsObjectAt(mapPos) {
@@ -119,6 +124,23 @@ func (g *GameState) PlayerRest(duration time.Duration) {
 	g.ui.FadeFromBlack()
 }
 
+func (g *GameState) SaveGame(toDirectory string) {
+	if toDirectory != "" {
+		err := g.Save(toDirectory)
+		if err != nil {
+			panic(err)
+		} else {
+			g.msg(foundation.Msg("Game saved."))
+		}
+	}
+}
+
+func (g *GameState) LoadGame(fromDirectory string) {
+	if fromDirectory != "" {
+		g.Load(fromDirectory)
+		g.msg(foundation.Msg("Game loaded."))
+	}
+}
 func (g *GameState) OpenRestMenu() {
 	g.ui.OpenMenu([]foundation.MenuItem{
 		{
@@ -301,6 +323,25 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
+			Name: "Show TimeTracker",
+			Action: func() {
+				g.ui.OpenTextWindow(g.timeTracker.String())
+			},
+		},
+		{
+			Name: "Show Scripts",
+			Action: func() {
+				g.ui.OpenTextWindow(g.scriptRunner.String())
+			},
+		},
+		{
+			Name: "Show Metronome",
+			Action: func() {
+				g.ui.OpenTextWindow(g.metronome.String())
+			},
+		},
+
+		{
 			Name: "Set Flag",
 			Action: func() {
 				g.ui.AskForString("Flag name", "", func(flagName string) {
@@ -330,14 +371,18 @@ func (g *GameState) OpenWizardMenu() {
 		{
 			Name: "Run Test Script",
 			Action: func() {
-				g.RunScript("jeff_kills_winters")
+				g.RunScriptByName("jeff_kills_winters")
 			},
 		},
 	})
 }
 
-func (g *GameState) RunScript(scriptName string) {
-	g.scriptRunner.RunScript(g.config.DataRootDir, scriptName, g.getScriptFuncs())
+func (g *GameState) RunScriptByName(scriptName string) {
+	g.scriptRunner.RunScriptByName(g.config.DataRootDir, scriptName, g.getScriptFuncs())
+}
+
+func (g *GameState) RunScript(script ActionScript) {
+	g.scriptRunner.RunScript(script)
 }
 
 func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource, isTerminal bool) {
@@ -364,14 +409,17 @@ func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource,
 		"NPC_NAME": npcName,
 	}
 	rootNode := conversation.GetRootNode(params)
-	g.OpenDialogueNode(conversation, rootNode, partner, isTerminal)
+	g.OpenDialogueNode(conversation, ConversationNode{}, rootNode, partner, isTerminal)
 }
 
-func (g *GameState) OpenDialogueNode(conversation *Conversation, node ConversationNode, conversationPartner foundation.ChatterSource, isTerminal bool) {
+func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode ConversationNode, currentNode ConversationNode, conversationPartner foundation.ChatterSource, isTerminal bool) {
 	endConversation := false
 	instantEndWithChatter := false
+
+	nodeText := g.fillTemplatedText(currentNode.NpcText)
+
 	var effectCalls []func()
-	for _, effect := range node.Effects {
+	for _, effect := range currentNode.Effects {
 		if effect == "StartCombat" {
 			if actor, isActor := conversationPartner.(*Actor); isActor {
 				actor.AddToEnemyActors(g.Player.GetInternalName())
@@ -385,10 +433,20 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 			}
 		} else if effect == "EndConversation" {
 			endConversation = true
+		} else if effect == "ReturnToPreviousNode" {
+			if !prevNode.IsEmpty() {
+				currentNode = prevNode
+			}
 		} else {
 			if fxtools.LooksLikeAFunction(effect) {
 				name, args := fxtools.GetNameAndArgs(effect)
 				switch name {
+				case "GotoNode":
+					nodeName := args.Get(0)
+					nextNode := conversation.GetNodeByName(nodeName)
+					if !nextNode.IsEmpty() {
+						currentNode = nextNode
+					}
 				case "SaveTimeNow":
 					timeName := args.Get(0)
 					g.SaveTimeNow(timeName)
@@ -398,9 +456,16 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 						panic(err)
 					}
 					g.advanceTime(time.Minute * time.Duration(minutes))
-				case "RunScript":
+				case "RunScriptByName":
 					scriptName := args.Get(0)
-					g.RunScript(scriptName)
+					g.RunScriptByName(scriptName)
+				case "RunScriptKill":
+					killerName := args.Get(0)
+					victimName := args.Get(1)
+					killer := g.actorWithName(killerName)
+					victim := g.actorWithName(victimName)
+					killScript := g.NewScriptKill(killer, victim)
+					g.RunScript(killScript)
 				case "DriverTransition":
 					mapName := args.Get(0)
 					locationName := args.Get(1)
@@ -469,8 +534,6 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 		}
 	}
 
-	nodeText := g.fillTemplatedText(node.NpcText)
-
 	if otherActor, isActor := conversationPartner.(*Actor); isActor && instantEndWithChatter {
 		g.ui.CloseConversation()
 		g.tryAddChatter(otherActor, nodeText)
@@ -485,14 +548,14 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, node Conversati
 			CloseMenus: true,
 		})
 	} else {
-		for _, o := range node.Options {
+		for _, o := range currentNode.Options {
 			option := o
 			if option.CanDisplay() {
 				nodeOptions = append(nodeOptions, foundation.MenuItem{
 					Name: g.fillTemplatedText(option.playerText),
 					Action: func() {
 						nextNode := conversation.GetNextNode(option)
-						g.OpenDialogueNode(conversation, nextNode, conversationPartner, isTerminal)
+						g.OpenDialogueNode(conversation, currentNode, nextNode, conversationPartner, isTerminal)
 					},
 					CloseMenus: true,
 				})

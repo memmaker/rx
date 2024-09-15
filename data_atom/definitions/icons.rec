@@ -260,3 +260,15 @@ Char: ♣
 Fg: bright_green_2
 Bg: tan_10
 
+Char: Θ
+Fg: light_gray_6
+Bg: dark_gray_5
+
+Char: `
+Fg: gray
+Bg: light_gray_5
+
+Char: ,
+Fg: gray
+Bg: light_gray_5
+

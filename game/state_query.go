@@ -144,21 +144,30 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 }
 
 func (g *GameState) IsSomethingBlockingTargetingAtLoc(point geometry.Point) bool {
-	return !g.currentMap().IsCurrentlyPassable(point)
+	currentMap := g.currentMap()
+	if currentMap.IsActorAt(point) {
+		return true
+	}
+	if currentMap.IsObjectAt(point) {
+		object := currentMap.ObjectAt(point)
+		if !object.IsPassableForProjectile() {
+			return true
+		}
+	}
+	if !currentMap.IsTileWalkable(point) && !currentMap.IsTransparent(point) {
+		return true
+	}
+	return false
 }
 
 func (g *GameState) IsSomethingInterestingAtLoc(loc geometry.Point) bool {
 	gridMap := g.currentMap()
 
-	if g.Player.Position() == loc {
-		return true
+	if !g.canPlayerSee(loc) {
+		return false
 	}
 
 	if gridMap.IsActorAt(loc) {
-		return true
-	}
-
-	if gridMap.IsItemAt(loc) {
 		return true
 	}
 

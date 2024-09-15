@@ -210,9 +210,10 @@ func (u *UI) cancelTargeting() {
 	u.mapWindow.SetInputCapture(u.handleMainInput)
 	u.application.SetMouseCapture(u.handleMainMouse)
 	u.state = StateNormal
+	u.UpdateInventory()
+	u.Print(foundation.NoMsg())
 	u.mapOverlay.ClearAll()
 	clear(u.targetingTiles)
-	u.Print(foundation.NoMsg())
 }
 
 func (u *UI) updateTarget(targetPos geometry.Point) {

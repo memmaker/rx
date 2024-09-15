@@ -212,7 +212,11 @@ func (g *GameState) playerUseOrZapItem(item *Item) {
 	} else if item.IsUsable() {
 		g.actorUseItem(g.Player, item)
 	} else if item.IsZappable() {
-		g.startZapItem(item)
+		if item.HasTag(foundation.TagTimed) {
+			g.actorSetItemCountdown(g.Player, item)
+		} else {
+			g.startZapItem(item)
+		}
 	}
 }
 
@@ -323,8 +327,45 @@ func (g *GameState) actorUseItem(user *Actor, item *Item) {
 
 	if user == g.Player {
 		if actionEndsTurn {
-			g.endPlayerTurn(10)
+			g.endPlayerTurn(g.Player.timeNeededForActions())
 		}
+	}
+}
+
+func (g *GameState) actorSetItemCountdown(user *Actor, item *Item) {
+	useEffectName := item.GetZapEffectName()
+
+	if useEffectName == "" || !item.HasTag(foundation.TagTimed) {
+		if user == g.Player {
+			g.msg(foundation.Msg("You cannot set the timer on this item"))
+		}
+		return
+	}
+
+	if g.metronome.HasTimed(item) {
+		if user == g.Player {
+			g.msg(foundation.Msg("This timer has already been set"))
+		}
+		return
+	}
+
+	setCharge := func(turns int) {
+		g.msg(foundation.HiLite("You set the timer of %s to %s", item.Name(), strconv.Itoa(turns)))
+		item.SetCharges(turns)
+		g.metronome.AddTimed(item, true, func() {
+			consequencesOfEffect := g.actorInvokeZapEffect(user, useEffectName, item.Position())
+			g.ui.AddAnimations(consequencesOfEffect)
+			g.removeItemFromGame(item)
+		})
+	}
+	turns := 5
+	if g.Player == user {
+		g.ui.AskForString("Set countdown", "5", func(input string) {
+			turns, _ = strconv.Atoi(input)
+			setCharge(turns)
+		})
+	} else {
+		setCharge(turns)
 	}
 }
 
@@ -706,16 +747,19 @@ func (g *GameState) CheckTransition() {
 
 	doTransition := func() {
 		title := "Move to another area"
-		message := fmt.Sprintf("Do you want to move to leave %s?", g.currentMap().GetDisplayName())
+		message := fmt.Sprintf("Do you want to leave %s?", g.currentMap().GetDisplayName())
 		g.ui.AskForConfirmation(title, message, func(didConfirm bool) {
-			currentMapName := g.currentMap().GetName()
-			location := g.currentMap().GetNamedLocationByPos(pos)
-			lockFlagName := fmt.Sprintf("lock(%s/%s)", currentMapName, location)
-			if g.gameFlags.HasFlag(lockFlagName) {
-				g.msg(foundation.Msg("The way is blocked"))
-				return
+			if didConfirm {
+				currentMapName := g.currentMap().GetName()
+				location := g.currentMap().GetNamedLocationByPos(pos)
+				lockFlagName := fmt.Sprintf("lock(%s/%s)", currentMapName, location)
+				if g.gameFlags.HasFlag(lockFlagName) {
+					g.msg(foundation.Msg("The way is blocked"))
+					return
+				}
+				g.GotoNamedLevel(transition.TargetMap, transition.TargetLocation)
+				g.advanceTime(5 * time.Minute)
 			}
-			g.GotoNamedLevel(transition.TargetMap, transition.TargetLocation)
 		})
 	}
 

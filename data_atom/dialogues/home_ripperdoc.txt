@@ -60,16 +60,12 @@ o_goto: End
 
 name: MedicalSupplies
 npc: I am sorry, but I am out of supplies. We're restocking soon.
-#
-o_text: Alright.
-o_goto: DanielIsRipperdoc
+effect: ReturnToPreviousNode
 
 name: Cyberware
 npc: Unfortunately, I am not able to install any cyberware at the moment.
 + I just took over the business and I am still setting up.
-#
-o_text: Fine.
-o_goto: DanielIsRipperdoc
+effect: ReturnToPreviousNode
 
 name: JacobQuestion
 npc: Yes, I know Jacob. What's your business with him?

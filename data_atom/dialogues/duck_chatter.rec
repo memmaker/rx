@@ -1,0 +1,15 @@
+
+s: being_around_player
+#
+t: Quack!
+t: Quack quack!
+t: Quack quack quack!
+t: Quack quack quack quack!
+t: Quack, Quack!
+
+
+s: being_damaged
+#
+t: QUACK!
+t: QUACK QU...!
+t: QUOCK!!!

@@ -4,23 +4,28 @@ Text: Grim, your old friend and fellow contractor, wants to retire.
 + He promised to leave you his apartment keys.
 Cond: !HasItem('home_keys')
 Viewed: false
-Active: false
+Active: true
 
 Text: You should check out Grim's apartment.
 Cond: HasItem('home_keys')
 Viewed: false
-Active: true
+Active: false
 
 Text: Jacob wants you to extract $500 from the Ripperdoc in the northside residential area.
-Cond: HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
+Cond: !HasFlag('Killed(jacob_thorne)') && HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
 Viewed: false
-Active: true
+Active: false
+
+Text: Jacob is dead. Daniel Harker, the Ripperdoc, will be pleased to hear about it.
+Cond: HasFlag('Killed(jacob_thorne)')
+Viewed: false
+Active: false
 
 Text: You have a referral from your Doctor to see Dr. Winters.
 + Head to the hospital in the north part of town and look for him there.
-Cond: !HasFlag('TalkedTo(dr_winters)')
+Cond: false && !HasFlag('TalkedTo(dr_winters)')
 Viewed: false
-Active: true
+Active: false
 
 Text: You'll have to deal with your medical condition on your own.
 Cond: HasFlag('TalkedTo(dr_winters)')

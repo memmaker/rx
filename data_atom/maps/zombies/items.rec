@@ -78,6 +78,7 @@ Category: Weapons
 Name: grenade_plasma
 Description: Grenade (Plasma)
 LongDescription: A magnetically sealed plasma delivery unit, with detonating explosives. Creates a blast of superheated plasma on contact. Min ST: 4.
+zap_effect: plasma_explode
 Size: 1
 Weight: 1
 Cost: 300

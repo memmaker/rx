@@ -15,13 +15,12 @@ type DamageAnimation struct {
 	drawables        map[geometry.Point]textiles.TextIcon
 	ticksLeft        int
 	makeBloody       func(mapPos geometry.Point)
-	bloodTicksLeft   int
 	bloodPerTick     int
 	secondaryDrawPos geometry.Point
 	bloodColors      []color.RGBA
 }
 
-func NewDamageAnimation(blood func(mapPos geometry.Point), defenderPos geometry.Point, playerPos geometry.Point, damage int, bloodColors []color.RGBA) *DamageAnimation {
+func NewDamageAnimation(blood func(mapPos geometry.Point), defenderPos geometry.Point, playerPos geometry.Point, damage int, bulletMultiplier int, bloodColors []color.RGBA) *DamageAnimation {
 	primary := '!'
 	fgColor := color.RGBA{R: 240, G: 20, B: 20, A: 255}
 	bgColor := color.RGBA{R: 40, A: 255}
@@ -63,24 +62,18 @@ func NewDamageAnimation(blood func(mapPos geometry.Point), defenderPos geometry.
 
 	// for every 10 points of damage we want 1 blood call
 	// spread around the 3 ticks we got
-	calls := damage / 10
-	bloodPerTick := 0
-	bloodTicks := 0
-	if calls > 2 {
-		bloodPerTick = calls / 3
-		bloodTicks = 3
-	} else if calls > 0 {
-		bloodPerTick = 1
-		bloodTicks = calls
-	}
+	// damage between 1 - 300
+	// bullet multi: 1 or 3
+	bloodAmount := damage / 5                                // 1-60
+	bloodPerTick := max(1, bloodAmount/(6*bulletMultiplier)) // 1-10
+
 	return &DamageAnimation{
 		BaseAnimation:    &BaseAnimation{},
 		pos:              defenderPos,
 		damage:           damage,
 		drawables:        drawables,
-		ticksLeft:        3,
+		ticksLeft:        3 * bulletMultiplier,
 		makeBloody:       blood,
-		bloodTicksLeft:   bloodTicks,
 		bloodPerTick:     bloodPerTick,
 		secondaryDrawPos: secondaryDrawPos,
 		bloodColors:      bloodColors,
@@ -108,10 +101,14 @@ func (d *DamageAnimation) GetDrawables() map[geometry.Point]textiles.TextIcon {
 
 	for i := 0; i < d.bloodPerTick; i++ {
 		randomNeighbor := neighbors[rand.Intn(len(neighbors))]
-		drawables[randomNeighbor] = textiles.TextIcon{
+		icon := textiles.TextIcon{
 			Char: []rune{'.', ',', ';', ':'}[rand.Intn(4)],
 			Fg:   d.bloodColors[rand.Intn(len(d.bloodColors))],
 		}
+		if rand.Intn(4) == 0 {
+			icon.Bg = d.bloodColors[rand.Intn(len(d.bloodColors))]
+		}
+		drawables[randomNeighbor] = icon
 	}
 	return drawables
 }
@@ -120,11 +117,8 @@ func (d *DamageAnimation) NextFrame() {
 	if d.ticksLeft > 0 {
 		d.ticksLeft--
 	}
-	if d.bloodTicksLeft > 0 {
-		d.bloodTicksLeft--
-		for i := 0; i < d.bloodPerTick; i++ {
-			d.makeBloody(d.pos)
-		}
+	for i := 0; i < d.bloodPerTick; i++ {
+		d.makeBloody(d.pos)
 	}
 	if d.ticksLeft == 0 {
 		d.onFinishedOrCancelled()

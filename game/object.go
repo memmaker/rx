@@ -20,17 +20,18 @@ func init() {
 }
 
 type BaseObject struct {
-	position      geometry.Point
-	category      foundation.ObjectCategory
-	customIcon    textiles.TextIcon
-	iconForObject func(string) textiles.TextIcon
-	internalName  string
-	displayName   string
-	isWalkable    bool
-	isHidden      bool
-	isTransparent bool
-	useCustomIcon bool
-	isAlive       bool
+	position                geometry.Point
+	category                foundation.ObjectCategory
+	customIcon              textiles.TextIcon
+	iconForObject           func(string) textiles.TextIcon
+	internalName            string
+	displayName             string
+	isWalkable              bool
+	isHidden                bool
+	isTransparent           bool
+	useCustomIcon           bool
+	isAlive                 bool
+	isPassableForProjectile bool
 }
 
 func (b *BaseObject) gobEncode(enc *gob.Encoder) error {
@@ -51,6 +52,10 @@ func (b *BaseObject) gobEncode(enc *gob.Encoder) error {
 	}
 
 	if err := enc.Encode(b.displayName); err != nil {
+		return err
+	}
+
+	if err := enc.Encode(b.isPassableForProjectile); err != nil {
 		return err
 	}
 
@@ -95,6 +100,10 @@ func (b *BaseObject) gobDecode(dec *gob.Decoder) error {
 	}
 
 	if err := dec.Decode(&b.displayName); err != nil {
+		return err
+	}
+
+	if err := dec.Decode(&b.isPassableForProjectile); err != nil {
 		return err
 	}
 
@@ -156,7 +165,7 @@ func (b *BaseObject) IsTransparent() bool {
 	return b.isTransparent
 }
 func (b *BaseObject) IsPassableForProjectile() bool {
-	return false
+	return b.isPassableForProjectile
 }
 
 func (b *BaseObject) IsAlive() bool {

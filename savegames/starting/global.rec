@@ -1,0 +1,12 @@
+%rec: global
+
+CurrentMap: home_area
+TurnsTaken: 0
+GameTime: 2077-02-05T16:20:23Z
+ShowEverything: false
+RewardsReceived: 
+
+%rec: flags
+
+%rec: terminal_guesses
+

@@ -19,6 +19,7 @@ type Inventory struct {
 	maxItemStacks  int
 	onChanged      func()
 	onBeforeRemove func(*Item)
+	getCarrierPos  func() geometry.Point
 }
 
 func (i *Inventory) GobEncode() ([]byte, error) {
@@ -50,10 +51,11 @@ func (i *Inventory) GobDecode(data []byte) error {
 	return nil
 }
 
-func NewInventory(maxItemStacks int) *Inventory {
+func NewInventory(maxItemStacks int, position func() geometry.Point) *Inventory {
 	return &Inventory{
 		items:         make([]*Item, 0),
 		maxItemStacks: maxItemStacks,
+		getCarrierPos: position,
 	}
 }
 func (i *Inventory) SetOnBeforeRemove(onBeforeRemove func(*Item)) {
@@ -227,6 +229,7 @@ func (i *Inventory) addItemInternally(item *Item) {
 		}
 	}
 
+	item.SetPositionHandler(i.getCarrierPos)
 	i.items = append(i.items, item)
 }
 
@@ -249,6 +252,7 @@ func (i *Inventory) changed() {
 }
 
 func (i *Inventory) beforeRemove(item *Item) {
+	item.SetPositionHandler(nil)
 	if i.onBeforeRemove != nil {
 		i.onBeforeRemove(item)
 	}

@@ -1,0 +1,33 @@
+%rec: definitions
+
+var: QUINN
+set: ActorWithName('quinn_rix')
+
+var: VICTIM
+set: ActorWithName('daniel_harker')
+
+%rec: outcomes
+
+if: IsDead(QUINN) && !IsDead(VICTIM)
+do: AddChatter(VICTIM, 'Wow, Quinn. I thought we were friends.')
+do: SetGoalMoveToSpawn(VICTIM)
+
+if: IsDead(VICTIM) && !IsDead(QUINN)
+do: AddChatter(QUINN, 'Another one bites the dust.')
+do: SetGoalMoveToSpawn(QUINN)
+
+%rec: cancel
+
+if: true
+do: SetGoalMoveToSpawn(QUINN)
+do: SetGoalMoveToSpawn(VICTIM)
+
+%rec: frames
+
+if: true
+do: AddChatter(QUINN, 'You pay, I deliver.')
+do: SetGoalMoveIntoShootingRange(QUINN, VICTIM)
+
+if: IsInShootingRange(QUINN, VICTIM)
+do: AddChatter(QUINN, 'Never liked you, Harker. But this is business.')
+do: SetGoalKill(QUINN, VICTIM)

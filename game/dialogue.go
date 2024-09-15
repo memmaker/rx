@@ -64,6 +64,10 @@ type ConversationNode struct {
 	Options []ConversationOption
 }
 
+func (n *ConversationNode) IsEmpty() bool {
+	return n.Name == "" && n.NpcText == "" && len(n.Options) == 0
+}
+
 type ConversationOption struct {
 	displayCondition *govaluate.EvaluableExpression
 	playerText       string
