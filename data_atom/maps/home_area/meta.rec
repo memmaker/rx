@@ -1,7 +1,7 @@
 %rec: default
 
 Name: Northside residential area
-MusicFile: 
+MusicFile: 22vcity
 IsOutdoor: true
 IndoorAmbientLight: (1.0, 1.0, 1.0)
 RunScript: tutorial

@@ -53,6 +53,7 @@ type Item struct {
 	cost                   int
 	posHandler             func() geometry.Point
 	alive                  bool
+	effectParameters       Params
 }
 
 func (i *Item) String() string {
@@ -802,4 +803,14 @@ func (i *Item) SetPositionHandler(handler func() geometry.Point) {
 
 func (i *Item) SetAlive(value bool) {
 	i.alive = value
+}
+
+func (i *Item) GetEffectParameters() Params {
+	parameters := i.effectParameters
+	if !parameters.HasDamage() && i.IsWeapon() {
+		damageInterval := i.GetWeaponDamage()
+		parameters["damage_interval"] = damageInterval
+		parameters["damage"] = damageInterval.Roll()
+	}
+	return parameters
 }

@@ -41,6 +41,9 @@ func NewEquipment() *Equipment {
 }
 
 func (e *Equipment) IsEquipped(item *Item) bool {
+	if item == nil {
+		return false
+	}
 	slotName := item.SlotName()
 
 	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
@@ -66,6 +69,9 @@ func (e *Equipment) SwapHands() {
 }
 
 func (e *Equipment) Equip(item *Item) {
+	if item == nil {
+		return
+	}
 	defer e.changed()
 	slotName := item.SlotName()
 	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
@@ -84,6 +90,9 @@ func (e *Equipment) Equip(item *Item) {
 }
 
 func (e *Equipment) UnEquip(item *Item) {
+	if item == nil {
+		return
+	}
 	defer e.changed()
 	slotName := item.SlotName()
 	if slotName == foundation.SlotNameMainHand || slotName == foundation.SlotNameOffHand {
@@ -273,7 +282,11 @@ func (e *Equipment) AfterTurn() {
 
 func (e *Equipment) GetAllFlags() map[special.ActorFlag]int {
 	flags := make(map[special.ActorFlag]int)
-	for _, item := range e.slots {
+	for slot, item := range e.slots {
+		if item == nil {
+			delete(e.slots, slot)
+			continue
+		}
 		itemFlags := item.GetEquipFlag()
 		if itemFlags == special.FlagNone {
 			continue

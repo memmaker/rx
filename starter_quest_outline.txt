@@ -66,7 +66,7 @@ What game elements are needed?
  - XP Rewards
  - Actors:
    - Ripperdoc (Daniel Harker)
-   - Replacement Doc (Julian Nox)
+   - Replacement Doc (Drake Gallows)
      - Is locked in the cellar of the hospital
    - Replacement Killer (Quinn Rix)
      - Lives near the hospital

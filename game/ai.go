@@ -159,7 +159,7 @@ func (g *GameState) defaultBehaviour(enemy *Actor) int {
 		// zap
 		zap := zaps[rand.Intn(len(zaps))]
 		targetPos := g.Player.Position()
-		consequencesOfMonsterZap := g.actorInvokeZapEffect(enemy, zap, targetPos)
+		consequencesOfMonsterZap := g.actorInvokeZapEffect(enemy, zap, targetPos, Params{})
 		g.ui.AddAnimations(consequencesOfMonsterZap)
 		return enemy.timeNeededForActions()
 	}

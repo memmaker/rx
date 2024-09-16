@@ -148,7 +148,7 @@ func (g *GameState) OpenTacticsMenu() {
 	menuItems = append(menuItems, foundation.MenuItem{
 		Name: "Charge Attack",
 		Action: func() {
-			g.startZapEffect("charge_attack", nil)
+			g.startZapEffect("charge_attack", nil, Params{})
 		},
 		CloseMenus: true,
 	})
@@ -162,7 +162,7 @@ func (g *GameState) OpenTacticsMenu() {
 					payFatigue := func() {
 						charSheet.LooseActionPoints(1)
 					}
-					g.startZapEffect("heroic_charge", payFatigue)
+					g.startZapEffect("heroic_charge", payFatigue, Params{})
 				} else {
 					g.msg(foundation.Msg("You are too fatigued to perform a heroic charge"))
 				}
@@ -188,12 +188,12 @@ func (g *GameState) startZapItem(item *Item) {
 	})
 }
 
-func (g *GameState) startZapEffect(zapEffectName string, payCost func()) {
+func (g *GameState) startZapEffect(zapEffectName string, payCost func(), params Params) {
 	g.ui.SelectTarget(func(targetPos geometry.Point) {
 		if payCost != nil {
 			payCost()
 		}
-		g.playerInvokeZapEffectAndEndTurn(zapEffectName, targetPos)
+		g.playerInvokeZapEffectAndEndTurn(zapEffectName, targetPos, params)
 	})
 }
 
@@ -353,7 +353,7 @@ func (g *GameState) actorSetItemCountdown(user *Actor, item *Item) {
 		g.msg(foundation.HiLite("You set the timer of %s to %s", item.Name(), strconv.Itoa(turns)))
 		item.SetCharges(turns)
 		g.metronome.AddTimed(item, true, func() {
-			consequencesOfEffect := g.actorInvokeZapEffect(user, useEffectName, item.Position())
+			consequencesOfEffect := g.actorInvokeZapEffect(user, useEffectName, item.Position(), item.GetEffectParameters())
 			g.ui.AddAnimations(consequencesOfEffect)
 			g.removeItemFromGame(item)
 		})

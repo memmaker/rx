@@ -134,6 +134,9 @@ func (g *GameState) revealAll() {
 }
 func (g *GameState) makeMapBloody(mapPos geometry.Point) {
 	// we need a random integer between 5 and 15
+	if !g.currentMap().Contains(mapPos) {
+		return
+	}
 	bloodColorFgInt := rand.Intn(11) + 5
 	bloodColorBgInt := rand.Intn(11) + 5
 
@@ -148,9 +151,19 @@ func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
 	for pos, _ := range spreadArea {
 		if currIndex == randomIndex {
 			g.makeMapBloody(pos)
-			return
+			break
 		}
 		currIndex++
+	}
+
+	rayHits := g.currentMap().RayCast(mapPos.ToCenteredPointF(), geometry.RandomDirection().ToPoint().ToCenteredPointF(), func(point geometry.Point) bool {
+		return !g.currentMap().IsTileWalkable(point)
+	})
+	if rayHits.Distance <= 3 {
+		wallPos := geometry.Point{X: int(rayHits.ColliderGridPosition[0]), Y: int(rayHits.ColliderGridPosition[1])}
+		if !g.currentMap().IsTileWalkable(wallPos) {
+			g.makeMapBloody(wallPos)
+		}
 	}
 }
 func (g *GameState) updatePlayerFoVAndApplyExploration() {

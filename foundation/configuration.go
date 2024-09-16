@@ -30,6 +30,8 @@ type Configuration struct {
 	DialogueShortcutsAreNumbers bool
 	UseLockpickingMiniGame      bool
 	UseLockpickingDX            bool
+
+	AudioEnabled bool
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -55,6 +57,8 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.AnimateDamage = field.AsBool()
 		case "AnimateEffects":
 			configuration.AnimateEffects = field.AsBool()
+		case "AudioEnabled":
+			configuration.AudioEnabled = field.AsBool()
 		case "MapWidth":
 			configuration.MapWidth = field.AsInt()
 		case "MapHeight":
@@ -113,6 +117,7 @@ func NewDefaultConfiguration() *Configuration {
 		DialogueShortcutsAreNumbers: false,
 		UseLockpickingMiniGame:      false,
 		UseLockpickingDX:            false,
+		AudioEnabled:                true,
 	}
 }
 
@@ -129,6 +134,7 @@ func (c *Configuration) WriteToFile(filename string) {
 			recfile.Field{Name: "AnimateProjectiles", Value: recfile.BoolStr(c.AnimateProjectiles)},
 			recfile.Field{Name: "AnimateDamage", Value: recfile.BoolStr(c.AnimateDamage)},
 			recfile.Field{Name: "AnimateEffects", Value: recfile.BoolStr(c.AnimateEffects)},
+			recfile.Field{Name: "AudioEnabled", Value: recfile.BoolStr(c.AudioEnabled)},
 			recfile.Field{Name: "MapWidth", Value: recfile.IntStr(c.MapWidth)},
 			recfile.Field{Name: "MapHeight", Value: recfile.IntStr(c.MapHeight)},
 			recfile.Field{Name: "DiagonalMovementEnabled", Value: recfile.BoolStr(c.DiagonalMovementEnabled)},

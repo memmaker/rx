@@ -2,23 +2,23 @@
 
 Name: OpenDoor
 Icon: ─
-Foreground: light_gray_1
-Background: dark_gray_2
+Foreground: light_gray_2
+Background: dark_gray_5
 
 Name: LockedDoor
 Icon: ∩
-Foreground: red_5
-Background: dark_gray_2
+Foreground: red_9
+Background: dark_gray_5
 
 Name: ClosedDoor
 Icon: ∩
-Foreground: green_1
-Background: dark_gray_2
+Foreground: neon_green_3
+Background: dark_gray_5
 
 Name: BrokenDoor
 Icon: *
-Foreground: light_gray_1
-Background: dark_gray_2
+Foreground: light_gray_2
+Background: dark_gray_5
 
 Name: UnknownContainer
 Icon: ?

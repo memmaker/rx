@@ -11,41 +11,26 @@ import (
 	"math/rand"
 )
 
-func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
-	var zapEffects = map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation{
-		"magic_missile":        magicMissile,
-		"fire_breath":          fireBreath,
-		"haste_target":         hasteTarget,
-		"slow_target":          slowTarget,
-		"teleport_target_away": teleportTargetAway,
-		"teleport_target_to":   teleportTargetTo,
-		"cancel_target":        cancelTarget,
-		"invisibility_target":  invisibilityTarget,
-		"cold_ray":             coldRay,
-		"lightning_ray":        lightningRay,
-		"fire_ray":             fireRay,
-		"charge_attack":        chargeAttack,
-		"heroic_charge":        heroicCharge,
-		"explode": func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
-			return explosion(g, zapper, aimPos, Params{
-				kvp: map[string]string{
-					"radius": "3",
-					"damage": "20-35",
-				},
-			})
-		},
-		"plasma_explode": func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
-			return plasmaExplosion(g, zapper, aimPos, Params{
-				kvp: map[string]string{
-					"radius": "3",
-					"damage": "35-65",
-				},
-			})
-		},
-		"magic_dart":  magicDart,
-		"magic_arrow": magicArrow,
-		//"force_descend_target": forceDescendTarget,
-		"hold_target": holdTarget,
+func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point, params Params) []foundation.Animation {
+	var zapEffects = map[string]func(g *GameState, zapper *Actor, aimPos geometry.Point, params Params) []foundation.Animation{
+		"fire_breath":    fireBreath,
+		"explode":        explosion,
+		"plasma_explode": plasmaExplosion,
+		//"magic_missile":        magicMissile,
+		//"haste_target":         hasteTarget,
+		//"slow_target":          slowTarget,
+		//"teleport_target_away": teleportTargetAway,
+		//"teleport_target_to":   teleportTargetTo,
+		//"cancel_target":        cancelTarget,
+		//"invisibility_target":  invisibilityTarget,
+		//"cold_ray":             coldRay,
+		//"lightning_ray":        lightningRay,
+		//"fire_ray":             fireRay,
+		//"charge_attack":        chargeAttack,
+		//"heroic_charge":        heroicCharge,
+		//"magic_dart":           magicDart,
+		//"magic_arrow":          magicArrow,
+		//"hold_target":          holdTarget,
 	}
 	return zapEffects
 }
@@ -153,7 +138,7 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 }
 func plasmaExplosion(g *GameState, zapper *Actor, loc geometry.Point, params Params) []foundation.Animation {
 	radius := params.GetIntOrDefault("radius", 3)
-	damageInterval := params.GetIntervalOrDefault("damage", fxtools.NewInterval(50, 75))
+	damageAmount := params.GetDamageOrDefault(35)
 
 	affected := g.currentMap().GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
 		return g.currentMap().IsTileWalkable(p) || g.currentMap().IsTileWithFlagAt(p, gridmap.TileFlagDestroyable)
@@ -167,7 +152,7 @@ func plasmaExplosion(g *GameState, zapper *Actor, loc geometry.Point, params Par
 		IsObviousAttack: true,
 		TargetingMode:   special.TargetingModeFireSingle,
 		DamageType:      special.DamageTypePlasma,
-		DamageAmount:    damageInterval.Roll(),
+		DamageAmount:    damageAmount,
 	}
 	for point, _ := range affected {
 		damageAnims := g.damageLocation(damage, point)
@@ -187,7 +172,7 @@ func plasmaExplosion(g *GameState, zapper *Actor, loc geometry.Point, params Par
 }
 func explosion(g *GameState, zapper *Actor, loc geometry.Point, params Params) []foundation.Animation {
 	radius := params.GetIntOrDefault("radius", 3)
-	damageInterval := params.GetIntervalOrDefault("damage", fxtools.NewInterval(25, 50))
+	damageAmount := params.GetDamageOrDefault(35)
 
 	affected := g.currentMap().GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
 		return g.currentMap().IsTileWalkable(p) || g.currentMap().IsTileWithFlagAt(p, gridmap.TileFlagDestroyable)
@@ -202,7 +187,7 @@ func explosion(g *GameState, zapper *Actor, loc geometry.Point, params Params) [
 		IsObviousAttack: true,
 		TargetingMode:   special.TargetingModeFireSingle,
 		DamageType:      special.DamageTypeExplosive,
-		DamageAmount:    damageInterval.Roll(),
+		DamageAmount:    damageAmount,
 	}
 	for point, _ := range affected {
 		damageAnims := g.damageLocation(damage, point)
@@ -736,7 +721,8 @@ func (g *GameState) getLine(origin geometry.Point, targetPos geometry.Point) []g
 	}
 	return pathOfFlight
 }
-func fireBreath(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
+func fireBreath(g *GameState, zapper *Actor, pos geometry.Point, params Params) []foundation.Animation {
+	damageAmount := params.GetDamageOrDefault(10)
 	origin := zapper.Position()
 	pathOfFlight := geometry.BresenhamLine(origin, pos, func(x, y int) bool {
 		if origin.X == x && origin.Y == y {
@@ -753,17 +739,21 @@ func fireBreath(g *GameState, zapper *Actor, pos geometry.Point) []foundation.An
 		targetPos = pathOfFlight[len(pathOfFlight)-2]
 	}
 
+	neigh := g.currentMap().NeighborsCardinal(targetPos, func(p geometry.Point) bool {
+		return g.currentMap().Contains(p)
+	})
+
 	breathAnim := g.ui.GetAnimBreath(pathOfFlight, nil)
 
 	var onHitAnimations []foundation.Animation
-	for _, hitPos := range pathOfFlight {
+	for _, hitPos := range append(pathOfFlight, neigh...) {
 		damage := SourcedDamage{
-			NameOfThing:     "",
+			NameOfThing:     "flames",
 			Attacker:        zapper,
 			IsObviousAttack: true,
 			TargetingMode:   special.TargetingModeFireSingle,
 			DamageType:      special.DamageTypeFire,
-			DamageAmount:    5,
+			DamageAmount:    damageAmount,
 		}
 		damageAnims := g.damageLocation(damage, hitPos)
 		onHitAnimations = append(onHitAnimations, damageAnims...)
@@ -791,8 +781,8 @@ func (g *GameState) actorZapItem(zapper *Actor, item *Item, targetPos geometry.P
 	if !g.hasPaidWithCharge(zapper, item) {
 		return nil
 	}
-
-	animations := g.actorInvokeZapEffect(zapper, zapEffectName, targetPos)
+	parameters := item.GetEffectParameters()
+	animations := g.actorInvokeZapEffect(zapper, zapEffectName, targetPos, parameters)
 
 	return animations
 }
@@ -801,15 +791,15 @@ func (g *GameState) playerZapItemAndEndTurn(item *Item, targetPos geometry.Point
 	g.ui.AddAnimations(consequences)
 	g.endPlayerTurn(g.Player.timeNeededForActions())
 }
-func (g *GameState) actorInvokeZapEffect(zapper *Actor, zapEffectName string, targetPos geometry.Point) []foundation.Animation {
+func (g *GameState) actorInvokeZapEffect(zapper *Actor, zapEffectName string, targetPos geometry.Point, params Params) []foundation.Animation {
 	zapFunc := ZapEffectFromName(zapEffectName)
 	if zapFunc == nil {
 		return nil
 	}
-	return zapFunc(g, zapper, targetPos)
+	return zapFunc(g, zapper, targetPos, params)
 }
 
-func ZapEffectFromName(zapEffectName string) func(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.Animation {
+func ZapEffectFromName(zapEffectName string) func(g *GameState, zapper *Actor, aimPos geometry.Point, params Params) []foundation.Animation {
 	if zapEffectName == "" {
 		return nil
 	}
@@ -821,8 +811,8 @@ func ZapEffectFromName(zapEffectName string) func(g *GameState, zapper *Actor, a
 	return zapFunc
 }
 
-func (g *GameState) playerInvokeZapEffectAndEndTurn(zapEffectName string, targetPos geometry.Point) {
-	consequences := g.actorInvokeZapEffect(g.Player, zapEffectName, targetPos)
+func (g *GameState) playerInvokeZapEffectAndEndTurn(zapEffectName string, targetPos geometry.Point, params Params) {
+	consequences := g.actorInvokeZapEffect(g.Player, zapEffectName, targetPos, params)
 	g.ui.AddAnimations(consequences)
 	g.endPlayerTurn(g.Player.timeNeededForActions())
 }

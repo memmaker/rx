@@ -1,50 +1,14 @@
 %rec: default
 
-Category: ExplodingPushBox
-Description: a box
-Position: (53,18)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (56,18)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (21,18)
-
 Category: BakedLight
-Radius: 5
+Radius: 7
 Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
-Position: (10,9)
-
-Category: Transition
-Description: a ladder up
-Location: secret_ladder
-TargetMap: home_area
-TargetLocation: ripperdoc_toilet
-Position: (19,6)
-
-Category: UnknownContainer
-Name: dead_drop
-Description: CONTRACTOR dead drop
-item: 10mm_jhp | 24
-Position: (76,17)
+Position: (25,3)
 
 Category: ExplodingPushBox
 Description: a box
 Position: (54,20)
-
-Category: Transition
-Description: a ladder up
-Location: man_hole_west
-TargetMap: home_area
-TargetLocation: man_hole_west
-Position: (9,9)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (18,20)
 
 Category: ExplodingPushBox
 Description: a box
@@ -56,10 +20,58 @@ Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
 Position: (47,11)
 
+Category: ExplodingPushBox
+Description: a box
+Position: (53,18)
+
 Category: Transition
 Description: a ladder up
 Location: man_hole_east
 TargetMap: home_area
 TargetLocation: man_hole_east
 Position: (47,12)
+
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 1.0
+Position: (10,9)
+
+Category: Transition
+Description: a ladder up
+Location: man_hole_west
+TargetMap: home_area
+TargetLocation: man_hole_west
+Position: (9,9)
+
+Category: BakedLight
+Radius: 7
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 1.0
+Position: (35,3)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (18,20)
+
+Category: LockedDoor
+Description: a door
+istransparent: true
+LockFlag: ripper_cell_door
+Position: (42,3)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (21,18)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (56,18)
+
+Category: Transition
+Description: a ladder up
+Location: secret_ladder
+TargetMap: home_area
+TargetLocation: ripperdoc_toilet
+Position: (19,6)
 

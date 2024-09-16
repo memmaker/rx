@@ -15,6 +15,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	item := &Item{
 		qualityInPercent: special.Percentage(-1),
 		alive:            true,
+		effectParameters: make(Params),
 	}
 
 	charges := 1
@@ -69,6 +70,12 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			} else {
 				panic("Invalid zap effect: " + field.Value)
 			}
+		case "effect_damage":
+			item.effectParameters["damage"] = field.AsInt()
+		case "effect_damage_interval":
+			item.effectParameters["damage_interval"] = fxtools.ParseInterval(field.Value)
+		case "effect_radius":
+			item.effectParameters["radius"] = field.AsInt()
 		case "charges":
 			charges = fxtools.ParseInterval(field.Value).Roll()
 		case "stat":

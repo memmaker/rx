@@ -1425,6 +1425,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetTileIcon(pos geometry.Poin
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetTileIconAt(pos geometry.Point) textiles.TextIcon {
+	if !m.Contains(pos) {
+		return textiles.TextIcon{}
+	}
 	return m.cells[pos.Y*m.mapWidth+pos.X].TileType.Icon
 }
 

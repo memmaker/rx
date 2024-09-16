@@ -56,6 +56,8 @@ type Actor struct {
 	enemyActors map[string]bool
 	enemyTeams  map[string]bool
 
+	audioBaseName string
+
 	xp int
 
 	SpawnPosition           geometry.Point
@@ -299,15 +301,16 @@ func NewActor() *Actor {
 			Fg:   color.RGBA{255, 255, 255, 255},
 			Bg:   color.RGBA{0, 0, 0, 255},
 		},
-		equipment:   NewEquipment(),
-		charSheet:   sheet,
-		body:        special.HumanBodyParts,
-		bodyDamage:  make(map[special.BodyPart]int),
-		aiState:     foundation.Neutral,
-		statusFlags: special.NewActorFlags(),
-		enemyActors: make(map[string]bool),
-		enemyTeams:  make(map[string]bool),
-		activeGoal:  NoGoal,
+		equipment:     NewEquipment(),
+		charSheet:     sheet,
+		body:          special.HumanBodyParts,
+		bodyDamage:    make(map[special.BodyPart]int),
+		aiState:       foundation.Neutral,
+		statusFlags:   special.NewActorFlags(),
+		enemyActors:   make(map[string]bool),
+		enemyTeams:    make(map[string]bool),
+		activeGoal:    NoGoal,
+		audioBaseName: "human_male",
 	}
 	a.inventory = NewInventory(23, a.Position)
 	return a
@@ -913,7 +916,7 @@ func (a *Actor) GetMeleeAudioCue(isKick bool) string {
 	return fmt.Sprintf("critters/%s/%s", audioName, hitType)
 }
 func (a *Actor) getAudioName() string {
-	return "human_male"
+	return a.audioBaseName
 }
 
 func (a *Actor) GetTeam() string {

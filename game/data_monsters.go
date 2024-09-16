@@ -85,6 +85,8 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		case "position":
 			pos, _ := geometry.NewPointFromEncodedString(field.Value)
 			actor.SetPosition(pos)
+		case "audio":
+			actor.audioBaseName = field.Value
 		case "dialogue":
 			actor.SetDialogueFile(field.Value)
 		case "chatter":

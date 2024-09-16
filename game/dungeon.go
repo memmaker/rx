@@ -1,71 +1,73 @@
 package game
 
 import (
-    "RogueUI/foundation"
-    "RogueUI/gridmap"
-    "bufio"
-    "fmt"
-    "github.com/memmaker/go/geometry"
-    "os"
-    "path"
+	"RogueUI/foundation"
+	"RogueUI/gridmap"
+	"bufio"
+	"fmt"
+	"github.com/memmaker/go/geometry"
+	"os"
+	"path"
 )
 
 func (g *GameState) GotoNamedLevel(levelName string, location string) {
 
-    if g.metronome.LeavingMapEvents() {
-        g.ui.AnimatePending()
-    }
+	if g.metronome.LeavingMapEvents() {
+		g.ui.AnimatePending()
+	}
 
-    var loadedMap *gridmap.GridMap[*Actor, *Item, Object]
-    var ok bool
-    var firstTimeInit func()
-    if loadedMap, ok = g.activeMaps[levelName]; !ok {
-        result := g.mapLoader.LoadMap(levelName)
-        loadedMap = result.Map
+	var loadedMap *gridmap.GridMap[*Actor, *Item, Object]
+	var ok bool
+	var firstTimeInit func()
+	if loadedMap, ok = g.activeMaps[levelName]; !ok {
+		result := g.mapLoader.LoadMap(levelName)
+		loadedMap = result.Map
 
-        if loadedMap == nil {
-            g.msg(foundation.Msg("It's impossible to move there.."))
-            return
-        }
+		if loadedMap == nil {
+			g.msg(foundation.Msg("It's impossible to move there.."))
+			return
+		}
 
-        g.iconsForObjects = result.IconsForObjects
+		g.iconsForObjects = result.IconsForObjects
 
-        firstTimeInit = func() {
-            flags := result.FlagsOfMap
-            for flagName, flagValue := range flags {
-                g.gameFlags.Set(flagName, flagValue)
-            }
+		firstTimeInit = func() {
+			flags := result.FlagsOfMap
+			for flagName, flagValue := range flags {
+				g.gameFlags.Set(flagName, flagValue)
+			}
 
-            scripts := result.ScriptsToRun
-            for _, script := range scripts {
-                g.RunScriptByName(script)
-            }
-        }
+			scripts := result.ScriptsToRun
+			for _, script := range scripts {
+				g.RunScriptByName(script)
+			}
+		}
 
-    } else {
-        g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", levelName), g.palette)
-    }
+	} else {
+		g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", levelName), g.palette)
+	}
 
-    if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
-        g.currentMap().RemoveActor(g.Player)
-        g.Player.RemoveLevelStatusEffects()
-    }
+	if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
+		g.currentMap().RemoveActor(g.Player)
+		g.Player.RemoveLevelStatusEffects()
+	}
 
-    namedLocation := loadedMap.GetNamedLocation(location)
-    loadedMap.AddActor(g.Player, namedLocation)
+	namedLocation := loadedMap.GetNamedLocation(location)
+	loadedMap.AddActor(g.Player, namedLocation)
 
-    mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
-    g.gameFlags.Increment(mapVisited)
+	mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
+	g.gameFlags.Increment(mapVisited)
 
-    g.setCurrentMap(loadedMap)
+	g.setCurrentMap(loadedMap)
 
-    g.afterPlayerMoved(geometry.Point{}, true)
+	g.afterPlayerMoved(geometry.Point{}, true)
 
-    if firstTimeInit != nil {
-        firstTimeInit()
-    }
+	if firstTimeInit != nil {
+		firstTimeInit()
+	}
 
-    g.updateUIStatus()
+	g.updateUIStatus()
+
+	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", loadedMap.GetMeta().MusicFile+".ogg"))
 }
 
 /*
@@ -128,7 +130,6 @@ func (g *GameState) GotoDungeonLevel(level int, stairs StairsInLevel, placePlaye
     })
     g.updateUIStatus()
 
-    g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", "08vats.ogg"))
 }
 */
 /*
@@ -220,15 +221,15 @@ func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, 
 }
 */
 func ReadFileAsOneStringWithoutNewLines(filename string) string {
-    file, err := os.Open(filename)
-    if err != nil {
-        return ""
-    }
-    defer file.Close()
-    scanner := bufio.NewScanner(file)
-    var result string
-    for scanner.Scan() {
-        result += scanner.Text()
-    }
-    return result
+	file, err := os.Open(filename)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	var result string
+	for scanner.Scan() {
+		result += scanner.Text()
+	}
+	return result
 }

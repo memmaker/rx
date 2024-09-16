@@ -480,6 +480,8 @@ func (g *GameState) initPlayerAndMap() {
 	g.journal.OnFlagsChanged()
 
 	g.updatePlayerFoVAndApplyExploration()
+
+	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", loadedMap.GetMeta().MusicFile+".ogg"))
 }
 func (g *GameState) attachHooksToPlayer() {
 	equipment := g.Player.GetEquipment()

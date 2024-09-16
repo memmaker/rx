@@ -3346,6 +3346,10 @@ func (u *UI) openPipBoy() {
 }
 
 func (u *UI) initAudio() {
+	if !u.settings.AudioEnabled {
+		u.audioPlayer.Disable()
+		return
+	}
 	go func() {
 		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "weapons"), "")
 		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "ui"), "")
@@ -3401,7 +3405,7 @@ func (u *UI) startIntro() {
 	u.stateOfIntro = TitleScreen
 	backGroundOverlay.SetBackgroundColor(tcell.ColorWhite)
 	backGroundOverlay.SetTextColor(tcell.ColorBlack)
-	backGroundOverlay.SetText("C O N T R A C T O R\na game by Felix Ruzzoli")
+	backGroundOverlay.SetText("C O N T R A C T O R\na Fallout Story\na game by Felix Ruzzoli")
 
 	u.application.Draw(backGroundOverlay)
 }

@@ -231,8 +231,10 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	} else {
 		g.playerLightSource.MaxIntensity = 0
 	}
+
 	g.msg(g.GetMapInfoForMovement(g.Player.Position()))
 	g.updateDijkstraMap()
+	g.updatePlayerFoVAndApplyExploration()
 
 	if g.Player.HasFlag(special.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
 		g.ui.AddAnimations(OneAnimation(teleportWithAnimation(g, g.Player, g.currentMap().RandomSpawnPosition())))

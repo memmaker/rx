@@ -272,3 +272,31 @@ Char: ,
 Fg: gray
 Bg: light_gray_5
 
+Char: #
+Fg: light_gray_1
+Bg: dark_gray_5
+
+Char: ║
+Fg: light_gray_1
+Bg: dark_gray_5
+
+Char: ∩
+Fg: red_9
+Bg: dark_gray_5
+
+Char: ∩
+Fg: neon_green_3
+Bg: dark_gray_5
+
+Char: ─
+Fg: light_gray_2
+Bg: dark_gray_5
+
+Char: *
+Fg: light_gray_2
+Bg: dark_gray_5
+
+Char: ∩
+Fg: light_gray_2
+Bg: dark_gray_5
+

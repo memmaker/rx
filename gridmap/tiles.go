@@ -6,6 +6,7 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
+	"image/color"
 	"io"
 )
 
@@ -34,6 +35,10 @@ func (t TileFlags) With(tag TileFlags) TileFlags {
 	return t | tag
 }
 
+func (t TileFlags) Without(flag TileFlags) TileFlags {
+	return t &^ flag
+}
+
 type Tile struct {
 	Icon               textiles.TextIcon
 	DefinedDescription string
@@ -43,10 +48,19 @@ type Tile struct {
 }
 
 func (t Tile) Destroyed() Tile {
+	t.Flags = t.Flags.Without(TileFlagDestroyable)
 	t.IsWalkable = true
 	t.IsTransparent = true
-	t.Icon = t.Icon.WithRune('*').Reversed()
+	t.Icon = t.Icon.WithRune('*')
+	if hasMoreLight(t.Icon.Bg, t.Icon.Fg) {
+		t.Icon = t.Icon.Reversed()
+	}
+	t.DefinedDescription = fmt.Sprintf("%s (destroyed)", t.DefinedDescription)
 	return t
+}
+
+func hasMoreLight(colorOne, colorTwo color.RGBA) bool {
+	return int(colorOne.R)+int(colorOne.G)+int(colorOne.B) > int(colorTwo.R)+int(colorTwo.G)+int(colorTwo.B)
 }
 
 func (t Tile) ToBinary(out io.Writer) {

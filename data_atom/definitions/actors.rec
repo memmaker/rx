@@ -389,7 +389,10 @@ Name: rat
 Description: Rat
 LongDescription: A typical large rat.
 Icon: R
-Foreground: light_gray_2
+Flags: Is_Animal
+default_relation: hostile
+audio: rat
+Foreground: light_gray_1
 Age: 25
 Gender: 1
 BodyType: 1

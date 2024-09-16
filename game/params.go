@@ -2,74 +2,76 @@ package game
 
 import (
 	"github.com/memmaker/go/fxtools"
-	"strconv"
 )
 
-type Params struct {
-	kvp map[string]string
-}
+type Params map[string]interface{}
 
-func NewParams(values map[string]string) Params {
-	return Params{kvp: values}
-}
 func (p Params) Has(key string) bool {
-	_, exists := p.kvp[key]
+	_, exists := p[key]
 	return exists
 }
 func (p Params) Get(key string) string {
-	val, exists := p.kvp[key]
+	val, exists := p[key]
 	if !exists {
 		return ""
 	}
-	return val
+	return val.(string)
 }
 func (p Params) GetInt(key string) int {
-	if !p.Has(key) {
-		return 0
-	}
-	atoi, _ := strconv.Atoi(p.kvp[key])
-	return atoi
+	return p.GetIntOrDefault(key, -1)
 }
 func (p Params) GetIntOrDefault(key string, defaultValue int) int {
 	if !p.Has(key) {
 		return defaultValue
 	}
-	atoi, _ := strconv.Atoi(p.kvp[key])
-	return atoi
+	return p[key].(int)
 }
 
 func (p Params) GetBool(key string) bool {
 	if !p.Has(key) {
 		return false
 	}
-	parseBool, _ := strconv.ParseBool(p.kvp[key])
-	return parseBool
+	return p.GetBoolOrDefault(key, false)
 }
 func (p Params) GetBoolOrDefault(key string, defaultValue bool) bool {
 	if !p.Has(key) {
 		return defaultValue
 	}
-	parseBool, _ := strconv.ParseBool(p.kvp[key])
-	return parseBool
+	return p[key].(bool)
 }
 func (p Params) GetFloat(key string) float64 {
 	if !p.Has(key) {
 		return 0
 	}
-	parseFloat, _ := strconv.ParseFloat(p.kvp[key], 64)
-	return parseFloat
+	return p.GetFloatOrDefault(key, 0)
 }
 func (p Params) GetFloatOrDefault(key string, defaultValue float64) float64 {
 	if !p.Has(key) {
 		return defaultValue
 	}
-	parseFloat, _ := strconv.ParseFloat(p.kvp[key], 64)
-	return parseFloat
+	return p[key].(float64)
 }
 
 func (p Params) GetIntervalOrDefault(s string, interval fxtools.Interval) fxtools.Interval {
 	if !p.Has(s) {
 		return interval
 	}
-	return fxtools.ParseInterval(p.Get(s))
+	return p[s].(fxtools.Interval)
+}
+
+func (p Params) GetInterval(key string) fxtools.Interval {
+	return p.GetIntervalOrDefault(key, fxtools.Interval{})
+}
+
+func (p Params) GetDamageOrDefault(defaultDamage int) int {
+	if p.Has("damage") {
+		defaultDamage = p.GetInt("damage")
+	} else if p.Has("damage_interval") {
+		defaultDamage = p.GetInterval("damage_interval").Roll()
+	}
+	return defaultDamage
+}
+
+func (p Params) HasDamage() bool {
+	return p.Has("damage") || p.Has("damage_interval")
 }

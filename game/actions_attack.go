@@ -324,16 +324,14 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, attackM
 	chanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
 
 	damageWithSource, drModifier := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, bodyPart)
-
+	weaponEffectParams := Params{
+		"damage": damageWithSource.DamageAmount,
+	}
 	var hitAnimations []foundation.Animation
 	if weapon.GetDamageType() == special.DamageTypeExplosive {
-		weaponEffectParams := map[string]string{
-			"radius": "3",
-			"damage": "35-100",
-		}
-		hitAnimations = explosion(g, attacker, defender.Position(), NewParams(weaponEffectParams))
+		hitAnimations = explosion(g, attacker, defender.Position(), weaponEffectParams)
 	} else if weapon.GetDamageType() == special.DamageTypeFire && attackMode.Mode == special.TargetingModeFlame {
-		hitAnimations = fireBreath(g, attacker, defender.Position())
+		hitAnimations = fireBreath(g, attacker, defender.Position(), weaponEffectParams)
 	} else {
 		hitAnimations = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender, drModifier)
 	}
@@ -355,19 +353,15 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item,
 	chanceToHit := 100
 
 	damageWithSource, _ := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, special.Body)
-
+	weaponEffectParams := weaponItem.GetEffectParameters()
 	var consequenceOfHit []foundation.Animation
 	if weapon.GetDamageType() == special.DamageTypeExplosive {
-		weaponEffectParams := map[string]string{
-			"radius": "3",
-			"damage": "35-100",
-		}
-		consequenceOfHit = explosion(g, attacker, targetPos, NewParams(weaponEffectParams))
+		consequenceOfHit = explosion(g, attacker, targetPos, weaponEffectParams)
 	} else {
 		if damageWithSource.DamageAmount > 0 {
 			if weaponItem.IsZappable() {
 				weaponZapEffect := ZapEffectFromName(weaponItem.GetZapEffectName())
-				consequenceOfHit = weaponZapEffect(g, attacker, targetPos)
+				consequenceOfHit = weaponZapEffect(g, attacker, targetPos, weaponEffectParams)
 			} else {
 				consequenceOfHit = g.damageLocation(damageWithSource, targetPos)
 			}
@@ -443,7 +437,7 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Item
 	if damageWithSource.DamageAmount > 0 {
 		if weaponItem.IsZappable() {
 			weaponZapEffect := ZapEffectFromName(weaponItem.GetZapEffectName())
-			damageAnims = weaponZapEffect(g, attacker, defender.Position())
+			damageAnims = weaponZapEffect(g, attacker, defender.Position(), weaponItem.GetEffectParameters())
 		} else {
 			damageAnims = g.damageActor(damageWithSource, defender)
 		}
@@ -527,7 +521,7 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile *Item, origin, target
 	// plasma
 	if missile.GetZapEffectName() != "" {
 		zapEffect := ZapEffectFromName(missile.GetZapEffectName())
-		itemHitEffect := zapEffect(g, thrower, targetPos)
+		itemHitEffect := zapEffect(g, thrower, targetPos, missile.GetEffectParameters())
 		onHitAnimations = append(onHitAnimations, itemHitEffect...)
 	}
 

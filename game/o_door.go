@@ -172,6 +172,9 @@ func (b *Door) GobDecode(data []byte) error {
 	return nil
 }
 func (b *Door) IsTransparent() bool {
+	if b.isTransparent {
+		return true
+	}
 	switch b.GetCategory() {
 	case foundation.ObjectOpenDoor:
 		return true
@@ -281,7 +284,7 @@ func (g *GameState) NewDoor(rec recfile.Record) *Door {
 	door.SetLockDifficulty(foundation.Easy)
 	door.SetWalkable(false)
 	door.SetHidden(false)
-	door.SetTransparent(true)
+	door.SetTransparent(false)
 
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
@@ -314,6 +317,8 @@ func (g *GameState) NewDoor(rec recfile.Record) *Door {
 			door.damageThreshold = field.AsInt()
 		case "audiocue":
 			door.audioCueBaseName = field.Value
+		case "istransparent":
+			door.SetTransparent(field.AsBool())
 		}
 	}
 

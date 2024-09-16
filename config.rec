@@ -6,6 +6,7 @@ AnimateMovement: false
 AnimateProjectiles: true
 AnimateDamage: true
 AnimateEffects: true
+AudioEnabled: true
 MapWidth: 80
 MapHeight: 23
 DiagonalMovementEnabled: true
