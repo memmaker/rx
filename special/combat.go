@@ -76,7 +76,7 @@ type PosInfo struct {
 	IlluminationPenalty int // 0 for bright, -40 for darkness
 }
 
-func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSheet, bodyPart BodyPart) int {
+func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSheet) int {
 	s := attacker.GetSkill(attackerSkill)
 	str := attacker.GetStat(Strength)
 	mws := 0 // TODO: minimum STR for weapon
@@ -89,12 +89,8 @@ func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSh
 	wa := 0 // Set to 1 for Weapon Accuracy PERK
 
 	obstacle := 0
-	melee := boolAsInt(attackerSkill.IsMeleeAttackSkill())
 	b := -10 * obstacle
 	blind := boolAsInt(attacker.IsBlinded())
-
-	// aimed shot penalty
-	aim := int((1.0 - 0.5*float64(melee)) * float64(bodyPart.AimPenalty()))
 
 	// insufficient strength penalty
 	t := -20 * max(0, mws-str-3*wh)
@@ -110,7 +106,6 @@ func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSh
 		hand +
 		20*wa -
 		max(0, defenderDodge) +
-		aim +
 		d -
 		25*blind
 
@@ -118,14 +113,13 @@ func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSh
 
 	return hitChance
 }
-func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, defender *CharSheet, defenderIsHelpless bool, acModifier int, bodyPart BodyPart) int {
-	s := attacker.GetSkill(attackerSkill)
+func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, minWeaponStr int, defender *CharSheet, defenderIsHelpless bool, weaponSkillBonus int) int {
+	s := attacker.GetSkill(attackerSkill) + weaponSkillBonus
 	p := attacker.GetStat(Perception)
 	str := attacker.GetStat(Strength)
-	mws := 0 // TODO: minimum STR for weapon
-	h1 := 0  // Set to 1 for 1H weapon
-	h2 := 1  // Set to 1 for 2H weapon
-	oh := 0  // Set to 1 for One-Handed PERK
+	h1 := 0 // Set to 1 for 1H weapon
+	h2 := 1 // Set to 1 for 2H weapon
+	oh := 0 // Set to 1 for One-Handed PERK
 	hand := oh * (-40*h2 + 20*h1)
 
 	wh := 0 // Set To 1 for Weapon Handling PERK
@@ -136,7 +130,6 @@ func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill
 	h := positionInfos.Distance
 	obstacle := positionInfos.ObstacleCount
 	ranged := boolAsInt(attackerSkill.IsRangedAttackSkill())
-	melee := boolAsInt(attackerSkill.IsMeleeAttackSkill())
 	knocked := boolAsInt(defenderIsHelpless)
 	b := -10 * obstacle
 	blind := boolAsInt(attacker.IsBlinded())
@@ -150,18 +143,15 @@ func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill
 
 	sharp := 0 // TODO: Level of sharp shooter perk
 
-	// aimed shot penalty
-	aim := int((1.0 - 0.5*float64(melee)) * float64(bodyPart.AimPenalty()))
-
 	// insufficient strength penalty
-	t := -20 * max(0, mws-str-3*wh)
+	t := -20 * max(0, minWeaponStr-str-3*wh)
 
 	// illumination penatly
 	d := positionInfos.IlluminationPenalty
 
 	rang := ranged * (b + (-4-8*blind)*(h+pb-2*sharp))
 
-	defenderDodge := defender.GetDerivedStat(Dodge) + acModifier
+	defenderDodge := defender.GetDerivedStat(Dodge)
 
 	relativeSize := 0 // TODO: relative size of attacker and defender
 
@@ -172,7 +162,6 @@ func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill
 		20*wa -
 		max(0, defenderDodge) +
 		10*relativeSize +
-		aim +
 		d -
 		25*blind +
 		40*knocked

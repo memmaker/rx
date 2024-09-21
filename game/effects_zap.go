@@ -138,6 +138,8 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 }
 func plasmaExplosion(g *GameState, zapper *Actor, loc geometry.Point, params Params) []foundation.Animation {
 	radius := params.GetIntOrDefault("radius", 3)
+	bonusRadius := params.GetIntOrDefault("bonus_radius", 0)
+	radius += bonusRadius
 	damageAmount := params.GetDamageOrDefault(35)
 
 	affected := g.currentMap().GetDijkstraMap(loc, radius, func(p geometry.Point) bool {
@@ -172,6 +174,8 @@ func plasmaExplosion(g *GameState, zapper *Actor, loc geometry.Point, params Par
 }
 func explosion(g *GameState, zapper *Actor, loc geometry.Point, params Params) []foundation.Animation {
 	radius := params.GetIntOrDefault("radius", 3)
+	bonusRadius := params.GetIntOrDefault("bonus_radius", 0)
+	radius += bonusRadius
 	damageAmount := params.GetDamageOrDefault(35)
 
 	affected := g.currentMap().GetDijkstraMap(loc, radius, func(p geometry.Point) bool {

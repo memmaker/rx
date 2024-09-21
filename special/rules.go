@@ -16,13 +16,13 @@ func (r CheckResult) IsCriticalSuccess() bool {
 	return r.Crit && r.Success
 }
 
-type Percentage int8
+type Percentage float32
 
 func (p Percentage) String() string {
-	return fmt.Sprintf("%d%%", p)
+	return fmt.Sprintf("%d%%", int(p))
 }
 
-func (p Percentage) AsFloat() float64 {
+func (p Percentage) Normalized() float64 {
 	return float64(p) / 100.0
 }
 

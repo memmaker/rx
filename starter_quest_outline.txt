@@ -38,6 +38,7 @@ So how does the world react to the player's actions?
 
 Resolving the situation in any of these ways will be rewarded with XP.
 - If the player kills the Ripperdoc, the hospital will be closed for a few days and finally a new Ripperdoc will take over.
+  - Requires freeing the old Ripperdoc
 - If the player makes the Ripperdoc pay, the Ripperdoc will be angry but compliant.
 - If the player goes after the client, the client will
   - be dead and not appear in the game anymore

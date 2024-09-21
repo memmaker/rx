@@ -770,7 +770,7 @@ func (i *Item) IsLoadedWeapon() bool {
 }
 
 func (i *Item) GetArmorProtection(damageType special.DamageType) Protection {
-	return i.armor.getRawProtection(damageType).Scaled(i.qualityInPercent.AsFloat())
+	return i.armor.getRawProtection(damageType).Scaled(i.qualityInPercent.Normalized())
 }
 
 func (i *Item) GetArmorProtectionValueAsString() string {
@@ -781,7 +781,7 @@ func (i *Item) GetArmorProtectionValueAsString() string {
 }
 
 func (i *Item) GetWeaponDamage() fxtools.Interval {
-	return i.weapon.getRawDamage().Scaled(i.qualityInPercent.AsFloat())
+	return i.weapon.getRawDamage().Scaled(i.qualityInPercent.Normalized())
 }
 
 func (i *Item) IsStackingWithCharges() bool {
@@ -807,9 +807,32 @@ func (i *Item) GetEffectParameters() Params {
 		parameters["damage_interval"] = damageInterval
 		parameters["damage"] = damageInterval.Roll()
 	}
+	weapon := i.GetWeapon()
+	if i.IsRangedWeapon() && weapon.NeedsAmmo() && weapon.HasAmmo() {
+		ammo := weapon.GetLoadedAmmo()
+		ammoInfo := ammo.GetAmmo()
+		if ammoInfo.BonusRadius > 0 {
+			parameters["bonus_radius"] = ammoInfo.BonusRadius
+		}
+	}
 	return parameters
 }
 
 func (i *Item) SetQuality(quality int) {
 	i.qualityInPercent = special.Percentage(quality)
+}
+
+func (i *Item) GetDegradationFactor() float64 {
+	factor := 1.0
+	weapon := i.GetWeapon()
+	if i.IsRangedWeapon() && weapon.NeedsAmmo() && weapon.HasAmmo() {
+		ammo := weapon.GetLoadedAmmo()
+		ammoInfo := ammo.GetAmmo()
+		factor = ammoInfo.ConditionFactor
+	}
+	return factor
+}
+
+func (i *Item) Degrade(degrade float64) {
+	i.qualityInPercent -= special.Percentage(degrade)
 }

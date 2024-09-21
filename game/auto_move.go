@@ -65,22 +65,23 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 	return true
 }
 
-func (g *GameState) RunPlayerPath(isStarting bool) {
+func (g *GameState) RunPlayerPath() bool {
 	player := g.Player
 	if player.HasFlag(special.FlagConfused) {
 		g.Player.RemoveGoal()
 		g.msg(foundation.Msg("You cannot run while confused"))
-		return
+		return false
 	}
 
 	if len(g.GetVisibleEnemies()) > 0 {
 		g.Player.RemoveGoal()
 		g.msg(foundation.Msg("You cannot run while enemies are near"))
-		return
+
+		return false
 	}
 
 	if !g.Player.HasActiveGoal() || g.Player.cannotFindPath() {
-		return
+		return false
 	}
 
 	oldPos := g.Player.Position()
@@ -88,7 +89,8 @@ func (g *GameState) RunPlayerPath(isStarting bool) {
 	newPos := g.Player.Position()
 
 	if oldPos == newPos {
-		return
+		//g.ui.StopAutoMove()
+		return false
 	}
 
 	direction := newPos.Sub(oldPos).ToDirection()
@@ -101,5 +103,5 @@ func (g *GameState) RunPlayerPath(isStarting bool) {
 		NewPos:    newPos,
 		Mode:      foundation.PlayerMoveModePath,
 	})
-	return
+	return true
 }

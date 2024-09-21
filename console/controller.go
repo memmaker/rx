@@ -1568,12 +1568,13 @@ func (u *UI) handleMainInput(ev *tcell.EventKey) *tcell.EventKey {
 	u.mapOverlay.ClearAll()
 	if u.autoRun && mod == 128 && ev.Key() == tcell.KeyF40 {
 		time.Sleep(64 * time.Millisecond)
-		u.game.RunPlayerPath(false)
+		u.autoRun = u.game.RunPlayerPath()
 		return nil
 	}
 	if mod == 64 && u.autoRun && strings.ContainsRune("12346789", ch) {
 		direction := runeToDirection(ch)
-		u.continueAutoRun(direction)
+		time.Sleep(64 * time.Millisecond)
+		u.autoRun = u.game.RunPlayer(direction, false)
 		return nil
 	}
 	u.autoRun = false
@@ -1601,14 +1602,6 @@ func (u *UI) GenericInteraction() {
 func (u *UI) startAutoRun(direction geometry.CompassDirection) {
 	u.autoRun = true
 	u.game.RunPlayer(direction, true)
-}
-
-func (u *UI) continueAutoRun(direction geometry.CompassDirection) {
-	time.Sleep(64 * time.Millisecond)
-	canRun := u.game.RunPlayer(direction, false)
-	if !canRun {
-		u.autoRun = false
-	}
 }
 
 func (u *UI) applyStylingToUI() {
@@ -2556,12 +2549,14 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 	if newX != u.currentMouseX || newY != u.currentMouseY {
 		u.currentMouseX = newX
 		u.currentMouseY = newY
-		mapPos := u.ScreenToMap(mousePos)
-		mapInfo := u.game.GetMapInfo(mapPos)
-		if !mapInfo.IsEmpty() {
-			u.Print(mapInfo)
-		} else {
-			u.application.QueueUpdateDraw(u.UpdateLogWindow)
+		if !u.autoRun {
+			mapPos := u.ScreenToMap(mousePos)
+			mapInfo := u.game.GetMapInfo(mapPos)
+			if !mapInfo.IsEmpty() {
+				u.Print(mapInfo)
+			} else {
+				u.application.QueueUpdateDraw(u.UpdateLogWindow)
+			}
 		}
 	}
 	mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})

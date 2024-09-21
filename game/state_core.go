@@ -266,7 +266,7 @@ func (g *GameState) PlayerInteractAtPosition(pos geometry.Point) {
 						return a.Position() == pos || a.cannotFindPath()
 					},
 				})
-				g.RunPlayerPath(true)
+				g.RunPlayerPath()
 			}
 		}
 		// assume movement to this position..

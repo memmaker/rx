@@ -346,10 +346,15 @@ func (a *Actor) SetDialogueFile(scriptName string) {
 	a.dialogueFile = scriptName
 }
 
-func (a *Actor) GetBodyPartsAndHitChances(baseHitChance int) []fxtools.Tuple3[special.BodyPart, bool, int] {
+func (a *Actor) GetBodyPartsAndHitChances(baseHitChance int, isMelee bool) []fxtools.Tuple3[special.BodyPart, bool, int] {
 	var result []fxtools.Tuple3[special.BodyPart, bool, int]
 	for _, part := range a.body {
-		result = append(result, fxtools.Tuple3[special.BodyPart, bool, int]{Item1: part, Item2: a.IsCrippled(part), Item3: baseHitChance + part.AimPenalty()})
+		penalty := part.AimPenalty()
+		if isMelee {
+			penalty /= 2
+		}
+		hitChanceOnBodyPart := baseHitChance + penalty
+		result = append(result, fxtools.Tuple3[special.BodyPart, bool, int]{Item1: part, Item2: a.IsCrippled(part), Item3: hitChanceOnBodyPart})
 	}
 	return result
 }
@@ -990,39 +995,46 @@ func (a *Actor) LookInfo() string {
 	return a.Name()
 }
 
-func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, drModifier int, dtModifier int) SourcedDamage {
-	if !a.GetEquipment().HasArmorEquipped() {
-		return damage
-	}
+func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, dtModifierFromAttack int) SourcedDamage {
+	innateDR := a.GetCharSheet().GetDerivedStat(special.DamageResistance)
 
-	armor := a.GetEquipment().GetArmor()
-
-	var reduction int
-	var threshold int
-
-	if damage.DamageType.IsEnergy() {
-		protection := armor.GetArmorProtection(special.DamageTypeLaser)
-		threshold = protection.DamageThreshold
-		reduction = protection.DamageReduction
-	} else {
-		protection := armor.GetArmorProtection(special.DamageTypeNormal)
-		threshold = protection.DamageThreshold
-		reduction = protection.DamageReduction
-	}
-
-	reduction = max(0, reduction+drModifier)
-	threshold = max(0, threshold+dtModifier)
-
+	reduction := innateDR
+	threshold := 0
 	originalDamageAmount := damage.DamageAmount
+
+	if a.GetEquipment().HasArmorEquipped() {
+		armor := a.GetEquipment().GetArmor()
+		if damage.DamageType.IsEnergy() {
+			protection := armor.GetArmorProtection(special.DamageTypeLaser)
+			threshold = protection.DamageThreshold
+			reduction += protection.DamageReduction
+		} else {
+			protection := armor.GetArmorProtection(special.DamageTypeNormal)
+			threshold = protection.DamageThreshold
+			reduction += protection.DamageReduction
+		}
+
+		// degrade armor
+		if originalDamageAmount > 10 {
+			reductionFromDamageReceived := float64(originalDamageAmount) * 0.01
+			armor.Degrade(reductionFromDamageReceived)
+		}
+	}
+
+	maxArmorDR := 85
+	maxArmorDT := 30
+
+	reduction = max(0, min(maxArmorDR, reduction))
+	threshold = max(0, min(maxArmorDT, threshold+dtModifierFromAttack))
 
 	newDamageAmount := max(0, originalDamageAmount-threshold)
 
 	if newDamageAmount > 0 {
-		cappedReduction := min(reduction, 90)
-		reductionFactor := (100 - cappedReduction) / 100.0
-		newDamageAmount = max(1, newDamageAmount*reductionFactor)
+		reductionFactor := (100 - float64(reduction)) / 100.0
+		newDamageAmount = int(max(1, float64(newDamageAmount)*reductionFactor))
 	}
 	damage.DamageAmount = newDamageAmount
+
 	return damage
 }
 

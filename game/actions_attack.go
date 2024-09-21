@@ -191,7 +191,10 @@ func (g *GameState) playerMeleeAttackLocation(targetPos geometry.Point) {
 		g.playerMeleeAttack(defender)
 	} else if g.currentMap().IsObjectAt(targetPos) {
 		objectAt := g.currentMap().ObjectAt(targetPos)
-		attackAudioCue, damageWithSource := g.getMeleeDamage(g.Player, special.Body)
+		attackAudioCue, damageWithSource := g.getMeleeDamage(g.Player, 100, special.Body)
+		if weapon, hasMeleeWeapon := g.Player.GetEquipment().GetMeleeWeapon(); hasMeleeWeapon {
+			weapon.Degrade(1)
+		}
 		objectAt.OnDamage(damageWithSource)
 		animAttackerIndicator := g.ui.GetAnimBackgroundColor(g.Player.Position(), "dark_gray_6", 4, nil)
 		animAttackerIndicator.SetAudioCue(attackAudioCue)
@@ -227,40 +230,24 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part spec
 	}
 	var afterAttackAnimations []foundation.Animation
 
-	attackAudioCue, damageWithSource := g.getMeleeDamage(attacker, part)
-
-	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, 0, 0)
-
-	mainHandItem, _ := attacker.GetEquipment().GetMainHandItem()
+	mainHandItem, hasMeleeWeapon := attacker.GetEquipment().GetMeleeWeapon()
 
 	chanceToHit := g.getMeleeChanceToHit(attacker, mainHandItem, defender)
-	if damageWithSource.TargetingMode == special.TargetingModeKick {
-		chanceToHit = max(1, chanceToHit-10)
+	chanceToHit += part.AimPenalty() / 2
+
+	if hasMeleeWeapon {
+		mainHandItem.Degrade(0.1)
 	}
-	chanceToHit += part.AimPenalty()
+
+	attackAudioCue, damageWithSource := g.getMeleeDamage(attacker, chanceToHit, part)
 
 	animAttackerIndicator := g.ui.GetAnimBackgroundColor(attacker.Position(), "dark_gray_6", 4, nil)
 	animAttackerIndicator.SetAudioCue(attackAudioCue)
 
 	afterAttackAnimations = append(afterAttackAnimations, animAttackerIndicator)
 
-	if rand.Intn(100) < chanceToHit && damageWithSource.DamageAmount > 0 {
-		damageAnims := g.damageActor(damageWithSource, defender)
-		afterAttackAnimations = append(afterAttackAnimations, damageAnims...)
-	} else {
-		evade := g.ui.GetAnimEvade(defender, nil)
-		evade.SetAudioCue(defender.GetDodgedAudioCue())
-		afterAttackAnimations = append(afterAttackAnimations, evade)
-		if attacker == g.Player {
-			g.msg(foundation.Msg("You miss"))
-		} else {
-			g.msg(foundation.Msg(fmt.Sprintf("%s misses", attacker.Name())))
-		}
-	}
-
-	if damageWithSource.IsObviousAttack {
-		g.trySetHostile(defender, damageWithSource.Attacker)
-	}
+	damageAnims := g.applyDamageToActorAnimated(attacker, mainHandItem, damageWithSource, defender)
+	afterAttackAnimations = append(afterAttackAnimations, damageAnims...)
 
 	return afterAttackAnimations
 }
@@ -271,11 +258,11 @@ func (g *GameState) getMeleeChanceToHit(attacker *Actor, weaponItem *Item, defen
 		attackerSkill = weaponItem.GetWeapon().GetSkillUsed()
 	}
 
-	chanceToHit := special.MeleeChanceToHit(attacker.GetCharSheet(), attackerSkill, defender.GetCharSheet(), special.Body)
+	chanceToHit := special.MeleeChanceToHit(attacker.GetCharSheet(), attackerSkill, defender.GetCharSheet())
 	return chanceToHit
 }
 
-func (g *GameState) getMeleeDamage(attacker *Actor, part special.BodyPart) (string, SourcedDamage) {
+func (g *GameState) getMeleeDamage(attacker *Actor, cth int, part special.BodyPart) (string, SourcedDamage) {
 	targetingMode := special.TargetingModePunch
 	if rand.Intn(100) < 50 {
 		targetingMode = special.TargetingModeKick
@@ -297,6 +284,11 @@ func (g *GameState) getMeleeDamage(attacker *Actor, part special.BodyPart) (stri
 		damage = meleeDamageBonus + itemInHand.GetWeaponDamage().Roll()
 		damageType = weapon.GetDamageType()
 		attackAudioCue = weapon.GetFireAudioCue(special.TargetingModeFireSingle)
+	}
+
+	isHit := rand.Intn(100) < cth
+	if !isHit {
+		damage = 0
 	}
 
 	damageWithSource := SourcedDamage{
@@ -321,9 +313,11 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, attackM
 
 	attackAnimations, isProjectileAnimation := g.getWeaponAttackAnim(attacker, defender.Position(), weaponItem, attackMode, bulletsSpent)
 
-	chanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
+	baseChanceToHit := g.getRangedChanceToHit(attacker, weaponItem, defender)
+	chanceToHit := baseChanceToHit + bodyPart.AimPenalty()
 
-	damageWithSource, drModifier := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, bodyPart)
+	damageWithSource := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, defender, bodyPart)
+
 	weaponEffectParams := Params{
 		"damage": damageWithSource.DamageAmount,
 	}
@@ -333,7 +327,7 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Item, attackM
 	} else if weapon.GetDamageType() == special.DamageTypeFire && attackMode.Mode == special.TargetingModeFlame {
 		hitAnimations = fireBreath(g, attacker, defender.Position(), weaponEffectParams)
 	} else {
-		hitAnimations = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender, drModifier)
+		hitAnimations = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender)
 	}
 
 	if isProjectileAnimation {
@@ -352,7 +346,7 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item,
 
 	chanceToHit := 100
 
-	damageWithSource, _ := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, special.Body)
+	damageWithSource := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, nil, special.Body)
 	weaponEffectParams := weaponItem.GetEffectParameters()
 	var consequenceOfHit []foundation.Animation
 	if weapon.GetDamageType() == special.DamageTypeExplosive {
@@ -376,7 +370,7 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Item,
 	}
 }
 
-func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Item, attackMode AttackMode, bulletsSpent int, chanceToHit int, bodyPart special.BodyPart) (SourcedDamage, int) {
+func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Item, attackMode AttackMode, bulletsSpent int, chanceToHit int, victim *Actor, bodyPart special.BodyPart) SourcedDamage {
 	weapon := weaponItem.GetWeapon()
 	damage := weaponItem.GetWeaponDamage()
 	totalDamage := 0
@@ -387,25 +381,33 @@ func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Item, att
 		}
 	}
 
-	drModifier := 0
 	damageFactor := 1.0
-	if weapon.NeedsAmmo() {
-		ammoItem := weapon.GetAmmo()
+	bonusDamage := 0
+
+	if weapon.NeedsAmmo() && totalDamage > 0 {
+		ammoItem := weapon.GetLoadedAmmo()
 		ammo := ammoItem.GetAmmo()
-		drModifier = ammo.DRModifier
-		damageFactor = float64(ammo.DamageMultiplier) / float64(ammo.DamageDivisor)
+		if victim != nil {
+			for tags, dmgBonus := range ammo.BonusDamageAgainstActorWithTags {
+				if victim.HasFlag(tags) {
+					bonusDamage += dmgBonus
+				}
+			}
+		}
+
+		damageFactor = ammo.DamageFactor
 	}
 
 	damageWithSource := SourcedDamage{
-		NameOfThing:     "",
+		NameOfThing:     "ranged_weapon_damage",
 		Attacker:        attacker,
 		IsObviousAttack: true,
 		TargetingMode:   attackMode.Mode,
 		DamageType:      weapon.GetDamageType(),
-		DamageAmount:    int(float64(totalDamage) * damageFactor),
+		DamageAmount:    int(float64(totalDamage)*damageFactor) + bonusDamage,
 		BodyPart:        bodyPart,
 	}
-	return damageWithSource, drModifier
+	return damageWithSource
 }
 
 func (g *GameState) removeBulletsFromWeapon(weaponItem *Item, attackMode AttackMode) (int, *WeaponInfo) {
@@ -418,13 +420,29 @@ func (g *GameState) removeBulletsFromWeapon(weaponItem *Item, attackMode AttackM
 	}
 
 	weapon.RemoveBullets(bulletsSpent)
+
+	// apply weapon degradation by shooting
+	baseDegradePerBullet := 0.1
+
+	factorFromWeaponAndAmmo := weaponItem.GetDegradationFactor()
+
+	totalDegrade := baseDegradePerBullet * float64(min(5, bulletsSpent)) * factorFromWeaponAndAmmo
+
+	weaponItem.Degrade(totalDegrade)
+
 	return bulletsSpent, weapon
 }
 
-func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Item, damageWithSource SourcedDamage, defender *Actor, drModifier int) []foundation.Animation {
+func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Item, damageWithSource SourcedDamage, defender *Actor) []foundation.Animation {
 	var damageAnims []foundation.Animation
-	weapon := weaponItem.GetWeapon()
-	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, drModifier, 0)
+
+	dtMod := 0
+	if weaponItem != nil {
+		weapon := weaponItem.GetWeapon()
+		dtMod = weapon.GetTargetDTModifier()
+	}
+
+	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, dtMod)
 
 	attackedFlag := fmt.Sprintf("WasAttacked(%s)", defender.GetInternalName())
 	g.gameFlags.SetFlag(attackedFlag)
@@ -435,7 +453,7 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Item
 	}
 
 	if damageWithSource.DamageAmount > 0 {
-		if weaponItem.IsZappable() {
+		if weaponItem != nil && weaponItem.IsZappable() {
 			weaponZapEffect := ZapEffectFromName(weaponItem.GetZapEffectName())
 			damageAnims = weaponZapEffect(g, attacker, defender.Position(), weaponItem.GetEffectParameters())
 		} else {
@@ -445,9 +463,14 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Item
 		if damageWithSource.IsObviousAttack {
 			g.trySetHostile(defender, damageWithSource.Attacker)
 		}
-		evade := g.ui.GetAnimEvade(defender, func() {
-			g.ui.PlayCue(weapon.GetMissAudioCue())
-		})
+		var playMissSound func() = nil
+		if weaponItem != nil && weaponItem.IsWeapon() {
+			playMissSound = func() {
+				g.ui.PlayCue(weaponItem.GetWeapon().GetMissAudioCue())
+			}
+		}
+
+		evade := g.ui.GetAnimEvade(defender, playMissSound)
 		evade.SetAudioCue(defender.GetDodgedAudioCue())
 		damageAnims = []foundation.Animation{evade}
 		if attacker == g.Player {

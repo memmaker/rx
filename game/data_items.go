@@ -12,8 +12,9 @@ import (
 )
 
 func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) *Item {
+	NoQualityDefined := special.Percentage(-1)
 	item := &Item{
-		qualityInPercent: special.Percentage(-1),
+		qualityInPercent: NoQualityDefined,
 		alive:            true,
 		effectParameters: make(Params),
 	}
@@ -21,7 +22,11 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	charges := 1
 
 	itemAmmo := &AmmoInfo{
-		CaliberIndex: -1,
+		CaliberIndex:                    -1,
+		BonusDamageAgainstActorWithTags: make(map[special.ActorFlag]int),
+		DamageFactor:                    1,
+		ConditionFactor:                 1,
+		SpreadFactor:                    1,
 	}
 	itemWeapon := &WeaponInfo{
 		loadedInMagazine: nil,
@@ -100,14 +105,21 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			item.setFlagOnDrop = field.Value
 
 		// AMMO FIELDS
-		case "ammo_dmg_multiplier":
-			itemAmmo.DamageMultiplier = field.AsInt()
-		case "ammo_dmg_divisor":
-			itemAmmo.DamageDivisor = field.AsInt()
-		case "ammo_ac_modifier":
-			itemAmmo.ACModifier = field.AsInt()
-		case "ammo_dr_modifier":
-			itemAmmo.DRModifier = field.AsInt()
+		case "ammo_dmg_factor":
+			itemAmmo.DamageFactor = field.AsFloat()
+		case "ammo_condition_factor":
+			itemAmmo.ConditionFactor = field.AsFloat()
+		case "ammo_spread_factor":
+			itemAmmo.SpreadFactor = field.AsFloat()
+		case "ammo_dt_modifier":
+			itemAmmo.DTModifier = field.AsInt()
+		case "ammo_bonus_radius":
+			itemAmmo.BonusRadius = field.AsInt()
+		case "ammo_bonus_dmg_against":
+			if fxtools.LooksLikeAFunction(field.Value) {
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				itemAmmo.BonusDamageAgainstActorWithTags[special.ActorFlagFromString(name)] = args.GetInt(0)
+			}
 		case "ammo_rounds_in_magazine":
 			itemAmmo.RoundsInMagazine = field.AsInt()
 		case "ammo_caliber_index":
@@ -142,6 +154,8 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			maxRanges[0] = field.AsInt()
 		case "weapon_max_range_two":
 			maxRanges[1] = field.AsInt()
+		case "weapon_min_str":
+			itemWeapon.MinSTR = field.AsInt()
 
 		// ARMOR FIELDS
 		case "armor_encumbrance":
@@ -186,7 +200,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		item.armor = itemArmor
 	}
 
-	if item.qualityInPercent == -1 && (item.IsWeapon() || item.IsArmor()) {
+	if item.qualityInPercent == NoQualityDefined && (item.IsWeapon() || item.IsArmor()) {
 		item.qualityInPercent = max(10, special.Percentage(rand.Intn(100)+1))
 	}
 

@@ -24,23 +24,28 @@ func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Item, 
 	var posInfos special.PosInfo
 	posInfos.ObstacleCount = 0
 	posInfos.Distance = g.currentMap().MoveDistance(attacker.Position(), defender.Position())
+
 	posInfos.IlluminationPenalty = 0
+
+	brightnessAtTarget := g.LightAt(defender.Position()).Brightness()
+	if brightnessAtTarget < 0.48 {
+		posInfos.IlluminationPenalty = -20
+	} else if brightnessAtTarget < 0.28 {
+		posInfos.IlluminationPenalty = -40
+	}
 
 	weaponSkill := equippedWeapon.GetWeapon().GetSkillUsed()
 
 	defenderIsHelpless := defender.IsSleeping() || defender.IsStunned() || defender.IsKnockedDown()
 
-	acModifier := 0
-
-	if equippedWeapon != nil && equippedWeapon.IsRangedWeapon() && equippedWeapon.GetWeapon().NeedsAmmo() {
-		ammoItem := equippedWeapon.GetWeapon().GetAmmo()
-		if ammoItem != nil {
-			ammo := ammoItem.GetAmmo()
-			acModifier = ammo.ACModifier
-		}
+	skillBonus := 0
+	minStrength := 0
+	if equippedWeapon != nil && equippedWeapon.IsRangedWeapon()  {
+		skillBonus = equippedWeapon.GetSkillBonus(weaponSkill)
+		minStrength = equippedWeapon.GetWeapon().MinSTR
 	}
 
-	return special.RangedChanceToHit(posInfos, attacker.GetCharSheet(), weaponSkill, defender.GetCharSheet(), defenderIsHelpless, acModifier, special.Body)
+	return special.RangedChanceToHit(posInfos, attacker.GetCharSheet(), weaponSkill, minStrength, defender.GetCharSheet(), defenderIsHelpless, skillBonus)
 }
 
 func (g *GameState) GetItemInMainHand() (foundation.ItemForUI, bool) {
@@ -51,15 +56,17 @@ func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []
 	victim := targeted.(*Actor)
 	mainHandItem, hasMainHandItem := g.Player.GetEquipment().GetMainHandItem()
 	if !hasMainHandItem {
-		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(special.Unarmed))
+		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(special.Unarmed), true)
 	}
 	baseChance := 0
+	isMelee := true
 	if mainHandItem.IsRangedWeapon() {
+		isMelee = false
 		baseChance = g.getRangedChanceToHit(g.Player, mainHandItem, victim)
 	} else if mainHandItem.IsMeleeWeapon() {
 		baseChance = g.getMeleeChanceToHit(g.Player, mainHandItem, victim)
 	}
-	return victim.GetBodyPartsAndHitChances(baseChance)
+	return victim.GetBodyPartsAndHitChances(baseChance, isMelee)
 }
 
 func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {

@@ -28,52 +28,41 @@ func (m AttackMode) IsThrow() bool {
 }
 
 type AmmoInfo struct {
-	DamageMultiplier int
-	DamageDivisor    int
-	ACModifier       int
-	DRModifier       int
-	RoundsInMagazine int
-	CaliberIndex     int
+	DamageFactor                    float64
+	ConditionFactor                 float64
+	SpreadFactor                    float64
+	BonusDamageAgainstActorWithTags map[special.ActorFlag]int
+	DTModifier                      int
+	BonusRadius                     int
+	RoundsInMagazine                int
+	CaliberIndex                    int
 }
 
 func (i AmmoInfo) Equals(other *AmmoInfo) bool {
-	return i.DamageMultiplier == other.DamageMultiplier &&
-		i.DamageDivisor == other.DamageDivisor &&
-		i.ACModifier == other.ACModifier &&
-		i.DRModifier == other.DRModifier &&
+	return i.DamageFactor == other.DamageFactor &&
+		i.DTModifier == other.DTModifier &&
+		i.ConditionFactor == other.ConditionFactor &&
 		i.RoundsInMagazine == other.RoundsInMagazine &&
-		i.CaliberIndex == other.CaliberIndex
+		i.CaliberIndex == other.CaliberIndex &&
+		i.SpreadFactor == other.SpreadFactor &&
+		i.BonusRadius == other.BonusRadius &&
+		i.bonusDamageEquals(other.BonusDamageAgainstActorWithTags)
 }
 
 func (i AmmoInfo) IsValid() bool {
-	return i.DamageMultiplier != 0 && i.DamageDivisor != 0 && i.RoundsInMagazine > 0 && i.CaliberIndex > 0
+	return i.DamageFactor != 0 && i.RoundsInMagazine > 0 && i.CaliberIndex > 0 && i.ConditionFactor != 0 && i.SpreadFactor != 0
 }
 
-/*
-Name: flamethrower_fuel
-Description: Flamethrower Fuel
-Category: Ammo
-Size: 0
-Weight: 10
-Cost: 250
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -20
-ammo_dr_modifier: 25
-ammo_rounds_in_magazine: 10
-ammo_caliber_index: 2
-*/
-type AmmoDef struct {
-	DamageMultiplier int
-	DamageDivisor    int
-	ACModifier       int
-	DRModifier       int
-	RoundsInMagazine int
-	CaliberIndex     int
-}
-
-func (d AmmoDef) IsValid() bool {
-	return d.DamageMultiplier != 0 && d.DamageDivisor != 0 && d.RoundsInMagazine > 0
+func (i AmmoInfo) bonusDamageEquals(tags map[special.ActorFlag]int) bool {
+	if len(i.BonusDamageAgainstActorWithTags) != len(tags) {
+		return false
+	}
+	for tag, damage := range i.BonusDamageAgainstActorWithTags {
+		if tags[tag] != damage {
+			return false
+		}
+	}
+	return true
 }
 
 func GetAttackModes(targetModes [2]special.TargetingMode, tuCost [2]int, maxRange [2]int, noAim bool) []AttackMode {
@@ -124,6 +113,7 @@ type WeaponInfo struct {
 	attackModes      []AttackMode
 	soundID          int32
 	damageType       special.DamageType
+	MinSTR           int
 }
 
 func (i *WeaponInfo) GobEncode() ([]byte, error) {
@@ -344,7 +334,7 @@ func (i *WeaponInfo) IsValid() bool {
 	return i.weaponType != WeaponTypeUnknown
 }
 
-func (i *WeaponInfo) GetAmmo() *Item {
+func (i *WeaponInfo) GetLoadedAmmo() *Item {
 	return i.loadedInMagazine
 
 }
@@ -357,6 +347,17 @@ func (i *WeaponInfo) Unload() *Item {
 	ammo := i.loadedInMagazine
 	i.loadedInMagazine = nil
 	return ammo
+}
+
+func (i *WeaponInfo) GetTargetDTModifier() int {
+	if i.loadedInMagazine == nil {
+		return 0
+	}
+	ammo := i.loadedInMagazine.GetAmmo()
+	if ammo == nil {
+		return 0
+	}
+	return ammo.DTModifier
 }
 
 type WeaponType int
