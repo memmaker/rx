@@ -6,8 +6,14 @@ import (
 )
 
 type CheckResult struct {
-	Success bool
-	Crit    bool
+	Success bool // Did the check succeed?
+	Crit    bool // Critical success or failure
+	DieRoll int  // The result of the die roll (D100)
+	Degrees int
+}
+
+func (r CheckResult) IsCriticalSuccess() bool {
+	return r.Crit && r.Success
 }
 
 type Percentage int8
@@ -20,16 +26,21 @@ func (p Percentage) AsFloat() float64 {
 	return float64(p) / 100.0
 }
 
-func SuccessRoll(chanceOfSuccess, critModifier Percentage) CheckResult {
+func SuccessRoll(chanceOfSuccess, successCritChange Percentage) CheckResult {
 	var result CheckResult
-	result.Success = rand.Intn(100) < int(chanceOfSuccess)
+	dieRoll := rand.Intn(100) + 1
+	result.DieRoll = dieRoll
+	result.Success = dieRoll < int(chanceOfSuccess)
 
-	critChance := Percentage(10)
 	if result.Success {
-		critChance += critModifier
+		result.Crit = dieRoll <= int(successCritChange)
+		result.Degrees = int(chanceOfSuccess) - dieRoll
+	} else {
+		failCritChance := 5
+		result.Crit = dieRoll > (100 - failCritChance)
+		result.Degrees = dieRoll - int(chanceOfSuccess)
 	}
 
-	result.Crit = rand.Intn(100) < int(critChance)
 	return result
 }
 
@@ -37,14 +48,22 @@ func SuccessRoll(chanceOfSuccess, critModifier Percentage) CheckResult {
 func SkillContest(firstActor, firstCritChance, secondActor, secondCritChance Percentage) int {
 	firstRoll := SuccessRoll(firstActor, firstCritChance)
 	secondRoll := SuccessRoll(secondActor, secondCritChance)
-	maxTries := 1000
+	maxTries := 100
 	for i := 0; i < maxTries; i++ {
-		if firstRoll.Success && !secondRoll.Success {
+		if (firstRoll.Success && !secondRoll.Success) || (firstRoll.IsCriticalSuccess() && !secondRoll.IsCriticalSuccess()) {
 			return 0
 		}
-		if !firstRoll.Success && secondRoll.Success {
+		if (!firstRoll.Success && secondRoll.Success) || (!firstRoll.IsCriticalSuccess() && secondRoll.IsCriticalSuccess()) {
 			return 1
 		}
+
+		// blackjack tiebreaker
+		if firstRoll.DieRoll > secondRoll.DieRoll {
+			return 0
+		} else if firstRoll.DieRoll < secondRoll.DieRoll {
+			return 1
+		}
+
 		firstRoll = SuccessRoll(firstActor, firstCritChance)
 		secondRoll = SuccessRoll(secondActor, secondCritChance)
 	}

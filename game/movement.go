@@ -225,7 +225,7 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	if g.currentMap().IsItemAt(g.Player.Position()) && g.config.AutoPickup {
 		g.PlayerPickupItem()
 	}
-	if g.Player.GetInventory().HasLightSource() {
+	if g.Player.GetInventory().HasLightSource() || g.Player.IsCyberWareActive(CyberWareLight) {
 		g.playerLightSource.MaxIntensity = 1
 		g.currentMap().MoveLightSource(g.playerLightSource, g.Player.Position())
 	} else {

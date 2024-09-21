@@ -64,6 +64,31 @@ type Actor struct {
 	currentPathBlockedCount int
 	currentPath             []geometry.Point
 	currentPathIndex        int
+	bodyAugmentations       map[CyberWare]bool
+}
+
+func (a *Actor) AddCyberWare(ware CyberWare) {
+	a.bodyAugmentations[ware] = false
+}
+
+func (a *Actor) RemoveCyberWare(ware CyberWare) {
+	delete(a.bodyAugmentations, ware)
+}
+
+func (a *Actor) HasCyberWare(ware CyberWare) bool {
+	_, hasAug := a.bodyAugmentations[ware]
+	return hasAug
+}
+
+func (a *Actor) IsCyberWareActive(ware CyberWare) bool {
+	if active, hasAug := a.bodyAugmentations[ware]; hasAug {
+		return active
+	}
+	return false
+}
+
+func (a *Actor) SetCyberWareActive(ware CyberWare, active bool) {
+	a.bodyAugmentations[ware] = active
 }
 
 func (a *Actor) GetState() foundation.AIState {
@@ -301,16 +326,17 @@ func NewActor() *Actor {
 			Fg:   color.RGBA{255, 255, 255, 255},
 			Bg:   color.RGBA{0, 0, 0, 255},
 		},
-		equipment:     NewEquipment(),
-		charSheet:     sheet,
-		body:          special.HumanBodyParts,
-		bodyDamage:    make(map[special.BodyPart]int),
-		aiState:       foundation.Neutral,
-		statusFlags:   special.NewActorFlags(),
-		enemyActors:   make(map[string]bool),
-		enemyTeams:    make(map[string]bool),
-		activeGoal:    NoGoal,
-		audioBaseName: "human_male",
+		equipment:         NewEquipment(),
+		charSheet:         sheet,
+		bodyAugmentations: make(map[CyberWare]bool),
+		body:              special.HumanBodyParts,
+		bodyDamage:        make(map[special.BodyPart]int),
+		aiState:           foundation.Neutral,
+		statusFlags:       special.NewActorFlags(),
+		enemyActors:       make(map[string]bool),
+		enemyTeams:        make(map[string]bool),
+		activeGoal:        NoGoal,
+		audioBaseName:     "human_male",
 	}
 	a.inventory = NewInventory(23, a.Position)
 	return a
@@ -633,19 +659,10 @@ func (a *Actor) GetDetailInfo() string {
 		{Columns: []string{"Radiation:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.RadiationResistance))}},
 	}
 
-	skillRows := []fxtools.TableRow{
-		{Columns: []string{"Melee Weapons:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.MeleeWeapons))}},
-		{Columns: []string{"Unarmed:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Unarmed))}},
-		{Columns: []string{"Throwing:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Throwing))}},
-		{Columns: []string{"Small Guns:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.SmallGuns))}},
-		{Columns: []string{"Big Guns:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.BigGuns))}},
-		{Columns: []string{"Energy Weapons:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.EnergyWeapons))}},
-		{Columns: []string{"Doctor:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Doctor))}},
-		{Columns: []string{"Sneak:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Sneak))}},
-		{Columns: []string{"Lockpick:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Lockpick))}},
-		{Columns: []string{"Science:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Science))}},
-		{Columns: []string{"Repair:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Repair))}},
-		{Columns: []string{"Speech:", fmt.Sprintf("%d", a.charSheet.GetSkill(special.Speech))}},
+	var skillRows []fxtools.TableRow
+	for skillNo := 0; skillNo < int(special.SkillCount); skillNo++ {
+		skill := special.Skill(skillNo)
+		skillRows = append(skillRows, fxtools.TableRow{Columns: []string{skill.String() + ":", fmt.Sprintf("%d", a.charSheet.GetSkill(skill))}})
 	}
 
 	statLines := fxtools.TableLayout(statRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
@@ -696,7 +713,7 @@ func (a *Actor) GetGold() int {
 	return a.statusFlags.Get(special.FlagGold)
 }
 
-func (a *Actor) NeedsHealing() bool {
+func (a *Actor) IsWounded() bool {
 	return a.GetHitPoints() < a.GetHitPointsMax()
 }
 
@@ -967,7 +984,7 @@ func (a *Actor) LookInfo() string {
 	if a.IsKnockedDown() {
 		return fmt.Sprintf("%s (knocked down)", a.Name())
 	}
-	if a.NeedsHealing() {
+	if a.IsWounded() {
 		return fmt.Sprintf("%s (%s)", a.Name(), a.injuredString())
 	}
 	return a.Name()

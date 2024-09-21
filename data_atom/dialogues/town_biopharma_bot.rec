@@ -1,0 +1,188 @@
+%rec: OpeningBranch
+
+cond: IsActorInCombatWithPlayer(NPC)
+goto: PlayerCombatBranch
+
+cond: IsActorInCombat(NPC)
+goto: CombatBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: PlayerCombatBranch
+npc: Defense protocols activated. What is your intent?
+#
+o_text: Conflict is accidental. Stand down.
+o_goto: Apology
+#
+o_text: You're in my way.
+o_goto: BecauseICan
+
+name: Apology
+npc: Apology accepted. Deactivating defense protocols.
+effect: EndHostility
+effect: EndConversation
+
+name: BecauseICan
+npc: I am programmed to protect the people against threats. You are a threat.
+effect: EndConversation
+
+name: CombatBranch
+npc: Defense protocols activated. Conversation terminated.
+effect: EndConversation
+
+name: DefaultIntroduction
+npc: Welcome to Kelso. How may I assist you?
+#
+o_text: What is your function?
+o_goto: Function
+#
+o_text: What is this place?
+o_goto: Place
+#
+o_text: Where can I find Dr. Winters?
+o_cond: !HasFlag('TalkedTo(dr_winters)') && !HasFlag('KnowsWintersLocation')
+o_goto: DrWinters
+#
+o_text: Open Administrative Interface
+#o_cond: Skill('Science') > 25
+o_test: RollSkill('Science', 0)
+o_succ: AdminInterface
+o_fail: AdminInterfaceFail
+
+name: Function
+npc: I am a BioPharma medical assistance bot. I am programmed to provide medical assistance to the citizens of Kelso.
+effect: SetFlag('KnowsBotFunction')
+#
+o_text: Heal me then.
+o_goto: Heal
+#
+o_text: Interesting. What else can you tell me?
+o_goto: DefaultIntroduction
+#
+o_text: Maybe later. I have to go.
+o_goto: End
+
+name: Place
+npc: You are in the fantastic town of Kelso. Kelso is a small town in the middle of nowhere, but we have a lot of heart.
+#
+o_text: Who lives here?
+o_goto: Residents
+#
+o_text: Right. Tell me something else.
+o_goto: DefaultIntroduction
+#
+o_text: I heard enough. Goodbye.
+o_goto: End
+
+name: Residents
+npc: Kelso is home to a diverse group of people. We have a doctor, a biker, and a few other interesting characters.
+#
+o_text: Tell me about the doctor.
+o_goto: DrWinters
+#
+o_text: Tell me about the biker.
+o_goto: Biker
+#
+o_text: Tell me about the other characters.
+o_goto: OtherCharacters
+#
+o_text: I'm not interested. Goodbye.
+o_goto: End
+
+name: DrWinters
+npc: Dr. Winters is the town doctor. He is a very talented young man.
++ You can find him in his office north of here.
+effect: SetFlag('KnowsWintersLocation')
+#
+o_text: Thanks.
+o_goto: DefaultIntroduction
+
+name: Biker
+npc: Sunshine is a big, leather-clad biker. He is a bit rough around the edges, but he has a good heart.
++ He can usually be found at the local bar.
+#
+o_text: Thanks.
+o_goto: DefaultIntroduction
+
+name: OtherCharacters
+npc: Kelso is home to a few other interesting characters.
++ My polite programming prevents me from gossiping about them.
+#
+o_text: Sure, what else can you tell me?
+o_goto: DefaultIntroduction
+#
+o_text: I understand. Goodbye.
+o_goto: End
+
+name: AdminInterface
+npc: Access granted. Welcome to the administrative interface.
+#
+o_text: Activate Sleep Mode
+o_goto: SleepMode
+#
+o_text: Activate Combat Simulation
+o_goto: CombatSimulation
+#
+o_text: Activate Self-Destruct Sequence
+o_goto: SelfDestruct
+#
+o_text: Activate Assassin Protocol
+o_goto: AssassinProtocol
+#
+o_text: Log Out
+o_goto: End
+
+name: AdminInterfaceFail
+npc: Access denied. Defense protocols activated.
+effect: StartCombat
+
+name: Heal
+npc: Of course. Please stand still.
+effect: HealPlayer
+#
+o_text: Thanks.
+o_goto: DefaultIntroduction
+
+name: End
+npc: Goodbye.
+effect: EndConversation
+
+name: SleepMode
+npc: Activating sleep mode. Goodbye.
+effect: ActorSleep('town_biopharma_bot')
+effect: EndConversation
+
+name: CombatSimulation
+npc: Activating combat simulation. Prepare for combat.
+effect: ActorFrenzy('town_biopharma_bot')
+effect: EndConversation
+
+name: SelfDestruct
+npc: Self-destruct sequence activated. Goodbye.
+effect: ActorDie('town_biopharma_bot')
+effect: EndConversation
+
+name: AssassinProtocol
+npc: Assassin protocol activated. Please select a target.
+#
+o_text: Dr. Winters
+o_goto: DrWintersAssassination
+#
+o_text: Sunshine
+o_goto: SunshineAssassination
+#
+o_text: Cancel
+o_goto: AdminInterface
+
+name: DrWintersAssassination
+npc: Target selected. Initiating assassination protocol.
+effect: ActorKill('dr_winters')
+effect: EndConversation
+
+name: SunshineAssassination
+npc: Target selected. Initiating assassination protocol.
+effect: ActorKill('town_sunshine')
+effect: EndConversation

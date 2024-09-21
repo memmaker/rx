@@ -1,102 +1,5 @@
 %rec: default
 
-Name: grim_beard
-Icon: O
-Foreground: light_gray_2
-Description: an old man
-Dialogue: grim_beard
-LongDescription: 
-Age: 25
-Gender: 1
-BodyType: 0
-XP: 200
-KillType: 1
-DamageType: 0
-TeamNum: 1
-HitPoints: 50
-ActionPoints: 7
-ArmorClass: 20
-MeleeDamage: 1
-CarryWeight: 125
-Sequence: 12
-HealingRate: 1
-CriticalChance: 9
-Strength: 4
-Perception: 6
-Endurance: 4
-Charisma: 9
-Intelligence: 7
-Agility: 5
-Luck: 9
-SkillBonusSmallGuns: 120
-SkillBonusUnarmed: 37
-SkillBonusMelee: 47
-SkillBonusBarter: 64
-DTNormal: 2
-DRNormal: 25
-DRLaser: 20
-DRFire: 20
-DRPlasma: 10
-DRElectrical: 30
-DREMP: 500
-DRExplosive: 20
-DRRadiation: 8
-DRPoison: 20
-SourceFile: 00000144.pro
-Equipment: key('home_keys','apartment keys')
-Equipment: street_wear
-Equipment: street_wear
-equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
-equipment: stimpak
-Position: (61,14)
-
-Name: big_gun_thug
-Icon: B
-Foreground: light_gray_2
-Description: Big Gun Thug
-LongDescription: 
-Age: 25
-BodyType: 0
-XP: 85
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 65
-ActionPoints: 8
-ArmorClass: 14
-MeleeDamage: 3
-CarryWeight: 225
-Sequence: 8
-HealingRate: 1
-CriticalChance: 5
-Strength: 8
-Perception: 4
-Endurance: 5
-Charisma: 4
-Intelligence: 4
-Agility: 6
-Luck: 5
-SkillBonusSmallGuns: 29
-SkillBonusBigGuns: 59
-SkillBonusEnergyWeapons: 9
-SkillBonusUnarmed: 3
-SkillBonusMelee: 8
-SkillBonusThrowing: 19
-DRNormal: 20
-DRLaser: 20
-DRFire: 10
-DRPlasma: 10
-DRElectrical: 30
-DREMP: 500
-DRExplosive: 20
-DRRadiation: 10
-DRPoison: 25
-Equipment: rocket_launcher
-Equipment: explosive_rocket | 5
-SourceFile: 00000038.pro
-Position: (28,15)
-
 Name: taxi_driver
 Icon: T
 Foreground: yellow_2
@@ -148,7 +51,7 @@ DRRadiation: 12
 DRPoison: 30
 SourceFile: 00000137.pro
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (57,20)
 
@@ -225,11 +128,11 @@ DREMP: 500
 DRRadiation: 8
 DRPoison: 20
 Equipment: street_wear
-equipment: 12_ga_shotgun_shells | 10
+equipment: 12_ga_shotgun_shells
 equipment: shotgun
 equipment: combat_knife
 equipment: stimpak
-equipment: gold | 1000
+equipment: gold(1000)
 SourceFile: 00000088.pro
 Position: (29,3)
 
@@ -279,9 +182,110 @@ DRExplosive: 25
 DRRadiation: 12
 DRPoison: 30
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 equipment: combat_knife
 SourceFile: 00000140.pro
 Position: (15,17)
+
+Name: grim_beard
+Icon: O
+Foreground: light_gray_2
+Description: an old man
+Dialogue: grim_beard
+LongDescription: 
+Age: 25
+Gender: 1
+BodyType: 0
+XP: 200
+KillType: 1
+DamageType: 0
+TeamNum: 1
+HitPoints: 50
+ActionPoints: 7
+ArmorClass: 20
+MeleeDamage: 1
+CarryWeight: 125
+Sequence: 12
+HealingRate: 1
+CriticalChance: 9
+Strength: 4
+Perception: 6
+Endurance: 4
+Charisma: 9
+Intelligence: 7
+Agility: 5
+Luck: 9
+SkillBonusSmallGuns: 120
+SkillBonusUnarmed: 37
+SkillBonusMelee: 47
+SkillBonusBarter: 64
+DTNormal: 2
+DRNormal: 25
+DRLaser: 20
+DRFire: 20
+DRPlasma: 10
+DRElectrical: 30
+DREMP: 500
+DRExplosive: 20
+DRRadiation: 8
+DRPoison: 20
+SourceFile: 00000144.pro
+Equipment: key('home_keys','apartment keys')
+Equipment: street_wear
+Equipment: street_wear
+equipment: 10mm_pistol
+equipment: 10mm_jhp
+equipment: stimpak
+Position: (61,14)
+
+Name: big_bob
+Icon: B
+Foreground: light_gray_2
+Description: 'Big' Bob
+Dialogue: big_bob
+LongDescription: 
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 65
+ActionPoints: 8
+ArmorClass: 14
+MeleeDamage: 3
+CarryWeight: 225
+Sequence: 8
+HealingRate: 1
+CriticalChance: 5
+Strength: 8
+Perception: 4
+Endurance: 5
+Charisma: 4
+Intelligence: 4
+Agility: 6
+Luck: 5
+SkillBonusSmallGuns: 29
+SkillBonusBigGuns: 59
+SkillBonusEnergyWeapons: 9
+SkillBonusUnarmed: 3
+SkillBonusMelee: 8
+SkillBonusThrowing: 19
+DRNormal: 20
+DRLaser: 20
+DRFire: 10
+DRPlasma: 10
+DRElectrical: 30
+DREMP: 500
+DRExplosive: 20
+DRRadiation: 10
+DRPoison: 25
+Equipment: 10mm_smg
+Equipment: 10mm_smg
+Equipment: 10mm_jhp(240)
+Equipment: explosive_rocket(5)
+Equipment: rocket_launcher
+SourceFile: 00000038.pro
+Position: (28,15)
 

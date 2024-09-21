@@ -24,6 +24,14 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
+Name: none
+Char: ·
+Foreground: olive_5
+Background: olive_6
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
 Name: cracked wall
 Char: ,
 Foreground: gray

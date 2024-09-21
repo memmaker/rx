@@ -1,0 +1,22 @@
+
+%rec: definitions
+
+var: DD
+set: ContainerWithName('dead_drop')
+
+%rec: outcomes
+
+if: HasFlag('starter(completed)')
+do: Hilite('>>> You have mail <<<')
+
+%rec: cancel
+
+%rec: frames
+
+if: IsItemInContainer(DD, 'gold', 500)
+do: SaveTimeNow('dd_01_deposited')
+
+if: IsHoursAfter('dd_01_deposited', 6)
+do: ContainerRemoveItem(DD, 'gold', 500)
+do: ContainerAddItem(DD, 'leather_armor')
+do: SetFlag('starter(completed)')

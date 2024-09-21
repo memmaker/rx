@@ -1,15 +1,20 @@
 package game
 
 import (
+	"RogueUI/special"
+	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/recfile"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
 type Conversation struct {
 	openingBranches []OpeningBranch
 	nodes           map[string]ConversationNode
+	Variables       map[string]interface{}
 }
 
 func NewConversation() *Conversation {
@@ -34,6 +39,7 @@ func (c *Conversation) CreateGraph() string {
 }
 
 func (c *Conversation) GetRootNode(params map[string]interface{}) ConversationNode {
+	c.Variables = params
 	for _, branch := range c.openingBranches {
 		evaluateResult, err := branch.branchCondition.Evaluate(params)
 		asBool := evaluateResult.(bool)
@@ -45,7 +51,7 @@ func (c *Conversation) GetRootNode(params map[string]interface{}) ConversationNo
 }
 
 func (c *Conversation) GetNextNode(chosenOption ConversationOption) ConversationNode {
-	return c.nodes[chosenOption.GetFollowupBranch()]
+	return c.nodes[chosenOption.GetFollowupBranch(c.Variables)]
 }
 
 func (c *Conversation) GetNodeByName(node string) ConversationNode {
@@ -76,11 +82,11 @@ type ConversationOption struct {
 	failureBranch    string
 }
 
-func (o *ConversationOption) CanDisplay() bool {
+func (o *ConversationOption) CanDisplay(params map[string]interface{}) bool {
 	if o.displayCondition == nil {
 		return true
 	}
-	evaluateResult, err := o.displayCondition.Evaluate(nil)
+	evaluateResult, err := o.displayCondition.Evaluate(params)
 	if err != nil {
 		panic(err)
 	}
@@ -88,11 +94,11 @@ func (o *ConversationOption) CanDisplay() bool {
 	return err == nil && asBool
 }
 
-func (o *ConversationOption) GetFollowupBranch() string {
+func (o *ConversationOption) GetFollowupBranch(params map[string]interface{}) string {
 	if o.branchCondition == nil {
 		return o.successBranch
 	}
-	evaluateResult, err := o.branchCondition.Evaluate(nil)
+	evaluateResult, err := o.branchCondition.Evaluate(params)
 	asBool := evaluateResult.(bool)
 	if err == nil && asBool {
 		return o.successBranch
@@ -105,6 +111,27 @@ func (o *ConversationOption) GetAllPossibleBranches() []string {
 		return []string{o.successBranch}
 	}
 	return []string{o.successBranch, o.failureBranch}
+}
+
+func (o *ConversationOption) RollInfo() string {
+	if o.branchCondition == nil {
+		return ""
+	}
+	conditionAsString := o.branchCondition.String()
+	// format : RollSkill('skillName', -10)
+	regexPattern := `RollSkill\('([^']*)',\s*([-0-9]+)\)`
+	// extract skill name
+	// extract modifier
+	matches := regexp.MustCompile(regexPattern).FindStringSubmatch(conditionAsString)
+	if matches == nil {
+		return ""
+	}
+	skillName := special.SkillFromString(matches[1])
+	modifier, _ := strconv.Atoi(matches[2])
+	if modifier == 0 {
+		return fmt.Sprintf(" (%s)", skillName.String())
+	}
+	return fmt.Sprintf(" (%s%+d)", skillName.String(), modifier)
 }
 
 func ParseConversation(filename string, conditionFuncs map[string]govaluate.ExpressionFunction) (*Conversation, error) {

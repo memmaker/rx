@@ -1,8 +1,13 @@
- - rats have wrong sound (all enemies)
  - rats attack each other
 
- - when entering sewer for first time, the visible actors list includes dr. gallows
  - should be possible to sneak around the rats
- - damage of flamer and all explosives is wrong
  - no way to repair items without skill investment
  - Blood & Light flooding the walls, make it hard to tell walls and floors apart
+
+
+ - Check d100 opposing rolls (blackjack system)
+ - Blackjack: Roll under your skill but over the roll of the opponent
+ -> If an opponent has a higher skill and rolls over your own skill
+    there is NO CHANCE to beat this roll.
+ -> If he rolls under your skill, the chance is the difference between
+	your skill and his roll.

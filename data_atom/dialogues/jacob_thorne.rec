@@ -1,0 +1,75 @@
+#- Find out more about the client and go after him (from either the doc or grim)
+#  - to kill him - POSSIBLE
+#  - to get more payment
+#  - to intimidate him into leaving the Doc alone
+#  - to steal money from him - POSSIBLE
+
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: Wait, I recognize you. You're the contractor I hired.
++ What the hell are *you* doing here?
+#
+o_text: I'm here to collect my reward.
+o_cond: !HasFlag('starter(completed)')
+o_goto: CollectPayment
+#
+o_text: I'd like to know my client on a more personal level.
+o_test: RollSkill('seduce', 10)
+o_succ: SeduceSuccess
+o_fail: SeduceFail
+#
+o_text: I'm here to renegotiate the terms of our contract.
+o_goto: NegotiateContract
+#
+o_text: You'll leave the Ripperdoc alone, is that clear?
+o_test: RollSkill('intimidate', -10)
+o_succ: IntimidateSuccess
+o_fail: IntimidateFail
+#
+o_text: I've got a bullet with your name on it.
+o_cond: HasFlag('took_single_round') && !HasFlag('PlayerKillCount')
+o_test: RollSkill('intimidate', 10)
+o_succ: IntimidateSuccess
+o_fail: IntimidateFail
+#
+o_text: I've got a bullet with your name on it.
+o_cond: HasFlag('took_single_round') && HasFlag('PlayerKillCount')
+o_test: RollSkill('intimidate', 30)
+o_succ: IntimidateSuccess
+o_fail: IntimidateFail
+
+name: IntimidateSuccess
+npc: (He looks scared.) Okay, okay. I'll leave the Ripperdoc alone.
++ If that's what you want, I'll call off the job.
+#
+o_text: You're damn right you will.
+o_goto: DefaultIntroduction
+#
+o_text: You know what? I have to be sure. A bullet to your forehead should do the trick.
+o_goto: KillClient
+
+name: IntimidateFail
+npc: You piece of shit. You think you can intimidate me?
++ I am going to rip you apart, choomba.
+effect: StartCombat
+
+name: KillClient
+npc: Fine, come at me, bro.
+effect: StartCombat
+
+name: CollectPayment
+npc: I was told to use the dead drop? I am not sure why you are here.
++ But ok, let's go with it. So, did you get my money?
+#
+o_text: Sure, it's right here.
+o_cond: HasItem('gold', 500)
+o_goto: GiveMoney
+#
+o_text: Not yet, still working on it.
+o_gogo: DefaultIntroduction

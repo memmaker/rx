@@ -1,0 +1,119 @@
+%rec: OpeningBranch
+
+cond: IsActorInCombatWithPlayer(NPC)
+goto: PlayerCombatBranch
+
+cond: IsActorInCombat(NPC)
+goto: CombatBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: PlayerCombatBranch
+npc: Alright, speak up. Why the hell are you attacking me?
+#
+o_text: I'm sorry, I didn't mean to attack you.
+o_goto: Apology
+#
+o_text: Because I can.
+o_goto: BecauseICan
+
+name: Apology
+npc: Fine, just don't do it again.
+effect: EndHostility
+effect: EndConversation
+
+name: BecauseICan
+npc: You're a real piece of work, you know that?
+effect: EndConversation
+
+name: CombatBranch
+npc: I'm kind of busy right now.
+effect: EndConversation
+
+name: DefaultIntroduction
+npc: Where to, stranger?
+#
+o_text: Just drive.
+o_goto: Drive
+#
+o_text: Take me home.
+o_cond: IsMap('home_area')
+o_goto: DriveHome
+#
+# Starter Mission
+o_text: I want to do some hiking in the woods. (Home of Jacob Thorne)
+o_cond: HasFlag('LocationKnown(jacobs_home)') && !IsMap('jacobs_home')
+o_goto: JacobsHome
+#
+o_text: Get me to this location here (Cryo Facility).
+o_cond: HasFlag('LocationKnown(cryolab)') && !IsMap('cryolab')
+o_goto: CryoFacility
+#
+o_text: The old mansion, right outside Kelso.
+o_cond: HasFlag('LocationKnown(mansion)') && !IsMap('mansion')
+o_goto: Mansion
+#
+o_text: Get me to the BioPharmaceuticals lab.
+o_cond: HasFlag('LocationKnown(zombies)') && !IsMap('zombies')
+o_goto: ZombieLab
+#
+o_text: Take me to Kelso.
+o_cond: HasFlag('LocationKnown(town)') && !IsMap('town')
+o_goto: Kelso
+#
+o_text: Rob a store
+o_cond: !IsMap('store_robbery')
+o_goto: StoreRobbery
+#
+o_text: Nevermind.
+o_goto: Bye
+
+name: Bye
+npc: Alright, see you around.
+effect: EndConversation
+
+name: Drive
+npc: Sure thing.
+#
+o_text: (Wait)
+o_goto: DefaultIntroduction
+
+# Home
+name: DriveHome
+npc: Home sweet home.
+effect: TransitionWithDriver('home_area', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+# Starter Mission
+name: JacobsHome
+npc: I like the calmness of the woods.
+effect: TransitionWithDriver('jacobs_home', 'taxi_stand')
+effect: AdvanceTimeByMinutes(25)
+
+name: Kelso
+npc: There you go.
+effect: TransitionWithDriver('town', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+name: CryoFacility
+npc: Right where you want to be.
+effect: TransitionWithDriver('cryolab', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+name: ZombieLab
+npc: Here we are.
+effect: TransitionWithDriver('zombies', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+name: Mansion
+npc: Nice place.
+effect: TransitionWithDriver('mansion', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+name: StoreRobbery
+npc: You got it.
+effect: Transition('store_robbery', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)

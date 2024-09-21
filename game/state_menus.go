@@ -4,9 +4,11 @@ import (
 	"RogueUI/foundation"
 	"RogueUI/special"
 	"fmt"
+	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -131,6 +133,9 @@ func (g *GameState) SaveGame(toDirectory string) {
 			panic(err)
 		} else {
 			g.msg(foundation.Msg("Game saved."))
+			if g.IsIronMan() {
+				g.ui.QuitGame()
+			}
 		}
 	}
 }
@@ -138,6 +143,9 @@ func (g *GameState) SaveGame(toDirectory string) {
 func (g *GameState) LoadGame(fromDirectory string) {
 	if fromDirectory != "" {
 		g.Load(fromDirectory)
+		if g.IsIronMan() {
+			os.RemoveAll(fromDirectory)
+		}
 		g.msg(foundation.Msg("Game loaded."))
 	}
 }
@@ -378,36 +386,37 @@ func (g *GameState) OpenWizardMenu() {
 }
 
 func (g *GameState) RunScriptByName(scriptName string) {
-	g.scriptRunner.RunScriptByName(g.config.DataRootDir, scriptName, g.getScriptFuncs())
+	g.scriptRunner.RunScriptByName(path.Join(g.config.DataRootDir, "maps"), g.currentMap().GetName(), scriptName, g.getScriptFuncs())
 }
 
 func (g *GameState) RunScript(script ActionScript) {
-	g.scriptRunner.RunScript(script)
+	g.scriptRunner.RunScript(g.currentMap().GetName(), script)
 }
 
 func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource, isTerminal bool) {
-	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", name+".txt")
+	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", name+".rec")
 	if !fxtools.FileExists(conversationFilename) {
+		g.msg(foundation.HiLite("%s has nothing to say.", partner.Name()))
 		return
 	}
-	conversation, err := ParseConversation(conversationFilename, g.getConditionFuncs())
+	conversation, err := ParseConversation(conversationFilename, g.getScriptFuncs())
 	if err != nil {
 		panic(err)
 		return
 	}
 
 	var npcName string
+	params := make(map[string]interface{})
 	if actor, isActor := partner.(*Actor); isActor {
 		npcName = actor.GetInternalName()
 		talkedFlagName := fmt.Sprintf("TalkedTo(%s)", npcName)
 		g.gameFlags.Increment(talkedFlagName)
+		params["NPC"] = actor
 	} else {
 		npcName = partner.Name()
 	}
+	params["NPC_NAME"] = npcName
 
-	params := map[string]interface{}{
-		"NPC_NAME": npcName,
-	}
 	rootNode := conversation.GetRootNode(params)
 	g.OpenDialogueNode(conversation, ConversationNode{}, rootNode, partner, isTerminal)
 }
@@ -420,7 +429,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 
 	var effectCalls []func()
 	for _, effect := range currentNode.Effects {
-		if effect == "StartCombat" {
+		if effect == "StartCombat" { // simple parameterless dialogue only effects
 			if actor, isActor := conversationPartner.(*Actor); isActor {
 				actor.AddToEnemyActors(g.Player.GetInternalName())
 				actor.SetHostile()
@@ -440,33 +449,14 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 		} else {
 			if fxtools.LooksLikeAFunction(effect) {
 				name, args := fxtools.GetNameAndArgs(effect)
-				switch name {
+				switch name { // these effects are also only possible here, because they directly influence the conversation flow
 				case "GotoNode":
 					nodeName := args.Get(0)
 					nextNode := conversation.GetNodeByName(nodeName)
 					if !nextNode.IsEmpty() {
 						currentNode = nextNode
 					}
-				case "SaveTimeNow":
-					timeName := args.Get(0)
-					g.SaveTimeNow(timeName)
-				case "AdvanceTimeByMinutes":
-					minutes, err := strconv.Atoi(args.Get(0))
-					if err != nil {
-						panic(err)
-					}
-					g.advanceTime(time.Minute * time.Duration(minutes))
-				case "RunScriptByName":
-					scriptName := args.Get(0)
-					g.RunScriptByName(scriptName)
-				case "RunScriptKill":
-					killerName := args.Get(0)
-					victimName := args.Get(1)
-					killer := g.actorWithName(killerName)
-					victim := g.actorWithName(victimName)
-					killScript := g.NewScriptKill(killer, victim)
-					g.RunScript(killScript)
-				case "DriverTransition":
+				case "TransitionWithDriver":
 					mapName := args.Get(0)
 					locationName := args.Get(1)
 					g.ui.FadeToBlack()
@@ -491,16 +481,23 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 					g.GotoNamedLevel(mapName, locationName)
 					g.ui.FadeFromBlack()
 					instantEndWithChatter = true
-				case "RemoveItem":
+				case "TakeItemFromPlayer":
 					itemName := args.Get(0)
-					removedItem := g.Player.GetInventory().RemoveItemByName(itemName)
-					if removedItem != nil {
-						g.msg(foundation.HiLite("%s removed.", removedItem.Name()))
+					count := 1
+					if len(args) > 1 {
+						count = args.GetInt(1)
 					}
-				case "StopScript":
-					scriptName := args.Get(0)
-					g.scriptRunner.StopScript(scriptName)
-				case "GiveItem":
+					actor, isActor := conversationPartner.(*Actor)
+					itemsForPartner := g.Player.GetInventory().RemoveItemsByNameAndCount(itemName, count)
+					if len(itemsForPartner) > 0 {
+						first := itemsForPartner[0]
+						niceItemName := first.Name()
+						g.msg(foundation.HiLite("%s removed.", niceItemName))
+						if isActor {
+							actor.GetInventory().AddItems(itemsForPartner)
+						}
+					}
+				case "GiveItemToPlayer":
 					itemName := args.Get(0)
 					count := 1
 					if len(args) > 1 {
@@ -527,8 +524,16 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 						g.Player.GetInventory().AddItems(itemsForPlayer)
 						g.msg(foundation.HiLite("%s received.", itemStackName))
 					}
-				default:
-					g.ApplyDialogueEffect(name, args)
+
+				default: // parse as generic expression and effect
+					expr, parseErr := govaluate.NewEvaluableExpressionWithFunctions(effect, g.getScriptFuncs())
+					if parseErr != nil {
+						panic(parseErr)
+					}
+					_, evalErr := expr.Evaluate(conversation.Variables)
+					if evalErr != nil {
+						panic(evalErr)
+					}
 				}
 			}
 		}
@@ -550,9 +555,9 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 	} else {
 		for _, o := range currentNode.Options {
 			option := o
-			if option.CanDisplay() {
+			if option.CanDisplay(conversation.Variables) {
 				nodeOptions = append(nodeOptions, foundation.MenuItem{
-					Name: g.fillTemplatedText(option.playerText),
+					Name: g.fillTemplatedText(option.playerText) + option.RollInfo(),
 					Action: func() {
 						nextNode := conversation.GetNextNode(option)
 						g.OpenDialogueNode(conversation, currentNode, nextNode, conversationPartner, isTerminal)

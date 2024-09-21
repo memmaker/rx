@@ -178,13 +178,26 @@ var VisibleDerivedStatCount = 12
 
 type Skill int
 
-func (s Skill) IsRangedAttackSkill() bool {
-	return s == SmallGuns || s == BigGuns || s == EnergyWeapons || s == Throwing
-}
-
-func (s Skill) IsMeleeAttackSkill() bool {
-	return s == Unarmed || s == MeleeWeapons
-}
+const (
+	SmallGuns Skill = iota
+	BigGuns
+	EnergyWeapons
+	Unarmed
+	MeleeWeapons
+	Throwing
+	Explosives
+	Doctor
+	Sneak
+	Lockpick
+	Steal
+	Traps
+	Science
+	Repair
+	Intimidate
+	Persuade
+	Seduce
+	SkillCount
+)
 
 func (s Skill) ToShortString() string {
 	switch s {
@@ -200,6 +213,8 @@ func (s Skill) ToShortString() string {
 		return "MW"
 	case Throwing:
 		return "TH"
+	case Explosives:
+		return "EX"
 	case Doctor:
 		return "DR"
 	case Sneak:
@@ -214,10 +229,23 @@ func (s Skill) ToShortString() string {
 		return "SC"
 	case Repair:
 		return "RP"
-	case Speech:
-		return "SP"
+	case Persuade:
+		return "PS"
+	case Intimidate:
+		return "IN"
+	case Seduce:
+		return "SD"
 	}
 	return ""
+}
+
+func (s Skill) ToAdjustmentString() string {
+	return fmt.Sprintf("%s_Adjustment", strings.ReplaceAll(s.String(), " ", ""))
+}
+
+func SkillFromAdjustmentString(name string) Skill {
+	name = strings.TrimSuffix(strings.ToLower(name), "_adjustment")
+	return skillFromShortString(name)
 }
 
 func (s Skill) String() string {
@@ -234,6 +262,8 @@ func (s Skill) String() string {
 		return "Melee Weapons"
 	case Throwing:
 		return "Throwing"
+	case Explosives:
+		return "Explosives"
 	case Doctor:
 		return "Doctor"
 	case Sneak:
@@ -248,43 +278,31 @@ func (s Skill) String() string {
 		return "Science"
 	case Repair:
 		return "Repair"
-	case Speech:
-		return "Speech"
+	case Persuade:
+		return "Persuade"
+	case Intimidate:
+		return "Intimidate"
+	case Seduce:
+		return "Seduce"
+
 	}
 	return ""
 }
 
-const (
-	SmallGuns Skill = iota
-	BigGuns
-	EnergyWeapons
-	Unarmed
-	MeleeWeapons
-	Throwing
-	Doctor
-	Sneak
-	Lockpick
-	Steal
-	Traps
-	Science
-	Repair
-	Speech
-	SkillCount
-)
-
-func SkillFromString(name string) Skill {
-	name = strings.ToLower(name)
+func skillFromShortString(name string) Skill {
 	switch name {
-	case "small_guns":
+	case "smallguns":
 		return SmallGuns
-	case "big_guns":
+	case "bigguns":
 		return BigGuns
-	case "energy_weapons":
+	case "energyweapons":
 		return EnergyWeapons
 	case "unarmed":
 		return Unarmed
-	case "melee_weapons":
+	case "meleeweapons":
 		return MeleeWeapons
+	case "explosives":
+		return Explosives
 	case "throwing":
 		return Throwing
 	case "doctor":
@@ -301,12 +319,86 @@ func SkillFromString(name string) Skill {
 		return Science
 	case "repair":
 		return Repair
-	case "speech":
-		return Speech
+	case "persuade":
+		return Persuade
+	case "intimidate":
+		return Intimidate
+	case "seduce":
+		return Seduce
 	}
 	panic("invalid skill name")
+	return -1
+}
+
+func SkillFromString(name string) Skill {
+	name = strings.ReplaceAll(strings.ToLower(name), "_", "")
+	return skillFromShortString(name)
+}
+
+func SkillFromBonusString(name string) Skill {
+	name = strings.TrimPrefix(strings.ToLower(name), "skillbonus")
+	return skillFromShortString(name)
+}
+
+func (s Skill) IsRangedAttackSkill() bool {
+	return s == SmallGuns || s == BigGuns || s == EnergyWeapons || s == Throwing
+}
+
+func (s Skill) IsMeleeAttackSkill() bool {
+	return s == Unarmed || s == MeleeWeapons
+}
+
+func (cs *CharSheet) getSkillBase(skill Skill) int {
+	switch skill {
+	case SmallGuns:
+		return 20 + (cs.GetStat(Perception) * 4)
+	case BigGuns:
+		return cs.GetStat(Strength) + cs.GetStat(Perception) + 5
+	case EnergyWeapons:
+		return cs.GetStat(Perception) * 2
+	case Unarmed:
+		return 30 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
+	case MeleeWeapons:
+		return 20 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
+	case Throwing:
+		return 4 * cs.GetStat(Agility)
+	case Explosives:
+		return 10 + cs.GetStat(Intelligence) + (cs.GetStat(Luck) * 2)
+	case Doctor:
+		return 5 + cs.GetStat(Perception) + cs.GetStat(Intelligence)
+	case Sneak:
+		return 5 + (3 * cs.GetStat(Agility))
+	case Lockpick:
+		return 10 + (cs.GetStat(Perception) + cs.GetStat(Agility))
+	case Steal:
+		return 3 * cs.GetStat(Agility)
+	case Traps:
+		return 10 + (cs.GetStat(Perception) + cs.GetStat(Agility))
+	case Science:
+		return 4 * cs.GetStat(Intelligence)
+	case Repair:
+		return 2*cs.GetStat(Intelligence) + cs.GetStat(Luck)
+	case Persuade:
+		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Intelligence)
+	case Intimidate:
+		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Strength)
+	case Seduce:
+		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Perception)
+		/*
+			case Barter:
+				return 4 * cs.GetStat(Charisma)
+			case Gambling:
+				return 5 * cs.GetStat(Luck)
+			case Outdoorsman:
+				return 5 + cs.GetStat(Endurance) + cs.GetStat(Intelligence) + cs.GetStat(Luck)
+		*/
+	}
+	panic("invalid skill")
 	return 0
 }
+
+// Check: If the task at hand is simply not possible for someone without a certain level of skill
+// Roll: If the task at hand is in general possible, even if it's difficult
 
 // tagging gives 20% bonus to skill
 func NewCharSheet() *CharSheet {
@@ -586,49 +678,6 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 	return 0
 }
 
-func (cs *CharSheet) getSkillBase(skill Skill) int {
-	switch skill {
-	case SmallGuns:
-		return 20 + (cs.GetStat(Perception) * 4)
-	case BigGuns:
-		return cs.GetStat(Strength) + cs.GetStat(Perception) + 5
-	case EnergyWeapons:
-		return cs.GetStat(Perception) * 2
-	case Unarmed:
-		return 30 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
-	case MeleeWeapons:
-		return 20 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
-	case Throwing:
-		return 4 * cs.GetStat(Agility)
-	case Doctor:
-		return 5 + cs.GetStat(Perception) + cs.GetStat(Intelligence)
-	case Sneak:
-		return 5 + (3 * cs.GetStat(Agility))
-	case Lockpick:
-		return 10 + (cs.GetStat(Perception) + cs.GetStat(Agility))
-	case Steal:
-		return 3 * cs.GetStat(Agility)
-	case Traps:
-		return 10 + (cs.GetStat(Perception) + cs.GetStat(Agility))
-	case Science:
-		return 4 * cs.GetStat(Intelligence)
-	case Repair:
-		return 2*cs.GetStat(Intelligence) + cs.GetStat(Luck)
-	case Speech:
-		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Intelligence)
-		/*
-			case Barter:
-				return 4 * cs.GetStat(Charisma)
-			case Gambling:
-				return 5 * cs.GetStat(Luck)
-			case Outdoorsman:
-				return 5 + cs.GetStat(Endurance) + cs.GetStat(Intelligence) + cs.GetStat(Luck)
-		*/
-	}
-	panic("invalid skill")
-	return 0
-}
-
 func (cs *CharSheet) HealCompletely() {
 	cs.hitPointsCurrent = cs.GetDerivedStat(HitPoints)
 	cs.onDerivedStatChanged(HitPoints)
@@ -835,7 +884,7 @@ func (cs *CharSheet) GetHitPointsString() string {
 }
 
 func (cs *CharSheet) ToRecord() recfile.Record {
-	return recfile.Record{
+	record := recfile.Record{
 		recfile.Field{Name: "Level", Value: recfile.IntStr(cs.GetLevel())},
 		recfile.Field{Name: "AvailableStatPoints", Value: recfile.IntStr(cs.availableStatPoints)},
 		recfile.Field{Name: "AvailableSkillPoints", Value: recfile.IntStr(cs.availableSkillPoints)},
@@ -849,21 +898,14 @@ func (cs *CharSheet) ToRecord() recfile.Record {
 		recfile.Field{Name: "Luck", Value: recfile.IntStr(cs.GetStat(Luck))},
 		recfile.Field{Name: "HitPoints", Value: recfile.IntStr(cs.GetHitPoints())},
 		recfile.Field{Name: "ActionPoints", Value: recfile.IntStr(cs.GetActionPoints())},
-		recfile.Field{Name: "SmallGuns_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(SmallGuns))},
-		recfile.Field{Name: "BigGuns_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(BigGuns))},
-		recfile.Field{Name: "EnergyWeapons_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(EnergyWeapons))},
-		recfile.Field{Name: "Unarmed_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Unarmed))},
-		recfile.Field{Name: "MeleeWeapons_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(MeleeWeapons))},
-		recfile.Field{Name: "Throwing_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Throwing))},
-		recfile.Field{Name: "Doctor_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Doctor))},
-		recfile.Field{Name: "Sneak_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Sneak))},
-		recfile.Field{Name: "Lockpick_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Lockpick))},
-		recfile.Field{Name: "Steal_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Steal))},
-		recfile.Field{Name: "Traps_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Traps))},
-		recfile.Field{Name: "Science_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Science))},
-		recfile.Field{Name: "Repair_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Repair))},
-		recfile.Field{Name: "Speech_Adjustment", Value: recfile.IntStr(cs.getSkillAdjustment(Speech))},
 	}
+	// add skills
+	for skillNo := 0; skillNo < int(SkillCount); skillNo++ {
+		skill := Skill(skillNo)
+		record = append(record, recfile.Field{Name: skill.ToAdjustmentString(), Value: recfile.IntStr(cs.getSkillAdjustment(skill))})
+	}
+
+	return record
 }
 
 func (cs *CharSheet) HasStatPointsToSpend() bool {

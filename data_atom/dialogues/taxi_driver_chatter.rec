@@ -1,3 +1,19 @@
+s: being_around_player
+#
+c: PlayerMainHandIs('flamer')
+#
+t: Holy Firestorm, Batman!
+t: You're not going to use that thing, are you?
+t: Whoa, whoa, whoa! What are you doing with that thing?
+t: I am sure you have a good reason to carry that around.
+
+s: being_around_player
+#
+c: !PlayerHasArmor()
+#
+t: Put some clothes on, will you?
+t: No pants, no service.
+t: No clothes, no ride.
 
 s: being_around_player
 #

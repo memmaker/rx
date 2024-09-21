@@ -1,0 +1,103 @@
+%rec: OpeningBranch
+
+# Flag: solved_bobs_problems
+
+cond: !HasFlag('solved_bobs_problems')
+goto: BasicSupply
+
+cond: HasFlag('solved_bobs_problems')
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: Exit
+npc: Come back soon!
+effect: EndConversation
+
+name: BasicSupply
+npc: Welcome to Big Bob's Supplies!
++ Unfortunately, I have a small problem with my deliveries.
++ So for now, I can only offer you a limited selection of items.
+#
+o_text: Show me what you have.
+o_goto: ShowBasicItems
+#
+o_text: Tell me about your 'problem'.
+o_goto: TellMeAboutProblem
+#
+o_text: What's the neighborhood like?
+o_goto: TellMeAboutNeighborhood
+#
+o_text: I see, goodbye.
+o_goto: Exit
+
+name: ShowBasicItems
+npc: Here's what I can offer:
++ a 10mm SMG for $500
++ and some 10mm ammo for $50 per mag.
+#
+o_text: I'll take the SMG.
+o_cond: HasItem('gold', 500)
+o_goto: BuySMG
+#
+o_text: I'll take some ammo.
+o_cond: HasItem('gold', 50)
+o_goto: BuyAmmo
+#
+o_text: I'll need exactly 1 round of ammo.
+o_cond: !HasFlag('took_single_round')
+o_goto: BuySingleRound
+#
+o_text: I'll pass for now.
+o_goto: BasicSupply
+
+name: BuySMG
+npc: Good choice! It's a reliable weapon. You'll need some ammo for it, too.
++ That burst fire mode can be a real life saver, but it eats through ammo like crazy.
+#
+effect: TakeItemFromPlayer('gold', 500)
+effect: GiveItemToPlayer('10mm_smg')
+#
+o_text: Thanks, I am good on ammo.
+o_goto: BasicSupply
+#
+o_text: I'll take some ammo.
+o_cond: HasItem('gold', 50)
+o_goto: BuyAmmo
+#
+o_text: I'll need exactly 1 round of ammo.
+o_cond: !HasFlag('took_single_round')
+o_goto: BuySingleRound
+#
+o_text: I better get going.
+o_goto: Exit
+
+name: BuyAmmo
+npc: Here you go. Enjoy your purchase!
+effect: TakeItemFromPlayer('gold', 50)
+effect: GiveItemToPlayer('10mm_jhp', 24)
+#
+o_text: Nice doing business with you.
+o_goto: BasicSupply
+#
+o_text: That's all I need for now.
+o_goto: Exit
+
+name: BuySingleRound
+npc: Haha, that's original! Here you go. This one's on the house.
++ I am pretty sure you'll be back for more soon.
++ Or... maybe not.
+effect: GiveItemToPlayer('10mm_jhp', 1)
+effect: SetFlag('took_single_round')
+#
+o_text: Alright, show me what else you have.
+o_goto: BasicSupply
+#
+o_text: I'll be back.
+o_goto: Exit
+#
+o_text: This bullet is all I need.
+o_goto: Exit
+#
+o_text: I'll have some engraving to do, excuse me.
+o_goto: Exit

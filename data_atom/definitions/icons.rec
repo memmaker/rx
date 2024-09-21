@@ -300,3 +300,15 @@ Char: ∩
 Fg: light_gray_2
 Bg: dark_gray_5
 
+Char: ·
+Fg: brown_2
+Bg: brown_1
+
+Char: ·
+Fg: forest_green_8
+Bg: forest_green_11
+
+Char: ·
+Fg: olive_5
+Bg: olive_6
+

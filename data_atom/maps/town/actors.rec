@@ -18,7 +18,7 @@ dodge: 5
 ActionPoints: 4
 default_relation: neutral
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (24,18)
 
@@ -42,7 +42,7 @@ ActionPoints: 4
 default_relation: neutral
 SkillBonusSmallGuns: 20
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 equipment: key('doc_offices','Dr. Winters keys')
 Position: (45,5)
@@ -67,7 +67,7 @@ ActionPoints: 4
 SkillBonusSmallGuns: 30
 default_relation: neutral
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (33,14)
 
@@ -90,7 +90,7 @@ ActionPoints: 4
 SkillBonusSmallGuns: 20
 default_relation: neutral
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (9,17)
 
@@ -113,7 +113,7 @@ ActionPoints: 4
 SkillBonusSmallGuns: 30
 default_relation: neutral
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (72,16)
 
@@ -136,7 +136,7 @@ ActionPoints: 4
 SkillBonusSmallGuns: 25
 default_relation: neutral
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (73,14)
 
@@ -159,7 +159,7 @@ ActionPoints: 4
 SkillBonusSmallGuns: 25
 default_relation: neutral
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (48,17)
 
@@ -181,7 +181,7 @@ dodge: 5
 ActionPoints: 4
 default_relation: neutral
 equipment: 10mm_pistol
-equipment: 10mm_jhp | 24
+equipment: 10mm_jhp
 equipment: stimpak
 Position: (51,5)
 

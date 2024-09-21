@@ -64,18 +64,6 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			actionpoints = field.AsInt()
 		case "speed":
 			speed = field.AsInt()
-		case "skillbonusunarmed":
-			charSheet.SetSkillAdjustment(special.Unarmed, field.AsInt())
-		case "skillbonusmeleeweapons":
-			charSheet.SetSkillAdjustment(special.MeleeWeapons, field.AsInt())
-		case "skillbonussmallguns":
-			charSheet.SetSkillAdjustment(special.SmallGuns, field.AsInt())
-		case "skillbonusbigguns":
-			charSheet.SetSkillAdjustment(special.BigGuns, field.AsInt())
-		case "skillbonusenergyweapons":
-			charSheet.SetSkillAdjustment(special.EnergyWeapons, field.AsInt())
-		case "skillbonusthrowing":
-			charSheet.SetSkillAdjustment(special.Throwing, field.AsInt())
 		case "size_modifier":
 			actor.SetSizeModifier(field.AsInt())
 		case "equipment":
@@ -97,6 +85,12 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			}
 		default:
 			//println("WARNING: Unknown field: " + field.Name)
+			if strings.HasPrefix(field.Name, "skillbonus") {
+				skill := special.SkillFromBonusString(field.Value)
+				if skill != -1 {
+					charSheet.SetSkillAdjustment(skill, field.AsInt())
+				}
+			}
 		}
 	}
 

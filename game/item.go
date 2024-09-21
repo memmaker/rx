@@ -12,8 +12,6 @@ import (
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"math/rand"
-	"strconv"
-	"strings"
 )
 
 type Item struct {
@@ -314,30 +312,27 @@ func (i *Item) GobDecode(data []byte) error {
 }
 
 func (g *GameState) NewItemFromString(itemName string) *Item {
-	charges := 1
-	setCharges := false
 	if fxtools.LooksLikeAFunction(itemName) {
-		var item *Item
 		name, args := fxtools.GetNameAndArgs(itemName)
 		switch name {
 		case "key":
-			item = NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
+			return NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
 		case "note":
-			item = NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
+			return NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
+		default: // parametric item name(charges, quality)
+			newItem := g.newItemFromName(name)
+			charges := args.GetInt(0)
+			newItem.SetCharges(charges)
+			if len(args) > 1 {
+				quality := args.GetInt(1)
+				newItem.SetQuality(quality)
+			}
+			return newItem
 		}
-		return item
-	} else if strings.Contains(itemName, "|") {
-		parts := strings.Split(itemName, "|")
-		itemName = strings.TrimSpace(parts[0])
-		charges, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
-		setCharges = true
 	}
 
+	// default item creation from template without parameters
 	newItem := g.newItemFromName(itemName)
-	if setCharges {
-		newItem.SetCharges(charges)
-	}
-
 	return newItem
 }
 
@@ -813,4 +808,8 @@ func (i *Item) GetEffectParameters() Params {
 		parameters["damage"] = damageInterval.Roll()
 	}
 	return parameters
+}
+
+func (i *Item) SetQuality(quality int) {
+	i.qualityInPercent = special.Percentage(quality)
 }

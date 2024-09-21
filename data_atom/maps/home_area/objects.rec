@@ -1,34 +1,32 @@
 %rec: default
 
-Category: Transition
-Description: a man-hole
-Location: man_hole_west
-TargetMap: home_underground
-TargetLocation: man_hole_west
-Position: (9,9)
-
-Category: OpenDoor
-Description: a door
-Position: (58,3)
-
 Category: ClosedDoor
 Description: a closed door
-Position: (75,6)
+Position: (7,15)
 
 Category: UnknownContainer
-Description: doctor's stash
-item: gold | 750
-item: stimpak | 3
-Position: (3,2)
-
-Category: NamedLocation
-Identifier: taxi_driver
-Position: (57,20)
+Name: dead_drop
+Description: CONTRACTOR dead drop
+item: 10mm_jhp
+Position: (76,17)
 
 Category: LockedDoor
 Description: a door
 LockFlag: CHANGEME
 Position: (37,5)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (37,15)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (75,6)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (57,20)
 
 Category: Transition
 Description: a man-hole
@@ -41,19 +39,6 @@ Category: LockedDoor
 Description: a door
 LockFlag: home_keys
 Position: (62,9)
-
-Category: LockedDoor
-Description: a door
-LockFlag: CHANGEME
-Position: (37,15)
-
-Category: ClosedDoor
-Description: a closed door
-Position: (7,15)
-
-Category: NamedLocation
-Identifier: spawn
-Position: (62,14)
 
 Category: Terminal
 Name: Taxi
@@ -69,6 +54,31 @@ TargetMap: home_underground
 TargetLocation: secret_ladder
 Position: (19,6)
 
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (59,20)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (20,3)
+
+Category: OpenDoor
+Description: a door
+Position: (58,3)
+
+Category: UnknownContainer
+Description: doctor's stash
+item: gold(750)
+item: stimpak
+item: stimpak
+item: stimpak
+Position: (3,2)
+
+Category: ClosedDoor
+Description: a closed door
+Position: (73,5)
+
 Category: Terminal
 Description: a terminal
 Dialogue: home_terminal
@@ -79,18 +89,9 @@ Description: a door
 LockFlag: CHANGEME
 Position: (11,19)
 
-Category: NamedLocation
-Identifier: taxi_stand
-Position: (59,20)
-
 Category: ClosedDoor
 Description: a closed door
 Position: (11,13)
-
-Category: LockedDoor
-Description: a door
-LockFlag: CHANGEME
-Position: (20,3)
 
 Category: ClosedDoor
 Description: a closed door
@@ -100,13 +101,14 @@ Category: ClosedDoor
 Description: a closed door
 Position: (58,7)
 
-Category: ClosedDoor
-Description: a closed door
-Position: (73,5)
+Category: Transition
+Description: a man-hole
+Location: man_hole_west
+TargetMap: home_underground
+TargetLocation: man_hole_west
+Position: (9,9)
 
-Category: UnknownContainer
-Name: dead_drop
-Description: CONTRACTOR dead drop
-item: 10mm_jhp | 24
-Position: (76,17)
+Category: NamedLocation
+Identifier: spawn
+Position: (62,14)
 

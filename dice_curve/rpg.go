@@ -27,21 +27,26 @@ func SuccessRoll(effectiveSkill int) (rollResult int, result ResultType, marginO
 // SkillContest returns the winner of a skill contest between two contenders.
 // Will return 0 on draw (shouldn't happen (often)), 1 if contenderOne wins, and 2 if contenderTwo wins.
 func SkillContest(contenderOneEffectiveSkill, contenderTwoEffectiveSkill int) (winner int) {
-	_, rOne, _ := SuccessRoll(contenderOneEffectiveSkill)
-	_, rTwo, _ := SuccessRoll(contenderTwoEffectiveSkill)
+	rolleOne, rOne, _ := SuccessRoll(contenderOneEffectiveSkill)
+	rollTwo, rTwo, _ := SuccessRoll(contenderTwoEffectiveSkill)
+
 	maxTries := 100
 	for i := 0; i < maxTries; i++ {
-		if rOne == rTwo {
-			continue
-		}
-		if rOne.IsSuccess() && rTwo.IsFailure() {
+		if (rOne.IsSuccess() && rTwo.IsFailure()) || (rOne.IsCriticalSucces() && !rTwo.IsCriticalSucces()) {
 			return 1
 		}
-		if rOne.IsFailure() && rTwo.IsSuccess() {
+		if rOne.IsFailure() && rTwo.IsSuccess() || (!rOne.IsCriticalSucces() && rTwo.IsCriticalSucces()) {
 			return 2
 		}
-		_, rOne, _ = SuccessRoll(contenderOneEffectiveSkill)
-		_, rTwo, _ = SuccessRoll(contenderTwoEffectiveSkill)
+
+		if rolleOne > rollTwo {
+			return 1
+		} else if rolleOne < rollTwo {
+			return 2
+		}
+
+		rolleOne, rOne, _ = SuccessRoll(contenderOneEffectiveSkill)
+		rollTwo, rTwo, _ = SuccessRoll(contenderTwoEffectiveSkill)
 	}
 	return 0
 }

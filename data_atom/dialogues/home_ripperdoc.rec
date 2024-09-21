@@ -1,0 +1,268 @@
+%rec: OpeningBranch
+
+# Daniel Harker is the new Ripperdoc, who took over after he locked Julian away.
+# Julian Nox is the original Ripperdoc locked away in the cellar of the hospital.
+
+# When the game starts, Daniel is the Ripperdoc and Julian is locked away.
+
+cond: HasFlag('starter(money_collected)') && !HasFlag('Killed(daniel_harker)') && !HasFlag('Killed(julian_nox)')
+goto: BackAfterCollectingMoney
+
+cond: HasFlag('Killed(julian_nox)')
+goto: DanielAfterKillingJulian
+
+cond: HasFlag('Killed(daniel_harker)')
+goto: JulianAfterKillingDaniel
+
+cond: HasFlag('JobAccepted(starter)')
+goto: DanielAfterJobAccepted
+
+cond: true
+goto: DanielIsRipperdoc
+
+%rec: Nodes
+
+name: End
+npc: So long.
+effect: EndConversation
+
+name: BackAfterCollectingMoney
+npc: So, you are back. What do you want?
+#
+o_text: I need some medical supplies.
+o_goto: MedicalSupplies
+#
+o_text: I need some cyberware.
+o_goto: Cyberware
+#
+o_text: I need to know where I can find Jacob.
+o_cond: !HasFlag('LocationKnown(jacobs_home)')
+o_goto: JacobLocation
+#
+o_text: I am fine.
+o_goto: End
+
+name: DanielIsRipperdoc
+npc: I am Daniel Harker, the Ripperdoc. What can I do for you?
+#
+o_text: I need some medical supplies.
+o_goto: MedicalSupplies
+#
+o_text: I need some cyberware.
+o_goto: Cyberware
+#
+o_text: Do you know a guy named 'Jacob'?
+o_cond: HasFlag('JobRead(starter)') && !HasFlag('LocationKnown(jacobs_home)')
+o_goto: JacobQuestion
+#
+o_text: Nothing.
+o_goto: End
+
+name: MedicalSupplies
+npc: I am sorry, but I am out of supplies. We're restocking soon.
+effect: ReturnToPreviousNode
+
+name: Cyberware
+npc: Unfortunately, I am not able to install any cyberware at the moment.
++ I just took over the business and I am still setting up.
+effect: ReturnToPreviousNode
+
+name: JacobQuestion
+npc: Yes, I know Jacob. What's your business with him?
+#
+o_text: I am here to collect the money he owes you.
+o_cond: !HasFlag('starter(money_collected)')
+o_goto: JacobMoney
+#
+o_text: What is your relationship with him?
+o_goto: JacobRelationship
+#
+o_text: None of your business.
+o_goto: DanielIsRipperdoc
+
+name: JacobMoney
+npc: I see. I am sorry, but I don't have the money right now.
++ I will have it in a few days.
+#
+o_text: I will come back later.
+o_goto: DanielIsRipperdoc
+#
+o_text: I insist. I will take the money from you now.
+o_goto: JacobMoneyNow
+#
+o_text: Money or violence. Choose.
+o_goto: JacobMoneyNow
+#
+o_text: Maybe we can work something out.
+o_goto: JacobMoneyWorkOut
+
+name: JacobMoneyNow
+npc: I am sorry, alright. Here is the money. Please don't hurt me.
++ (Daniel gives you the money.)
+effect: GiveItemToPlayer('gold', 500)
+effect: SetFlag('starter(money_collected)')
+effect: SetFlag('Angered(daniel_harker)')
+#
+o_text: Thanks.
+o_goto: DanielIsRipperdoc
+
+name: JacobMoneyWorkOut
+npc: I could give a discount on some of my services, if you keep that bastard off my back.
+#
+o_text: I will think about it.
+o_goto: DanielIsRipperdoc
+#
+o_text: We have a deal.
+o_goto: AcceptDiscount
+#
+o_text: Fine for me, but Jacob needs to see at least *some* money.
+o_goto: HalfTheMoney
+#
+o_text: That's not enough.
+o_goto: WantMore
+
+name: HalfTheMoney
+npc: That's still a whole month's rent for me.
++ If that will keep him off my back, I will give it to you.
++ (Daniel gives you the money.)
+effect: GiveItemToPlayer('gold', 250)
+effect: SetFlag('starter(money_collected)')
+#
+o_text: Thanks.
+o_goto: DanielIsRipperdoc
+
+
+name: AcceptDiscount
+npc: Nice doing business with you.
+effect: SetFlag('Pleased(daniel_harker)')
+effect: SetFlag('Discount(daniel_harker)')
+#
+o_text: You're welcome.
+o_goto: DanielIsRipperdoc
+
+name: WantMore
+npc: I am sorry, but I can't give you more than that. I have a wife and kids to feed.
+#
+o_text: I will come back later.
+o_goto: DanielIsRipperdoc
+#
+o_text: My means of violence are not limited by morality. I want $1000 on this table in 5 seconds.
+o_cond: HasFlag('PlayerKillCount')
+o_goto: JacobDoubleThreat
+#
+o_text: I can see a list of solvent clients on your terminal. I am sure you can pay me $1000 right now.
+o_cond: GetStat('Perception') > 6
+o_goto: JacobTerminalThreat
+
+name: JacobDoubleThreat
+npc: Alright, alright. No need to get nasty.
++ (Daniel gives you the money.)
+effect: GiveItemToPlayer('gold', 1000)
+effect: SetFlag('starter(money_collected)')
+effect: SetFlag('Angered(daniel_harker)')
+#
+o_text: Nice doing business with you.
+o_goto: DanielIsRipperdoc
+
+name: JacobTerminalThreat
+npc: I see you are a smart one. Let's just keep this between us.
++ (Daniel gives you the money.)
+effect: GiveItemToPlayer('gold', 1000)
+effect: SetFlag('starter(money_collected)')
+effect: SetFlag('Angered(daniel_harker)')
+#
+o_text: Thanks.
+o_goto: DanielIsRipperdoc
+
+name: JacobRelationship
+npc: I know him from the old days, his full name is Jacob Thorne.
++ We used to be friends. However, he turned out to be a 'bad apple', if you know what I mean.\
++ He is a dangerous criminal. Better stay away from him.
+#
+o_text: Thanks.
+o_goto: DanielIsRipperdoc
+#
+o_text: I will take care of him.
+o_goto: JacobKill
+#
+o_text: Do you know where I can find him?
+o_goto: JacobLocation
+
+name: JacobKill
+npc: That may be a solution.. Usually, I don't condone violence, but in this case, I will make an exception.
++ I can offer you a discount on my services if you take care of him.
+#
+o_text: I will think about it.
+o_goto: DanielIsRipperdoc
+#
+o_text: We have a deal.
+o_goto: AcceptKillJacob
+#
+o_text: I can't do that.
+o_goto: DanielIsRipperdoc
+
+name: AcceptKillJacob
+npc: Good luck. You will need it.
++ (He marks the location of Jacob on your map.)
+effect: SetFlag('LocationKnown(jacobs_home)')
+#
+o_text: Thanks.
+o_goto: DanielIsRipperdoc
+
+name: JacobLocation
+npc: He lives in a small hut in the woods. You can't miss it.
++ (He marks the location on your map.)
+effect: SetFlag('LocationKnown(jacobs_home)')
+#
+o_text: Thanks.
+o_goto: DanielIsRipperdoc
+
+name: DanielAfterKillingJulian
+npc: Thanks for taking care of my little problem.
++ What can I do for you?
+#
+o_text: I need some medical supplies.
+o_goto: MedicalSupplies
+#
+o_text: I need some cyberware.
+o_goto: Cyberware
+#
+o_text: Do you know a guy named 'Jacob'?
+o_cond: HasFlag('JobRead(starter)')
+o_goto: JacobQuestion
+#
+o_text: Nothing.
+o_goto: End
+
+name: DanielAfterJobAccepted
+npc: (He looks a bit nervous.)
++ I'll take a wild guess and say you are here for the money.
+#
+o_text: Yes, I am.
+o_goto: JacobMoney
+#
+o_text: No, I am not.
+o_goto: DanielIsRipperdoc
+
+name: JulianAfterKillingDaniel
+npc: (He looks at you with joy.)
++ Thank you for freeing me. What can I do for you?
+#
+o_text: I need some medical supplies.
+o_goto: JulianMedicalSupplies
+#
+o_text: I need some cyberware.
+o_goto: JulianCyberware
+#
+o_text: Do you know a guy named 'Jacob'?
+o_cond: HasFlag('JobRead(starter)')
+o_goto: JulianJacobQuestion
+#
+o_text: Nothing.
+o_goto: End
+
+name: JulianJacobQuestion
+npc: I have no idea who you are talking about.
+#
+o_text: Alright.
+o_goto: JulianAfterKillingDaniel

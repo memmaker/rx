@@ -480,10 +480,16 @@ func EscapeKeyEvent() *tcell.EventKey {
 }
 
 func (u *UI) PlayMusic(fileName string) {
+	if !u.settings.AudioEnabled || !u.settings.MusicEnabled {
+		return
+	}
 	u.audioPlayer.StopAll()
-	u.audioPlayer.Stream(fileName)
+	u.audioPlayer.StreamLoop(fileName)
 }
 func (u *UI) PlayCue(cueName string) {
+	if !u.settings.AudioEnabled || !u.settings.SoundEffectsEnabled {
+		return
+	}
 	u.audioPlayer.PlayCue(cueName)
 }
 
@@ -2797,7 +2803,7 @@ func NewTextUI(settings *foundation.Configuration) *UI {
 		lastFrameStyle: make(map[geometry.Point]tcell.Style),
 	}
 	u.initCoreUI()
-	u.initAudio()
+	u.loadAudioSfx()
 	return u
 }
 
@@ -3345,7 +3351,10 @@ func (u *UI) openPipBoy() {
 	})
 }
 
-func (u *UI) initAudio() {
+func (u *UI) loadAudioSfx() {
+	if !u.settings.SoundEffectsEnabled && u.settings.AudioEnabled {
+		return
+	}
 	if !u.settings.AudioEnabled {
 		u.audioPlayer.Disable()
 		return
@@ -3466,6 +3475,9 @@ func (u *UI) showMainMenu() {
 func (u *UI) newGame() {
 	modeDialogue := OpenChoiceDialogue(u.application, u.pages, "Mode?", "Choose game mode", []string{"Save anytime", "Ironman"}, func(index int, choice string) {
 		if index == 0 || index == 1 {
+			if index == 1 {
+				u.game.SetIronMan()
+			}
 			u.moveInGame()
 		} else {
 			_, frontPanel := u.pages.GetFrontPanel()
@@ -3484,6 +3496,27 @@ func offsetVertically(primitive cview.Primitive, amount int) {
 }
 
 func (u *UI) OpenSystemMenu() {
+	if u.game.IsIronMan() {
+		u.OpenMenu([]foundation.MenuItem{
+			{
+				Name: "Save & Quit",
+				Action: func() {
+					u.game.SaveGame(path.Join(u.settings.SaveGameDir, "iron_man"))
+				},
+			},
+			{
+				Name: "Quit Game",
+				Action: func() {
+					u.AskForConfirmation("Really?", "Do you want to quit this game?", func(confirmed bool) {
+						if confirmed {
+							u.QuitGame()
+						}
+					})
+				},
+			},
+		})
+		return
+	}
 	u.OpenMenu([]foundation.MenuItem{
 		{
 			Name:   "Save Game",

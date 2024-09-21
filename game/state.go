@@ -22,19 +22,6 @@ type MapLoader interface {
 	LoadMap(mapName string) gridmap.MapLoadResult[*Actor, *Item, Object]
 }
 
-func (g *GameState) ApplyDialogueEffect(name string, args []string) {
-	switch name {
-	case "SetFlag":
-		flagName := strings.Trim(args[0], "'\" ")
-		g.gameFlags.SetFlag(flagName)
-		g.checkJournalAndRewards()
-	case "ClearFlag":
-		flagName := strings.Trim(args[0], "'\" ")
-		g.gameFlags.ClearFlag(flagName)
-	}
-	return
-}
-
 func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
 	actor.GetInventory().AddItem(item)
 	if item.IsEquippable() {
@@ -106,6 +93,7 @@ func (g *GameState) hasPaidWithCharge(user *Actor, item *Item) bool {
 
 func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 	if victim == g.Player {
+		g.msg(foundation.HiLite("You have died"))
 		g.QueueActionAfterAnimation(func() {
 			g.gameOver(causeOfDeath.String())
 		})
@@ -137,8 +125,17 @@ func (g *GameState) makeMapBloody(mapPos geometry.Point) {
 	if !g.currentMap().Contains(mapPos) {
 		return
 	}
-	bloodColorFgInt := rand.Intn(11) + 5
-	bloodColorBgInt := rand.Intn(11) + 5
+	var bloodColorFgInt int
+	var bloodColorBgInt int
+	if g.currentMap().IsTileWalkable(mapPos) { // blood on the floor is darker
+		// range 10-15
+		bloodColorFgInt = rand.Intn(6) + 10
+		bloodColorBgInt = rand.Intn(6) + 10
+	} else {
+		// range 5-10
+		bloodColorFgInt = rand.Intn(6) + 5
+		bloodColorBgInt = rand.Intn(6) + 5
+	}
 
 	currentTileIcon := g.currentMap().GetTileIconAt(mapPos)
 	g.currentMap().SetTileIcon(mapPos, currentTileIcon.WithBg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorBgInt))).WithFg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorFgInt))))

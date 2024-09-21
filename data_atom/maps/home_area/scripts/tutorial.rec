@@ -1,0 +1,59 @@
+%rec: definitions
+
+var: OLDMAN
+set: ActorWithName('grim_beard')
+
+%rec: outcomes
+
+if: IsActorDead(OLDMAN)
+do: AddChatter(OLDMAN, 'You\'ll regret this.')
+
+if: IsActorInCombatWithPlayer(OLDMAN)
+do: AddChatter(OLDMAN, 'Really? You want to fight me now?')
+
+if: IsActorInCombat(OLDMAN)
+do: AddChatter(OLDMAN, 'Just let me finish this here, real quick.')
+
+%rec: cancel
+
+if: true
+do: AddChatter(OLDMAN, 'Whatever.')
+
+%rec: frames
+
+if: true
+do: AddChatter(OLDMAN, 'Can you move? Try {{ .keys_move }} to move in any direction.')
+
+if: HasFlag('playerSteps')
+do: AddChatter(OLDMAN, 'Looks good. I guess you can put some clothes on now.')
+
+if: true
+do: AddChatter(OLDMAN, 'Here take these. It\'s {{ .keys_inventory }} to open your inventory.')
+do: ActorDropItem(OLDMAN, 'street_wear')
+
+if: HasItem('street_wear')
+do: AddChatter(OLDMAN, 'Then type the letter in front of the item to equip it.')
+
+if: HasArmorEquipped('street_wear')
+do: AddChatter(OLDMAN, 'Nice. Wait a second, use {{ .keys_wait }}.')
+
+if: true
+do: AddChatter(OLDMAN, 'This will also cancel most actions.')
+
+if: true
+do: AddChatter(OLDMAN, 'Try looking around with {{ .keys_look }} and then moving.')
+
+if: true
+do: AddChatter(OLDMAN, 'Perfect. Now, let\'s talk about combat.')
+
+if: true
+do: AddChatter(OLDMAN, 'There is the old dead drop at the side of the that tree.')
+
+if: true
+do: AddChatter(OLDMAN, 'I have left a bit of ammo there for you.')
+
+if: true
+do: AddChatter(OLDMAN, 'I also kept a mint condition 10mm by my bedside.')
+
+if: true
+do: AddChatter(OLDMAN, 'It\'s yours.')

@@ -531,6 +531,17 @@ func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []*Item {
 	return append(itemsToRemove, splitItems...)
 }
 
+func (i *Inventory) HasItemWithNameAndCount(name string, count int) bool {
+	for _, invItem := range i.items {
+		if invItem.GetInternalName() == name {
+			count -= invItem.GetStackSize()
+			if count <= 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
 func (i *Inventory) AddItems(player []*Item) {
 	for _, item := range player {
 		i.addItemInternally(item)

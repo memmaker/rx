@@ -155,20 +155,24 @@ func (b *Container) HasItemsWithName(name string, stackSize int) bool {
 	return stackSize <= 0
 }
 
-func (b *Container) RemoveItemsWithName(name string, count int) {
+func (b *Container) RemoveItemsWithName(name string, count int) []*Item {
+	var itemsRemoved []*Item
 	for i := 0; i < len(b.containedItems); i++ {
 		item := b.containedItems[i]
 		if item.GetInternalName() == name {
 			if item.GetStackSize() <= count {
 				b.containedItems = append(b.containedItems[:i], b.containedItems[i+1:]...)
+				itemsRemoved = append(itemsRemoved, item)
 				count -= item.GetStackSize()
 				i--
 			} else {
-				item.SetCharges(item.GetStackSize() - count)
-				return
+				splitItem := item.Split(count)
+				itemsRemoved = append(itemsRemoved, splitItem)
+				break
 			}
 		}
 	}
+	return itemsRemoved
 }
 
 func (b *Container) Has(item *Item) bool {
@@ -178,6 +182,12 @@ func (b *Container) Has(item *Item) bool {
 		}
 	}
 	return false
+}
+
+func (b *Container) AddItems(items []*Item) {
+	for _, item := range items {
+		b.AddItem(item)
+	}
 }
 
 func (g *GameState) openContainer(container *Container) {
@@ -234,10 +244,7 @@ func (g *GameState) stackTransfer(from ItemContainer, to ItemContainer, item *In
 			return
 		}
 
-		itemName := multiItem.GetInternalName()
-
-		splitItem := g.newItemFromName(itemName)
-		splitItem.SetCharges(splitAmount)
+		splitItem := multiItem.Split(splitAmount)
 
 		multiItem.SetCharges(totalAmount - splitAmount)
 

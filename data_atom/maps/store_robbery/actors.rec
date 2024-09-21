@@ -204,7 +204,7 @@ Foreground: light_gray_2
 Description: Master Trader
 Dialogue: store_robbery_merchant
 Equipment: key('storeBackRoom', 'Store key')
-Equipment: gold | 500
+Equipment: gold(500)
 LongDescription: 
 Age: 25
 BodyType: 0

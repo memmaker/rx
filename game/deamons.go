@@ -55,7 +55,7 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 	}
 
 	if !g.Player.IsHungry() && g.TurnsTaken()%healInterval == 0 && len(g.playerVisibleActorsByDistance()) == 0 {
-		if g.Player.NeedsHealing() {
+		if g.Player.IsWounded() {
 			g.Player.Heal(1)
 		} else {
 			//g.Player.AddFatiguePoints(1)
@@ -65,7 +65,7 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 	for i := len(g.currentMap().Actors()) - 1; i >= 0; i-- {
 		actor := g.currentMap().Actors()[i]
 		actor.AfterTurn()
-		if actor.HasFlag(special.FlagRegenerating) && actor.NeedsHealing() {
+		if actor.HasFlag(special.FlagRegenerating) && actor.IsWounded() {
 			actor.Heal(1)
 		}
 	}

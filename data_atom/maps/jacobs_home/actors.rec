@@ -47,9 +47,9 @@ DRExplosive: 25
 DRRadiation: 18
 DRPoison: 45
 SourceFile: 00000040.pro
-Equipment: gold | 600
-Equipment: 10mm_pistol | 1
-Equipment: 10mm_jhp | 24
-Equipment: street_wear | 1
+Equipment: gold(600)
+Equipment: 10mm_pistol
+Equipment: 10mm_jhp
+Equipment: street_wear
 Position: (50,9)
 

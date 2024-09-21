@@ -215,6 +215,14 @@ type GameState struct {
 	chatterCache map[*Actor]map[foundation.ChatterType][]EntriesWithCondition
 }
 
+func (g *GameState) SetIronMan() {
+	g.gameFlags.SetFlag("IronMan")
+}
+
+func (g *GameState) IsIronMan() bool {
+	return g.gameFlags.HasFlag("IronMan")
+}
+
 func (g *GameState) IsPlayerAndMapInitialized() bool {
 	return g.Player != nil && g.currentMap() != nil
 }
@@ -402,8 +410,8 @@ func (g *GameState) init() {
 
 	g.terminalGuesses = make(map[string][]string)
 
-	g.rewardTracker = NewRewardTracker(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec")), g.getConditionFuncs())
-	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getConditionFuncs())
+	g.rewardTracker = NewRewardTracker(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec")), g.getScriptFuncs())
+	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getScriptFuncs())
 	g.hookupJournalAndFlags()
 
 	g.scriptRunner = NewScriptRunner()
@@ -437,13 +445,8 @@ func (g *GameState) initPlayerAndMap() {
 			} else if field.Name == "mapLocation" {
 				spawnLocation = field.Value
 			} else if field.Name == "item" {
-				parts := field.AsList("|")
-				amount := parts[0].AsInt()
-				itemName := parts[1].Value
-				for i := 0; i < amount; i++ {
-					// these require icons to be loaded
-					g.giveAndTryEquipItem(g.Player, g.NewItemFromString(itemName))
-				}
+				itemName := field.Value
+				g.giveAndTryEquipItem(g.Player, g.NewItemFromString(itemName))
 			}
 		}
 	}
@@ -519,7 +522,7 @@ func (g *GameState) UIReady() {
 	g.moveIntoDungeon()
 	// ADD Banner
 	//g.ui.ShowTextFileFullscreen(path.Join("data","banner.txt"), g.moveIntoDungeon)
-	g.scriptRunner.CheckAndRunFrames()
+	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
 }
 
 // moveIntoDungeon requires the UI to be available. It will request a dungeon crawl UI
@@ -558,7 +561,7 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 
 	didCancel := g.ui.AnimatePending() // animate player actions..
 
-	g.scriptRunner.CheckAndRunFrames()
+	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
 
 	g.metronome.Tick()
 
@@ -788,7 +791,7 @@ func (g *GameState) advanceTimeAndTurn(duration time.Duration) {
 }
 func (g *GameState) advanceTime(duration time.Duration) {
 	g.gameTime = g.gameTime.AddDuration(duration)
-	g.scriptRunner.CheckAndRunFrames()
+	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
 	g.updatePlayerFoVAndApplyExploration()
 }
 
@@ -844,7 +847,7 @@ func (g *GameState) GetRandomChatter(talker *Actor, chatterType foundation.Chatt
 	if _, hasCached := g.chatterCache[talker]; !hasCached {
 		chatterFilePath := path.Join(g.config.DataRootDir, "dialogues", talker.chatterFile+".rec")
 		records := recfile.Read(fxtools.MustOpen(chatterFilePath))
-		g.chatterCache[talker] = NewChatterFromRecords(records, g.getConditionFuncs())
+		g.chatterCache[talker] = NewChatterFromRecords(records, g.getScriptFuncs())
 	}
 
 	chatterForActor = g.chatterCache[talker]
@@ -854,7 +857,9 @@ func (g *GameState) GetRandomChatter(talker *Actor, chatterType foundation.Chatt
 		for _, chatter := range chatterList {
 			if chatter.Condition == nil {
 				chosenChatter = chatter
-			} else if condition, err := chatter.Condition.Evaluate(nil); err == nil && condition.(bool) {
+			} else if condition, err := chatter.Condition.Evaluate(map[string]interface{}{
+				"NPC": talker,
+			}); err == nil && condition.(bool) {
 				chosenChatter = chatter
 				break
 			}

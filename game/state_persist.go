@@ -102,10 +102,10 @@ func (g *GameState) Load(directory string) {
 	journalFile := fxtools.MustOpen(path.Join(directory, "journal.rec"))
 	journalRecords := recfile.ReadMulti(journalFile)
 	journalFile.Close()
-	g.journal = NewJournalFromRecords(journalRecords, g.getConditionFuncs())
+	g.journal = NewJournalFromRecords(journalRecords, g.getScriptFuncs())
 
 	rewardsFile := fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec"))
-	g.rewardTracker = NewRewardTracker(rewardsFile, g.getConditionFuncs())
+	g.rewardTracker = NewRewardTracker(rewardsFile, g.getScriptFuncs())
 	g.rewardTracker.SetRewardsReceived(rewardsReceived)
 
 	// Loaded Map States
