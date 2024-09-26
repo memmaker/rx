@@ -1,0 +1,13 @@
+I will provide you with a branching dialogue file and I want you to complete it. It has some nodes missing.
+
+Missing nodes:
+  DrakeCyberware
+  DrakeMedicalSupplies
+
+
+Add them in the same fashion as you see the existing nodes implemented. I want you improvise text and and options but don't go overboard with adding new choices, just bring closure to the existing conversation. The text should be in the flavour of cyberpunk style setting, a world filled with crime.
+
+Don't repeat any of the text or dialogue I am giving to you.
+Do not provide any additional text output or explanations for what you are doing. Just provide me with the missing dialogue nodes I mentioned above in the text format you can deduce from the existing dialogue nodes.
+
+Here comes the existing but incomplete conversation:

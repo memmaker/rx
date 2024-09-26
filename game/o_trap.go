@@ -19,7 +19,7 @@ func (t *Trap) InitWithGameState(g *GameState) {
 		if t.isLoaded {
 			t.isLoaded = false
 			zapEffect := ZapEffectFromName(t.category.ZapEffect())
-			return zapEffect(g, nil, t.Position(), Params{})
+			return zapEffect(g, nil, t.Position(), foundation.Params{})
 		}
 		return nil
 	}

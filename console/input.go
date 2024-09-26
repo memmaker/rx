@@ -74,6 +74,9 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["rest"] = u.game.OpenRestMenu
 	u.commandTable["repair"] = u.game.OpenRepairMenu
 	u.commandTable["journal"] = u.game.OpenJournal
+
+	u.commandTable["toggle_run"] = u.game.PlayerToggleRun
+
 	u.commandTable["log"] = u.ShowLog
 	u.commandTable["monsters"] = u.ShowVisibleActors
 	u.commandTable["items"] = u.ShowVisibleItems
@@ -137,7 +140,6 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["attack"] = u.game.PlayerRangedAttack
 	u.commandTable["quick_attack"] = u.game.PlayerQuickRangedAttack
 
-	u.commandTable["switch_weapons"] = u.game.SwitchWeapons
 	u.commandTable["cycle_target_mode"] = u.game.CycleTargetMode
 	u.commandTable["apply_skill"] = u.game.PlayerApplySkill
 	u.commandTable["reload_weapon"] = u.game.PlayerReloadWeapon
@@ -170,6 +172,7 @@ func (u *UI) showKeyBindings() {
 		"items":             "Item List",
 		"help":              "Help",
 		"show_key_bindings": "Key Bindings",
+		"toggle_run":        "Toggle Run",
 		"north":             "North",
 		"south":             "South",
 		"west":              "West",
@@ -205,7 +208,6 @@ func (u *UI) showKeyBindings() {
 		"cycle_target_mode": "Cycle Weapon Mode",
 		"apply_skill":       "Apply Skill",
 		"reload_weapon":     "Reload Weapon",
-		"switch_weapons":    "Switch Weapons",
 		"apply":             "Apply",
 	}
 
@@ -231,6 +233,7 @@ func (u *UI) showKeyBindings() {
 		"run_southwest",
 		"run_southeast",
 		"run_direction",
+		"toggle_run",
 		"system_menu",
 		"quit",
 	}
@@ -243,7 +246,6 @@ func (u *UI) showKeyBindings() {
 		"pickup",
 		"cycle_target_mode",
 		"reload_weapon",
-		"switch_weapons",
 		"attack",
 		"quick_attack",
 		"look",

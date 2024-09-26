@@ -1,113 +1,23 @@
 package game
 
 import (
+	"RogueUI/foundation"
 	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
 	"strings"
 )
 
-type AttackMode struct {
-	Mode     special.TargetingMode
-	TUCost   int
-	MaxRange int
-	IsAimed  bool
-}
-
-func (m AttackMode) String() string {
-	if m.IsAimed {
-		return fmt.Sprintf("%s (Aimed)", m.Mode.ToString())
-	}
-	return m.Mode.ToString()
-}
-
-func (m AttackMode) IsThrow() bool {
-	return m.Mode == special.TargetingModeThrow
-}
-
-type AmmoInfo struct {
-	DamageFactor                    float64
-	ConditionFactor                 float64
-	SpreadFactor                    float64
-	BonusDamageAgainstActorWithTags map[special.ActorFlag]int
-	DTModifier                      int
-	BonusRadius                     int
-	RoundsInMagazine                int
-	CaliberIndex                    int
-}
-
-func (i AmmoInfo) Equals(other *AmmoInfo) bool {
-	return i.DamageFactor == other.DamageFactor &&
-		i.DTModifier == other.DTModifier &&
-		i.ConditionFactor == other.ConditionFactor &&
-		i.RoundsInMagazine == other.RoundsInMagazine &&
-		i.CaliberIndex == other.CaliberIndex &&
-		i.SpreadFactor == other.SpreadFactor &&
-		i.BonusRadius == other.BonusRadius &&
-		i.bonusDamageEquals(other.BonusDamageAgainstActorWithTags)
-}
-
-func (i AmmoInfo) IsValid() bool {
-	return i.DamageFactor != 0 && i.RoundsInMagazine > 0 && i.CaliberIndex > 0 && i.ConditionFactor != 0 && i.SpreadFactor != 0
-}
-
-func (i AmmoInfo) bonusDamageEquals(tags map[special.ActorFlag]int) bool {
-	if len(i.BonusDamageAgainstActorWithTags) != len(tags) {
-		return false
-	}
-	for tag, damage := range i.BonusDamageAgainstActorWithTags {
-		if tags[tag] != damage {
-			return false
-		}
-	}
-	return true
-}
-
-func GetAttackModes(targetModes [2]special.TargetingMode, tuCost [2]int, maxRange [2]int, noAim bool) []AttackMode {
-	var modes []AttackMode
-	if targetModes[0] != special.TargetingModeNone {
-		modes = append(modes, AttackMode{
-			Mode:     targetModes[0],
-			TUCost:   tuCost[0],
-			MaxRange: maxRange[0],
-			IsAimed:  false,
-		})
-		if !noAim && targetModes[0].IsAimable() {
-			modes = append(modes, AttackMode{
-				Mode:     targetModes[0],
-				TUCost:   tuCost[0] + 2,
-				MaxRange: maxRange[0],
-				IsAimed:  true,
-			})
-		}
-	}
-	if targetModes[1] != special.TargetingModeNone {
-		modes = append(modes, AttackMode{
-			Mode:     targetModes[1],
-			TUCost:   tuCost[1],
-			MaxRange: maxRange[1],
-			IsAimed:  false,
-		})
-		if !noAim && targetModes[1].IsAimable() {
-			modes = append(modes, AttackMode{
-				Mode:     targetModes[1],
-				TUCost:   tuCost[1] + 2,
-				MaxRange: maxRange[1],
-				IsAimed:  true,
-			})
-		}
-	}
-	return modes
-}
-
-type WeaponInfo struct {
+type Weapon struct {
+	*GenericItem
 	damageDice       fxtools.Interval
 	weaponType       WeaponType
 	skillUsed        special.Skill
 	magazineSize     int
-	loadedInMagazine *Item
+	loadedInMagazine *Ammo
 	burstRounds      int
 	caliberIndex     int
 	attackModes      []AttackMode
@@ -116,7 +26,104 @@ type WeaponInfo struct {
 	MinSTR           int
 }
 
-func (i *WeaponInfo) GobEncode() ([]byte, error) {
+func (i *Weapon) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
+	return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
+}
+func (i *Weapon) InventoryNameWithColors(colorCode string) string {
+	line := cview.Escape(i.Name())
+
+	line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), i.GetWeaponDamage().ShortString()))
+
+	statPairs := i.getStatPairsAsStrings()
+
+	if len(statPairs) > 0 {
+		line = fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|"))
+	}
+
+	lineWithColor := colorCode + line + "[-]"
+
+	qIcon := getQualityIcon(i.qualityInPercent)
+	lineWithColor = fmt.Sprintf("%s %s", qIcon, lineWithColor)
+
+	return lineWithColor
+}
+func (i *Weapon) LongNameWithColors(colorCode string) string {
+	weapon := i
+	attackMode := weapon.GetAttackMode(i.currentAttackModeIndex)
+	targetMode := attackMode.String()
+	timeNeeded := attackMode.TUCost
+	bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
+	line := cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, i.GetWeaponDamage().ShortString(), bullets))
+	return colorCode + line + "[-]"
+}
+
+func (i *Weapon) GetDegradationFactorOfAttack() float64 {
+	factor := 1.0
+	weapon := i
+	if i.IsRangedWeapon() && weapon.NeedsAmmo() && weapon.HasAmmo() {
+		ammo := weapon.GetLoadedAmmo()
+		ammoInfo := ammo
+		factor = ammoInfo.ConditionFactor
+	}
+	return factor
+}
+
+func (i *Weapon) IsEquippable() bool {
+	return true
+}
+func (i *Weapon) IsRepairable() bool {
+	return true
+}
+func (i *Weapon) IsWeapon() bool {
+	return true
+}
+
+func (i *Weapon) IsRangedWeapon() bool {
+	return i.weaponType.IsRanged()
+}
+
+func (i *Weapon) IsMeleeWeapon() bool {
+	return i.weaponType.IsMelee()
+}
+
+func (i *Weapon) GetEffectParameters() foundation.Params {
+	parameters := i.GenericItem.GetEffectParameters()
+	weapon := i
+	if !parameters.HasDamage() && i.IsWeapon() {
+		damageInterval := i.GetWeaponDamage()
+		parameters["damage_interval"] = damageInterval
+		parameters["damage"] = damageInterval.Roll()
+	}
+	if i.IsRangedWeapon() && weapon.NeedsAmmo() && weapon.HasAmmo() {
+		ammo := weapon.GetLoadedAmmo()
+		ammoInfo := ammo
+		if ammoInfo.BonusRadius > 0 {
+			parameters["bonus_radius"] = ammoInfo.BonusRadius
+		}
+	}
+	return parameters
+}
+
+func (i *Weapon) GetCurrentAttackMode() AttackMode {
+	return i.GetAttackMode(i.currentAttackModeIndex)
+}
+
+func (i *Weapon) CycleTargetMode() {
+	i.currentAttackModeIndex++
+	if i.currentAttackModeIndex >= len(i.attackModes) {
+		i.currentAttackModeIndex = 0
+	}
+}
+
+func (i *Weapon) IsLoadedWeapon() bool {
+	return i.IsWeapon() && i.IsLoaded()
+}
+
+func (i *Weapon) GetWeaponDamage() fxtools.Interval {
+	return i.getRawDamage().Scaled(i.qualityInPercent.Normalized())
+}
+
+func (i *Weapon) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 
@@ -168,7 +175,7 @@ func (i *WeaponInfo) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (i *WeaponInfo) GobDecode(data []byte) error {
+func (i *Weapon) GobDecode(data []byte) error {
 	decoder := gob.NewDecoder(bytes.NewReader(data))
 
 	// Decode each field of the struct in order
@@ -194,7 +201,7 @@ func (i *WeaponInfo) GobDecode(data []byte) error {
 	}
 
 	if hasAmmo {
-		i.loadedInMagazine = &Item{}
+		i.loadedInMagazine = &Ammo{}
 		if err := decoder.Decode(i.loadedInMagazine); err != nil {
 			return err
 		}
@@ -223,71 +230,71 @@ func (i *WeaponInfo) GobDecode(data []byte) error {
 	return nil
 }
 
-func (i *WeaponInfo) getRawDamage() fxtools.Interval {
+func (i *Weapon) getRawDamage() fxtools.Interval {
 	return i.damageDice
 }
 
-func (i *WeaponInfo) GetWeaponType() WeaponType {
+func (i *Weapon) GetWeaponType() WeaponType {
 	return i.weaponType
 }
 
-func (i *WeaponInfo) GetSkillUsed() special.Skill {
+func (i *Weapon) GetSkillUsed() special.Skill {
 	return i.skillUsed
 }
 
-func (i *WeaponInfo) GetCaliber() int {
+func (i *Weapon) GetCaliber() int {
 	return i.caliberIndex
 }
 
-func (i *WeaponInfo) BulletsNeededForFullClip() (int, string) {
+func (i *Weapon) BulletsNeededForFullClip() (int, string) {
 	if i.loadedInMagazine == nil {
 		return i.magazineSize, ""
 	}
 	ammoKind := i.loadedInMagazine
-	return i.magazineSize - i.GetLoadedBullets(), ammoKind.GetInternalName()
+	return i.magazineSize - i.GetLoadedBullets(), ammoKind.InternalName()
 }
 
-func (i *WeaponInfo) LoadAmmo(ammo *Item) *Item {
+func (i *Weapon) LoadAmmo(ammo *Ammo) *Ammo {
 	if i.loadedInMagazine == nil {
 		i.loadedInMagazine = ammo
 		return nil
 	}
 	if i.loadedInMagazine.CanStackWith(ammo) {
-		i.loadedInMagazine.Merge(ammo)
+		i.loadedInMagazine.MergeCharges(ammo)
 		return nil
 	}
 	oldAmmo := i.loadedInMagazine
 	i.loadedInMagazine = ammo
-	if oldAmmo.GetCharges() > 0 {
+	if oldAmmo.Charges() > 0 {
 		return oldAmmo
 	}
 	return nil
 }
 
-func (i *WeaponInfo) IsRanged() bool {
+func (i *Weapon) IsRanged() bool {
 	return i.weaponType.IsRanged()
 }
 
-func (i *WeaponInfo) IsMelee() bool {
+func (i *Weapon) IsMelee() bool {
 	return i.weaponType.IsMelee()
 }
 
-func (i *WeaponInfo) HasAmmo() bool {
+func (i *Weapon) HasAmmo() bool {
 	return i.GetLoadedBullets() > 0 || !i.NeedsAmmo()
 }
 
-func (i *WeaponInfo) GetLoadedBullets() int {
+func (i *Weapon) GetLoadedBullets() int {
 	if i.loadedInMagazine == nil {
 		return 0
 	}
-	return i.loadedInMagazine.GetCharges()
+	return i.loadedInMagazine.Charges()
 }
 
-func (i *WeaponInfo) GetMagazineSize() int {
+func (i *Weapon) GetMagazineSize() int {
 	return i.magazineSize
 }
 
-func (i *WeaponInfo) RemoveBullets(spent int) {
+func (i *Weapon) RemoveBullets(spent int) {
 	if i.loadedInMagazine == nil {
 		return
 	}
@@ -295,15 +302,15 @@ func (i *WeaponInfo) RemoveBullets(spent int) {
 	i.loadedInMagazine.RemoveCharges(spent)
 }
 
-func (i *WeaponInfo) GetBurstRounds() int {
+func (i *Weapon) GetBurstRounds() int {
 	return i.burstRounds
 }
 
-func (i *WeaponInfo) NeedsAmmo() bool {
+func (i *Weapon) NeedsAmmo() bool {
 	return i.caliberIndex > 0
 }
 
-func (i *WeaponInfo) GetFireAudioCue(mode special.TargetingMode) string {
+func (i *Weapon) GetFireAudioCue(mode special.TargetingMode) string {
 	strMode := "single"
 	if (mode == special.TargetingModeFireBurst || mode == special.TargetingModeFireFullAuto) &&
 		len(i.attackModes) > 1 {
@@ -312,48 +319,48 @@ func (i *WeaponInfo) GetFireAudioCue(mode special.TargetingMode) string {
 	return fmt.Sprintf("weapons/%d_%s", i.soundID, strMode)
 }
 
-func (i *WeaponInfo) GetReloadAudioCue() string {
+func (i *Weapon) GetReloadAudioCue() string {
 	return fmt.Sprintf("weapons/%d_reload", i.soundID)
 }
-func (i *WeaponInfo) GetOutOfAmmoAudioCue() string {
+func (i *Weapon) GetOutOfAmmoAudioCue() string {
 	return fmt.Sprintf("weapons/%d_out_of_ammo", i.soundID)
 }
-func (i *WeaponInfo) GetMissAudioCue() string {
+func (i *Weapon) GetMissAudioCue() string {
 	return fmt.Sprintf("weapons/%d_hit_surface", i.soundID)
 }
 
-func (i *WeaponInfo) GetDamageType() special.DamageType {
+func (i *Weapon) GetDamageType() special.DamageType {
 	return i.damageType
 }
 
-func (i *WeaponInfo) GetAttackMode(index int) AttackMode {
+func (i *Weapon) GetAttackMode(index int) AttackMode {
 	return i.attackModes[index]
 }
 
-func (i *WeaponInfo) IsValid() bool {
+func (i *Weapon) IsValid() bool {
 	return i.weaponType != WeaponTypeUnknown
 }
 
-func (i *WeaponInfo) GetLoadedAmmo() *Item {
+func (i *Weapon) GetLoadedAmmo() *Ammo {
 	return i.loadedInMagazine
 
 }
 
-func (i *WeaponInfo) IsLoaded() bool {
-	return i.loadedInMagazine != nil && i.loadedInMagazine.GetCharges() > 0
+func (i *Weapon) IsLoaded() bool {
+	return i.loadedInMagazine != nil && i.loadedInMagazine.Charges() > 0
 }
 
-func (i *WeaponInfo) Unload() *Item {
+func (i *Weapon) Unload() *Ammo {
 	ammo := i.loadedInMagazine
 	i.loadedInMagazine = nil
 	return ammo
 }
 
-func (i *WeaponInfo) GetTargetDTModifier() int {
+func (i *Weapon) GetTargetDTModifier() int {
 	if i.loadedInMagazine == nil {
 		return 0
 	}
-	ammo := i.loadedInMagazine.GetAmmo()
+	ammo := i.loadedInMagazine
 	if ammo == nil {
 		return 0
 	}
@@ -454,4 +461,58 @@ func WeaponTypeFromString(value string) WeaponType {
 	}
 	panic("Invalid weapon type: " + value)
 	return WeaponTypeUnknown
+}
+
+type AttackMode struct {
+	Mode     special.TargetingMode
+	TUCost   int
+	MaxRange int
+	IsAimed  bool
+}
+
+func (m AttackMode) String() string {
+	if m.IsAimed {
+		return fmt.Sprintf("%s (Aimed)", m.Mode.ToString())
+	}
+	return m.Mode.ToString()
+}
+
+func (m AttackMode) IsThrow() bool {
+	return m.Mode == special.TargetingModeThrow
+}
+func GetAttackModes(targetModes [2]special.TargetingMode, tuCost [2]int, maxRange [2]int, noAim bool) []AttackMode {
+	var modes []AttackMode
+	if targetModes[0] != special.TargetingModeNone {
+		modes = append(modes, AttackMode{
+			Mode:     targetModes[0],
+			TUCost:   tuCost[0],
+			MaxRange: maxRange[0],
+			IsAimed:  false,
+		})
+		if !noAim && targetModes[0].IsAimable() {
+			modes = append(modes, AttackMode{
+				Mode:     targetModes[0],
+				TUCost:   tuCost[0] + 2,
+				MaxRange: maxRange[0],
+				IsAimed:  true,
+			})
+		}
+	}
+	if targetModes[1] != special.TargetingModeNone {
+		modes = append(modes, AttackMode{
+			Mode:     targetModes[1],
+			TUCost:   tuCost[1],
+			MaxRange: maxRange[1],
+			IsAimed:  false,
+		})
+		if !noAim && targetModes[1].IsAimable() {
+			modes = append(modes, AttackMode{
+				Mode:     targetModes[1],
+				TUCost:   tuCost[1] + 2,
+				MaxRange: maxRange[1],
+				IsAimed:  true,
+			})
+		}
+	}
+	return modes
 }

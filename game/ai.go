@@ -2,7 +2,6 @@ package game
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
@@ -11,28 +10,28 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 	if enemy.timeEnergy <= 0 {
 		return 0 // not enough time energy for any action, spend 0 to accumulate
 	}
-	enemy.GetFlags().Increment(special.FlagTurnsSinceLastIdleChatter)
+	enemy.GetFlags().Increment(foundation.FlagTurnsSinceLastIdleChatter)
 
-	if enemy.HasFlag(special.FlagStun) {
-		stunCounter := enemy.GetFlags().Get(special.FlagStun)
+	if enemy.HasFlag(foundation.FlagStun) {
+		stunCounter := enemy.GetFlags().Get(foundation.FlagStun)
 		if stunCounter == 1 {
 			//g.msg(foundation.HiLite("%s is stunned", enemy.Name()))
-			enemy.GetFlags().Increment(special.FlagStun)
+			enemy.GetFlags().Increment(foundation.FlagStun)
 			return enemy.timeEnergy
 		} else {
 			//turnMod := stunCounter - 1
 			//_, result, _ := dice_curve.SuccessRoll(enemy.GetIntelligence() + turnMod)
 			if true { // result.IsFailure() { TODO
-				enemy.GetFlags().Increment(special.FlagStun)
+				enemy.GetFlags().Increment(foundation.FlagStun)
 				return enemy.timeEnergy
 			}
 			g.msg(foundation.HiLite("%s clears its mind", enemy.Name()))
 		}
 	}
 
-	if enemy.HasFlag(special.FlagHeld) {
+	if enemy.HasFlag(foundation.FlagHeld) {
 		if rand.Intn(10) == 0 {
-			enemy.GetFlags().Unset(special.FlagHeld)
+			enemy.GetFlags().Unset(foundation.FlagHeld)
 			g.msg(foundation.HiLite("%s breaks free", enemy.Name()))
 		} else {
 			return enemy.timeEnergy
@@ -53,12 +52,12 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		}
 	}
 
-	if enemy.HasFlag(special.FlagCanConfuse) && rand.Intn(4) == 0 {
-		enemy.GetFlags().Unset(special.FlagCanConfuse)
+	if enemy.HasFlag(foundation.FlagCanConfuse) && rand.Intn(4) == 0 {
+		enemy.GetFlags().Unset(foundation.FlagCanConfuse)
 		g.msg(foundation.HiLite("%s stops glowing red", enemy.Name()))
 	}
 
-	if enemy.HasFlag(special.FlagConfused) {
+	if enemy.HasFlag(foundation.FlagConfused) {
 		consequencesOfConfusion := g.actConfused(enemy)
 		if len(consequencesOfConfusion) > 0 {
 			g.ui.AddAnimations(consequencesOfConfusion)
@@ -66,9 +65,9 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		}
 	}
 
-	if enemy.HasFlag(special.FlagScared) {
+	if enemy.HasFlag(foundation.FlagScared) {
 		if !nearEachOther && rand.Intn(3) == 0 {
-			enemy.GetFlags().Unset(special.FlagScared)
+			enemy.GetFlags().Unset(foundation.FlagScared)
 			g.msg(foundation.HiLite("%s regains its courage", enemy.Name()))
 		} else {
 			newPos := g.currentMap().GetMoveOnPlayerDijkstraMap(enemy.Position(), false, g.playerDijkstraMap)
@@ -85,13 +84,13 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 	if !inCombat {
 
 		// IDLE STUFF HERE
-		if nearEachOther && g.canPlayerSee(enemy.Position()) && enemy.chatterFile != "" && enemy.GetFlags().Get(special.FlagTurnsSinceLastIdleChatter) > 40 && rand.Intn(4) == 0 {
+		if nearEachOther && g.canPlayerSee(enemy.Position()) && enemy.chatterFile != "" && enemy.GetFlags().Get(foundation.FlagTurnsSinceLastIdleChatter) > 40 && rand.Intn(4) == 0 {
 			if g.tryAddRandomChatter(enemy, foundation.ChatterBeingAroundPlayer) {
-				enemy.GetFlags().Unset(special.FlagTurnsSinceLastIdleChatter)
+				enemy.GetFlags().Unset(foundation.FlagTurnsSinceLastIdleChatter)
 			}
 		}
 
-		if enemy.HasFlag(special.FlagAnimal) {
+		if enemy.HasFlag(foundation.FlagAnimal) {
 			consequencesOfConfusion := g.actConfused(enemy)
 			if len(consequencesOfConfusion) > 0 {
 				g.ui.AddAnimations(consequencesOfConfusion)
@@ -103,12 +102,12 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 	}
 
 	losToPlayer := g.canPlayerSee(enemy.Position())
-	if !enemy.HasFlag(special.FlagAwareOfPlayer) && nearEachOther && losToPlayer && CanPerceive(enemy, g.Player) {
-		enemy.GetFlags().Set(special.FlagAwareOfPlayer)
+	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && nearEachOther && losToPlayer && CanPerceive(enemy, g.Player) {
+		enemy.GetFlags().Set(foundation.FlagAwareOfPlayer)
 		g.msg(foundation.HiLite("%s notices you", enemy.Name()))
 	}
 
-	if !enemy.HasFlag(special.FlagAwareOfPlayer) {
+	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) {
 		return enemy.timeEnergy
 	}
 
@@ -116,7 +115,7 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		return enemy.timeEnergy
 	}
 
-	wantToChase := nearEachOther || enemy.HasFlag(special.FlagChase)
+	wantToChase := nearEachOther || enemy.HasFlag(foundation.FlagChase)
 	if !wantToChase {
 		return enemy.timeEnergy
 	}
@@ -154,18 +153,18 @@ func (g *GameState) defaultBehaviour(enemy *Actor) int {
 
 	// has skills?
 	zaps := enemy.GetIntrinsicZapEffects()
-	canZap := len(zaps) > 0 && !enemy.HasFlag(special.FlagCancel)
+	canZap := len(zaps) > 0 && !enemy.HasFlag(foundation.FlagCancel)
 	if canZap && sameRoom { //rand.Intn(3) == 0 {
 		// zap
 		zap := zaps[rand.Intn(len(zaps))]
 		targetPos := g.Player.Position()
-		consequencesOfMonsterZap := g.actorInvokeZapEffect(enemy, zap, targetPos, Params{})
+		consequencesOfMonsterZap := g.actorInvokeZapEffect(enemy, zap, targetPos, foundation.Params{})
 		g.ui.AddAnimations(consequencesOfMonsterZap)
 		return enemy.timeNeededForActions()
 	}
 
 	aiUseEffects := enemy.GetIntrinsicUseEffects()
-	canUse := len(aiUseEffects) > 0 && !enemy.HasFlag(special.FlagCancel)
+	canUse := len(aiUseEffects) > 0 && !enemy.HasFlag(foundation.FlagCancel)
 	if canUse && sameRoom {
 		useEffect := aiUseEffects[rand.Intn(len(aiUseEffects))]
 		_, consequencesOfMonsterUseEffect := g.actorInvokeUseEffect(enemy, useEffect)
@@ -188,7 +187,7 @@ func (g *GameState) defaultBehaviour(enemy *Actor) int {
 
 func (g *GameState) actConfused(enemy *Actor) []foundation.Animation {
 	if rand.Intn(6) == 0 {
-		enemy.GetFlags().Unset(special.FlagConfused)
+		enemy.GetFlags().Unset(foundation.FlagConfused)
 	} else if rand.Intn(5) != 0 {
 		actionDirection := geometry.RandomDirection()
 		targetPos := enemy.Position().Add(actionDirection.ToPoint())

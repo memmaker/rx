@@ -13,14 +13,14 @@ import (
 func (g *GameState) GetRangedChanceToHitForUI(target foundation.ActorForUI) int {
 	defender := target.(*Actor)
 	attacker := g.Player
-	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandItem()
+	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
 	if !hasWeapon {
 		return 0
 	}
 	return g.getRangedChanceToHit(attacker, weapon, defender)
 }
 
-func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Item, defender *Actor) int {
+func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Weapon, defender *Actor) int {
 	var posInfos special.PosInfo
 	posInfos.ObstacleCount = 0
 	posInfos.Distance = g.currentMap().MoveDistance(attacker.Position(), defender.Position())
@@ -34,29 +34,33 @@ func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Item, 
 		posInfos.IlluminationPenalty = -40
 	}
 
-	weaponSkill := equippedWeapon.GetWeapon().GetSkillUsed()
+	weaponSkill := equippedWeapon.GetSkillUsed()
 
 	defenderIsHelpless := defender.IsSleeping() || defender.IsStunned() || defender.IsKnockedDown()
 
-	skillBonus := 0
 	minStrength := 0
-	if equippedWeapon != nil && equippedWeapon.IsRangedWeapon()  {
-		skillBonus = equippedWeapon.GetSkillBonus(weaponSkill)
-		minStrength = equippedWeapon.GetWeapon().MinSTR
+
+	if equippedWeapon != nil && equippedWeapon.IsRangedWeapon() {
+		//skillBonus = equippedWeapon.GetSkillBonus(weaponSkill)
+		minStrength = equippedWeapon.MinSTR
 	}
 
-	return special.RangedChanceToHit(posInfos, attacker.GetCharSheet(), weaponSkill, minStrength, defender.GetCharSheet(), defenderIsHelpless, skillBonus)
+	return special.RangedChanceToHit(posInfos, attacker.GetCharSheet(), weaponSkill, minStrength, defender.GetCharSheet(), defenderIsHelpless)
 }
 
-func (g *GameState) GetItemInMainHand() (foundation.ItemForUI, bool) {
-	return g.Player.GetEquipment().GetMainHandItem()
+func (g *GameState) GetItemInMainHand() (foundation.Item, bool) {
+	item, b := g.Player.GetEquipment().GetMainHandItem()
+	if !b {
+		return nil, false
+	}
+	return item.(foundation.Item), b
 }
 
 func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []fxtools.Tuple3[special.BodyPart, bool, int] {
 	victim := targeted.(*Actor)
-	mainHandItem, hasMainHandItem := g.Player.GetEquipment().GetMainHandItem()
+	mainHandItem, hasMainHandItem := g.Player.GetEquipment().GetMainHandWeapon()
 	if !hasMainHandItem {
-		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(special.Unarmed), true)
+		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(special.MeleeCombat), true)
 	}
 	baseChance := 0
 	isMelee := true
@@ -69,7 +73,7 @@ func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []
 	return victim.GetBodyPartsAndHitChances(baseChance, isMelee)
 }
 
-func (g *GameState) ItemAt(loc geometry.Point) foundation.ItemForUI {
+func (g *GameState) ItemAt(loc geometry.Point) foundation.Item {
 	if g.currentMap().Contains(loc) && g.currentMap().IsItemAt(loc) {
 		itemAt := g.currentMap().ItemAt(loc)
 		return itemAt
@@ -124,17 +128,17 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 	}
 
 	// special abilities
-	canSeeFood := g.Player.HasFlag(special.FlagSeeFood)
+	canSeeFood := g.Player.HasFlag(foundation.FlagSeeFood)
 	if g.IsFoodAt(loc) && canSeeFood {
 		return true
 	}
 
-	canSeeMonsters := g.Player.HasFlag(special.FlagSeeMonsters)
+	canSeeMonsters := g.Player.HasFlag(foundation.FlagSeeMonsters)
 	if g.currentMap().IsActorAt(loc) && canSeeMonsters {
 		return true
 	}
 
-	canSeeTraps := g.Player.HasFlag(special.FlagSeeTraps)
+	canSeeTraps := g.Player.HasFlag(foundation.FlagSeeTraps)
 	if g.currentMap().IsObjectAt(loc) && canSeeTraps {
 		objectAt := g.currentMap().ObjectAt(loc)
 		if objectAt.IsTrap() {
@@ -181,12 +185,8 @@ func (g *GameState) IsSomethingInterestingAtLoc(loc geometry.Point) bool {
 	return false
 }
 
-func (g *GameState) IsEquipped(items foundation.ItemForUI) bool {
-	itemStack, isItem := items.(*InventoryStack)
-	if !isItem {
-		return false
-	}
-	return g.Player.GetEquipment().IsEquipped(itemStack.First())
+func (g *GameState) IsEquipped(items foundation.Item) bool {
+	return g.Player.GetEquipment().IsEquipped(items)
 }
 
 func (g *GameState) GetVisibleActors() []foundation.ActorForUI {
@@ -199,7 +199,7 @@ func (g *GameState) GetVisibleEnemies() []*Actor {
 	})
 }
 
-func (g *GameState) GetHudFlags() map[special.ActorFlag]int {
+func (g *GameState) GetHudFlags() map[foundation.ActorFlag]int {
 	flagSet := g.Player.GetFlags().UnderlyingCopy()
 	equipFlags := g.Player.GetEquipment().GetAllFlags()
 	for flag, _ := range equipFlags {
@@ -221,8 +221,8 @@ func (g *GameState) GetHudStats() map[foundation.HudValue]int {
 	uiStats[foundation.HudHitPoints] = max(0, g.Player.GetHitPoints())
 	uiStats[foundation.HudHitPointsMax] = g.Player.GetHitPointsMax()
 
-	uiStats[foundation.HudFatiguePoints] = g.Player.GetCharSheet().GetActionPoints()
-	uiStats[foundation.HudFatiguePointsMax] = g.Player.GetCharSheet().GetActionPointsMax()
+	uiStats[foundation.HudActionPoints] = g.Player.GetCharSheet().GetActionPoints()
+	uiStats[foundation.HudActionPointsMax] = g.Player.GetCharSheet().GetActionPointsMax()
 
 	uiStats[foundation.HudDamageResistance] = g.Player.GetDamageResistance()
 
@@ -270,11 +270,11 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	return foundation.HiLite("You see %s", tileDesc)
 }
 
-func (g *GameState) GetInventoryForUI() []foundation.ItemForUI {
+func (g *GameState) GetInventoryForUI() []foundation.Item {
 	if g.Player == nil {
-		return []foundation.ItemForUI{}
+		return []foundation.Item{}
 	}
-	return itemStacksForUI(g.Player.GetInventory().StackedItemsWithFilter(func(item *Item) bool { return !item.IsAmmo() }))
+	return g.Player.GetInventory().StackedItemsWithFilter(func(item foundation.Item) bool { return !item.IsAmmo() })
 }
 
 func (g *GameState) MapAt(loc geometry.Point) textiles.TextIcon {
@@ -293,14 +293,14 @@ func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 
 	if mapCell.Actor != nil {
 		actor := *mapCell.Actor
-		if actor.IsVisible(g.Player.HasFlag(special.FlagSeeInvisible)) {
+		if actor.IsVisible(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
 			return foundation.EntityTypeActor
 		}
 	}
 
 	if mapCell.DownedActor != nil {
 		actor := *mapCell.DownedActor
-		if actor.IsVisible(g.Player.HasFlag(special.FlagSeeInvisible)) {
+		if actor.IsVisible(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
 			return foundation.EntityTypeDownedActor
 		}
 	}
@@ -340,18 +340,18 @@ func (g *GameState) playerVisibleActorsByDistance() []*Actor {
 	})
 	return enemies
 }
-func (g *GameState) GetVisibleItems() []foundation.ItemForUI {
-	return itemStacksForUI(StacksFromItems(g.playerVisibleItemsByDistance()))
+func (g *GameState) GetVisibleItems() []foundation.Item {
+	return g.playerVisibleItemsByDistance()
 }
-func (g *GameState) playerVisibleItemsByDistance() []*Item {
+func (g *GameState) playerVisibleItemsByDistance() []foundation.Item {
 	playerPos := g.Player.Position()
-	var visibleItems []*Item
+	var visibleItems []foundation.Item
 	for _, item := range g.currentMap().Items() {
 		if g.canPlayerSee(item.Position()) {
 			visibleItems = append(visibleItems, item)
 		}
 	}
-	slices.SortStableFunc(visibleItems, func(i, j *Item) int {
+	slices.SortStableFunc(visibleItems, func(i, j foundation.Item) int {
 		distI := geometry.Distance(playerPos, i.Position())
 		distJ := geometry.Distance(playerPos, j.Position())
 		return cmp.Compare(distI, distJ)
@@ -363,9 +363,9 @@ func (g *GameState) canPlayerSee(pos geometry.Point) bool {
 	return g.playerFoV.Visible(pos)
 }
 
-func (g *GameState) GetFilteredInventory(filter func(item *Item) bool) []foundation.ItemForUI {
+func (g *GameState) GetFilteredInventory(filter func(item foundation.Item) bool) []foundation.Item {
 	items := g.Player.GetInventory().StackedItemsWithFilter(filter)
-	return itemStacksForUI(items)
+	return items
 
 }
 

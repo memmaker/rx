@@ -4,6 +4,7 @@ import (
 	"RogueUI/foundation"
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
@@ -14,10 +15,13 @@ type Container struct {
 	*BaseObject
 
 	isKnown        bool
-	containedItems []*Item
+	containedItems []foundation.Item
 	show           func()
 	isPlayer       func(actor *Actor) bool
 	lockFlag       string
+
+	flagRemovalOf string
+	flagCall      func()
 }
 
 func (b *Container) GobEncode() ([]byte, error) {
@@ -78,9 +82,12 @@ func (b *Container) OnBump(actor *Actor) {
 	}
 }
 
-func (b *Container) RemoveItem(item *Item) {
+func (b *Container) RemoveItem(item foundation.Item) {
 	for i, containedItem := range b.containedItems {
 		if containedItem == item {
+			if b.flagCall != nil && b.flagRemovalOf != "" && containedItem.InternalName() == b.flagRemovalOf {
+				b.flagCall()
+			}
 			b.containedItems = append(b.containedItems[:i], b.containedItems[i+1:]...)
 			return
 		}
@@ -91,13 +98,11 @@ func (b *Container) ContainsItems() bool {
 	return len(b.containedItems) > 0
 }
 
-func (b *Container) AddItem(item *Item) {
-	if item.IsStackingWithCharges() {
-		for _, containedItem := range b.containedItems {
-			if containedItem.CanStackWith(item) {
-				containedItem.SetCharges(containedItem.GetCharges() + item.GetCharges())
-				return
-			}
+func (b *Container) AddItem(item foundation.Item) {
+	for _, containedItem := range b.containedItems {
+		if containedItem.CanStackWith(item) {
+			containedItem.SetCharges(containedItem.Charges() + item.Charges())
+			return
 		}
 	}
 	item.SetPosition(b.position)
@@ -127,6 +132,8 @@ func (g *GameState) NewContainer(rec recfile.Record) Object {
 			if item != nil {
 				container.AddItem(item)
 			}
+		case "flag_removal_of":
+			container.flagRemovalOf = field.Value
 		case "lockflag":
 			container.lockFlag = field.Value
 		}
@@ -141,12 +148,17 @@ func (b *Container) InitWithGameState(g *GameState) {
 	b.show = func() {
 		g.openContainer(b)
 	}
+	if b.flagRemovalOf != "" {
+		b.flagCall = func() {
+			g.gameFlags.Increment(fmt.Sprintf("ContainerRemoved(%s, %s)", b.internalName, b.flagRemovalOf))
+		}
+	}
 }
 
 func (b *Container) HasItemsWithName(name string, stackSize int) bool {
 	for _, item := range b.containedItems {
-		if item.GetInternalName() == name {
-			stackSize -= item.GetStackSize()
+		if item.InternalName() == name {
+			stackSize -= item.StackSize()
 			if stackSize <= 0 {
 				return true
 			}
@@ -155,15 +167,15 @@ func (b *Container) HasItemsWithName(name string, stackSize int) bool {
 	return stackSize <= 0
 }
 
-func (b *Container) RemoveItemsWithName(name string, count int) []*Item {
-	var itemsRemoved []*Item
+func (b *Container) RemoveItemsWithName(name string, count int) []foundation.Item {
+	var itemsRemoved []foundation.Item
 	for i := 0; i < len(b.containedItems); i++ {
 		item := b.containedItems[i]
-		if item.GetInternalName() == name {
-			if item.GetStackSize() <= count {
+		if item.InternalName() == name {
+			if item.StackSize() <= count {
 				b.containedItems = append(b.containedItems[:i], b.containedItems[i+1:]...)
 				itemsRemoved = append(itemsRemoved, item)
-				count -= item.GetStackSize()
+				count -= item.StackSize()
 				i--
 			} else {
 				splitItem := item.Split(count)
@@ -175,7 +187,7 @@ func (b *Container) RemoveItemsWithName(name string, count int) []*Item {
 	return itemsRemoved
 }
 
-func (b *Container) Has(item *Item) bool {
+func (b *Container) Has(item foundation.Item) bool {
 	for _, containedItem := range b.containedItems {
 		if containedItem == item {
 			return true
@@ -184,21 +196,21 @@ func (b *Container) Has(item *Item) bool {
 	return false
 }
 
-func (b *Container) AddItems(items []*Item) {
+func (b *Container) AddItems(items []foundation.Item) {
 	for _, item := range items {
 		b.AddItem(item)
 	}
 }
 
 func (g *GameState) openContainer(container *Container) {
-	containerItems := itemStacksForUI(StackedItemsWithFilter(container.containedItems, func(item *Item) bool { return true }))
-	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
+	containerItems := StackedFilteredAndSortedItems(container.containedItems, func(item foundation.Item) bool { return true })
+	playerItems := g.Player.GetInventory().Items()
 
-	transferToPlayer := func(itemTaken foundation.ItemForUI, amount int) {
+	transferToPlayer := func(itemTaken foundation.Item, amount int) {
 		itemName := itemTaken.Name()
 
 		if amount > 0 {
-			g.stackTransfer(container, g.Player.GetInventory(), itemTaken.(*InventoryStack), amount)
+			g.stackTransfer(container, g.Player.GetInventory(), itemTaken, amount)
 
 			g.ui.PlayCue("world/pickup")
 
@@ -207,11 +219,11 @@ func (g *GameState) openContainer(container *Container) {
 
 		g.openContainer(container)
 	}
-	transferToContainer := func(itemTaken foundation.ItemForUI, amount int) {
+	transferToContainer := func(itemTaken foundation.Item, amount int) {
 		itemName := itemTaken.Name()
 
 		if amount > 0 {
-			g.stackTransfer(g.Player.GetInventory(), container, itemTaken.(*InventoryStack), amount)
+			g.stackTransfer(g.Player.GetInventory(), container, itemTaken, amount)
 
 			g.ui.PlayCue("world/drop")
 
@@ -224,37 +236,29 @@ func (g *GameState) openContainer(container *Container) {
 }
 
 type ItemContainer interface {
-	AddItem(item *Item)
-	RemoveItem(item *Item)
+	AddItem(item foundation.Item)
+	RemoveItem(item foundation.Item)
 }
 
-func (g *GameState) stackTransfer(from ItemContainer, to ItemContainer, item *InventoryStack, splitAmount int) {
+func (g *GameState) stackTransfer(from ItemContainer, to ItemContainer, item foundation.Item, splitAmount int) {
 	if splitAmount == 0 {
 		return
 	}
-	if len(item.GetItems()) == 1 && item.First().IsMultipleStacks() {
-		multiItem := item.First()
-		totalAmount := multiItem.GetStackSize()
 
-		splitAmount = min(splitAmount, totalAmount)
+	multiItem := item
+	totalAmount := multiItem.StackSize()
 
-		if splitAmount == totalAmount {
-			from.RemoveItem(multiItem)
-			to.AddItem(multiItem)
-			return
-		}
+	splitAmount = min(splitAmount, totalAmount)
 
-		splitItem := multiItem.Split(splitAmount)
-
-		multiItem.SetCharges(totalAmount - splitAmount)
-
-		to.AddItem(splitItem)
-	} else {
-		splitAmount = min(splitAmount, len(item.GetItems()))
-		for i := 0; i < splitAmount; i++ {
-			itemToMove := item.GetItems()[i]
-			from.RemoveItem(itemToMove)
-			to.AddItem(itemToMove)
-		}
+	if splitAmount == totalAmount {
+		from.RemoveItem(multiItem)
+		to.AddItem(multiItem)
+		return
 	}
+
+	splitItem := multiItem.Split(splitAmount)
+
+	multiItem.SetCharges(totalAmount - splitAmount)
+
+	to.AddItem(splitItem)
 }

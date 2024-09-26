@@ -12,9 +12,10 @@ import (
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"math/rand"
+	"strings"
 )
 
-type Item struct {
+type GenericItem struct {
 	description  string
 	internalName string
 	position     geometry.Point
@@ -22,19 +23,16 @@ type Item struct {
 
 	qualityInPercent special.Percentage
 
-	weapon        *WeaponInfo
-	armor         *ArmorInfo
-	ammo          *AmmoInfo
 	useEffectName string
 	zapEffectName string
-	charges       int
 
-	stat       special.Stat
-	statBonus  int
-	skill      special.Skill
-	skillBonus int
+	stackSize int
 
-	equipFlag    special.ActorFlag
+	charges int
+
+	statChanges StatChange
+
+	equipFlag    foundation.ActorFlag
 	thrownDamage fxtools.Interval
 	tags         foundation.ItemTags
 	textFile     string
@@ -51,35 +49,52 @@ type Item struct {
 	cost                   int
 	posHandler             func() geometry.Point
 	alive                  bool
-	effectParameters       Params
+	effectParameters       foundation.Params
+	invIndex               int
 }
 
-func (i *Item) String() string {
+func (i *GenericItem) SetInventoryIndex(index int) {
+	i.invIndex = index
+}
+func (i *GenericItem) AddStacks(item foundation.Item) {
+	i.stackSize += item.StackSize()
+}
+
+func (i *GenericItem) IsStackable() bool {
+	return false
+}
+func (i *GenericItem) IsRepairable() bool {
+	return false
+}
+func (i *GenericItem) Quality() special.Percentage {
+	return i.qualityInPercent
+}
+
+func (i *GenericItem) String() string {
 	return fmt.Sprintf("Item: %s(%d)", i.internalName, i.charges)
 }
 
-func (i *Item) ShouldActivate(tickCount int) bool {
+func (i *GenericItem) ShouldActivate(tickCount int) bool {
 	return i.charges == tickCount
 }
 
-func (i *Item) IsAlive(tickCount int) bool {
+func (i *GenericItem) IsAlive(tickCount int) bool {
 	return tickCount <= i.charges && i.alive
 }
 
-func (i *Item) IsMultipleStacks() bool {
-	return i.charges > 1 &&
-		(i.IsStackingWithCharges())
+func (i *GenericItem) IsMultipleStacks() bool {
+	return i.stackSize > 1
 }
 
-func (i *Item) GetStackSize() int {
+func (i *GenericItem) StackSize() int {
 	if i.IsMultipleStacks() {
-		return i.charges
+		return i.stackSize
 	}
 	return 1
 }
 
 // GobEncode encodes the Item struct into a byte slice.
-func (i *Item) GobEncode() ([]byte, error) {
+func (i *GenericItem) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 
@@ -100,28 +115,6 @@ func (i *Item) GobEncode() ([]byte, error) {
 		return nil, err
 	}
 
-	conditionalEncode := func(cond bool, value any) error {
-		if cond {
-			err := encoder.Encode(true)
-			if err != nil {
-				return err
-			}
-			return encoder.Encode(value)
-		} else {
-			return encoder.Encode(false)
-		}
-	}
-
-	if err := conditionalEncode(i.weapon != nil, i.weapon); err != nil {
-		return nil, err
-	}
-	if err := conditionalEncode(i.armor != nil, i.armor); err != nil {
-		return nil, err
-	}
-	if err := conditionalEncode(i.ammo != nil, i.ammo); err != nil {
-		return nil, err
-	}
-
 	if err := encoder.Encode(i.useEffectName); err != nil {
 		return nil, err
 	}
@@ -132,16 +125,7 @@ func (i *Item) GobEncode() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := encoder.Encode(i.stat); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.statBonus); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.skill); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.skillBonus); err != nil {
+	if err := encoder.Encode(i.statChanges); err != nil {
 		return nil, err
 	}
 
@@ -194,7 +178,7 @@ func (i *Item) GobEncode() ([]byte, error) {
 }
 
 // GobDecode decodes a byte slice into an Item struct.
-func (i *Item) GobDecode(data []byte) error {
+func (i *GenericItem) GobDecode(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
 
@@ -215,31 +199,6 @@ func (i *Item) GobDecode(data []byte) error {
 		return err
 	}
 
-	conditionalDecode := func(value any) error {
-		hasComponent := false
-		if err := decoder.Decode(&hasComponent); err != nil {
-			return err
-		}
-		if hasComponent {
-			if err := decoder.Decode(value); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	if err := conditionalDecode(&i.weapon); err != nil {
-		return err
-	}
-
-	if err := conditionalDecode(&i.armor); err != nil {
-		return err
-	}
-
-	if err := conditionalDecode(&i.ammo); err != nil {
-		return err
-	}
-
 	if err := decoder.Decode(&i.useEffectName); err != nil {
 		return err
 	}
@@ -250,16 +209,7 @@ func (i *Item) GobDecode(data []byte) error {
 		return err
 	}
 
-	if err := decoder.Decode(&i.stat); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.statBonus); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.skill); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.skillBonus); err != nil {
+	if err := decoder.Decode(&i.statChanges); err != nil {
 		return err
 	}
 
@@ -311,7 +261,7 @@ func (i *Item) GobDecode(data []byte) error {
 	return nil
 }
 
-func (g *GameState) NewItemFromString(itemName string) *Item {
+func (g *GameState) NewItemFromString(itemName string) foundation.Item {
 	if fxtools.LooksLikeAFunction(itemName) {
 		name, args := fxtools.GetNameAndArgs(itemName)
 		switch name {
@@ -321,11 +271,11 @@ func (g *GameState) NewItemFromString(itemName string) *Item {
 			return NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
 		default: // parametric item name(charges, quality)
 			newItem := g.newItemFromName(name)
-			charges := args.GetInt(0)
-			newItem.SetCharges(charges)
+			count := args.GetInt(0)
+			newItem.SetCharges(count)
 			if len(args) > 1 {
 				quality := args.GetInt(1)
-				newItem.SetQuality(quality)
+				newItem.SetQuality(special.Percentage(quality))
 			}
 			return newItem
 		}
@@ -333,10 +283,13 @@ func (g *GameState) NewItemFromString(itemName string) *Item {
 
 	// default item creation from template without parameters
 	newItem := g.newItemFromName(itemName)
+	if newItem.IsRepairable() && newItem.Quality() == -1 {
+		newItem.SetQuality(special.Percentage(rand.Intn(90) + 10))
+	}
 	return newItem
 }
 
-func (g *GameState) newItemFromName(itemName string) *Item {
+func (g *GameState) newItemFromName(itemName string) foundation.Item {
 	if itemName == "gold" {
 		return g.NewGold(1)
 	}
@@ -354,8 +307,8 @@ func (g *GameState) newItemFromName(itemName string) *Item {
 	}
 	return newItem
 }
-func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Item {
-	return &Item{
+func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *GenericItem {
+	return &GenericItem{
 		description:  description,
 		internalName: fileName,
 		category:     foundation.ItemCategoryReadables,
@@ -363,8 +316,8 @@ func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Item
 		icon:         icon,
 	}
 }
-func NewKey(keyID, description string, icon textiles.TextIcon) *Item {
-	return &Item{
+func NewKey(keyID, description string, icon textiles.TextIcon) *GenericItem {
+	return &GenericItem{
 		description:  description,
 		internalName: keyID,
 		lockFlag:     keyID,
@@ -374,67 +327,67 @@ func NewKey(keyID, description string, icon textiles.TextIcon) *Item {
 	}
 }
 
-func (i *Item) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
+func (i *GenericItem) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
 	return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
 }
 
-func (i *Item) Shortcut() rune {
-	return -1
+func (i *GenericItem) Shortcut() rune {
+	return foundation.ShortCutFromIndex(i.invIndex)
 }
 
-func (i *Item) DisplayLength() int {
+func (i *GenericItem) DisplayLength() int {
 	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut(""))
 }
 
-func (i *Item) GetListInfo() string {
-	return fmt.Sprintf("%s", i.description)
+func (i *GenericItem) Description() string {
+	return i.description
 }
 
-func (i *Item) LongNameWithColors(colorCode string) string {
+func (i *GenericItem) LongNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
-	if i.IsWeapon() {
-		weapon := i.weapon
-		attackMode := weapon.GetAttackMode(i.currentAttackModeIndex)
-		targetMode := attackMode.String()
-		timeNeeded := attackMode.TUCost
-		bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
-		line = cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, i.GetWeaponDamage().ShortString(), bullets))
-	}
-	if i.IsArmor() {
-		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.GetArmorProtectionValueAsString()))
-	}
 	return colorCode + line + "[-]"
 }
 
-func (i *Item) InventoryNameWithColors(colorCode string) string {
+func (i *GenericItem) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 
-	if i.IsWeapon() {
-		line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), i.GetWeaponDamage().ShortString()))
-	}
-	if i.IsArmor() {
-		line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.GetArmorProtectionValueAsString()))
-	}
-	if i.IsAmmo() {
-		line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetCharges()))
-	}
+	statPairs := i.getStatPairsAsStrings()
 
-	if i.statBonus != 0 {
-		line = fmt.Sprintf("%s [%+d %s]", line, i.statBonus, i.stat.ToShortString())
-	}
-
-	if i.skillBonus != 0 {
-		line = fmt.Sprintf("%s [%+d %s]", line, i.skillBonus, i.skill.ToShortString())
+	if len(statPairs) > 0 {
+		line = fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|"))
 	}
 
 	lineWithColor := colorCode + line + "[-]"
 
-	if i.IsWeapon() || i.IsArmor() {
-		qIcon := getQualityIcon(i.qualityInPercent)
-		lineWithColor = fmt.Sprintf("%s %s", qIcon, lineWithColor)
+	return lineWithColor
+}
+
+func (i *GenericItem) getStatPairsAsStrings() []string {
+	var statPairs []string
+	if len(i.statChanges.StatChanges) > 0 {
+		for stat := special.Stat(0); stat < special.StatCount; stat++ {
+			if chg, hasChg := i.statChanges.StatChanges[stat]; hasChg {
+				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, stat.ToShortString()))
+			}
+		}
 	}
 
-	return lineWithColor
+	if len(i.statChanges.SkillChanges) > 0 {
+		for skill := special.Skill(0); skill < special.SkillCount; skill++ {
+			if chg, hasChg := i.statChanges.SkillChanges[skill]; hasChg {
+				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, skill.ToShortString()))
+			}
+		}
+	}
+
+	if len(i.statChanges.DerivedStatChanges) > 0 {
+		for stat := special.DerivedStat(0); stat < special.DerivedStatCount; stat++ {
+			if chg, hasChg := i.statChanges.DerivedStatChanges[stat]; hasChg {
+				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, stat.ToShortString()))
+			}
+		}
+	}
+	return statPairs
 }
 
 func getQualityIcon(quality special.Percentage) string {
@@ -468,18 +421,18 @@ func getQualityIcon(quality special.Percentage) string {
 	return fmt.Sprintf("%s%s[-]", colorCode, char)
 }
 
-func (i *Item) SetPosition(pos geometry.Point) {
+func (i *GenericItem) SetPosition(pos geometry.Point) {
 	i.position = pos
 }
 
-func (i *Item) Position() geometry.Point {
+func (i *GenericItem) Position() geometry.Point {
 	if i.posHandler != nil {
 		return i.posHandler()
 	}
 	return i.position
 }
 
-func (i *Item) Name() string {
+func (i *GenericItem) Name() string {
 	name := i.description
 	if i.IsGold() {
 		name = fmt.Sprintf("$%d", i.charges)
@@ -488,190 +441,153 @@ func (i *Item) Name() string {
 	return name
 }
 
-func (i *Item) IsThrowable() bool {
+func (i *GenericItem) IsThrowable() bool {
 	return true
 }
 
-func (i *Item) IsUsableOrZappable() bool {
+func (i *GenericItem) IsUsableOrZappable() bool {
 	return i.useEffectName != "" || i.zapEffectName != ""
 }
 
-func (i *Item) IsReadable() bool {
+func (i *GenericItem) IsReadable() bool {
 	isRealText := i.IsBook()
 	isSkillBook := i.IsSkillBook()
 	return isRealText || isSkillBook
 }
 
-func (i *Item) IsBook() bool {
+func (i *GenericItem) IsBook() bool {
 	return i.textFile != "" || i.text != ""
 }
 
-func (i *Item) IsSkillBook() bool {
-	return i.skillBonus != 0 && i.category == foundation.ItemCategoryReadables
+func (i *GenericItem) IsSkillBook() bool {
+	return len(i.statChanges.SkillChanges) == 1 &&
+		len(i.statChanges.StatChanges) == 0 &&
+		len(i.statChanges.DerivedStatChanges) == 0 &&
+		i.category == foundation.ItemCategoryReadables
 }
 
-func (i *Item) IsUsable() bool {
+func (i *GenericItem) IsUsable() bool {
 	return i.useEffectName != ""
 }
 
-func (i *Item) GetUseEffectName() string {
+func (i *GenericItem) UseEffect() string {
 	return i.useEffectName
 }
 
-func (i *Item) GetZapEffectName() string {
+func (i *GenericItem) ZapEffect() string {
 	return i.zapEffectName
 }
 
-func (i *Item) IsZappable() bool {
+func (i *GenericItem) IsZappable() bool {
 	return i.zapEffectName != ""
 }
 
-func (i *Item) Color() color.RGBA {
+func (i *GenericItem) Color() color.RGBA {
 	return color.RGBA{255, 255, 255, 255}
 }
 
-func (i *Item) CanStackWith(other *Item) bool {
-	if i.description != other.description || i.category != other.category {
+func (i *GenericItem) CanStackWith(other foundation.Item) bool {
+	if i.description != other.Description() || i.category != other.Category() {
 		return false
 	}
 
-	if i.internalName != other.internalName {
+	if i.internalName != other.InternalName() {
 		return false
 	}
 	if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() {
 		return false
 	}
 
-	if i.useEffectName != other.useEffectName || i.zapEffectName != other.zapEffectName {
+	if i.useEffectName != other.UseEffect() || i.zapEffectName != other.ZapEffect() {
 		return false
 	}
 
-	if i.category == foundation.ItemCategoryGold && other.category == foundation.ItemCategoryGold {
+	if i.category == foundation.ItemCategoryGold && other.Category() == foundation.ItemCategoryGold {
 		return true
 	}
 
-	if i.IsAmmo() && other.IsAmmo() && i.GetAmmo().Equals(other.GetAmmo()) {
-		return true
-	}
-
-	if i.charges != other.charges {
+	if i.charges != other.Charges() {
 		return false
 	}
 
 	return true
 }
 
-func (i *Item) SlotName() foundation.EquipSlot {
-	switch {
-	case i.IsArmor():
-		return foundation.SlotNameArmorTorso
-	case i.IsWeapon():
-		return foundation.SlotNameMainHand
-	}
-	return foundation.SlotNameNotEquippable
+func (i *GenericItem) IsEquippable() bool {
+	return false
 }
 
-func (i *Item) IsEquippable() bool {
-	return i.IsWeapon() || i.IsArmor()
+func (i *GenericItem) IsMeleeWeapon() bool {
+	return false
 }
 
-func (i *Item) IsMeleeWeapon() bool {
-	return i.IsWeapon() && i.GetWeapon().IsMelee()
+func (i *GenericItem) IsRangedWeapon() bool {
+	return false
 }
 
-func (i *Item) IsRangedWeapon() bool {
-	return i.IsWeapon() && i.GetWeapon().IsRanged()
+func (i *GenericItem) IsArmor() bool {
+	return false
 }
 
-func (i *Item) IsArmor() bool {
-	return i.armor != nil
+func (i *GenericItem) IsWeapon() bool {
+	return false
 }
 
-func (i *Item) IsWeapon() bool {
-	return i.weapon != nil
-}
-
-func (i *Item) GetCategory() foundation.ItemCategory {
+func (i *GenericItem) Category() foundation.ItemCategory {
 	return i.category
 }
 
-func (i *Item) GetWeapon() *WeaponInfo {
-	return i.weapon
-}
-
-func (i *Item) GetArmor() *ArmorInfo {
-	return i.armor
-}
-
-func (i *Item) IsGold() bool {
+func (i *GenericItem) IsGold() bool {
 	return i.category == foundation.ItemCategoryGold
 }
 
-func (i *Item) GetCharges() int {
+func (i *GenericItem) Charges() int {
 	return i.charges
 }
 
-func (i *Item) IsFood() bool {
+func (i *GenericItem) IsFood() bool {
 	return i.category == foundation.ItemCategoryFood
 }
 
-func (i *Item) GetInternalName() string {
+func (i *GenericItem) IsConsumable() bool {
+	return i.category == foundation.ItemCategoryFood || i.category == foundation.ItemCategoryConsumables
+}
+func (i *GenericItem) IsDrug() bool {
+	return i.charges > 0 && i.category == foundation.ItemCategoryConsumables && (len(i.statChanges.StatChanges) > 0 || len(i.statChanges.SkillChanges) > 0 || len(i.statChanges.DerivedStatChanges) > 0)
+}
+
+func (i *GenericItem) InternalName() string {
 	return i.internalName
 }
 
-func (i *Item) GetStatBonus(stat special.Stat) int {
-
-	if i.stat == stat {
-		return i.statBonus
-	}
-	return 0
-}
-func (i *Item) GetSkillBonus(skill special.Skill) int {
-	if i.skill == skill {
-		return i.skillBonus
-	}
-	return 0
-}
-func (i *Item) GetEquipFlag() special.ActorFlag {
+func (i *GenericItem) GetEquipFlag() foundation.ActorFlag {
 	return i.equipFlag
 }
 
-func (i *Item) IsMissile() bool {
-	return i.IsWeapon() && i.GetWeapon().GetWeaponType().IsMissile()
-}
-
-func (i *Item) GetThrowDamage() fxtools.Interval {
+func (i *GenericItem) GetThrowDamage() fxtools.Interval {
 	return i.thrownDamage
 }
 
-func (i *Item) ConsumeCharge() {
+func (i *GenericItem) ConsumeCharge() {
 	i.charges--
 }
 
-func (i *Item) SetCharges(amount int) {
+func (i *GenericItem) SetCharges(amount int) {
 	i.charges = amount
 }
 
-func (i *Item) AfterEquippedTurn() {
+func (i *GenericItem) AfterEquippedTurn() {
 
 }
 
-func (i *Item) IsAmmo() bool {
-	return i.ammo != nil
-}
-
-func (i *Item) IsAmmoOfCaliber(ammo int) bool {
-	return i.IsAmmo() && i.GetAmmo().CaliberIndex == ammo
-}
-
-func (i *Item) RemoveCharges(spent int) {
+func (i *GenericItem) RemoveCharges(spent int) {
 	i.charges -= spent
 	if i.charges < 0 {
 		i.charges = 0
 	}
 }
 
-func (i *Item) Split(bullets int) *Item {
+func (i *GenericItem) Split(bullets int) foundation.Item {
 	if bullets >= i.charges {
 		return i
 	}
@@ -681,158 +597,128 @@ func (i *Item) Split(bullets int) *Item {
 	return &clone
 }
 
-func (i *Item) Merge(ammo *Item) {
-	i.charges += ammo.charges
+func (i *GenericItem) MergeCharges(ammo foundation.Item) {
+	i.charges += ammo.Charges()
 }
 
-func (i *Item) GetAmmo() *AmmoInfo {
-	return i.ammo
+func (i *GenericItem) IsMissile() bool {
+	return false
 }
 
-func (i *Item) IsLockpick() bool {
+func (i *GenericItem) IsAmmo() bool {
+	return false
+}
+
+func (i *GenericItem) IsLockpick() bool {
 	return i.category == foundation.ItemCategoryLockpicks
 }
 
-func (i *Item) IsKey() bool {
+func (i *GenericItem) IsKey() bool {
 	return i.category == foundation.ItemCategoryKeys && i.lockFlag != ""
 }
 
-func (i *Item) GetLockFlag() string {
+func (i *GenericItem) GetLockFlag() string {
 	return i.lockFlag
 }
 
-func (i *Item) HasTag(tag foundation.ItemTags) bool {
+func (i *GenericItem) HasTag(tag foundation.ItemTags) bool {
 	return i.tags.Contains(tag)
 }
 
-func (i *Item) GetTextFile() string {
+func (i *GenericItem) GetTextFile() string {
 	return i.textFile
 }
 
-func (i *Item) GetIcon() textiles.TextIcon {
+func (i *GenericItem) GetIcon() textiles.TextIcon {
 	return i.icon
 }
 
-func (i *Item) IsBreakingNow() bool {
+func (i *GenericItem) IsBreakingNow() bool {
 	return rand.Intn(100) < i.chanceToBreakOnThrow
 }
 
-func (i *Item) GetCurrentAttackMode() AttackMode {
-	return i.weapon.GetAttackMode(i.currentAttackModeIndex)
-}
-
-func (i *Item) CycleTargetMode() {
-	if !i.IsWeapon() {
-		return
-	}
-	i.currentAttackModeIndex++
-	if i.currentAttackModeIndex >= len(i.weapon.attackModes) {
-		i.currentAttackModeIndex = 0
-	}
-}
-
-func (i *Item) PickupFlag() string {
+func (i *GenericItem) PickupFlag() string {
 	return i.setFlagOnPickup
 }
 
-func (i *Item) DropFlag() string {
+func (i *GenericItem) DropFlag() string {
 	return i.setFlagOnDrop
 }
 
-func (i *Item) GetText() string {
+func (i *GenericItem) GetText() string {
 	return i.text
 }
 
-func (i *Item) IsLightSource() bool {
+func (i *GenericItem) IsLightSource() bool {
 	return i.HasTag(foundation.TagLightSource)
 }
 
-func (i *Item) GetCarryWeight() int {
+func (i *GenericItem) GetCarryWeight() int {
 	return i.weight
 }
 
-func (i *Item) NeedsRepair() bool {
+func (i *GenericItem) NeedsRepair() bool {
 	if !i.IsWeapon() && !i.IsArmor() {
 		return false
 	}
 	return i.qualityInPercent < 100
 }
 
-func (i *Item) CanBeRepairedWith(other *Item) bool {
+func (i *GenericItem) CanBeRepairedWith(other foundation.Repairable) bool {
 	if !other.NeedsRepair() || i == other {
 		return false
 	}
-	return i.category == other.category && i.internalName == other.internalName
+	return i.category == other.Category() && i.internalName == other.InternalName()
 }
 
-func (i *Item) IsLoadedWeapon() bool {
-	return i.IsWeapon() && i.GetWeapon().IsLoaded()
-}
-
-func (i *Item) GetArmorProtection(damageType special.DamageType) Protection {
-	return i.armor.getRawProtection(damageType).Scaled(i.qualityInPercent.Normalized())
-}
-
-func (i *Item) GetArmorProtectionValueAsString() string {
-	physical := i.GetArmorProtection(special.DamageTypeNormal)
-	energy := i.GetArmorProtection(special.DamageTypeLaser)
-	return fmt.Sprintf("%s %s", physical.String(), energy.String())
-
-}
-
-func (i *Item) GetWeaponDamage() fxtools.Interval {
-	return i.weapon.getRawDamage().Scaled(i.qualityInPercent.Normalized())
-}
-
-func (i *Item) IsStackingWithCharges() bool {
-	return i.IsAmmo() || i.IsGold()
-}
-
-func (i *Item) IsWatch() bool {
+func (i *GenericItem) IsWatch() bool {
 	return i.useEffectName == "show_time"
 }
 
-func (i *Item) SetPositionHandler(handler func() geometry.Point) {
+func (i *GenericItem) SetPositionHandler(handler func() geometry.Point) {
 	i.posHandler = handler
 }
 
-func (i *Item) SetAlive(value bool) {
+func (i *GenericItem) SetAlive(value bool) {
 	i.alive = value
 }
 
-func (i *Item) GetEffectParameters() Params {
+func (i *GenericItem) GetEffectParameters() foundation.Params {
 	parameters := i.effectParameters
-	if !parameters.HasDamage() && i.IsWeapon() {
-		damageInterval := i.GetWeaponDamage()
-		parameters["damage_interval"] = damageInterval
-		parameters["damage"] = damageInterval.Roll()
-	}
-	weapon := i.GetWeapon()
-	if i.IsRangedWeapon() && weapon.NeedsAmmo() && weapon.HasAmmo() {
-		ammo := weapon.GetLoadedAmmo()
-		ammoInfo := ammo.GetAmmo()
-		if ammoInfo.BonusRadius > 0 {
-			parameters["bonus_radius"] = ammoInfo.BonusRadius
-		}
-	}
 	return parameters
 }
 
-func (i *Item) SetQuality(quality int) {
+func (i *GenericItem) SetQuality(quality special.Percentage) {
 	i.qualityInPercent = special.Percentage(quality)
 }
 
-func (i *Item) GetDegradationFactor() float64 {
+func (i *GenericItem) GetDegradationFactorOfAttack() float64 {
 	factor := 1.0
-	weapon := i.GetWeapon()
-	if i.IsRangedWeapon() && weapon.NeedsAmmo() && weapon.HasAmmo() {
-		ammo := weapon.GetLoadedAmmo()
-		ammoInfo := ammo.GetAmmo()
-		factor = ammoInfo.ConditionFactor
-	}
 	return factor
 }
 
-func (i *Item) Degrade(degrade float64) {
+func (i *GenericItem) Degrade(degrade float64) {
 	i.qualityInPercent -= special.Percentage(degrade)
+}
+
+func (i *GenericItem) GetSkillMod(skill special.Skill) (int, bool) {
+	mod, hasMod := i.statChanges.SkillChanges[skill]
+	return mod, hasMod
+}
+
+func (i *GenericItem) GetStatMod(stat special.Stat) (int, bool) {
+	mod, hasMod := i.statChanges.StatChanges[stat]
+	return mod, hasMod
+}
+
+func (i *GenericItem) GetDerivedStatMod(stat special.DerivedStat) (int, bool) {
+	mod, hasMod := i.statChanges.DerivedStatChanges[stat]
+	return mod, hasMod
+}
+
+func (i *GenericItem) GetSkillBookValues() (special.Skill, int) {
+	for skill, value := range i.statChanges.SkillChanges {
+		return skill, value
+	}
+	return special.SkillCount, 0
 }

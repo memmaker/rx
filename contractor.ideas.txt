@@ -1,0 +1,30 @@
+
+Weapons:
+ - Accuracy
+ - Reliability
+ - Concealability
+
+
+Cool Ideas to add:
+ - Zombie Shooting Area - Headshots kill, limb shots slow down, body shots do nothing
+ - Escape Room - Solve puzzles to escape
+ - Stealth Mission - Avoid detection
+ - Manipulated Senses - Make the player kill innocents
+ - Doom Style Traps / Triggers / Secrets
+
+Clothing & Disguise System
+
+1: Getting jumped by thugs if you’re wearing nice clothes in a bad area
+2: Being able to pose as a sex worker to lure a feeding victim to a secluded area if you’re wearing something revealing.
+
+A disguise mechanic similar to Hitman or what FNV tried to do, I wish I could take down a security guard and wear their uniform to sneak into a place, dress like a doctor or nurse to steal some blood or even having a mision where I have the choice to frame a character for a crime I comitted while wearing their clothes
+
+Want interesting Dialogue and non-combat interactions?
+Look at DISCO ELYSIUM and their skill checks and thought cabinet
+
+Beliefs & Instincts (Mouse Guard)
+
+Beliefs - A stance the player takes, rewards for acting according to them
+Instincts - Minor instinctive behaviors, can happen without the player directly initiating them
+
+Interesting Faults/Flaws/Traits

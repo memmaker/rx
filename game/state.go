@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
+	"image/color"
 	"math/rand"
 	"strings"
 	"text/template"
@@ -19,10 +20,10 @@ import (
 // map window size in a console : 23x80
 
 type MapLoader interface {
-	LoadMap(mapName string) gridmap.MapLoadResult[*Actor, *Item, Object]
+	LoadMap(mapName string) gridmap.MapLoadResult[*Actor, foundation.Item, Object]
 }
 
-func (g *GameState) giveAndTryEquipItem(actor *Actor, item *Item) {
+func (g *GameState) giveAndTryEquipItem(actor *Actor, item foundation.Item) {
 	actor.GetInventory().AddItem(item)
 	if item.IsEquippable() {
 		actor.GetEquipment().Equip(item)
@@ -61,30 +62,22 @@ func (g *GameState) appendLogMessage(message foundation.HiLiteString) {
 	g.logBuffer = append(g.logBuffer, message)
 }
 
-func (g *GameState) removeItemFromInventory(holder *Actor, item *Item) {
-	equipment := holder.GetEquipment()
+func (g *GameState) removeItemFromInventory(holder *Actor, item foundation.Item) {
 	inventory := holder.GetInventory()
-	if item.IsMissile() {
-		nextInStack := inventory.RemoveAndGetNextInStack(item)
-		if nextInStack != nil {
-			equipment.Equip(nextInStack)
-		}
-	} else {
-		inventory.RemoveItem(item)
-	}
+	inventory.RemoveItem(item)
 }
 
-func (g *GameState) hasPaidWithCharge(user *Actor, item *Item) bool {
+func (g *GameState) hasPaidWithCharge(user *Actor, item foundation.Item) bool {
 	if item == nil { // no item = intrinsic effect
 		return true
 	}
-	if item.charges == 0 {
+	if item.Charges() == 0 {
 		g.msg(foundation.Msg("The item is out of charges"))
 		return false
 	}
-	if item.charges > 0 {
-		item.charges--
-		if item.charges == 0 { // destroy
+	if item.Charges() > 0 {
+		item.ConsumeCharge()
+		if item.Charges() == 0 { // destroy
 			g.removeItemFromInventory(user, item)
 		}
 	}
@@ -141,6 +134,39 @@ func (g *GameState) makeMapBloody(mapPos geometry.Point) {
 	g.currentMap().SetTileIcon(mapPos, currentTileIcon.WithBg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorBgInt))).WithFg(g.palette.Get(fmt.Sprintf("red_%d", bloodColorFgInt))))
 	return
 }
+
+func (g *GameState) makeMapBurned(mapPos geometry.Point) {
+	// we need a random integer between 5 and 15
+	if !g.currentMap().Contains(mapPos) || g.currentMap().IsTileWithFlagAt(mapPos, gridmap.TileFlagWater) {
+		return
+	}
+	// black, dark_gray_7, brown_12
+	var factor float64
+	if g.currentMap().IsTileWalkable(mapPos) { // burn on the floor is darker
+		factor = 0.2
+	} else {
+		factor = 0.5
+	}
+
+	currentTileIcon := g.currentMap().GetTileIconAt(mapPos)
+
+	bgNew := multiplyWithRandomJitter(currentTileIcon.Bg, factor)
+	fgNew := multiplyWithRandomJitter(currentTileIcon.Fg, factor)
+
+	g.currentMap().SetTileIcon(mapPos, currentTileIcon.WithBg(bgNew).WithFg(fgNew))
+	return
+}
+
+func multiplyWithRandomJitter(color color.RGBA, amount float64) color.RGBA {
+	rAmount := amount + (rand.Float64() * 0.1) - 0.05
+	gAmount := amount + (rand.Float64() * 0.1) - 0.05
+	bAmount := amount + (rand.Float64() * 0.1) - 0.05
+	newC := color
+	newC.G = uint8(float64(color.G) * gAmount)
+	newC.R = uint8(float64(color.R) * rAmount)
+	newC.B = uint8(float64(color.B) * bAmount)
+	return newC
+}
 func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
 	spreadArea := g.currentMap().GetDijkstraMap(mapPos, 2, g.currentMap().IsCurrentlyPassable)
 	randomIndex := rand.Intn(len(spreadArea))
@@ -181,35 +207,35 @@ func (g *GameState) checkPlayerCanAct() {
 	// then check the end condition for this status effect
 	// if it's not reached, we want the UI to show a message about the situation
 	// the player has to confirm it and then we can end the turn
-	if !g.Player.HasFlag(special.FlagStun) && !g.Player.HasFlag(special.FlagHeld) {
+	if !g.Player.HasFlag(foundation.FlagStun) && !g.Player.HasFlag(foundation.FlagHeld) {
 		return
 	}
 
-	if g.Player.HasFlag(special.FlagStun) {
+	if g.Player.HasFlag(foundation.FlagStun) {
 		result := g.Player.GetCharSheet().StatRoll(special.Strength, 0)
 
 		if result.Success {
 			g.msg(foundation.Msg("You shake off the stun"))
-			g.Player.GetFlags().Unset(special.FlagStun)
+			g.Player.GetFlags().Unset(foundation.FlagStun)
 			return
 		}
-		g.Player.GetFlags().Increment(special.FlagStun)
+		g.Player.GetFlags().Increment(foundation.FlagStun)
 
 		g.msg(foundation.Msg("You are stunned and cannot act"))
 
 		// TODO: animate a small delay here?
 		g.endPlayerTurn(g.Player.timeNeededForActions())
 	}
-	if g.Player.HasFlag(special.FlagHeld) {
+	if g.Player.HasFlag(foundation.FlagHeld) {
 		result := g.Player.GetCharSheet().StatRoll(special.Strength, 0)
 
 		if result.Crit {
 			g.msg(foundation.Msg("You break free from the hold"))
-			g.Player.GetFlags().Unset(special.FlagHeld)
+			g.Player.GetFlags().Unset(foundation.FlagHeld)
 			return
 		} else if result.Success {
-			g.Player.GetFlags().Decrease(special.FlagHeld, 10)
-			if !g.Player.HasFlag(special.FlagHeld) {
+			g.Player.GetFlags().Decrease(foundation.FlagHeld, 10)
+			if !g.Player.HasFlag(foundation.FlagHeld) {
 				g.msg(foundation.Msg("You break free from the hold"))
 				return
 			}
@@ -241,7 +267,7 @@ func (g *GameState) triggerTileEffectsAfterMovement(actor *Actor, oldPos, newPos
 	return nil
 }
 
-func (g *GameState) buyItemFromVendor(item foundation.ItemForUI, price int) {
+func (g *GameState) buyItemFromVendor(item foundation.Item, price int) {
 	player := g.Player
 	if !player.HasGold(price) {
 		g.msg(foundation.Msg("You cannot afford that"))
@@ -252,7 +278,7 @@ func (g *GameState) buyItemFromVendor(item foundation.ItemForUI, price int) {
 		return
 	}
 	player.RemoveGold(price)
-	i := item.(*Item)
+	i := item.(*GenericItem)
 	player.GetInventory().AddItem(i)
 }
 
@@ -293,18 +319,6 @@ func (g *GameState) dropInventory(victim *Actor) {
 	}
 }
 
-func (g *GameState) startSprint(actor *Actor) {
-	/*
-		if actor.GetActionPoints() < 1 {
-			g.msg(foundation.Msg("You are too tired to sprint"))
-			return
-		}
-		actor.LooseActionPoints(1)
-
-	*/
-	haste(g, actor)
-}
-
 func (g *GameState) fillTemplatedText(text string) string {
 	parsedTemplate, err := template.New("text").Parse(text)
 	if err != nil {
@@ -327,8 +341,8 @@ func (g *GameState) fillTemplatedText(text string) string {
 	return filledText.String()
 }
 
-func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Point, item *Item, attackMode AttackMode, bulletCount int) (foundation.Animation, bool) {
-	weapon := item.GetWeapon()
+func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Point, item *Weapon, attackMode AttackMode, bulletCount int) (foundation.Animation, bool) {
+	weapon := item
 	var attackAnim foundation.Animation
 	isProjectile := false
 	sourcePos := attacker.Position()

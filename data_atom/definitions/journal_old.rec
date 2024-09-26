@@ -1,0 +1,29 @@
+
+
+cond: false && !HasFlag('TalkedTo(dr_winters)')
+text:
++ You have a referral from your Doctor to see Dr. Winters.
++ Head to the hospital in the north part of town and look for him there.
+
+cond: HasFlag('TalkedTo(dr_winters)')
+text:
++ You'll have to deal with your medical condition on your own.
+
+cond: HasFlag('LocationKnown(zombies)')
+text:
++ You learned about the BioPharmaceuticals Inc. lab at the outskirts of town.
++ There might be something useful there.
+
+cond: HasFlag('LocationKnown(mansion)')
+text:
++ You know where the mansion of the rich old man is.
++ Maybe you should pay him a visit?
+
+cond: HasFlag('LocationKnown(cryolab)')
+text:
++ You know where the cryolab is.
++ Time to find yourself a place to sleep.
+
+cond: HasFlag('KnowsAbout(apocalypse)')
+text:
++ Survive the apocalypse.

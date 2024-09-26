@@ -172,7 +172,6 @@ type GameState struct {
 	logBuffer            []foundation.HiLiteString
 	terminalGuesses      map[string][]string
 	journal              *Journal
-	rewardTracker        *RewardTracker
 	showEverything       bool
 	flagsChangedThisTurn bool
 
@@ -191,7 +190,7 @@ type GameState struct {
 	metronome    *Metronome
 
 	// Maps (Needs to be saved)
-	activeMaps     map[string]*gridmap.GridMap[*Actor, *Item, Object]
+	activeMaps     map[string]*gridmap.GridMap[*Actor, foundation.Item, Object]
 	currentMapName string
 
 	visionRange int
@@ -213,6 +212,14 @@ type GameState struct {
 
 	// Temporary State
 	chatterCache map[*Actor]map[foundation.ChatterType][]EntriesWithCondition
+}
+
+func (g *GameState) PlayerToggleRun() {
+	if g.Player.HasFlag(foundation.FlagRunning) {
+		g.Player.UnsetFlag(foundation.FlagRunning)
+	} else if g.Player.GetCharSheet().GetActionPoints() > 0 {
+		g.Player.SetFlag(foundation.FlagRunning)
+	}
 }
 
 func (g *GameState) SetIronMan() {
@@ -289,7 +296,7 @@ func (g *GameState) GetMapDisplayName() string {
 	return g.currentMap().GetDisplayName()
 }
 
-func (g *GameState) currentMap() *gridmap.GridMap[*Actor, *Item, Object] {
+func (g *GameState) currentMap() *gridmap.GridMap[*Actor, foundation.Item, Object] {
 	return g.activeMaps[g.currentMapName]
 }
 
@@ -313,7 +320,7 @@ func (g *GameState) IsInteractionAt(position geometry.Point) bool {
 
 func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
 	itemTemplates := make(map[string]recfile.Record)
-	parts := []string{"weapons", "ammo", "armor", "food", "miscItems"}
+	parts := []string{"weapons", "ammo", "armor", "food", "consumables", "miscItems"}
 	for _, part := range parts {
 		itemTemplateFile := path.Join(dataRootDir, "definitions", part+".rec")
 		records := recfile.Read(fxtools.MustOpen(itemTemplateFile))
@@ -341,7 +348,7 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 		visionRange:         80,
 		palette:             palette,
 		globalItemTemplates: loadItemTemplates(config.DataRootDir),
-		activeMaps:          make(map[string]*gridmap.GridMap[*Actor, *Item, Object]),
+		activeMaps:          make(map[string]*gridmap.GridMap[*Actor, foundation.Item, Object]),
 		chatterCache:        make(map[*Actor]map[foundation.ChatterType][]EntriesWithCondition),
 	}
 
@@ -365,7 +372,7 @@ func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
 	panic(fmt.Sprintf("Could not create actor from record: %v", rec))
 	return nil, geometry.Point{}
 }
-func (g *GameState) NewItem(rec recfile.Record) (*Item, geometry.Point) {
+func (g *GameState) NewItem(rec recfile.Record) (foundation.Item, geometry.Point) {
 	newItem := NewItemFromRecord(rec, g.iconForItem)
 	if newItem != nil {
 		itemPos := newItem.Position()
@@ -374,7 +381,7 @@ func (g *GameState) NewItem(rec recfile.Record) (*Item, geometry.Point) {
 	panic(fmt.Sprintf("Could not create item from record: %v", rec))
 	return nil, geometry.Point{}
 }
-func (g *GameState) NewObject(rec recfile.Record, newMap *gridmap.GridMap[*Actor, *Item, Object]) (Object, geometry.Point) {
+func (g *GameState) NewObject(rec recfile.Record, newMap *gridmap.GridMap[*Actor, foundation.Item, Object]) (Object, geometry.Point) {
 	object := g.NewObjectFromRecord(rec, g.palette, newMap)
 	if object != nil {
 		objectPos := object.Position()
@@ -410,7 +417,6 @@ func (g *GameState) init() {
 
 	g.terminalGuesses = make(map[string][]string)
 
-	g.rewardTracker = NewRewardTracker(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec")), g.getScriptFuncs())
 	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.getScriptFuncs())
 	g.hookupJournalAndFlags()
 
@@ -419,6 +425,7 @@ func (g *GameState) init() {
 }
 
 func (g *GameState) hookupJournalAndFlags() {
+	g.journal.SetIncrementFlagHandler(g.gameFlags.Increment)
 	g.journal.SetChangeHandler(func() {
 		g.ui.PlayCue("ui/journal")
 		g.msg(foundation.HiLite(">>> Journal updated <<<"))
@@ -446,7 +453,8 @@ func (g *GameState) initPlayerAndMap() {
 				spawnLocation = field.Value
 			} else if field.Name == "item" {
 				itemName := field.Value
-				g.giveAndTryEquipItem(g.Player, g.NewItemFromString(itemName))
+				newItemFromString := g.NewItemFromString(itemName)
+				g.giveAndTryEquipItem(g.Player, newItemFromString)
 			}
 		}
 	}
@@ -480,15 +488,17 @@ func (g *GameState) initPlayerAndMap() {
 
 	g.attachHooksToPlayer()
 
-	g.journal.OnFlagsChanged()
+	g.journal.Update()
 
 	g.updatePlayerFoVAndApplyExploration()
+
+	playerSheet.HealAPAndHPCompletely()
 
 	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", loadedMap.GetMeta().MusicFile+".ogg"))
 }
 func (g *GameState) attachHooksToPlayer() {
 	equipment := g.Player.GetEquipment()
-	g.Player.GetFlags().SetOnChangeHandler(func(flag special.ActorFlag, value int) {
+	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
 		g.ui.UpdateStats()
 	})
 	g.Player.GetCharSheet().SetOnStatChangeHandler(func(stat special.Stat) {
@@ -499,14 +509,28 @@ func (g *GameState) attachHooksToPlayer() {
 
 	g.Player.GetInventory().SetOnBeforeRemove(equipment.UnEquip)
 
-	g.Player.GetCharSheet().SetSkillModifierHandler(g.Player.GetInventory().GetSkillModifiersFromItems)
+	g.Player.GetCharSheet().SetSkillModifierHandler(func(skill special.Skill) []special.Modifier {
+		modsFromItems := g.Player.GetInventory().GetSkillModifiersFromItems(skill)
+		modsFromActiveEffects := g.Player.GetTemporarySkillModifiers(skill)
+		return append(modsFromItems, modsFromActiveEffects...)
+	})
 
-	g.Player.GetCharSheet().SetStatModifierHandler(g.Player.GetInventory().GetStatModifiersFromItems)
+	g.Player.GetCharSheet().SetStatModifierHandler(func(stat special.Stat) []special.Modifier {
+		modsFromItems := g.Player.GetInventory().GetStatModifiersFromItems(stat)
+		modsFromActiveEffects := g.Player.GetTemporaryStatModifiers(stat)
+		return append(modsFromItems, modsFromActiveEffects...)
+	})
+
+	g.Player.GetCharSheet().SetDerivedStatModifierHandler(func(stat special.DerivedStat) []special.Modifier {
+		modsFromItems := g.Player.GetInventory().GetDerivedStatModifiersFromItems(stat)
+		modsFromActiveEffects := g.Player.GetTemporaryDerivedStatModifiers(stat)
+		return append(modsFromItems, modsFromActiveEffects...)
+	})
 
 	equipment.SetOnChangeHandler(g.updateUIStatus)
 }
 
-func (g *GameState) setCurrentMap(loadedMap *gridmap.GridMap[*Actor, *Item, Object]) {
+func (g *GameState) setCurrentMap(loadedMap *gridmap.GridMap[*Actor, foundation.Item, Object]) {
 	mapName := loadedMap.GetName()
 	g.activeMaps[mapName] = loadedMap
 	g.currentMapName = mapName
@@ -580,10 +604,7 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	}
 	g.afterAnimationActions = nil
 
-	if g.flagsChangedThisTurn {
-		g.checkJournalAndRewards()
-		g.flagsChangedThisTurn = false
-	}
+	g.checkJournal()
 
 	g.updateUIStatus()
 
@@ -592,10 +613,9 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	g.updatePlayerFoVAndApplyExploration()
 }
 
-func (g *GameState) checkJournalAndRewards() {
-	g.journal.OnFlagsChanged()
+func (g *GameState) checkJournal() {
+	rewards := g.journal.Update()
 
-	rewards := g.rewardTracker.GetNewRewards(nil)
 	for _, reward := range rewards {
 		g.awardXP(reward.XP, reward.Text)
 	}
@@ -654,52 +674,54 @@ func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
 
 func (g *GameState) StartPickpocket(actor *Actor) {
 	actorEquipment := actor.GetEquipment()
-	stealableItems := itemStacksForUI(actor.GetInventory().StackedItemsWithFilter(actorEquipment.IsNotEquipped))
+	stealableItems := actor.GetInventory().StackedItemsWithFilter(func(item foundation.Item) bool {
+		return actorEquipment.IsNotEquipped(item)
+	})
 
-	rightToLeft := func(itemUI foundation.ItemForUI, amount int) {
+	rightToLeft := func(itemUI foundation.Item, amount int) {
 		if amount == 0 {
 			return
 		}
-		itemStack := itemUI.(*InventoryStack)
-		g.PlayerStealOrPlantItem(actor, itemStack.First(), true)
+		itemStack := itemUI
+		g.PlayerStealOrPlantItem(actor, itemStack, true)
 	}
 
-	leftToRight := func(itemUI foundation.ItemForUI, amount int) {
+	leftToRight := func(itemUI foundation.Item, amount int) {
 		if amount == 0 {
 			return
 		}
-		itemStack := itemUI.(*InventoryStack)
-		g.PlayerStealOrPlantItem(actor, itemStack.First(), false)
+		itemStack := itemUI
+		g.PlayerStealOrPlantItem(actor, itemStack, false)
 	}
 
 	leftName := g.Player.Name()
 	rightName := actor.Name()
-	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
+	playerItems := g.Player.GetInventory().Items()
 
 	g.ui.ShowGiveAndTakeContainer(leftName, playerItems, rightName, stealableItems, rightToLeft, leftToRight)
 }
 
-func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item *Item, isSteal bool) {
+func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item foundation.Item, isSteal bool) {
 	itemStealModifier := 0
-	if item.GetCategory().IsEasySteal() {
+	if item.Category().IsEasySteal() {
 		itemStealModifier = 10
-	} else if item.GetCategory().IsHardSteal() {
+	} else if item.Category().IsHardSteal() {
 		itemStealModifier = -10
 	}
 	if victim.IsSleeping() {
 		itemStealModifier += 75
 	}
 
-	var transferFunc func(*Item)
+	var transferFunc func(foundation.Item)
 	if isSteal {
-		transferFunc = func(itemTaken *Item) {
+		transferFunc = func(itemTaken foundation.Item) {
 			victim.GetInventory().RemoveItem(item)
 			g.Player.GetInventory().AddItem(item)
 			g.msg(foundation.HiLite("You steal %s", item.Name()))
 			g.ui.PlayCue("world/pickup")
 		}
 	} else {
-		transferFunc = func(itemTaken *Item) {
+		transferFunc = func(itemTaken foundation.Item) {
 			g.Player.GetInventory().RemoveItem(item)
 			victim.GetInventory().AddItem(item)
 			g.msg(foundation.HiLite("You plant %s", item.Name()))
@@ -707,7 +729,7 @@ func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item *Item, isSteal bo
 		}
 	}
 
-	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Steal, itemStealModifier)
+	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Stealth, itemStealModifier)
 	if skillRoll.Success {
 		transferFunc(item)
 		g.StartPickpocket(victim)
@@ -769,16 +791,23 @@ func (g *GameState) getShootingRangePosition(attacker *Actor, weaponRange int, v
 	victimPos := victim.Position()
 
 	mapAroundVictim := g.currentMap().GetDijkstraMap(victimPos, weaponRange, g.currentMap().IsCurrentlyPassable)
+	mapAroundAttacker := g.currentMap().GetDijkstraMap(attackerPos, weaponRange+10, g.currentMap().IsCurrentlyPassable)
 
 	// find the best position to shoot from
 	bestPos := attackerPos
 	bestDistance := geometry.Distance(attackerPos, victimPos)
 
-	for pos, dist := range mapAroundVictim {
-		distFloat := float64(dist) / 10
-		if !g.canActorSee(victim, pos) {
+	for pos, _ := range mapAroundVictim {
+		if !g.canActorSee(victim, pos) || pos == victimPos {
 			continue
 		}
+
+		distForUs, canBeReached := mapAroundAttacker[pos]
+		if !canBeReached {
+			continue
+		}
+		distFloat := float64(distForUs) / 10
+
 		if distFloat < bestDistance {
 			bestPos = pos
 			bestDistance = distFloat
@@ -797,7 +826,7 @@ func (g *GameState) advanceTime(duration time.Duration) {
 
 func (g *GameState) awardXP(xp int, text string) {
 	didLevelUpNow := g.Player.GetCharSheet().AddXP(xp)
-	g.msg(foundation.HiLite("You received %s "+text, strconv.Itoa(xp)+" XP"))
+	g.msg(foundation.HiLite("You received %s ("+text+")", strconv.Itoa(xp)+" XP"))
 	if didLevelUpNow {
 		g.ui.PlayCue("ui/LEVELUP")
 		g.msg(foundation.HiLite(">>> You have gone up a level <<<"))
@@ -906,7 +935,7 @@ func (g *GameState) actorWithName(name string) *Actor {
 	return nil
 }
 
-func (g *GameState) removeItemFromGame(item *Item) {
+func (g *GameState) removeItemFromGame(item foundation.Item) {
 	item.SetAlive(false)
 	itemPosition := item.Position()
 	if itemAt, isItemAt := g.currentMap().TryGetItemAt(itemPosition); isItemAt && itemAt == item {
@@ -921,4 +950,20 @@ func (g *GameState) removeItemFromGame(item *Item) {
 			container.RemoveItem(item)
 		}
 	}
+}
+
+func (g *GameState) actorConsumeDrug(actor *Actor, item *GenericItem) {
+	actor.AddTemporaryStatChange(&TemporaryStatChange{
+		StatChange: item.statChanges,
+		Name:       item.Name(),
+		TurnsLeft:  item.charges,
+	})
+
+	if g.Player == actor {
+		g.msg(foundation.HiLite("You consume %s", item.Name()))
+	} else {
+		g.msg(foundation.HiLite("%s consumes %s", actor.Name(), item.Name()))
+	}
+
+	g.removeItemFromInventory(actor, item)
 }

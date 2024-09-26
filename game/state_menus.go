@@ -16,7 +16,7 @@ import (
 )
 
 func (g *GameState) OpenInventory() {
-	inventory := g.GetFilteredInventory(func(item *Item) bool {
+	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
 		return !item.IsAmmo()
 	})
 	if len(inventory) == 0 {
@@ -26,20 +26,15 @@ func (g *GameState) OpenInventory() {
 	g.ui.OpenInventoryForManagement(inventory)
 }
 func (g *GameState) ChooseItemForThrow() {
-	inventory := g.GetFilteredInventory(func(item *Item) bool {
+	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
 		return item.IsThrowable()
 	})
 	if len(inventory) == 0 {
 		g.msg(foundation.Msg("You are not carrying anything throwable."))
 		return
 	}
-	g.ui.OpenInventoryForSelection(inventory, "Throw what?", func(itemStack foundation.ItemForUI) {
-		stack, isStack := itemStack.(*InventoryStack)
-		if !isStack {
-			return
-		}
-		item := stack.First()
-		g.startThrowItem(item)
+	g.ui.OpenInventoryForSelection(inventory, "Throw what?", func(itemStack foundation.Item) {
+		g.startThrowItem(itemStack)
 	})
 }
 
@@ -431,8 +426,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 	for _, effect := range currentNode.Effects {
 		if effect == "StartCombat" { // simple parameterless dialogue only effects
 			if actor, isActor := conversationPartner.(*Actor); isActor {
-				actor.AddToEnemyActors(g.Player.GetInternalName())
-				actor.SetHostile()
+				g.trySetHostile(actor, g.Player)
 			}
 			instantEndWithChatter = true
 		} else if effect == "EndHostility" {
@@ -440,6 +434,8 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 				actor.RemoveEnemy(g.Player)
 				actor.SetNeutral()
 			}
+		} else if effect == "EndWithChatter" {
+			instantEndWithChatter = true
 		} else if effect == "EndConversation" {
 			endConversation = true
 		} else if effect == "ReturnToPreviousNode" {
@@ -504,12 +500,12 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 						count = args.GetInt(1)
 					}
 					actor, isActor := conversationPartner.(*Actor)
-					var itemsForPlayer []*Item
+					var itemsForPlayer []foundation.Item
 					if isActor {
 						itemsForPlayer = actor.GetInventory().RemoveItemsByNameAndCount(itemName, count)
 					} else {
 						oneItem := g.newItemFromName(itemName)
-						if oneItem.IsStackingWithCharges() {
+						if oneItem.IsStackable() {
 							oneItem.SetCharges(count)
 						} else {
 							for i := 0; i < count; i++ {
@@ -575,8 +571,8 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 }
 
 func (g *GameState) playerHackingRoll(difficulty foundation.Difficulty) special.CheckResult {
-	scienceSkill := g.Player.GetCharSheet().GetSkill(special.Science)
-	luck := g.Player.GetCharSheet().GetStat(special.Luck)
+	scienceSkill := g.Player.GetCharSheet().GetSkill(special.Technology)
+	luck := 5
 
 	modifier := difficulty.GetRollModifier()
 	effectiveSkill := scienceSkill + modifier

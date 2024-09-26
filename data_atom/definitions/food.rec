@@ -2,26 +2,3 @@ Description: ration of food
 Name: food_ration
 Category: food
 use_effect: satiate_fully
-
-Description: stimpak
-Name: stimpak
-Category: food
-use_effect: satiate_fully
-
-Description: heavy stimpak
-Name: heavy_stimpak
-Category: food
-use_effect: satiate_fully
-
-Description: bobby pin
-Name: bobby_pin
-Category: lockpicks
-skill: lockpick
-skill_bonus: 20
-
-Description: aviator sunglasses
-Name: aviator_sunglasses
-Category: Other
-stat: charisma
-stat_bonus: 1
-Text: These make you look ridiculously cool.

@@ -65,12 +65,6 @@ name: Bye
 npc: (You decide to leave the taxi.)
 effect: EndConversation
 
-name: Drive
-npc: Sure thing.
-#
-o_text: (Wait)
-o_goto: DefaultIntroduction
-
 name: HeadQuarters
 npc: Alright, let's go.
 effect: Transition('home_area', 'taxi_stand')

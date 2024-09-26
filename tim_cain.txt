@@ -35,3 +35,9 @@ Thoughts on Fallout
  - Environmental storytelling
  - Don't force level ups
  - Allow Perks to broaden the application of skills
+ - Stats
+   - Remove Luck (Make into Perk)
+   - Physical vs. Mental
+   - No Numbers
+ - First shot bulls-eye (first shot, starting combat is a guaranteed hit)
+ - Don't increase crit-chance by much, but instead the crit-damage

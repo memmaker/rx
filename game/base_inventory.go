@@ -6,19 +6,15 @@ import (
 	"bytes"
 	"cmp"
 	"encoding/gob"
-	"fmt"
-	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/geometry"
-	"github.com/memmaker/go/textiles"
-	"image/color"
 	"slices"
 )
 
 type Inventory struct {
-	items          []*Item
+	items          []foundation.Item
 	maxItemStacks  int
 	onChanged      func()
-	onBeforeRemove func(*Item)
+	onBeforeRemove func(equippableItem foundation.Equippable)
 	getCarrierPos  func() geometry.Point
 }
 
@@ -53,148 +49,51 @@ func (i *Inventory) GobDecode(data []byte) error {
 
 func NewInventory(maxItemStacks int, position func() geometry.Point) *Inventory {
 	return &Inventory{
-		items:         make([]*Item, 0),
+		items:         make([]foundation.Item, 0),
 		maxItemStacks: maxItemStacks,
 		getCarrierPos: position,
 	}
 }
-func (i *Inventory) SetOnBeforeRemove(onBeforeRemove func(*Item)) {
+func (i *Inventory) SetOnBeforeRemove(onBeforeRemove func(equippable foundation.Equippable)) {
 	i.onBeforeRemove = onBeforeRemove
 }
-func (i *Inventory) Items() []*Item {
+func (i *Inventory) Items() []foundation.Item {
 	return i.items
 }
 
-type InventoryStack struct {
-	items    []*Item
-	invIndex int
-}
-
-func (i InventoryStack) IsMultipleStacks() bool {
-	return len(i.items) > 1 || i.First().IsMultipleStacks()
-}
-
-func (i InventoryStack) GetStackSize() int {
-	if len(i.items) == 1 && i.First().IsMultipleStacks() {
-		return i.First().GetStackSize()
-	}
-	return len(i.items)
-}
-
-func (i InventoryStack) GetCarryWeight() int {
-	return i.First().GetCarryWeight() * len(i.items)
-}
-
-func (i InventoryStack) GetIcon() textiles.TextIcon {
-	return i.items[0].GetIcon()
-}
-
-func (i InventoryStack) LongNameWithColors(colorCode string) string {
-	return appendStacks(i.items[0].LongNameWithColors(colorCode), len(i.items))
-}
-
-func (i InventoryStack) Position() geometry.Point {
-	return i.items[0].Position()
-}
-
-func (i InventoryStack) Shortcut() rune {
-	return foundation.ShortCutFromIndex(i.invIndex)
-}
-func (i InventoryStack) GetCategory() foundation.ItemCategory {
-	return i.items[0].GetCategory()
-}
-func (i InventoryStack) DisplayLength() int {
-	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut(""))
-
-}
-func (i InventoryStack) InventoryNameWithColors(lineColor string) string {
-	return appendStacks(i.items[0].InventoryNameWithColors(lineColor), len(i.items))
-}
-
-func (i InventoryStack) InventoryNameWithColorsAndShortcut(lineColor string) string {
-	return fmt.Sprintf("%c - %s", i.Shortcut(), appendStacks(i.items[0].InventoryNameWithColors(lineColor), len(i.items)))
-}
-func (i InventoryStack) GetListInfo() string {
-	return appendStacks(i.items[0].GetListInfo(), len(i.items))
-}
-func (i InventoryStack) Name() string {
-	return appendStacks(i.items[0].Name(), len(i.items))
-}
-
-func appendStacks(name string, stackCount int) string {
-	if stackCount > 1 {
-		name = fmt.Sprintf("%s (x%d)", name, stackCount)
-	}
-	return name
-}
-
-func (i InventoryStack) String() string {
-	return i.Name()
-}
-
-func (i InventoryStack) Color() color.RGBA {
-	return i.items[0].Color()
-}
-
-func (i InventoryStack) Counter() int {
-	return len(i.items)
-}
-
-func (i InventoryStack) IsUsableOrZappable() bool {
-	return i.items[0].IsUsableOrZappable()
-}
-func (i InventoryStack) IsEquippable() bool {
-	return i.items[0].IsEquippable()
-}
-
-func (i InventoryStack) First() *Item {
-	return i.items[0]
-
-}
-
-func (i InventoryStack) GetItems() []*Item {
-	return i.items
-}
-func (i *Inventory) StackedItems() []*InventoryStack {
-	return StackedItemsWithFilter(i.items, func(item *Item) bool { return true })
-}
-func StackedItemsWithFilter(items []*Item, filter func(*Item) bool) []*InventoryStack {
+func StackedFilteredAndSortedItems(items []foundation.Item, filter func(foundation.Item) bool) []foundation.Item {
 	if len(items) == 0 {
-		return []*InventoryStack{}
+		return []foundation.Item{}
 	}
-	stacks := make([]*InventoryStack, 0)
+	stacks := make([]foundation.Item, 0)
 	for _, item := range items {
+		if !filter(item) {
+			continue
+		}
 		found := false
 		for stackIndex, stack := range stacks {
-			if stack.items[0].CanStackWith(item) {
-				stack.items = append(stack.items, item)
+			if stack.CanStackWith(item) {
+				stack.AddStacks(item)
 				stacks[stackIndex] = stack
 				found = true
 				break
 			}
 		}
 		if !found {
-			stacks = append(stacks, &InventoryStack{items: []*Item{item}})
+			stacks = append(stacks, item)
 		}
 	}
 
 	SortInventory(stacks)
 
-	for invIndex, stack := range stacks {
-		stack.invIndex = invIndex
-	}
-
-	for index := len(stacks) - 1; index >= 0; index-- {
-		curStack := stacks[index]
-		if !filter(curStack.First()) {
-			stacks = append(stacks[:index], stacks[index+1:]...)
-		}
+	for i, stack := range stacks {
+		stack.SetInventoryIndex(i)
 	}
 
 	return stacks
 }
 
-func (i *Inventory) RemoveItem(item *Item) {
+func (i *Inventory) RemoveItem(item foundation.Item) {
 	defer i.changed()
 	for idx, invItem := range i.items {
 		if invItem == item {
@@ -205,7 +104,7 @@ func (i *Inventory) RemoveItem(item *Item) {
 	}
 }
 
-func (i *Inventory) Has(item *Item) bool {
+func (i *Inventory) Has(item foundation.Item) bool {
 	for _, invItem := range i.items {
 		if invItem == item {
 			return true
@@ -214,18 +113,16 @@ func (i *Inventory) Has(item *Item) bool {
 	return false
 }
 
-func (i *Inventory) AddItem(item *Item) {
+func (i *Inventory) AddItem(item foundation.Item) {
 	defer i.changed()
 	i.addItemInternally(item)
 }
 
-func (i *Inventory) addItemInternally(item *Item) {
-	if item.IsStackingWithCharges() {
-		for _, invItem := range i.items {
-			if invItem.CanStackWith(item) {
-				invItem.SetCharges(invItem.GetCharges() + item.GetCharges())
-				return
-			}
+func (i *Inventory) addItemInternally(item foundation.Item) {
+	for _, invItem := range i.items {
+		if invItem.CanStackWith(item) {
+			invItem.AddStacks(item)
+			return
 		}
 	}
 
@@ -238,7 +135,7 @@ func (i *Inventory) IsEmpty() bool {
 }
 
 func (i *Inventory) IsFull() bool {
-	return len(i.StackedItems()) == i.maxItemStacks
+	return len(i.items) == i.maxItemStacks
 }
 
 func (i *Inventory) SetOnChangeHandler(onChanged func()) {
@@ -251,14 +148,14 @@ func (i *Inventory) changed() {
 	}
 }
 
-func (i *Inventory) beforeRemove(item *Item) {
+func (i *Inventory) beforeRemove(item foundation.Item) {
 	item.SetPositionHandler(nil)
 	if i.onBeforeRemove != nil {
 		i.onBeforeRemove(item)
 	}
 }
 
-func (i *Inventory) RemoveAndGetNextInStack(item *Item) *Item {
+func (i *Inventory) RemoveAndGetNextInStack(item *GenericItem) foundation.Item {
 	i.RemoveItem(item)
 	for _, invItem := range i.items {
 		if invItem.CanStackWith(item) {
@@ -270,24 +167,28 @@ func (i *Inventory) RemoveAndGetNextInStack(item *Item) *Item {
 
 func (i *Inventory) HasItemWithName(internalName string) bool {
 	for _, invItem := range i.items {
-		if invItem.GetInternalName() == internalName {
+		if invItem.InternalName() == internalName {
 			return true
 		}
 	}
 	return false
 }
 
-func (i *Inventory) RemoveAmmoByCaliber(ammo int, neededBullets int) *Item {
+func (i *Inventory) RemoveAmmoByCaliber(caliberIndex int, neededBullets int) *Ammo {
 	for _, invItem := range i.items {
-		if invItem.IsAmmoOfCaliber(ammo) {
-			availableBullets := invItem.GetCharges()
+		ammo, isAmmo := invItem.(*Ammo)
+		if !isAmmo {
+			continue
+		}
+		if ammo.IsAmmoOfCaliber(caliberIndex) {
+			availableBullets := invItem.Charges()
 			if availableBullets > neededBullets {
-				splitBullets := invItem.Split(neededBullets)
+				splitBullets := ammo.Split(neededBullets)
 				invItem.SetCharges(availableBullets - neededBullets)
-				return splitBullets
+				return splitBullets.(*Ammo)
 			} else {
-				i.RemoveItem(invItem)
-				return invItem
+				i.RemoveItem(ammo)
+				return ammo
 			}
 			break
 		}
@@ -295,17 +196,21 @@ func (i *Inventory) RemoveAmmoByCaliber(ammo int, neededBullets int) *Item {
 	return nil
 }
 
-func (i *Inventory) RemoveAmmoByName(name string, amount int) *Item {
+func (i *Inventory) RemoveAmmoByName(name string, amount int) *Ammo {
 	for _, invItem := range i.items {
-		if invItem.GetInternalName() == name {
-			availableBullets := invItem.GetCharges()
+		ammo, isAmmo := invItem.(*Ammo)
+		if !isAmmo {
+			continue
+		}
+		if ammo.InternalName() == name {
+			availableBullets := ammo.Charges()
 			if availableBullets > amount {
-				splitBullets := invItem.Split(amount)
-				invItem.SetCharges(availableBullets - amount)
+				splitBullets := ammo.Split(amount).(*Ammo)
+				ammo.SetCharges(availableBullets - amount)
 				return splitBullets
 			} else {
-				i.RemoveItem(invItem)
-				return invItem
+				i.RemoveItem(ammo)
+				return ammo
 			}
 			break
 		}
@@ -316,22 +221,22 @@ func (i *Inventory) RemoveAmmoByName(name string, amount int) *Item {
 
 func (i *Inventory) HasAmmo(caliber int, name string) bool {
 	for _, invItem := range i.items {
-		if invItem.IsAmmoOfCaliber(caliber) && invItem.GetInternalName() == name {
+		ammo, isAmmo := invItem.(*Ammo)
+		if !isAmmo {
+			continue
+		}
+		if ammo.IsAmmoOfCaliber(caliber) && ammo.InternalName() == name {
 			return true
 		}
 	}
 	return false
 }
 
-func (i *Inventory) GetPointer() *[]*Item {
-	return &i.items
-}
-
 func (i *Inventory) GetLockpickCount() int {
 	count := 0
 	for _, invItem := range i.items {
 		if invItem.IsLockpick() {
-			count += invItem.GetCharges()
+			count += invItem.Charges()
 		}
 	}
 	return count
@@ -341,7 +246,7 @@ func (i *Inventory) RemoveLockpick() {
 	for _, invItem := range i.items {
 		if invItem.IsLockpick() {
 			invItem.ConsumeCharge()
-			if invItem.GetCharges() == 0 {
+			if invItem.Charges() == 0 {
 				i.RemoveItem(invItem)
 			}
 			break
@@ -358,9 +263,9 @@ func (i *Inventory) HasKey(identifier string) bool {
 	return false
 }
 
-func (i *Inventory) RemoveItemByName(itemName string) *Item {
+func (i *Inventory) RemoveItemByName(itemName string) foundation.Item {
 	for _, invItem := range i.items {
-		if invItem.GetInternalName() == itemName {
+		if invItem.InternalName() == itemName {
 			i.RemoveItem(invItem)
 			return invItem
 		}
@@ -368,37 +273,39 @@ func (i *Inventory) RemoveItemByName(itemName string) *Item {
 	return nil
 }
 
-func (i *Inventory) GetBestWeapon() *Item {
+func (i *Inventory) GetBestWeapon() *Weapon {
 	maxDamage := 0
-	var bestWeapon *Item
+	var bestWeapon *Weapon
 	for _, invItem := range i.items {
 		if invItem.IsWeapon() {
-			damage := invItem.GetWeaponDamage().ExpectedValue()
+			wep := invItem.(*Weapon)
+			damage := wep.GetWeaponDamage().ExpectedValue()
 			if damage > maxDamage {
 				maxDamage = damage
-				bestWeapon = invItem
+				bestWeapon = wep
 			}
 		}
 	}
 	return bestWeapon
 }
 
-func (i *Inventory) GetBestRangedWeapon() *Item {
+func (i *Inventory) GetBestRangedWeapon() *Weapon {
 	maxDamage := 0
-	var bestWeapon *Item
+	var bestWeapon *Weapon
 	for _, invItem := range i.items {
 		if invItem.IsRangedWeapon() {
-			damage := invItem.GetWeaponDamage().ExpectedValue()
+			weapon := invItem.(*Weapon)
+			damage := weapon.GetWeaponDamage().ExpectedValue()
 			if damage > maxDamage {
 				maxDamage = damage
-				bestWeapon = invItem
+				bestWeapon = weapon
 			}
 		}
 	}
 	return bestWeapon
 }
 
-func (i *Inventory) HasStealableItems(isStealable func(item *Item) bool) bool {
+func (i *Inventory) HasStealableItems(isStealable func(item foundation.Equippable) bool) bool {
 	for _, invItem := range i.items {
 		if isStealable(invItem) {
 			return true
@@ -444,9 +351,9 @@ func (i *Inventory) GetNonAmmoWeight() int {
 	return totalWeight
 }
 
-func (i *Inventory) GetItemByName(name string) *Item {
+func (i *Inventory) GetItemByName(name string) foundation.Item {
 	for _, invItem := range i.items {
-		if invItem.GetInternalName() == name {
+		if invItem.InternalName() == name {
 			return invItem
 		}
 	}
@@ -455,11 +362,15 @@ func (i *Inventory) GetItemByName(name string) *Item {
 
 func (i *Inventory) GetSkillModifiersFromItems(skill special.Skill) []special.Modifier {
 	var modifiers []special.Modifier
-	for _, invItem := range i.StackedItems() {
-		if invItem.First().skill == skill && invItem.First().skillBonus != 0 {
+	for _, invItem := range i.items {
+		first := invItem
+		if first.IsSkillBook() || first.IsConsumable() {
+			continue
+		}
+		if modValue, hasValue := first.GetSkillMod(skill); hasValue {
 			modifiers = append(modifiers, special.DefaultModifier{
 				Source:    invItem.Name(),
-				Modifier:  invItem.First().GetSkillBonus(skill),
+				Modifier:  modValue,
 				Order:     0,
 				IsPercent: true,
 			})
@@ -470,11 +381,33 @@ func (i *Inventory) GetSkillModifiersFromItems(skill special.Skill) []special.Mo
 
 func (i *Inventory) GetStatModifiersFromItems(stat special.Stat) []special.Modifier {
 	var modifiers []special.Modifier
-	for _, invItem := range i.StackedItems() {
-		if invItem.First().stat == stat && invItem.First().statBonus != 0 {
+	for _, invItem := range i.items {
+		first := invItem
+		if first.IsConsumable() {
+			continue
+		}
+		if modValue, hasValue := first.GetStatMod(stat); hasValue {
 			modifiers = append(modifiers, special.DefaultModifier{
 				Source:   invItem.Name(),
-				Modifier: invItem.First().GetStatBonus(stat),
+				Modifier: modValue,
+				Order:    0,
+			})
+		}
+	}
+	return modifiers
+}
+
+func (i *Inventory) GetDerivedStatModifiersFromItems(stat special.DerivedStat) []special.Modifier {
+	var modifiers []special.Modifier
+	for _, invItem := range i.items {
+		first := invItem
+		if first.IsConsumable() {
+			continue
+		}
+		if modValue, hasValue := first.GetDerivedStatMod(stat); hasValue {
+			modifiers = append(modifiers, special.DefaultModifier{
+				Source:   invItem.Name(),
+				Modifier: modValue,
 				Order:    0,
 			})
 		}
@@ -486,8 +419,8 @@ func (i *Inventory) HasSkillModifier(skill special.Skill) bool {
 	return len(i.GetSkillModifiersFromItems(skill)) > 0
 }
 
-func (i *Inventory) StackedItemsWithFilter(filter func(item *Item) bool) []*InventoryStack {
-	return StackedItemsWithFilter(i.items, filter)
+func (i *Inventory) StackedItemsWithFilter(filter func(item foundation.Item) bool) []foundation.Item {
+	return StackedFilteredAndSortedItems(i.items, filter)
 }
 
 func (i *Inventory) HasWeapon() bool {
@@ -508,17 +441,17 @@ func (i *Inventory) HasWatch() bool {
 	return false
 }
 
-func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []*Item {
-	itemsToRemove := make([]*Item, 0)
-	splitItems := make([]*Item, 0)
+func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []foundation.Item {
+	itemsToRemove := make([]foundation.Item, 0)
+	splitItems := make([]foundation.Item, 0)
 	for _, invItem := range i.items {
-		if invItem.GetInternalName() == name {
-			if invItem.IsMultipleStacks() && invItem.GetStackSize() > count {
+		if invItem.InternalName() == name {
+			if invItem.IsMultipleStacks() && invItem.StackSize() > count {
 				splitItems = append(splitItems, invItem.Split(count))
 				count = 0
 			} else {
 				itemsToRemove = append(itemsToRemove, invItem)
-				count -= invItem.GetStackSize()
+				count -= invItem.StackSize()
 			}
 			if count <= 0 {
 				break
@@ -533,8 +466,8 @@ func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []*Item {
 
 func (i *Inventory) HasItemWithNameAndCount(name string, count int) bool {
 	for _, invItem := range i.items {
-		if invItem.GetInternalName() == name {
-			count -= invItem.GetStackSize()
+		if invItem.InternalName() == name {
+			count -= invItem.StackSize()
 			if count <= 0 {
 				return true
 			}
@@ -542,39 +475,35 @@ func (i *Inventory) HasItemWithNameAndCount(name string, count int) bool {
 	}
 	return false
 }
-func (i *Inventory) AddItems(player []*Item) {
+func (i *Inventory) AddItems(player []foundation.Item) {
 	for _, item := range player {
 		i.addItemInternally(item)
 	}
 	i.changed()
 }
 
-func SortInventory(stacks []*InventoryStack) {
-	slices.SortStableFunc(stacks, func(i, j *InventoryStack) int {
-		itemI := i.items[0]
-		itemJ := j.items[0]
-		if itemI.GetCategory() != itemJ.GetCategory() {
-			return cmp.Compare(itemI.GetCategory(), itemJ.GetCategory())
+func SortInventory(stacks []foundation.Item) {
+	slices.SortStableFunc(stacks, func(i, j foundation.Item) int {
+		itemI := i
+		itemJ := j
+		if itemI.Category() != itemJ.Category() {
+			return cmp.Compare(itemI.Category(), itemJ.Category())
 		}
 		if itemI.IsWeapon() && itemJ.IsWeapon() {
-			if itemI.GetWeapon().GetWeaponType() != itemJ.GetWeapon().GetWeaponType() {
-				return cmp.Compare(itemI.GetWeapon().GetWeaponType(), itemJ.GetWeapon().GetWeaponType())
+			weapI := itemI.(*Weapon)
+			weapJ := itemJ.(*Weapon)
+			if weapI.GetWeaponType() != weapJ.GetWeaponType() {
+				return cmp.Compare(weapI.GetWeaponType(), weapJ.GetWeaponType())
 			}
-			expectedDamageI := itemI.GetWeaponDamage().ExpectedValue()
-			expectedDamageJ := itemJ.GetWeaponDamage().ExpectedValue()
+			expectedDamageI := weapI.GetWeaponDamage().ExpectedValue()
+			expectedDamageJ := weapJ.GetWeaponDamage().ExpectedValue()
 			return cmp.Compare(expectedDamageJ, expectedDamageI)
 		}
 		if itemI.IsArmor() && itemJ.IsArmor() {
-			return cmp.Compare(itemI.GetArmor().GetProtectionRating(), itemJ.GetArmor().GetProtectionRating())
+			armorI := itemI.(*Armor)
+			armorJ := itemJ.(*Armor)
+			return cmp.Compare(armorI.GetProtectionRating(), armorJ.GetProtectionRating())
 		}
 		return cmp.Compare(itemI.Name(), itemJ.Name())
 	})
-}
-
-func StacksFromItems(items []*Item) []*InventoryStack {
-	stacks := make([]*InventoryStack, 0)
-	for _, item := range items {
-		stacks = append(stacks, &InventoryStack{items: []*Item{item}})
-	}
-	return stacks
 }

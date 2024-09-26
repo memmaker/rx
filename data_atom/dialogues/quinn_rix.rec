@@ -22,7 +22,7 @@ o_text: I noticed you keep a nice collection of handguns. All in good condition.
 o_goto: GunCollection
 #
 o_text: I just wanted to issue a warning: Keep the fuck out of my way.
-o_test: RollSkill('Speech', 10)
+o_test: RollSkill('Intimidate', 10)
 o_succ: Intimidated
 o_fail: LaughedAt
 

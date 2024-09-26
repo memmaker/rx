@@ -28,11 +28,6 @@ Foreground: gray_3
 InventoryColor: magenta_2
 Background: light_blue_2
 
-Name: Drinks
-Icon: ⚱
-Foreground: Blue
-InventoryColor: Blue
-
 Name: Lockpicks
 Icon: τ
 Foreground: light_gray_2
@@ -48,6 +43,10 @@ Icon: ¿
 Foreground: yellow_3
 InventoryColor: yellow_3
 
+Name: Consumables
+Icon: º
+Foreground: light_blue
+InventoryColor: light_blue
 
 Name: Other
 Icon: ¿

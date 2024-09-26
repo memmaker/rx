@@ -114,6 +114,28 @@ func (c *CharsheetViewer) setupUI() {
 	derivedStatsWindow.SetBorder(true)
 	derivedStatsWindow.SetScrollBarVisibility(cview.ScrollBarNever)
 	derivedStatsWindow.SetScrollable(false)
+	derivedStatsWindow.SetMouseCapture(func(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
+		if action == cview.MouseLeftClick {
+			x, y := event.Position()
+			// to local coordinates
+			startX, startY, _, _ := derivedStatsWindow.GetInnerRect()
+			x -= startX
+			y -= startY
+			// to list item index
+			i := y
+
+			if i < 0 || i >= int(special.VisibleDerivedStatCount) {
+				return action, event
+			}
+
+			derivedStat := (special.DerivedStat)(i)
+
+			_, mods := c.sheet.GetDerivedStatWithModInfo(derivedStat)
+
+			c.descriptionWindow.SetText(derivedStat.String() + "\n" + modifiersToString(mods))
+		}
+		return action, event
+	})
 
 	descriptionWindow := cview.NewTextView()
 	descriptionWindow.SetScrollBarVisibility(cview.ScrollBarAuto)

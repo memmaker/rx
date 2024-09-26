@@ -8,8 +8,6 @@ func (n EquipSlot) ToString() string {
 	switch n {
 	case SlotNameMainHand:
 		return "Wielding"
-	case SlotNameOffHand:
-		return "Off Hand"
 	case SlotNameLightSource:
 		return "Light source"
 	case SlotNameArmorTorso:
@@ -39,7 +37,6 @@ const (
 
 	// On Body only
 	SlotNameMainHand
-	SlotNameOffHand
 )
 
 func ItemSlotFromString(s string) EquipSlot {

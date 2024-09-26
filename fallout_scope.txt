@@ -1,3 +1,5 @@
+
+
 Fallout Core Features
  - Items & Actors
    - Weapons - Missing: Animations & Effects for more Weapon Types
@@ -59,12 +61,6 @@ DX Items:
   - Lockpick
   - Flare
 
-Cool Ideas to add:
- - Zombie Shooting Area - Headshots kill, limb shots slow down, body shots do nothing
- - Escape Room - Solve puzzles to escape
- - Stealth Mission - Avoid detection
- - Manipulated Senses - Make the player kill innocents
- - Doom Style Traps / Triggers / Secrets
 
 See:
 https://mikesrpgcenter.com/fallout/index.html
@@ -84,7 +80,7 @@ Test Runs:
 
 Speech Skill:
  - Divide into multiple skills?
-   - Persuade (Int), Lie (Per), Intimidate (Str)
+   - Persuade (Int), Lie (Per), Intimidate (Str), Streetwise, Corporate Etiquette, etc.
    -> Should act differently in different situations
    -> Should have different effects on different NPCs
  - Don't just skip content, but alter it
@@ -98,3 +94,23 @@ Lockpicking:
 Hacking:
  - DX Style - Resource Spending
  - RL Style - Shells & SSH
+
+Make Stat Dumping sting
+Every Character Concept should be viable
+
+
+Cops - Alignment with the law
+Corporates - Alignment with a company
+Nomad - Alignment with a group
+
+# Common Char Archetypes
+
+Talk  - Diplomat / Trader
+Sneak - Techie / Thief / Infiltrator
+Fight - Ranged & Melee Fighters
+
+## Cyberpunk
+
+## Wasteland
+Hulk
+

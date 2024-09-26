@@ -9,14 +9,54 @@ name: DefaultIntroduction
 npc: ** Contractor Client Interface **
 + > Welcome
 effect: None
+#
 # Starter Mission
 o_text: (Job offer) Extract money, reward: leather armor.
 o_cond: !HasFlag('JobAccepted(starter)') && !HasFlag('JobDeclined(starter)')
 o_goto: starter_mission
 #
+#
+# Dead Man's Switch
+o_text: (IMPORTANT) Last message from Grim
+o_cond: HasFlag(Killed(grim_beard))
+o_goto: DeadMansSwitch
+#
 o_text: Leave.
 o_goto: End
 
+### Main Quest Delivery if grim_beard dies ###
+
+name: DeadMansSwitch
+npc: ** Contractor Client Interface **
++ > Accessing private records..
+#
+o_text: <Confirm>
+o_goto: ReadGrimsLastMessage
+#
+o_text: Leave.
+o_goto: End
+
+name: ReadGrimsLastMessage
+npc: ** Contractor Client Interface **
++ > Right, my turn to greet the reaper.
++ > I just hope I made a good choice with my heir.
++ > Ok, let's cut this crap. I am dead.
++ > Now listen up or you will join me early.
++ > Some high and mighty assholes are planning the literal end of the world.
++ > All I could find out is the name of one of the companies involved.
++ > They call themselves "Vault-Tec".
++ > If I were still young, or you know, alive, I would look into it.
++ > I'm out.
++ >
++ > Grim
+#
+effect: SetFlag('KnowsAbout(apocalypse)')
+#
+o_text: <Confirm>
+o_goto: End
+#
+o_text: FUCK.
+o_goto: End
 
 ### Starter Mission BEGIN ###
 

@@ -3,7 +3,6 @@ package game
 import (
 	"RogueUI/foundation"
 	"RogueUI/gridmap"
-	"RogueUI/special"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
@@ -26,7 +25,7 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 	oldPos := player.Position()
 
 	// adapted from: https://github.com/memmaker/rogue-pc-modern-C/blob/582340fcaef32dd91595721efb2d5db41ff3cb05/src/move.c#L56
-	if player.HasFlag(special.FlagConfused) && rand.Intn(5) != 0 {
+	if player.HasFlag(foundation.FlagConfused) && rand.Intn(5) != 0 {
 		direction = geometry.RandomDirection()
 	}
 
@@ -178,18 +177,18 @@ func (g *GameState) ManualMovePlayer(direction geometry.CompassDirection) {
 func (g *GameState) openInventoryOf(actor *Actor) {
 	inventory := actor.GetInventory()
 
-	actorItems := itemStacksForUI(inventory.StackedItemsWithFilter(func(item *Item) bool {
+	actorItems := inventory.StackedItemsWithFilter(func(item foundation.Item) bool {
 		return !item.HasTag(foundation.TagNoLoot)
-	}))
+	})
 
 	if (inventory.IsEmpty() || len(actorItems) == 0) && !actor.IsAlive() {
 		g.msg(foundation.Msg("There is nothing to pick up"))
 		return
 	}
 
-	rightToLeft := func(itemUI foundation.ItemForUI, amount int) {
+	rightToLeft := func(itemUI foundation.Item, amount int) {
 		if amount > 0 {
-			itemStack := itemUI.(*InventoryStack)
+			itemStack := itemUI
 
 			g.stackTransfer(inventory, g.Player.GetInventory(), itemStack, amount)
 
@@ -200,23 +199,23 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 	}
 
 	if !actor.IsAlive() {
-		g.ui.ShowTakeOnlyContainer(actor.Name(), actorItems, func(uiItem foundation.ItemForUI) {
-			rightToLeft(uiItem, uiItem.GetStackSize())
+		g.ui.ShowTakeOnlyContainer(actor.Name(), actorItems, func(uiItem foundation.Item) {
+			rightToLeft(uiItem, uiItem.StackSize())
 		})
 		return
 	}
 
-	leftToRight := func(itemUI foundation.ItemForUI, amount int) {
+	leftToRight := func(itemUI foundation.Item, amount int) {
 
 		if amount > 0 {
-			itemStack := itemUI.(*InventoryStack)
+			itemStack := itemUI
 			g.stackTransfer(g.Player.GetInventory(), inventory, itemStack, amount)
 			g.ui.PlayCue("world/drop")
 		}
 
 		g.openInventoryOf(actor)
 	}
-	playerItems := itemStacksForUI(g.Player.GetInventory().StackedItems())
+	playerItems := g.Player.GetInventory().Items()
 	g.ui.ShowGiveAndTakeContainer(g.Player.Name(), playerItems, actor.Name(), actorItems, rightToLeft, leftToRight)
 }
 func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition bool) {
@@ -236,9 +235,11 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	g.updateDijkstraMap()
 	g.updatePlayerFoVAndApplyExploration()
 
-	if g.Player.HasFlag(special.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
+	if g.Player.HasFlag(foundation.FlagCurseTeleportitis) && rand.Intn(100) < 5 {
 		g.ui.AddAnimations(OneAnimation(teleportWithAnimation(g, g.Player, g.currentMap().RandomSpawnPosition())))
 	}
+
+	g.Player.GetFlags().Unset(foundation.FlagConcentratedAiming)
 
 	// automatic door opening/closing sfx handling
 	if !wasMapTransition {

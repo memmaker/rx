@@ -480,6 +480,6 @@ Weight: 1
 Cost: 350
 zap_effect: explode
 tags: timed
-chance_to_break_on_throw: 100
+chance_to_break_on_throw: 10
 Position: (26,11)
 

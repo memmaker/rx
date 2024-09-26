@@ -85,7 +85,7 @@ func (b *PushBox) InitWithGameState(g *GameState) {
 	b.onDamage = func(dmg SourcedDamage) []foundation.Animation {
 		if b.category == foundation.ObjectExplodingPushBox {
 			g.currentMap().RemoveObject(b)
-			return explosion(g, dmg.Attacker, b.Position(), Params{
+			return explosion(g, dmg.Attacker, b.Position(), foundation.Params{
 				"damage_interval": fxtools.Interval{Min: 10, Max: 20},
 			})
 		}

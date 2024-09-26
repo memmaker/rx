@@ -16,7 +16,7 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 		g.ui.AnimatePending()
 	}
 
-	var loadedMap *gridmap.GridMap[*Actor, *Item, Object]
+	var loadedMap *gridmap.GridMap[*Actor, foundation.Item, Object]
 	var ok bool
 	var firstTimeInit func()
 	if loadedMap, ok = g.activeMaps[levelName]; !ok {

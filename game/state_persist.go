@@ -19,9 +19,6 @@ func (g *GameState) Save(directory string) error {
 		recfile.Field{Name: "TurnsTaken", Value: recfile.IntStr(g.TurnsTaken())},
 		recfile.Field{Name: "GameTime", Value: recfile.TimeStr(g.gameTime.Time)},
 		recfile.Field{Name: "ShowEverything", Value: recfile.BoolStr(g.showEverything)},
-		recfile.Field{Name: "RewardsReceived", Value: strings.Join(fxtools.MapSlice(g.rewardTracker.GetRewardsReceived(), func(intVal int) string {
-			return recfile.IntStr(intVal)
-		}), ", ")},
 	}
 	globalFile := fxtools.MustCreate(path.Join(directory, "global.rec"))
 	err := recfile.WriteMulti(globalFile, map[string][]recfile.Record{
@@ -70,7 +67,7 @@ func (g *GameState) Load(directory string) {
 	globalFile.Close()
 
 	globalRecord := globalRecords["global"][0]
-	var rewardsReceived []int
+
 	for _, field := range globalRecord {
 		switch strings.ToLower(field.Name) {
 		case "currentmap":
@@ -81,13 +78,6 @@ func (g *GameState) Load(directory string) {
 			g.gameTime = g.gameTime.WithTime(recfile.StrTime(field.Value))
 		case "showeverything":
 			g.showEverything = recfile.StrBool(field.Value)
-		case "rewardsreceived":
-			list := field.AsList(",")
-			rewards := make([]int, len(list))
-			for _, item := range list {
-				rewards = append(rewards, item.AsInt())
-			}
-			rewardsReceived = rewards
 		}
 	}
 
@@ -104,20 +94,16 @@ func (g *GameState) Load(directory string) {
 	journalFile.Close()
 	g.journal = NewJournalFromRecords(journalRecords, g.getScriptFuncs())
 
-	rewardsFile := fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "xp_rewards.rec"))
-	g.rewardTracker = NewRewardTracker(rewardsFile, g.getScriptFuncs())
-	g.rewardTracker.SetRewardsReceived(rewardsReceived)
-
 	// Loaded Map States
 	mapEntries, err := os.ReadDir(path.Join(directory, "maps"))
 	if err != nil {
 		panic(err)
 	}
-	loadedMaps := make(map[string]*gridmap.GridMap[*Actor, *Item, Object])
+	loadedMaps := make(map[string]*gridmap.GridMap[*Actor, foundation.Item, Object])
 	for _, mapEntry := range mapEntries {
 		if mapEntry.IsDir() {
 			mapName := mapEntry.Name()
-			gameMap := gridmap.Load[*Actor, *Item, Object](directory, mapName)
+			gameMap := gridmap.Load[*Actor, foundation.Item, Object](directory, mapName)
 			for _, obj := range gameMap.Objects() {
 				obj.InitWithGameState(g)
 			}

@@ -1,10 +1,8 @@
 package console
 
 import (
-	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/gridmap"
-	"RogueUI/special"
 	"cmp"
 	"fmt"
 	"github.com/0xcafed00d/joystick"
@@ -230,7 +228,7 @@ func (u *UI) SetColors(palette textiles.ColorPalette, colors map[foundation.Item
 	u.setTheme()
 }
 
-func (u *UI) ShowTakeOnlyContainer(name string, containedItems []foundation.ItemForUI, transfer func(item foundation.ItemForUI)) {
+func (u *UI) ShowTakeOnlyContainer(name string, containedItems []foundation.Item, transfer func(item foundation.Item)) {
 	var menuItems []foundation.MenuItem
 	menuLabels := u.menuLabelsFor(containedItems)
 	for index, i := range containedItems {
@@ -299,7 +297,7 @@ func (u *UI) openAmountWidget(itemName string, maxAmount int, onAmountSelected f
 
 }
 
-func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.ItemForUI, rightName string, rightItems []foundation.ItemForUI, transferToLeft func(itemTaken foundation.ItemForUI, stackCount int), transferToRight func(itemTaken foundation.ItemForUI, stackCount int)) {
+func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.Item, rightName string, rightItems []foundation.Item, transferToLeft func(itemTaken foundation.Item, stackCount int), transferToRight func(itemTaken foundation.Item, stackCount int)) {
 	var leftMenuItems []foundation.MenuItem
 	var rightMenuItems []foundation.MenuItem
 	var leftMenuLabels []string
@@ -324,7 +322,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 			Action: func() {
 				closeContainer()
 				if item.IsMultipleStacks() {
-					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
+					u.openAmountWidget(item.Name(), item.StackSize(), func(amount int) {
 						transferToRight(item, amount)
 					})
 				} else {
@@ -341,7 +339,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 			Action: func() {
 				closeContainer()
 				if item.IsMultipleStacks() {
-					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
+					u.openAmountWidget(item.Name(), item.StackSize(), func(amount int) {
 						transferToLeft(item, amount)
 					})
 				} else {
@@ -417,7 +415,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 		command := u.getCommandForKey(uiKey)
 		if command == "pickup" {
 			for _, item := range rightItems {
-				transferToLeft(item, item.GetStackSize())
+				transferToLeft(item, item.StackSize())
 			}
 			u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			closeContainer()
@@ -461,12 +459,12 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 	})
 }
 
-func (u *UI) menuLabelsFor(items []foundation.ItemForUI) []string {
+func (u *UI) menuLabelsFor(items []foundation.Item) []string {
 	tablerows := make([]fxtools.TableRow, len(items))
 	for index, i := range items {
 		item := i
 
-		itemName := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory()))
+		itemName := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.Category()))
 		itemWeight := fmt.Sprintf("%dlbs", item.GetCarryWeight())
 
 		tablerows[index] = fxtools.NewTableRow(itemName, itemWeight)
@@ -493,13 +491,13 @@ func (u *UI) PlayCue(cueName string) {
 	u.audioPlayer.PlayCue(cueName)
 }
 
-func (u *UI) OpenVendorMenu(itemsForSale []fxtools.Tuple[foundation.ItemForUI, int], buyItem func(ui foundation.ItemForUI, price int)) {
+func (u *UI) OpenVendorMenu(itemsForSale []fxtools.Tuple[foundation.Item, int], buyItem func(ui foundation.Item, price int)) {
 	var menuItems []foundation.MenuItem
 	for _, i := range itemsForSale {
 		item := i.GetItem1()
 		price := i.GetItem2()
 		menuItems = append(menuItems, foundation.MenuItem{
-			Name: fmt.Sprintf("%s (%d)", item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory())), price),
+			Name: fmt.Sprintf("%s (%d)", item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.Category())), price),
 			Action: func() {
 				buyItem(item, price)
 			},
@@ -522,10 +520,6 @@ func (u *UI) GetAnimBackgroundColor(position geometry.Point, colorName string, f
 	iconAtLocation, _ := u.mapLookup(position)
 	bgColor := u.uiTheme.GetColorByName(colorName)
 	return NewCoverAnimation(position, iconAtLocation.WithBg(bgColor), frameCount, done)
-}
-
-func (u *UI) HighlightStatChange(stat dice_curve.Stat) {
-	//TODO
 }
 
 func (u *UI) ShowGameOver(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
@@ -655,7 +649,7 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 
 func toLinesOfText(highScores []foundation.ScoreInfo) []string {
 	scoreTable := []string{
-		"= Top 10 Dungeon Crawlers =",
+		"= Top 10 Contractors =",
 		"",
 	}
 	for i, highScore := range highScores {
@@ -664,9 +658,9 @@ func toLinesOfText(highScores []foundation.ScoreInfo) []string {
 		}
 		scoreLine := ""
 		if highScore.Escaped {
-			scoreLine = fmt.Sprintf("[#c9c54d::b]%d. %s: %d Gold, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
+			scoreLine = fmt.Sprintf("[#c9c54d::b]%d. %s: $%d, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
 		} else {
-			scoreLine = fmt.Sprintf("%d. %s: %d Gold, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
+			scoreLine = fmt.Sprintf("%d. %s: $%d, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
 		}
 		scoreTable = append(scoreTable, scoreLine)
 	}
@@ -734,6 +728,7 @@ func (u *UI) AfterPlayerMoved(moveInfo foundation.MoveInfo) {
 	} else if moveInfo.Mode == foundation.PlayerMoveModeRun && u.autoRun {
 		u.application.QueueEvent(tcell.NewEventKey(tcell.KeyRune, directionToRune(moveInfo.Direction), 64))
 	}
+
 }
 
 func (u *UI) GetAnimMove(actor foundation.ActorForUI, old geometry.Point, new geometry.Point) foundation.Animation {
@@ -761,7 +756,7 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
 
 	var backGroundColor color.RGBA
 
-	if actor.HasFlag(special.FlagHeld) {
+	if actor.HasFlag(foundation.FlagHeld) {
 		return textiles.TextIcon{
 			Char: actor.Icon().Char,
 			Fg:   u.uiTheme.GetColorByName("Blue_1"),
@@ -778,7 +773,7 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
 
 func (u *UI) isPlayerHallucinating() bool {
 	flags := u.game.GetHudFlags()
-	_, isHallucinating := flags[special.FlagHallucinating]
+	_, isHallucinating := flags[foundation.FlagHallucinating]
 	return isHallucinating
 }
 
@@ -1183,7 +1178,7 @@ func (u *UI) GetAnimEnchantArmor(player foundation.ActorForUI, location geometry
 
 	return u.GetAnimTiles([]geometry.Point{location}, frames, done)
 }
-func (u *UI) GetAnimThrow(item foundation.ItemForUI, origin geometry.Point, target geometry.Point) (foundation.Animation, int) {
+func (u *UI) GetAnimThrow(item foundation.Item, origin geometry.Point, target geometry.Point) (foundation.Animation, int) {
 	if !u.settings.AnimationsEnabled || !u.settings.AnimateProjectiles {
 		return nil, 0
 	}
@@ -1748,14 +1743,14 @@ func (u *UI) UpdateInventory() {
 	}
 	longest := longestInventoryLineWithoutColorCodes(items)
 
-	var getItemName func(item foundation.ItemForUI, isEquipped bool) string
+	var getItemName func(item foundation.Item, isEquipped bool) string
 
 	if !u.isRightPanelWidthAtLeast(longest) {
 		if u.getRightPanelWidth() == 0 {
 			return
 		}
-		getItemName = func(item foundation.ItemForUI, isEquipped bool) string {
-			itemIcon := item.GetIcon().WithFg(u.uiTheme.GetInventoryItemColor(item.GetCategory())).WithBg(u.uiTheme.GetUIColor(UIColorUIBackground))
+		getItemName = func(item foundation.Item, isEquipped bool) string {
+			itemIcon := item.GetIcon().WithFg(u.uiTheme.GetInventoryItemColor(item.Category())).WithBg(u.uiTheme.GetUIColor(UIColorUIBackground))
 			if isEquipped {
 				itemIcon = itemIcon.Reversed()
 			}
@@ -1763,8 +1758,8 @@ func (u *UI) UpdateInventory() {
 			return iconString
 		}
 	} else {
-		getItemName = func(item foundation.ItemForUI, isEquipped bool) string {
-			nameWithColorsAndShortcut := item.InventoryNameWithColorsAndShortcut(u.uiTheme.GetInventoryItemColorCode(item.GetCategory()))
+		getItemName = func(item foundation.Item, isEquipped bool) string {
+			nameWithColorsAndShortcut := item.InventoryNameWithColorsAndShortcut(u.uiTheme.GetInventoryItemColorCode(item.Category()))
 			if isEquipped {
 				nameWithColorsAndShortcut = nameWithColorsAndShortcut[:2] + "+" + nameWithColorsAndShortcut[3:]
 			}
@@ -1809,9 +1804,9 @@ func (u *UI) UpdateVisibleActors() {
 			asPercent = rand.Float64()
 		}
 		barIcon := '*'
-		if enemy.HasFlag(special.FlagSleep) {
+		if enemy.HasFlag(foundation.FlagSleep) {
 			barIcon = 'z'
-		} else if !enemy.HasFlag(special.FlagAwareOfPlayer) {
+		} else if !enemy.HasFlag(foundation.FlagAwareOfPlayer) {
 			barIcon = '?'
 		}
 		hpBarString := fmt.Sprintf("[%s]", u.RuneBarFromPercent(barIcon, asPercent, 5))
@@ -1882,7 +1877,7 @@ func (u *UI) UpdateStats() {
 
 	itemName := "| none |"
 	if isEquipped {
-		itemName = "| " + equippedItem.LongNameWithColors(textiles.RGBAToFgColorCode(u.uiTheme.GetInventoryItemColor(equippedItem.GetCategory()))) + " |"
+		itemName = "| " + equippedItem.LongNameWithColors(textiles.RGBAToFgColorCode(u.uiTheme.GetInventoryItemColor(equippedItem.Category()))) + " |"
 	}
 
 	turns := statusValues[foundation.HudTurnsTaken]
@@ -1898,24 +1893,24 @@ func (u *UI) UpdateStats() {
 		playerBar := u.FullColorBarFromPercent(hp, hpMax, 11)
 		hpBarStr := fmt.Sprintf("HP [%s]", playerBar)
 
-		fatigueCurrent := statusValues[foundation.HudFatiguePoints]
-		fatigueMax := statusValues[foundation.HudFatiguePointsMax]
+		apCurrent := statusValues[foundation.HudActionPoints]
+		apMax := statusValues[foundation.HudActionPointsMax]
 
 		// display as bar
-		fatigueBarContent := u.RuneBarWithColor('!', "light_blue_1", "light_blue_5", fatigueCurrent, fatigueMax)
-		fpBarStr := fmt.Sprintf("FP [%s]", fatigueBarContent)
+		actionBarContent := u.RuneBarWithColor('!', "light_blue_1", "light_blue_5", apCurrent, apMax)
+		apBarStr := fmt.Sprintf("AP [%s]", actionBarContent)
 
-		longFlags := FlagStringLong(flags)
+		longFlags := PlayerFlagStringLong(flags)
 
 		width, _ := u.application.GetScreenSize()
 
 		mapFriendlyName := u.game.GetMapDisplayName()
 
-		lineTwo := fmt.Sprintf("%s %s %s %s | T: %d", hpBarStr, fpBarStr, longFlags, mapFriendlyName, turns)
+		lineTwo := fmt.Sprintf("%s %s %s | %s | T: %d", hpBarStr, apBarStr, longFlags, mapFriendlyName, turns)
 
 		if cview.TaggedStringWidth(lineTwo) > width {
-			shortFlags := FlagStringShort(flags)
-			lineTwo = fmt.Sprintf("%s %s %s", hpBarStr, fpBarStr, shortFlags)
+			shortFlags := PlayerFlagStringShort(flags)
+			lineTwo = fmt.Sprintf("%s %s %s", hpBarStr, apBarStr, shortFlags)
 		}
 
 		lineTwo = expandToWidth(lineTwo, width)
@@ -1930,10 +1925,12 @@ func (u *UI) UpdateStats() {
 	}
 }
 
-func FlagStringLong(flags map[special.ActorFlag]int) string {
-	flagOrder := special.AllFlagsExceptGoldOrdered()
+func PlayerFlagStringLong(flags map[foundation.ActorFlag]int) string {
 	var flagStrings []string
-	for _, flag := range flagOrder {
+	for flag := foundation.ActorFlag(0); flag < foundation.FlagCount; flag++ {
+		if !flag.ShowInHud() {
+			continue
+		}
 		if count, ok := flags[flag]; ok {
 			var flagLine string
 			if count > 1 {
@@ -1948,10 +1945,12 @@ func FlagStringLong(flags map[special.ActorFlag]int) string {
 	return strings.Join(flagStrings, " | ")
 }
 
-func FlagStringShort(flags map[special.ActorFlag]int) string {
-	flagOrder := special.AllFlagsExceptGoldOrdered()
+func PlayerFlagStringShort(flags map[foundation.ActorFlag]int) string {
 	var flagStrings []string
-	for _, flag := range flagOrder {
+	for flag := foundation.ActorFlag(0); flag < foundation.FlagCount; flag++ {
+		if !flag.ShowInHud() {
+			continue
+		}
 		if count, ok := flags[flag]; ok {
 			var flagLine string
 			if count > 1 {
@@ -1984,7 +1983,7 @@ func (u *UI) colorIfDiff(statStr string, stat foundation.HudValue, currentValue 
 	hiCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Yellow"))
 	return fmt.Sprintf("%s%s[-]", hiCode, statStr)
 }
-func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags map[special.ActorFlag]int, multiLine bool, equippedItem string) string {
+func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags map[foundation.ActorFlag]int, multiLine bool, equippedItem string) string {
 
 	damageResistance := statusValues[foundation.HudDamageResistance]
 	armorStr := fmt.Sprintf("DR: %-3d", damageResistance)
@@ -1998,13 +1997,13 @@ func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags
 		hpStr := fmt.Sprintf("HP: %-7s", hpValString)
 		hpStr = u.colorIfDiff(hpStr, foundation.HudHitPoints, hp)
 
-		fatigueCurrent := statusValues[foundation.HudFatiguePoints]
-		fatigueMax := statusValues[foundation.HudFatiguePointsMax]
+		fatigueCurrent := statusValues[foundation.HudActionPoints]
+		fatigueMax := statusValues[foundation.HudActionPointsMax]
 		fpValString := fmt.Sprintf("%d/%d", fatigueCurrent, fatigueMax)
 		fpStr := fmt.Sprintf("FP: %-7s", fpValString)
-		fpStr = u.colorIfDiff(fpStr, foundation.HudFatiguePoints, fatigueCurrent)
+		fpStr = u.colorIfDiff(fpStr, foundation.HudActionPoints, fatigueCurrent)
 
-		flagString := FlagStringShort(flags)
+		flagString := PlayerFlagStringShort(flags)
 
 		statusStr = fmt.Sprintf("%s %s %s %s %s", hpStr, fpStr, equippedItem, armorStr, flagString)
 	} else {
@@ -2031,7 +2030,7 @@ func (u *UI) openCharSheet() {
 
 	u.makeCenteredModal("modal", charSheet, 80, 25)
 }
-func (u *UI) openInventory(items []foundation.ItemForUI) *TextInventory {
+func (u *UI) openInventory(items []foundation.Item) *TextInventory {
 	inventory := NewTextInventory(u.game.IsPlayerOverEncumbered)
 	inventory.SetLineColor(u.uiTheme.GetInventoryItemColor)
 	inventory.SetEquippedTest(u.game.IsEquipped)
@@ -2051,10 +2050,10 @@ func (u *UI) openInventory(items []foundation.ItemForUI) *TextInventory {
 	return inventory
 }
 
-func (u *UI) OpenInventoryForManagement(items []foundation.ItemForUI) {
+func (u *UI) OpenInventoryForManagement(items []foundation.Item) {
 	inv := u.openInventory(items)
 	inv.SetTitle("Inventory")
-	inv.SetDefaultSelection(func(item foundation.ItemForUI) {
+	inv.SetDefaultSelection(func(item foundation.Item) {
 		if item.IsEquippable() {
 			u.game.EquipToggle(item)
 		} else {
@@ -2068,7 +2067,7 @@ func (u *UI) OpenInventoryForManagement(items []foundation.ItemForUI) {
 	inv.SetCloseOnControlSelection(true)
 	inv.SetCloseOnShiftSelection(true)
 }
-func (u *UI) OpenInventoryForSelection(itemStacks []foundation.ItemForUI, prompt string, onSelected func(item foundation.ItemForUI)) {
+func (u *UI) OpenInventoryForSelection(itemStacks []foundation.Item, prompt string, onSelected func(item foundation.Item)) {
 	u.rightPanel.Clear()
 	inv := u.openInventory(itemStacks)
 	inv.SetSelectionMode()
@@ -2719,7 +2718,7 @@ func (u *UI) ShowVisibleItems() {
 	}
 	var infoTexts strings.Builder
 	for i, item := range listOfItems {
-		info := item.GetListInfo()
+		info := item.Description()
 		info = fmt.Sprintf("%c - %s", item.GetIcon().Char, info)
 		infoTexts.WriteString(info)
 		if i < len(listOfItems)-1 {
@@ -2959,79 +2958,6 @@ func (u *UI) ApplyLighting(p geometry.Point, fg, bg color.RGBA) (color.RGBA, col
 
 func applyLightToMaterial(lightAtCell fxtools.HDRColor, material color.RGBA) fxtools.HDRColor {
 	return lightAtCell.Multiply(fxtools.NewRGBColorFromBytes(material.R, material.G, material.B))
-}
-
-func (u *UI) ShowCharacterSheet() {
-	var attributeActions []foundation.MenuItem
-
-	statList := []dice_curve.Stat{
-		dice_curve.Strength,
-		dice_curve.Dexterity,
-		dice_curve.Intelligence,
-		dice_curve.Health,
-		dice_curve.BasicSpeed,
-		dice_curve.HitPoints,
-		dice_curve.FatiguePoints,
-		dice_curve.Perception,
-		dice_curve.Will,
-	}
-	for _, s := range statList {
-		//statInList := s
-		attributeActions = append(attributeActions, foundation.MenuItem{
-			Name: fmt.Sprintf("+ %s", s.ToString()),
-			Action: func() {
-				//u.game.IncreaseAttributeLevel(statInList)
-				u.showCharacterActions(attributeActions)
-			},
-		})
-	}
-
-	var skillActions []foundation.MenuItem
-
-	skillList := []dice_curve.SkillName{
-		dice_curve.SkillNameBrawling,
-		dice_curve.SkillNameMeleeWeapons,
-		dice_curve.SkillNameShield,
-		dice_curve.SkillNameThrowing,
-		dice_curve.SkillNameMissileWeapons,
-	}
-
-	for _, s := range skillList {
-		skillInList := s
-		skillActions = append(skillActions, foundation.MenuItem{
-			Name: fmt.Sprintf("+ %s", skillInList),
-			Action: func() {
-				//u.game.IncreaseSkillLevel(skillInList)
-				u.showCharacterActions(skillActions)
-			},
-		})
-
-	}
-
-	baseActions := []foundation.MenuItem{
-		{
-			Name:       "Close",
-			Action:     func() {},
-			CloseMenus: true,
-		},
-		{
-			Name: "Change base Attributes",
-			Action: func() {
-				u.showCharacterActions(attributeActions)
-			},
-			CloseMenus: true,
-		},
-
-		{
-			Name: "Change Skills",
-			Action: func() {
-				u.showCharacterActions(skillActions)
-			},
-			CloseMenus: true,
-		},
-	}
-
-	u.showCharacterActions(baseActions)
 }
 
 func (u *UI) showCharacterActions(actions []foundation.MenuItem) {

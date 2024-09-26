@@ -5,31 +5,65 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/memmaker/go/cview"
+	"strings"
 )
 
-type Protection struct {
-	DamageReduction int
-	DamageThreshold int
-}
-
-func (p Protection) String() string {
-	return fmt.Sprintf("%d|%d%%", p.DamageThreshold, p.DamageReduction)
-}
-
-func (p Protection) Scaled(float float64) Protection {
-	return Protection{
-		DamageReduction: int(float * float64(p.DamageReduction)),
-		DamageThreshold: int(float * float64(p.DamageThreshold)),
-	}
-}
-
-type ArmorInfo struct {
+type Armor struct {
+	*GenericItem
 	protection         map[special.DamageType]Protection
 	encumbrance        int
 	radiationReduction int
 }
 
-func (i *ArmorInfo) GobEncode() ([]byte, error) {
+func (i *Armor) IsArmor() bool {
+	return true
+}
+
+func (i *Armor) IsEquippable() bool {
+	return true
+}
+func (i *Armor) IsRepairable() bool {
+	return true
+}
+func (i *Armor) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
+	return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
+}
+func (i *Armor) InventoryNameWithColors(colorCode string) string {
+	line := cview.Escape(i.Name())
+
+	line = cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.GetArmorProtectionValueAsString()))
+
+	statPairs := i.getStatPairsAsStrings()
+
+	if len(statPairs) > 0 {
+		line = fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|"))
+	}
+
+	lineWithColor := colorCode + line + "[-]"
+
+	qIcon := getQualityIcon(i.qualityInPercent)
+	lineWithColor = fmt.Sprintf("%s %s", qIcon, lineWithColor)
+
+	return lineWithColor
+}
+func (i *Armor) LongNameWithColors(colorCode string) string {
+	line := cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.GetArmorProtectionValueAsString()))
+	return colorCode + line + "[-]"
+}
+
+func (i *Armor) GetArmorProtection(damageType special.DamageType) Protection {
+	return i.getRawProtection(damageType).Scaled(i.qualityInPercent.Normalized())
+}
+
+func (i *Armor) GetArmorProtectionValueAsString() string {
+	physical := i.GetArmorProtection(special.DamageTypeNormal)
+	energy := i.GetArmorProtection(special.DamageTypeLaser)
+	return fmt.Sprintf("%s %s", physical.String(), energy.String())
+
+}
+
+func (i *Armor) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 
@@ -50,7 +84,7 @@ func (i *ArmorInfo) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (i *ArmorInfo) GobDecode(data []byte) error {
+func (i *Armor) GobDecode(data []byte) error {
 	decoder := gob.NewDecoder(bytes.NewReader(data))
 
 	// Decode each field of the struct in order
@@ -70,32 +104,38 @@ func (i *ArmorInfo) GobDecode(data []byte) error {
 	return nil
 }
 
-func (i *ArmorInfo) getRawProtection(dType special.DamageType) Protection {
+func (i *Armor) getRawProtection(dType special.DamageType) Protection {
 	protection := i.protection[dType]
 	return protection
 }
 
-func (i *ArmorInfo) GetEncumbrance() int {
+func (i *Armor) GetEncumbrance() int {
 	return i.encumbrance
 }
 
-func (i *ArmorInfo) GetProtectionRating() int {
+func (i *Armor) GetProtectionRating() int {
 	physical := i.getRawProtection(special.DamageTypeNormal)
 	energy := i.getRawProtection(special.DamageTypeLaser)
 
 	return (physical.DamageReduction + energy.DamageReduction) + (physical.DamageThreshold + energy.DamageThreshold)
 }
 
-func (i *ArmorInfo) IsValid() bool {
+func (i *Armor) IsValid() bool {
 	return len(i.protection) != 0
 }
 
-type ArmorDef struct {
-	Protection         map[special.DamageType]Protection
-	Encumbrance        int
-	RadiationReduction int
+type Protection struct {
+	DamageReduction int
+	DamageThreshold int
 }
 
-func (d ArmorDef) IsValid() bool {
-	return len(d.Protection) != 0
+func (p Protection) String() string {
+	return fmt.Sprintf("%d|%d%%", p.DamageThreshold, p.DamageReduction)
+}
+
+func (p Protection) Scaled(float float64) Protection {
+	return Protection{
+		DamageReduction: int(float * float64(p.DamageReduction)),
+		DamageThreshold: int(float * float64(p.DamageThreshold)),
+	}
 }

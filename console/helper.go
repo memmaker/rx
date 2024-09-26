@@ -54,7 +54,7 @@ func widthAndHeightFromString(description string) (int, int) {
 	return longest, height
 }
 
-func longestInventoryLineWithoutColorCodes(items []foundation.ItemForUI) int {
+func longestInventoryLineWithoutColorCodes(items []foundation.Item) int {
 	longest := 0
 	for _, line := range items {
 		withoutColors := line.DisplayLength()

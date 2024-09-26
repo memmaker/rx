@@ -1,0 +1,112 @@
+%rec: OpeningBranch
+
+# Daniel Harker is the new Ripperdoc, who took over after he locked Drake away.
+# Drake Gallows is the original Ripperdoc locked away in the cellar of the hospital.
+
+# When the game starts, Daniel is the Ripperdoc and Drake is locked away.
+
+cond: !HasFlag('drake_freed')
+goto: FoundInCellar
+
+cond: true
+goto: JustLeaving
+
+%rec: Nodes
+
+name: JustLeaving
+npc: I don't have time for this.
+effect: EndWithChatter
+
+name: EndNoPayment
+npc: Thank you! I am out of here.
+effect: SetFlag('drake_freed')
+effect: SetFlag('drake_freed_without_payment')
+effect: EndWithChatter
+
+name: FoundInCellar
+npc: Damn, now who might you be?
+#
+o_text: I am here to get you out.
+o_goto: FreeDrake
+#
+o_text: Come with me if you want to live.
+o_goto: FreeDrake
+#
+o_text: You are in no position to ask questions. So, who are you?
+o_goto: WhoAreYou
+#
+o_text: I just wanted you to know that you are not forgotten. I am your executioner.
+o_goto: KillDrake
+
+name: FreeDrake
+npc: You are busting me out? This must be my lucky day.
+effect: SetFlag('Freed(drake_gallows)')
+#
+o_text: You are welcome.
+o_goto: EndNoPayment
+#
+o_text: Nothing is free. I need something from you.
+o_goto: NothingIsFree
+
+name: WhoAreYou
+npc: I am Drake Gallows, the Ripperdoc of this hospital.
++ This bastard locked me away in my own cellar.
+#
+o_text: Stay calm. I will get you out.
+o_goto: FreeDrake
+#
+o_text: So you have no idea why he did this?
+o_goto: WhyDidHeDoThis
+#
+o_text: Rightfully so. I will close the door behind me.
+o_goto: LeaveDrake
+#
+o_text: I just don't get why he didn't kill you. I will correct this mistake right here.
+o_goto: KillDrake
+
+name: WhyDidHeDoThis
+npc: Look, I already told you what I know, you'd better ask him why he did what he did.
+#
+effect: ReturnToPreviousNode
+
+name: NothingIsFree
+npc: Figures. So what is it?
+#
+o_text: You owe me $1000 for my troubles. I'll fetch it in a few days.
+o_goto: ThousandCash
+#
+o_text: You owe me a favor. You'll see me again.
+o_goto: Favor
+
+name: ThousandCash
+npc: Deal. I am leaving now.
+#
+effect: SetFlag('drake_freed')
+effect: SetFlag('drake_owes_cash')
+effect: EndWithChatter
+
+name: Favor
+npc: Guess I have no choice. I am leaving then.
+#
+effect: SetFlag('drake_freed')
+effect: SetFlag('drake_owes_favor')
+effect: EndWithChatter
+
+name: KillDrake
+npc: What? Why?
+#
+effect: StartCombat
+
+name: LeaveDrake
+npc: (Drake sneers, his voice cold.)
+npc: So, you’re just going to leave me here to rot, huh? Typical.
++ Guess the streets aren’t as dangerous as this cage.
+#
+o_text: You deserve it. Enjoy the solitude.
+o_goto: JustLeaving
+#
+o_text: Maybe next time, choomba.
+o_goto: JustLeaving
+#
+o_text: It’s nothing personal. You’re not my problem.
+o_goto: JustLeaving

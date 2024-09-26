@@ -185,10 +185,11 @@ DRPoison: 5
 SourceFile: 00000011.pro
 Position: (20,18)
 
-Name: scientist
+Name: drake_gallows
 Icon: G
 Foreground: light_gray_2
 Description: Dr. Gallows
+dialogue: drake_gallows
 LongDescription: Drake Gallows
 Age: 25
 BodyType: 0

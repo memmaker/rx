@@ -90,7 +90,7 @@ func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSh
 
 	obstacle := 0
 	b := -10 * obstacle
-	blind := boolAsInt(attacker.IsBlinded())
+	blind := boolAsInt(false)
 
 	// insufficient strength penalty
 	t := -20 * max(0, mws-str-3*wh)
@@ -113,8 +113,8 @@ func MeleeChanceToHit(attacker *CharSheet, attackerSkill Skill, defender *CharSh
 
 	return hitChance
 }
-func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, minWeaponStr int, defender *CharSheet, defenderIsHelpless bool, weaponSkillBonus int) int {
-	s := attacker.GetSkill(attackerSkill) + weaponSkillBonus
+func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill Skill, minWeaponStr int, defender *CharSheet, defenderIsHelpless bool) int {
+	s := attacker.GetSkill(attackerSkill)
 	p := attacker.GetStat(Perception)
 	str := attacker.GetStat(Strength)
 	h1 := 0 // Set to 1 for 1H weapon
@@ -132,7 +132,7 @@ func RangedChanceToHit(positionInfos PosInfo, attacker *CharSheet, attackerSkill
 	ranged := boolAsInt(attackerSkill.IsRangedAttackSkill())
 	knocked := boolAsInt(defenderIsHelpless)
 	b := -10 * obstacle
-	blind := boolAsInt(attacker.IsBlinded())
+	blind := boolAsInt(false)
 
 	// range penalty
 	rp := sr*(boolAsInt(h < 8)*8+boolAsInt(h >= 8)*-5*(p-2)) +

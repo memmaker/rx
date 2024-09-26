@@ -16,7 +16,7 @@ type ActorForUI interface {
 	GetListInfo() string
 	GetHitPoints() int
 	GetHitPointsMax() int
-	HasFlag(held special.ActorFlag) bool
+	HasFlag(held ActorFlag) bool
 	GetState() AIState
 	GetDetailInfo() string
 	GetInternalName() string

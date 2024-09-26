@@ -6,7 +6,7 @@ set: ContainerWithName('dead_drop')
 
 %rec: outcomes
 
-if: HasFlag('starter(completed)')
+if: HasFlag('ClientRewardReceived(starter)')
 do: Hilite('>>> You have mail <<<')
 
 %rec: cancel
@@ -19,4 +19,4 @@ do: SaveTimeNow('dd_01_deposited')
 if: IsHoursAfter('dd_01_deposited', 6)
 do: ContainerRemoveItem(DD, 'gold', 500)
 do: ContainerAddItem(DD, 'leather_armor')
-do: SetFlag('starter(completed)')
+do: SetFlag('ClientRewardReceived(starter)')

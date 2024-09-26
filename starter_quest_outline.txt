@@ -23,8 +23,8 @@ Now the player should have these options:
   - to pay you at least half - POSSIBLE
   - to reward you for going after the client - POSSIBLE
 - Find the old ripperdoc, locked away in the cellar of the hospital
-  - to kill him
-  - to free him
+  - to kill him - POSSIBLE
+  - to free him - POSSIBLE
   - to get information from him about the secret stash
 - Pay out of his own pocket, or with money stolen from someone else - POSSIBLE
 - Ignore the job - POSSIBLE

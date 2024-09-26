@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, newMap *gridmap.GridMap[*Actor, *Item, Object]) Object {
+func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.ColorPalette, newMap *gridmap.GridMap[*Actor, foundation.Item, Object]) Object {
 	objectType := record.FindValueForKeyIgnoreCase("category")
 
 	switch strings.ToLower(objectType) {
@@ -54,13 +54,13 @@ func (g *GameState) iconForItem(itemCategory foundation.ItemCategory) textiles.T
 	}
 	return textiles.TextIcon{}
 }
-func (g *GameState) addItemToMap(item *Item, mapPos geometry.Point) {
+func (g *GameState) addItemToMap(item foundation.Item, mapPos geometry.Point) {
 	g.currentMap().AddItemWithDisplacement(item, mapPos)
 }
 
-func (g *GameState) NewGold(amount int) *Item {
+func (g *GameState) NewGold(amount int) *GenericItem {
 	icon := g.iconForItem(foundation.ItemCategoryGold)
-	gold := &Item{
+	gold := &GenericItem{
 		description:  "gold",
 		internalName: "gold",
 		category:     foundation.ItemCategoryGold,

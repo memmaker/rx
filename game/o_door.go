@@ -68,7 +68,7 @@ func (b *Door) InitWithGameState(g *GameState) {
 						return
 					}
 					g.Player.GetInventory().RemoveLockpick()
-					skill := g.Player.GetCharSheet().GetSkill(special.Lockpick)
+					skill := g.Player.GetCharSheet().GetSkill(special.Mechanics)
 					reduction := int(float64(skill) * 0.375)
 					if b.PickByReduceStrength(reduction) {
 						lockPickResult(true)
@@ -78,15 +78,14 @@ func (b *Door) InitWithGameState(g *GameState) {
 					}
 
 				} else {
-					skill := g.Player.GetCharSheet().GetSkill(special.Lockpick)
+					skill := g.Player.GetCharSheet().GetSkill(special.Mechanics)
 					modifier := b.lockDiff.GetRollModifier()
 					chance := skill + modifier
 					if chance <= 0 {
 						g.msg(foundation.Msg("You don't have the skill to pick this lock"))
 						return
 					}
-					luckPercent := special.Percentage(g.Player.GetCharSheet().GetStat(special.Luck))
-					rollResult := special.SuccessRoll(special.Percentage(chance), luckPercent)
+					rollResult := special.SuccessRoll(special.Percentage(chance), 5)
 					if !rollResult.Success && rollResult.Crit {
 						g.Player.GetInventory().RemoveLockpick()
 						g.msg(foundation.Msg("Your lockpick broke!"))

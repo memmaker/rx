@@ -133,7 +133,7 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			if !hasMainHandItem {
 				return false, nil
 			}
-			return mainHandItem.GetInternalName() == weaponName, nil
+			return mainHandItem.InternalName() == weaponName, nil
 		},
 
 		// Global Queries & Actions
@@ -363,10 +363,10 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 		},
 		"ContainerAddItem": func(args ...interface{}) (interface{}, error) {
 			container := args[0].(*Container)
-			if item, isItem := args[1].(*Item); isItem {
+			if item, isItem := args[1].(foundation.Item); isItem {
 				container.AddItem(item)
 				return nil, nil
-			} else if items, isItems := args[1].([]*Item); isItems {
+			} else if items, isItems := args[1].([]foundation.Item); isItems {
 				container.AddItems(items)
 				return nil, nil
 			}
@@ -386,10 +386,10 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 		},
 		"ActorAddItem": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
-			if item, isItem := args[1].(*Item); isItem {
+			if item, isItem := args[1].(foundation.Item); isItem {
 				actor.GetInventory().AddItem(item)
 				return nil, nil
-			} else if items, isItems := args[1].([]*Item); isItems {
+			} else if items, isItems := args[1].([]foundation.Item); isItems {
 				actor.GetInventory().AddItems(items)
 				return nil, nil
 			}
@@ -407,10 +407,10 @@ func tryKill(g *GameState, a *Actor, target *Actor) int {
 	if !a.GetEquipment().HasRangedWeaponInMainHand() {
 		a.tryEquipRangedWeapon()
 	}
-	mainHandItem, hasMainHandItem := a.GetEquipment().GetMainHandItem()
+	mainHandItem, hasMainHandItem := a.GetEquipment().GetMainHandWeapon()
 	if hasMainHandItem && mainHandItem.IsRangedWeapon() {
 
-		if !mainHandItem.GetWeapon().HasAmmo() && mainHandItem.GetWeapon().NeedsAmmo() {
+		if !mainHandItem.HasAmmo() && mainHandItem.NeedsAmmo() {
 			g.actorReloadMainHandWeapon(a)
 			return a.timeNeededForActions()
 		}

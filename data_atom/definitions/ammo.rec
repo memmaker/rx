@@ -7,14 +7,13 @@ Category: Ammo
 Size: 0
 Weight: 3
 Cost: 200
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: -25
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: -25
 ammo_rounds_in_magazine: 1
 ammo_caliber_index: 1
 ammo_caliber_name: Rocket
-###
 
 Name: 10mm_jhp
 Description: 10mm JHP
@@ -23,14 +22,12 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 75
-ammo_dmg_multiplier: 2
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 25
+ammo_dmg_factor: 1.5
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
 ammo_rounds_in_magazine: 24
 ammo_caliber_index: 8
 ammo_caliber_name: 10mm
-###
 
 Name: 10mm_ap
 Description: 10mm AP
@@ -39,14 +36,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 100
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 2
-ammo_ac_modifier: 0
-ammo_dr_modifier: -25
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: -25
 ammo_rounds_in_magazine: 24
 ammo_caliber_index: 8
 ammo_caliber_name: 10mm
-###
 
 Name: 44_magnum_jhp
 Description: .44 Magnum JHP
@@ -55,14 +51,12 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 50
-ammo_dmg_multiplier: 2
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 50
+ammo_dmg_factor: 1.5
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 9
 ammo_caliber_name: .44 cal
-###
 
 Name: flamethrower_fuel
 Description: Flamethrower Fuel
@@ -71,14 +65,11 @@ Category: Ammo
 Size: 0
 Weight: 10
 Cost: 250
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -20
-ammo_dr_modifier: 25
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
 ammo_rounds_in_magazine: 10
 ammo_caliber_index: 2
 ammo_caliber_name: Flamethrower Fuel
-###
 
 Name: 14mm_ap
 Description: 14mm AP
@@ -87,14 +78,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 150
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 2
-ammo_ac_modifier: 0
-ammo_dr_modifier: -50
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: -50
 ammo_rounds_in_magazine: 30
 ammo_caliber_index: 10
 ammo_caliber_name: 14mm
-###
 
 Name: 223_fmj
 Description: .223 FMJ
@@ -103,14 +93,12 @@ Category: Ammo
 Size: 0
 Weight: 2
 Cost: 200
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -20
-ammo_dr_modifier: -20
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_dt_modifier: -20
 ammo_rounds_in_magazine: 50
 ammo_caliber_index: 5
 ammo_caliber_name: .223
-###
 
 Name: 5mm_jhp
 Description: 5mm JHP
@@ -119,14 +107,12 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 100
-ammo_dmg_multiplier: 2
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 35
+ammo_dmg_factor: 1.5
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
 ammo_rounds_in_magazine: 50
 ammo_caliber_index: 6
 ammo_caliber_name: 5mm
-###
 
 Name: 5mm_ap
 Description: 5mm AP
@@ -135,14 +121,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 120
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 2
-ammo_ac_modifier: 0
-ammo_dr_modifier: -35
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: -35
 ammo_rounds_in_magazine: 50
 ammo_caliber_index: 6
 ammo_caliber_name: 5mm
-###
 
 Name: rocket_ap
 Description: Rocket AP
@@ -151,14 +136,12 @@ Category: Ammo
 Size: 0
 Weight: 3
 Cost: 400
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -15
-ammo_dr_modifier: -50
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_dt_modifier: -50
 ammo_rounds_in_magazine: 1
 ammo_caliber_index: 1
 ammo_caliber_name: Rocket
-###
 
 Name: small_energy_cell
 Description: Small Energy Cell
@@ -167,14 +150,13 @@ Category: Ammo
 Size: 0
 Weight: 3
 Cost: 400
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 40
 ammo_caliber_index: 3
 ammo_caliber_name: C Energy Cell
-###
 
 Name: micro_fusion_cell
 Description: Micro Fusion Cell
@@ -183,14 +165,13 @@ Category: Ammo
 Size: 0
 Weight: 5
 Cost: 1000
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 50
 ammo_caliber_index: 4
 ammo_caliber_name: D Energy Cell
-###
 
 Name: 12_ga_shotgun_shells
 Description: 12 ga. Shotgun Shells
@@ -199,14 +180,12 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 225
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -10
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 11
 ammo_caliber_name: 12-gauge
-###
 
 Name: 44_magnum_fmj
 Description: .44 magnum FMJ
@@ -215,14 +194,13 @@ Category: Ammo
 Size: 0
 Weight: 2
 Cost: 50
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: -20
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: -20
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 9
 ammo_caliber_name: .44 cal
-###
 
 Name: 9mm_ball
 Description: 9mm ball
@@ -231,14 +209,13 @@ Category: Ammo
 Size: 1
 Weight: 2
 Cost: 100
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 12
 ammo_caliber_name: 9mm
-###
 
 Name: bbs
 Description: BB's
@@ -247,14 +224,13 @@ Category: Ammo
 Size: 1
 Weight: 2
 Cost: 20
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 0
 ammo_caliber_name: None
-###
 
 Name: robo_rocket_ammo
 Description: Robo Rocket Ammo
@@ -263,14 +239,13 @@ Category: Ammo
 Size: 0
 Weight: 10
 Cost: 0
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: -25
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: -25
 ammo_rounds_in_magazine: 6
 ammo_caliber_index: 1
 ammo_caliber_name: Rocket
-###
 
 Name: 45_caliber
 Description: .45 Caliber
@@ -279,30 +254,28 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 75
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: 0
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 10
 ammo_caliber_index: 14
 ammo_caliber_name: .45 cal
-###
 
 Name: 2mm_ec
 Description: 2mm EC
-LongDescription: Ammunition.
+LongDescription: Ammunition. 2mm electro-pulse charge.
 Category: Ammo
 Size: 0
-Weight: 1
-Cost: 400
-ammo_dmg_multiplier: 3
-ammo_dmg_divisor: 2
-ammo_ac_modifier: -30
-ammo_dr_modifier: -20
-ammo_rounds_in_magazine: 50
+Weight: 5
+Cost: 350
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_dt_modifier: -20
+ammo_rounds_in_magazine: 10
 ammo_caliber_index: 15
 ammo_caliber_name: 2mm
-###
 
 Name: 47mm_caseless
 Description: 4.7mm Caseless
@@ -311,14 +284,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 600
-ammo_dmg_multiplier: 3
-ammo_dmg_divisor: 2
-ammo_ac_modifier: -5
-ammo_dr_modifier: -10
+ammo_dmg_factor: 1.5
+ammo_condition_factor: 1.0
+ammo_dt_modifier: -10
 ammo_rounds_in_magazine: 50
 ammo_caliber_index: 16
 ammo_caliber_name: 4.7mm caseless
-###
+ammo_bonus_radius: 0
 
 Name: 9mm
 Description: 9mm
@@ -327,14 +299,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 100
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 2
-ammo_ac_modifier: 0
-ammo_dr_modifier: 10
+ammo_dmg_factor: 0.5
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 12
 ammo_caliber_name: 9mm
-###
+ammo_bonus_radius: 0
 
 Name: hn_needler_cartridge
 Description: HN Needler Cartridge
@@ -343,14 +314,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 250
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -10
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 30
 ammo_caliber_index: 17
 ammo_caliber_name: HN needler
-###
+ammo_bonus_radius: 0
 
 Name: hn_ap_needler_cartridge
 Description: HN AP Needler Cartridge
@@ -359,14 +329,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 300
-ammo_dmg_multiplier: 2
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -10
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.5
+ammo_condition_factor: 1.0
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 10
 ammo_caliber_index: 17
 ammo_caliber_name: HN needler
-###
+ammo_bonus_radius: 0
 
 Name: 762mm
 Description: 7.62mm
@@ -375,14 +344,13 @@ Category: Ammo
 Size: 0
 Weight: 1
 Cost: 150
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -5
-ammo_dr_modifier: -10
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_dt_modifier: -10
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 18
 ammo_caliber_name: 7.62mm
-###
+ammo_bonus_radius: 0
 
 Name: flamethrower_fuel_mkii
 Description: Flamethrower Fuel MKII
@@ -391,12 +359,11 @@ Category: Ammo
 Size: 0
 Weight: 10
 Cost: 250
-ammo_dmg_multiplier: 1
-ammo_dmg_divisor: 1
-ammo_ac_modifier: -20
-ammo_dr_modifier: 0
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_dt_modifier: 0
 ammo_rounds_in_magazine: 10
 ammo_caliber_index: 2
 ammo_caliber_name: Flamethrower Fuel
-###
+ammo_bonus_radius: 0
 

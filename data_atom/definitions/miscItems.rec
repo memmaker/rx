@@ -8,7 +8,6 @@ Name: key
 Category: Keys
 LockFlag: CHANGEME
 
-
 Description: loose money
 Name: gold
 Category: Gold
@@ -17,14 +16,24 @@ Charges: CHANGEME
 Description: Big Book of Skillz
 Name: skillbook
 Category: Books
-skill: CHANGEME
-skill_bonus: 20
+skill_bonus: SKILLNAME(20)
 
 Description: a digital watch
 Name: watch
 Category: Other
 Use_Effect: show_time
 Charges: -1
+
+Description: bobby pin
+Name: bobby_pin
+Category: lockpicks
+skill_bonus: mechanics(20)
+
+Description: aviator sunglasses
+Name: aviator_sunglasses
+Category: Other
+stat_bonus: charisma(1)
+Text: These make you look ridiculously cool.
 
 Name: dynamite
 Description: a stick of dynamite
@@ -35,5 +44,5 @@ Weight: 1
 Cost: 350
 zap_effect: explode
 tags: timed
-chance_to_break_on_throw: 100
-###
+chance_to_break_on_throw: 10
+

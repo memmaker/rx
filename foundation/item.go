@@ -1,28 +1,150 @@
 package foundation
 
 import (
+	"RogueUI/special"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
+	"image/color"
 	"math/rand"
 	"strings"
 )
 
-type ItemForUI interface {
+type Readable interface {
+	IsSkillBook() bool
+	GetSkillBookValues() (special.Skill, int)
+	GetTextFile() string
+	GetText() string
+}
+
+type Usable interface {
 	Name() string
-	GetCategory() ItemCategory
+	GetEffectParameters() Params
+	UseEffect() string
+}
+
+type Zappable interface {
+	Name() string
+	ZapEffect() string
+	GetEffectParameters() Params
+}
+
+type Repairable interface {
+	Name() string
+	CanBeRepairedWith(parts Repairable) bool
+	Quality() special.Percentage
+	SetQuality(quality special.Percentage)
+	NeedsRepair() bool
+	Category() ItemCategory
+	InternalName() string
+}
+type Equippable interface {
+	Name() string
+	IsArmor() bool
+	IsWeapon() bool
+	IsLightSource() bool
+	IsRangedWeapon() bool
+	IsMeleeWeapon() bool
+	IsMissile() bool
+	GetEquipFlag() ActorFlag
+	Charges() int
+	AfterEquippedTurn()
+	InternalName() string
+}
+
+type Timable interface {
+	Zappable
+	Name() string
+	HasTag(timed ItemTags) bool
+	SetCharges(turns int)
+
+	ShouldActivate(tickCount int) bool
+	IsAlive(tickCount int) bool
+	String() string
+	Position() geometry.Point
+}
+type Item interface {
+	Name() string
+	String() string
+	Category() ItemCategory
 	InventoryNameWithColors(lineColorCode string) string
 	InventoryNameWithColorsAndShortcut(invItemColorCode string) string
-	IsEquippable() bool
-	IsUsableOrZappable() bool
-	GetListInfo() string
+	Description() string
 	Shortcut() rune
 	DisplayLength() int
 	Position() geometry.Point
+	SetPosition(position geometry.Point)
 	LongNameWithColors(colorCode string) string
 	GetIcon() textiles.TextIcon
 	GetCarryWeight() int
+	GetDerivedStatMod(stat special.DerivedStat) (int, bool)
+	ShouldActivate(tickCount int) bool
+	IsAlive(tickCount int) bool
+
+	// Type Queries
+	IsLightSource() bool
+	IsRangedWeapon() bool
+	IsMeleeWeapon() bool
+	IsDrug() bool
+	IsWeapon() bool
+	IsArmor() bool
+	IsAmmo() bool
+	IsConsumable() bool
+	IsLockpick() bool
+	IsMissile() bool
+	IsEquippable() bool
+	IsUsableOrZappable() bool
+	IsReadable() bool
+	IsUsable() bool
+	IsZappable() bool
+	IsKey() bool
+	IsWatch() bool
+	IsFood() bool
+
+	// Stacking
 	IsMultipleStacks() bool
-	GetStackSize() int
+	StackSize() int
+	Split(count int) Item
+	CanStackWith(item Item) bool
+	AddStacks(item Item)
+
+	GetLockFlag() string
+	GetThrowDamage() fxtools.Interval
+	InternalName() string
+
+	GetEffectParameters() Params
+	ZapEffect() string
+	UseEffect() string
+	Charges() int
+	SetCharges(count int)
+	SetQuality(qualityInPercent special.Percentage)
+
+	Quality() special.Percentage
+	GetEquipFlag() ActorFlag
+	NeedsRepair() bool
+	Color() color.RGBA
+	SetPositionHandler(pos func() geometry.Point)
+	ConsumeCharge()
+	HasTag(loot ItemTags) bool
+
+	AfterEquippedTurn()
+	DropFlag() string
+	PickupFlag() string
+
+	CanBeRepairedWith(parts Repairable) bool
+
+	IsSkillBook() bool
+	GetSkillBookValues() (special.Skill, int)
+	GetTextFile() string
+	GetText() string
+	SetAlive(isAlive bool)
+	GetStatMod(stat special.Stat) (int, bool)
+	GetSkillMod(skill special.Skill) (int, bool)
+	IsBreakingNow() bool
+	IsThrowable() bool
+	IsStackable() bool
+	SetInventoryIndex(i int)
+	IsRepairable() bool
 }
 
 type ItemCategory int

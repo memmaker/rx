@@ -794,16 +794,26 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) displaceActor(a ActorType, po
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) AddItemWithDisplacement(a ItemType, targetPos geometry.Point) {
 	if !m.Contains(targetPos) {
+		println("WARNING: Could not find a free spot for item")
+		return
+	}
+	if !m.IsActorAt(targetPos) && !m.IsItemAt(targetPos) && m.CanPlaceItemHere(targetPos) {
+		m.AddItem(a, targetPos)
 		return
 	}
 
-	free := m.GetFreeCellsForDistribution(targetPos, 1, func(p geometry.Point) bool {
-		return m.CanPlaceItemHere(p)
+	free := m.GetDijkstraMap(targetPos, 25, func(p geometry.Point) bool {
+		return m.IsTileWalkable(p)
 	})
-	filterSlice(free, func(p geometry.Point) bool {
-		return p != targetPos
-	})
-	if len(free) == 0 {
+	bestPos := targetPos
+	bestDist := math.MaxInt32
+	for p, dist := range free {
+		if m.CanPlaceItemHere(p) && dist < bestDist && p != targetPos {
+			bestDist = dist
+			bestPos = p
+		}
+	}
+	if bestDist == math.MaxInt32 {
 		if m.CanPlaceItemHere(targetPos) {
 			m.AddItem(a, targetPos)
 			return
@@ -811,7 +821,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddItemWithDisplacement(a Ite
 		println("WARNING: Could not find a free spot for item")
 		return
 	}
-	freePos := free[0]
+	freePos := bestPos
 	m.AddItem(a, freePos)
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetJPSPath(start geometry.Point, end geometry.Point, isWalkable func(geometry.Point) bool) []geometry.Point {

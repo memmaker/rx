@@ -38,8 +38,6 @@ func (s Stat) ToShortString() string {
 		return "INT"
 	case Agility:
 		return "AGI"
-	case Luck:
-		return "LCK"
 	}
 	return ""
 }
@@ -58,8 +56,6 @@ func (s Stat) GetDescription() string {
 		return "Intelligence affects the number of skill points you receive when you level up, and the number of new Perks you can choose."
 	case Agility:
 		return "Agility affects your Action Points, and your ability to dodge attacks."
-	case Luck:
-		return "Luck affects your Critical Chance, and the outcome of random events."
 	}
 	return ""
 }
@@ -78,8 +74,6 @@ func (s Stat) String() string {
 		return "Intelligence"
 	case Agility:
 		return "Agility"
-	case Luck:
-		return "Luck"
 	}
 	return ""
 }
@@ -91,7 +85,6 @@ const (
 	Charisma
 	Intelligence
 	Agility
-	Luck
 	StatCount
 )
 
@@ -110,8 +103,6 @@ func StatFromString(name string) Stat {
 		return Intelligence
 	case "agility":
 		return Agility
-	case "luck":
-		return Luck
 	}
 	panic("invalid stat name")
 	return 0
@@ -155,6 +146,80 @@ func (s DerivedStat) String() string {
 	return ""
 }
 
+func DerivedStatFromString(name string) DerivedStat {
+	name = strings.ReplaceAll(strings.ToLower(name), "_", "")
+	switch name {
+	case "actionpoints":
+		return ActionPoints
+	case "dodge":
+		return Dodge
+	case "carryweight":
+		return CarryWeight
+	case "criticalchance":
+		return CriticalChance
+	case "damageresistance":
+		return DamageResistance
+	case "energyresistance":
+		return EnergyResistance
+	case "healingrate":
+		return HealingRate
+	case "hitpoints":
+		return HitPoints
+	case "meleedamagebonus":
+		return MeleeDamageBonus
+	case "partylimit":
+		return PartyLimit
+	case "perkrate":
+		return PerkRate
+	case "poisonresistance":
+		return PoisonResistance
+	case "radiationresistance":
+		return RadiationResistance
+	case "speed":
+		return Speed
+	case "skillrate":
+		return SkillRate
+	}
+	panic("invalid derived stat name")
+	return -1
+}
+
+func (s DerivedStat) ToShortString() any {
+	switch s {
+	case ActionPoints:
+		return "AP"
+	case Dodge:
+		return "DG"
+	case CarryWeight:
+		return "CW"
+	case CriticalChance:
+		return "CC"
+	case DamageResistance:
+		return "DR"
+	case EnergyResistance:
+		return "ER"
+	case HealingRate:
+		return "HR"
+	case HitPoints:
+		return "HP"
+	case MeleeDamageBonus:
+		return "MD"
+	case PartyLimit:
+		return "PL"
+	case PerkRate:
+		return "PR"
+	case PoisonResistance:
+		return "PR"
+	case RadiationResistance:
+		return "RR"
+	case Speed:
+		return "SP"
+	case SkillRate:
+		return "SR"
+	}
+	return ""
+}
+
 const (
 	ActionPoints DerivedStat = iota
 	HitPoints
@@ -179,62 +244,43 @@ var VisibleDerivedStatCount = 12
 type Skill int
 
 const (
-	SmallGuns Skill = iota
-	BigGuns
-	EnergyWeapons
-	Unarmed
-	MeleeWeapons
-	Throwing
-	Explosives
-	Doctor
-	Sneak
-	Lockpick
-	Steal
-	Traps
-	Science
-	Repair
+	MeleeCombat Skill = iota
+	RangedCombat
+
+	Social
 	Intimidate
-	Persuade
-	Seduce
+
+	Stealth
+	Mechanics
+
+	Biology
+	Technology
+
 	SkillCount
 )
 
 func (s Skill) ToShortString() string {
 	switch s {
-	case SmallGuns:
-		return "SG"
-	case BigGuns:
-		return "BG"
-	case EnergyWeapons:
-		return "EW"
-	case Unarmed:
-		return "UN"
-	case MeleeWeapons:
-		return "MW"
-	case Throwing:
-		return "TH"
-	case Explosives:
-		return "EX"
-	case Doctor:
-		return "DR"
-	case Sneak:
-		return "SK"
-	case Lockpick:
-		return "LP"
-	case Steal:
-		return "ST"
-	case Traps:
-		return "TR"
-	case Science:
-		return "SC"
-	case Repair:
-		return "RP"
-	case Persuade:
-		return "PS"
+	case MeleeCombat:
+		return "ML"
+	case RangedCombat:
+		return "RG"
+
+	case Social:
+		return "SO"
 	case Intimidate:
 		return "IN"
-	case Seduce:
-		return "SD"
+
+	case Stealth:
+		return "ST"
+	case Mechanics:
+		return "MC"
+
+	case Biology:
+		return "BI"
+	case Technology:
+		return "TC"
+
 	}
 	return ""
 }
@@ -250,83 +296,46 @@ func SkillFromAdjustmentString(name string) Skill {
 
 func (s Skill) String() string {
 	switch s {
-	case SmallGuns:
-		return "Small Guns"
-	case BigGuns:
-		return "Big Guns"
-	case EnergyWeapons:
-		return "Energy Weapons"
-	case Unarmed:
-		return "Unarmed"
-	case MeleeWeapons:
-		return "Melee Weapons"
-	case Throwing:
-		return "Throwing"
-	case Explosives:
-		return "Explosives"
-	case Doctor:
-		return "Doctor"
-	case Sneak:
-		return "Sneak"
-	case Lockpick:
-		return "Lockpick"
-	case Steal:
-		return "Steal"
-	case Traps:
-		return "Traps"
-	case Science:
-		return "Science"
-	case Repair:
-		return "Repair"
-	case Persuade:
-		return "Persuade"
+	case RangedCombat:
+		return "Ranged Combat"
+	case MeleeCombat:
+		return "Melee Combat"
+	case Biology:
+		return "Biology"
+	case Stealth:
+		return "Stealth"
+	case Technology:
+		return "Technology"
+	case Mechanics:
+		return "Mechanics"
 	case Intimidate:
 		return "Intimidate"
-	case Seduce:
-		return "Seduce"
-
+	case Social:
+		return "Social"
 	}
 	return ""
 }
 
 func skillFromShortString(name string) Skill {
 	switch name {
-	case "smallguns":
-		return SmallGuns
-	case "bigguns":
-		return BigGuns
-	case "energyweapons":
-		return EnergyWeapons
-	case "unarmed":
-		return Unarmed
-	case "meleeweapons":
-		return MeleeWeapons
-	case "explosives":
-		return Explosives
-	case "throwing":
-		return Throwing
-	case "doctor":
-		return Doctor
-	case "sneak":
-		return Sneak
-	case "lockpick":
-		return Lockpick
-	case "steal":
-		return Steal
-	case "traps":
-		return Traps
-	case "science":
-		return Science
-	case "repair":
-		return Repair
-	case "persuade":
-		return Persuade
+	case "rangedcombat":
+		return RangedCombat
+	case "meleecombat":
+		return MeleeCombat
+	case "biology":
+		return Biology
+	case "stealth":
+		return Stealth
+	case "technology":
+		return Technology
+	case "mechanics":
+		return Mechanics
 	case "intimidate":
 		return Intimidate
-	case "seduce":
-		return Seduce
+	case "social":
+		return Social
 	}
-	panic("invalid skill name")
+	panic(fmt.Sprintf("invalid skill name: '%s'", name))
 	return -1
 }
 
@@ -341,49 +350,41 @@ func SkillFromBonusString(name string) Skill {
 }
 
 func (s Skill) IsRangedAttackSkill() bool {
-	return s == SmallGuns || s == BigGuns || s == EnergyWeapons || s == Throwing
+	return s == RangedCombat
 }
 
 func (s Skill) IsMeleeAttackSkill() bool {
-	return s == Unarmed || s == MeleeWeapons
+	return s == MeleeCombat
 }
 
 func (cs *CharSheet) getSkillBase(skill Skill) int {
+	// Str: 2x
+	// Int: 2x
+	// Per: 2x
+	// End: 2x
+	// Cha: 2x
+	// Agi: 2x
+	multiplier := 5
 	switch skill {
-	case SmallGuns:
-		return 20 + (cs.GetStat(Perception) * 4)
-	case BigGuns:
-		return cs.GetStat(Strength) + cs.GetStat(Perception) + 5
-	case EnergyWeapons:
-		return cs.GetStat(Perception) * 2
-	case Unarmed:
-		return 30 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
-	case MeleeWeapons:
-		return 20 + (2 * (cs.GetStat(Agility) + cs.GetStat(Strength)))
-	case Throwing:
-		return 4 * cs.GetStat(Agility)
-	case Explosives:
-		return 10 + cs.GetStat(Intelligence) + (cs.GetStat(Luck) * 2)
-	case Doctor:
-		return 5 + cs.GetStat(Perception) + cs.GetStat(Intelligence)
-	case Sneak:
-		return 5 + (3 * cs.GetStat(Agility))
-	case Lockpick:
-		return 10 + (cs.GetStat(Perception) + cs.GetStat(Agility))
-	case Steal:
-		return 3 * cs.GetStat(Agility)
-	case Traps:
-		return 10 + (cs.GetStat(Perception) + cs.GetStat(Agility))
-	case Science:
-		return 4 * cs.GetStat(Intelligence)
-	case Repair:
-		return 2*cs.GetStat(Intelligence) + cs.GetStat(Luck)
-	case Persuade:
-		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Intelligence)
+	case MeleeCombat:
+		return ((cs.GetStat(Strength)) + (cs.GetStat(Endurance))) * multiplier
+	case RangedCombat:
+		return (cs.GetStat(Perception) + 5) * multiplier
+
+	case Social:
+		return (cs.GetStat(Charisma) + 5) * multiplier
 	case Intimidate:
-		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Strength)
-	case Seduce:
-		return 3*cs.GetStat(Charisma) + 2*cs.GetStat(Perception)
+		return ((cs.GetStat(Charisma)) + (cs.GetStat(Strength))) * multiplier
+
+	case Stealth:
+		return (cs.GetStat(Agility) + 5) * multiplier
+	case Mechanics:
+		return ((cs.GetStat(Agility)) + (cs.GetStat(Endurance))) * multiplier
+
+	case Biology:
+		return ((cs.GetStat(Intelligence)) + (cs.GetStat(Perception))) * multiplier
+	case Technology:
+		return (cs.GetStat(Intelligence) + 5) * multiplier
 		/*
 			case Barter:
 				return 4 * cs.GetStat(Charisma)
@@ -397,7 +398,7 @@ func (cs *CharSheet) getSkillBase(skill Skill) int {
 	return 0
 }
 
-// Check: If the task at hand is simply not possible for someone without a certain level of skill
+// CreateReports: If the task at hand is simply not possible for someone without a certain level of skill
 // Roll: If the task at hand is in general possible, even if it's difficult
 
 // tagging gives 20% bonus to skill
@@ -410,15 +411,14 @@ func NewCharSheet() *CharSheet {
 			Charisma:     5,
 			Intelligence: 5,
 			Agility:      5,
-			Luck:         5,
 		},
-		availableStatPoints:    5,
+		availableStatPoints:    0,
 		derivedStatAdjustments: make(map[DerivedStat]int),
 		skillAdjustments:       make(map[Skill]int),
 		taggedSkills:           make(map[Skill]bool),
 		level:                  1,
 	}
-	c.HealCompletely()
+	c.HealAPAndHPCompletely()
 	return c
 }
 
@@ -535,13 +535,19 @@ type DefaultModifier struct {
 	Modifier  int
 	Order     int
 	IsPercent bool
+	Suffix    string
 }
 
 func (d DefaultModifier) Description() string {
+	var line string
 	if d.IsPercent {
-		return fmt.Sprintf("%s: %+d%%", d.Source, d.Modifier)
+		line = fmt.Sprintf("%s: %+d%%", d.Source, d.Modifier)
 	}
-	return fmt.Sprintf("%s: %+d", d.Source, d.Modifier)
+	line = fmt.Sprintf("%s: %+d", d.Source, d.Modifier)
+	if d.Suffix != "" {
+		line += " " + d.Suffix
+	}
+	return line
 }
 
 func (d DefaultModifier) Apply(i int) int {
@@ -583,6 +589,11 @@ func (cs *CharSheet) GetStat(stat Stat) int {
 func (cs *CharSheet) GetStatWithModInfo(stat Stat) (int, []Modifier) {
 	baseValue := cs.getStatBaseValue(stat)
 	return cs.getModifiedStatWithInfo(stat, baseValue)
+}
+
+func (cs *CharSheet) GetDerivedStatWithModInfo(ds DerivedStat) (int, []Modifier) {
+	baseValue := cs.getDerivedStatBaseValue(ds)
+	return cs.getModifiedDerivedStatWithInfo(ds, baseValue)
 }
 
 func (cs *CharSheet) getStatBaseValue(stat Stat) int {
@@ -644,13 +655,13 @@ func (cs *CharSheet) GetDerivedStat(ds DerivedStat) int {
 func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 	switch ds {
 	case ActionPoints:
-		return 5 + cs.GetStat(Agility)/2
+		return 5 + cs.GetStat(Agility) + (cs.GetStat(Endurance) / 2)
 	case Dodge:
 		return cs.GetStat(Agility) // Needs to factor in armor..
 	case CarryWeight:
 		return 20 + 15*cs.GetStat(Strength)
 	case CriticalChance:
-		return cs.GetStat(Luck)
+		return 5
 	case DamageResistance:
 		return 0
 	case EnergyResistance:
@@ -670,17 +681,20 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 	case RadiationResistance:
 		return cs.GetStat(Endurance) * 2
 	case Speed:
-		return 2 * cs.GetStat(Perception)
+		return 2 * cs.GetStat(Agility)
 	case SkillRate:
-		return 5 + (cs.GetStat(Intelligence) * 2)
+		return 3 + (cs.GetStat(Intelligence) * 2)
 	}
 	panic("invalid derived stat")
 	return 0
 }
 
-func (cs *CharSheet) HealCompletely() {
+func (cs *CharSheet) HealAPAndHPCompletely() {
 	cs.hitPointsCurrent = cs.GetDerivedStat(HitPoints)
+	cs.actionPointsCurrent = cs.GetDerivedStat(ActionPoints)
+
 	cs.onDerivedStatChanged(HitPoints)
+	cs.onDerivedStatChanged(ActionPoints)
 }
 
 func (cs *CharSheet) TakeRawDamage(damage int) {
@@ -690,14 +704,6 @@ func (cs *CharSheet) TakeRawDamage(damage int) {
 
 func (cs *CharSheet) IsAlive() bool {
 	return cs.hitPointsCurrent > 0
-}
-
-func (cs *CharSheet) IsHelpless() bool {
-	return false // TODO: return status effect knocked out or knocked down
-}
-
-func (cs *CharSheet) IsBlinded() bool {
-	return false // TODO: return status effect blinded
 }
 
 func (cs *CharSheet) onRetrieveStatHook(stat Stat, value int) int {
@@ -731,7 +737,21 @@ func (cs *CharSheet) getModifiedStatWithInfo(stat Stat, value int) (int, []Modif
 	}
 	return value, nil
 }
+func (cs *CharSheet) getModifiedDerivedStatWithInfo(ds DerivedStat, value int) (int, []Modifier) {
+	if cs.getDerivedStatMods != nil {
+		mods := cs.getDerivedStatMods(ds)
 
+		slices.SortStableFunc(mods, func(i, j Modifier) int {
+			return cmp.Compare(i.SortOrder(), j.SortOrder())
+		})
+
+		for _, mod := range mods {
+			value = mod.Apply(value)
+		}
+		return value, mods
+	}
+	return value, nil
+}
 func (cs *CharSheet) onRetrieveDerivedStatHook(ds DerivedStat, value int) int {
 	if cs.getDerivedStatMods != nil {
 		mods := cs.getDerivedStatMods(ds)
@@ -797,16 +817,12 @@ func (cs *CharSheet) GetActionPointsMax() int {
 }
 
 func (cs *CharSheet) GetActionPoints() int {
-	return cs.actionPointsCurrent
+	return min(cs.actionPointsCurrent, cs.GetActionPointsMax())
 }
 
 func (cs *CharSheet) LooseActionPoints(amount int) {
 	cs.actionPointsCurrent = max(0, cs.actionPointsCurrent-amount)
 	cs.onDerivedStatChanged(ActionPoints)
-}
-
-func (cs *CharSheet) HasFlag(flagName ActorFlag) bool {
-	return false
 }
 
 func (cs *CharSheet) AddSkillPoints(amount int) {
@@ -866,12 +882,12 @@ func (cs *CharSheet) IsSkillHigherOrEqual(skill Skill, difficulty int) bool {
 	return cs.GetSkill(skill) >= difficulty
 }
 func (cs *CharSheet) SkillRoll(skill Skill, modifiers int) CheckResult {
-	critChance := cs.GetStat(Luck)
+	critChance := cs.GetDerivedStat(CriticalChance)
 	return SuccessRoll(Percentage(max(0, min(95, cs.GetSkill(skill)+modifiers))), Percentage(critChance))
 }
 
 func (cs *CharSheet) StatRoll(stat Stat, modifiers int) CheckResult {
-	critChance := cs.GetStat(Luck)
+	critChance := cs.GetDerivedStat(CriticalChance)
 	statSkill := max(0, min(95, (cs.GetStat(stat)*10)+modifiers))
 	return SuccessRoll(Percentage(statSkill), Percentage(critChance))
 }
@@ -895,7 +911,6 @@ func (cs *CharSheet) ToRecord() recfile.Record {
 		recfile.Field{Name: "Charisma", Value: recfile.IntStr(cs.GetStat(Charisma))},
 		recfile.Field{Name: "Intelligence", Value: recfile.IntStr(cs.GetStat(Intelligence))},
 		recfile.Field{Name: "Agility", Value: recfile.IntStr(cs.GetStat(Agility))},
-		recfile.Field{Name: "Luck", Value: recfile.IntStr(cs.GetStat(Luck))},
 		recfile.Field{Name: "HitPoints", Value: recfile.IntStr(cs.GetHitPoints())},
 		recfile.Field{Name: "ActionPoints", Value: recfile.IntStr(cs.GetActionPoints())},
 	}
@@ -1053,6 +1068,10 @@ func (cs *CharSheet) SetSkillModifierHandler(handler func(skill Skill) []Modifie
 
 func (cs *CharSheet) SetStatModifierHandler(handler func(stat Stat) []Modifier) {
 	cs.getStatMods = handler
+}
+
+func (cs *CharSheet) SetDerivedStatModifierHandler(handler func(ds DerivedStat) []Modifier) {
+	cs.getDerivedStatMods = handler
 }
 
 func (cs *CharSheet) AddSkillPointsTo(skill Skill, increase int) {

@@ -1,0 +1,38 @@
+Description: stimpak
+Name: stimpak
+Category: food
+use_effect: satiate_fully
+
+Description: heavy stimpak
+Name: heavy_stimpak
+Category: food
+use_effect: satiate_fully
+
+Description: Med-X
+Name: med_x
+Category: consumables
+derived_stat_bonus: damage_resistance(25)
+charges: 10
+
+Description: Mentats
+Name: mentats
+Category: consumables
+stat_bonus: intelligence(2)
+stat_bonus: perception(2)
+stat_bonus: charisma(1)
+charges: 5
+
+Description: Buffout
+Name: buffout
+Category: consumables
+stat_bonus: strength(2)
+stat_bonus: endurance(2)
+derived_stat_bonus: hitpoints(25)
+charges: 5
+
+Description: Jet
+Name: jet
+Category: consumables
+derived_stat_bonus: speed(20)
+derived_stat_bonus: action_points(5)
+charges: 5

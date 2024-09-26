@@ -40,7 +40,7 @@ o_text: Just drive.
 o_goto: Drive
 #
 o_text: Take me home.
-o_cond: IsMap('home_area')
+o_cond: !IsMap('home_area')
 o_goto: DriveHome
 #
 # Starter Mission

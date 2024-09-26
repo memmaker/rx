@@ -1,18 +1,18 @@
 %rec: OpeningBranch
 
-# Daniel Harker is the new Ripperdoc, who took over after he locked Julian away.
-# Julian Nox is the original Ripperdoc locked away in the cellar of the hospital.
+# Daniel Harker is the new Ripperdoc, who took over after he locked Drake away.
+# Drake Gallows is the original Ripperdoc locked away in the cellar of the hospital.
 
-# When the game starts, Daniel is the Ripperdoc and Julian is locked away.
+# When the game starts, Daniel is the Ripperdoc and Drake is locked away.
 
-cond: HasFlag('starter(money_collected)') && !HasFlag('Killed(daniel_harker)') && !HasFlag('Killed(julian_nox)')
+cond: HasFlag('starter(money_collected)') && !HasFlag('Killed(daniel_harker)') && !HasFlag('Killed(drake_gallows)')
 goto: BackAfterCollectingMoney
 
-cond: HasFlag('Killed(julian_nox)')
-goto: DanielAfterKillingJulian
+cond: HasFlag('Killed(drake_gallows)')
+goto: DanielAfterKillingDrake
 
 cond: HasFlag('Killed(daniel_harker)')
-goto: JulianAfterKillingDaniel
+goto: DrakeAfterKillingDaniel
 
 cond: HasFlag('JobAccepted(starter)')
 goto: DanielAfterJobAccepted
@@ -127,6 +127,7 @@ npc: That's still a whole month's rent for me.
 + (Daniel gives you the money.)
 effect: GiveItemToPlayer('gold', 250)
 effect: SetFlag('starter(money_collected)')
+effect: SetFlag('WorkFor(daniel_harker)')
 #
 o_text: Thanks.
 o_goto: DanielIsRipperdoc
@@ -136,6 +137,7 @@ name: AcceptDiscount
 npc: Nice doing business with you.
 effect: SetFlag('Pleased(daniel_harker)')
 effect: SetFlag('Discount(daniel_harker)')
+effect: SetFlag('WorkFor(daniel_harker)')
 #
 o_text: You're welcome.
 o_goto: DanielIsRipperdoc
@@ -204,6 +206,7 @@ o_goto: DanielIsRipperdoc
 name: AcceptKillJacob
 npc: Good luck. You will need it.
 + (He marks the location of Jacob on your map.)
+effect: SetFlag('WorkFor(daniel_harker)')
 effect: SetFlag('LocationKnown(jacobs_home)')
 #
 o_text: Thanks.
@@ -217,7 +220,7 @@ effect: SetFlag('LocationKnown(jacobs_home)')
 o_text: Thanks.
 o_goto: DanielIsRipperdoc
 
-name: DanielAfterKillingJulian
+name: DanielAfterKillingDrake
 npc: Thanks for taking care of my little problem.
 + What can I do for you?
 #
@@ -244,25 +247,56 @@ o_goto: JacobMoney
 o_text: No, I am not.
 o_goto: DanielIsRipperdoc
 
-name: JulianAfterKillingDaniel
+name: DrakeAfterKillingDaniel
 npc: (He looks at you with joy.)
 + Thank you for freeing me. What can I do for you?
 #
 o_text: I need some medical supplies.
-o_goto: JulianMedicalSupplies
+o_goto: DrakeMedicalSupplies
 #
 o_text: I need some cyberware.
-o_goto: JulianCyberware
+o_goto: DrakeCyberware
 #
 o_text: Do you know a guy named 'Jacob'?
 o_cond: HasFlag('JobRead(starter)')
-o_goto: JulianJacobQuestion
+o_goto: DrakeJacobQuestion
 #
 o_text: Nothing.
 o_goto: End
 
-name: JulianJacobQuestion
+name: DrakeJacobQuestion
 npc: I have no idea who you are talking about.
 #
 o_text: Alright.
-o_goto: JulianAfterKillingDaniel
+o_goto: DrakeAfterKillingDaniel
+
+name: DrakeCyberware
+npc: (Drake scratches the back of his neck, looking uneasy.)
+npc: Look, I’d love to help you out, but... my tools are busted. Some scavengers hit the place while I was locked up.
++ Can’t do installs without the proper gear, you understand.
+#
+o_text: You’re telling me a Ripperdoc doesn’t have any tools?
+o_goto: DrakeCyberwareExcuse
+#
+o_text: Fine, I’ll come back later.
+o_goto: End
+
+name: DrakeCyberwareExcuse
+npc: Hey, this is no joke. I need time to restock and get things running again. Come back in a few days.
+#
+o_text: I don’t have time for excuses, Drake.
+o_goto: End
+#
+o_text: Alright. But don’t waste my time when I return.
+o_goto: End
+
+name: DrakeMedicalSupplies
+npc: (Drake gives a nervous chuckle.)
+npc: About that... I, uh, just had a little “inventory issue.” Someone else cleared me out before you showed up.
++ Nothing left but dust right now.
+#
+o_text: How convenient.
+o_goto: End
+#
+o_text: You’re full of it, Drake. This better not happen again.
+o_goto: End

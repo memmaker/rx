@@ -11,31 +11,32 @@ import (
 	"strings"
 )
 
-func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) *Item {
+func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) foundation.Item {
 	NoQualityDefined := special.Percentage(-1)
-	item := &Item{
+	item := &GenericItem{
 		qualityInPercent: NoQualityDefined,
 		alive:            true,
-		effectParameters: make(Params),
+		effectParameters: make(foundation.Params),
+		statChanges:      StatChange{},
 	}
 
 	charges := 1
 
-	itemAmmo := &AmmoInfo{
+	itemAmmo := &Ammo{
 		CaliberIndex:                    -1,
-		BonusDamageAgainstActorWithTags: make(map[special.ActorFlag]int),
+		BonusDamageAgainstActorWithTags: make(map[foundation.ActorFlag]int),
 		DamageFactor:                    1,
 		ConditionFactor:                 1,
 		SpreadFactor:                    1,
 	}
-	itemWeapon := &WeaponInfo{
+	itemWeapon := &Weapon{
 		loadedInMagazine: nil,
 	}
 	var targetModes [2]special.TargetingMode
 	var tuCosts [2]int
 	var maxRanges [2]int
 
-	itemArmor := &ArmorInfo{}
+	itemArmor := &Armor{}
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		// GLOBAL FIELDS
@@ -83,16 +84,38 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			item.effectParameters["radius"] = field.AsInt()
 		case "charges":
 			charges = fxtools.ParseInterval(field.Value).Roll()
-		case "stat":
-			item.stat = special.StatFromString(field.Value)
 		case "stat_bonus":
-			item.statBonus = fxtools.ParseInterval(field.Value).Roll()
-		case "skill":
-			item.skill = special.SkillFromString(field.Value)
+			if fxtools.LooksLikeAFunction(field.Value) {
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				stat := special.StatFromString(name)
+				bonus := args.GetInt(0)
+				if item.statChanges.StatChanges == nil {
+					item.statChanges.StatChanges = make(map[special.Stat]int)
+				}
+				item.statChanges.StatChanges[stat] = bonus
+			}
 		case "skill_bonus":
-			item.skillBonus = fxtools.ParseInterval(field.Value).Roll()
+			if fxtools.LooksLikeAFunction(field.Value) {
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				skill := special.SkillFromString(name)
+				bonus := args.GetInt(0)
+				if item.statChanges.SkillChanges == nil {
+					item.statChanges.SkillChanges = make(map[special.Skill]int)
+				}
+				item.statChanges.SkillChanges[skill] = bonus
+			}
+		case "derived_stat_bonus":
+			if fxtools.LooksLikeAFunction(field.Value) {
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				stat := special.DerivedStatFromString(name)
+				bonus := args.GetInt(0)
+				if item.statChanges.DerivedStatChanges == nil {
+					item.statChanges.DerivedStatChanges = make(map[special.DerivedStat]int)
+				}
+				item.statChanges.DerivedStatChanges[stat] = bonus
+			}
 		case "equip_flag":
-			item.equipFlag = special.ActorFlagFromString(field.Value)
+			item.equipFlag = foundation.ActorFlagFromString(field.Value)
 		case "textfile":
 			item.textFile = field.Value
 		case "text":
@@ -118,7 +141,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		case "ammo_bonus_dmg_against":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				name, args := fxtools.GetNameAndArgs(field.Value)
-				itemAmmo.BonusDamageAgainstActorWithTags[special.ActorFlagFromString(name)] = args.GetInt(0)
+				itemAmmo.BonusDamageAgainstActorWithTags[foundation.ActorFlagFromString(name)] = args.GetInt(0)
 			}
 		case "ammo_rounds_in_magazine":
 			itemAmmo.RoundsInMagazine = field.AsInt()
@@ -185,23 +208,26 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 
 	item.charges = charges
 
+	if item.qualityInPercent == NoQualityDefined && (item.IsWeapon() || item.IsArmor()) {
+		item.qualityInPercent = max(10, special.Percentage(rand.Intn(100)+1))
+	}
+
 	if itemAmmo.IsValid() {
-		item.ammo = itemAmmo
-		item.charges = item.ammo.RoundsInMagazine
+		itemAmmo.GenericItem = item
+		itemAmmo.GenericItem.charges = itemAmmo.RoundsInMagazine
+		return itemAmmo
 	}
 
 	if itemWeapon.IsValid() {
 		noAim := item.tags.Contains(foundation.TagNoAim)
 		itemWeapon.attackModes = GetAttackModes(targetModes, tuCosts, maxRanges, noAim)
-		item.weapon = itemWeapon
+		itemWeapon.GenericItem = item
+		return itemWeapon
 	}
 
 	if itemArmor.IsValid() {
-		item.armor = itemArmor
-	}
-
-	if item.qualityInPercent == NoQualityDefined && (item.IsWeapon() || item.IsArmor()) {
-		item.qualityInPercent = max(10, special.Percentage(rand.Intn(100)+1))
+		itemArmor.GenericItem = item
+		return itemArmor
 	}
 
 	return item

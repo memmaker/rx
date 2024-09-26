@@ -5,25 +5,33 @@ import (
 	"RogueUI/dungen"
 	"RogueUI/foundation"
 	"RogueUI/game"
+	"RogueUI/validation"
 	"bufio"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/fxtools"
 	"math/rand"
 	"os"
+	"path"
 	"strings"
 )
 
 func main() {
 	devStart := false
+
+	config := foundation.NewConfigurationFromFile("config.rec")
+
 	if len(os.Args) > 1 {
 		if os.Args[1] == "dev" {
 			devStart = true
+		} else if os.Args[1] == "val_dialogue" {
+			validation.ValidateDialogue(path.Join(config.DataRootDir, "dialogues"))
+			return
 		}
 	}
+
 	fxtools.SetKeypadToNumericMode()
 
-	config := foundation.NewConfigurationFromFile("config.rec")
 
 	if config.PlayerName == "" {
 		config.PlayerName = askForName()

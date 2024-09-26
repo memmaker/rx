@@ -28,16 +28,16 @@ type GameForUI interface {
 	// Do stuff
 
 	PlayerPickupItem()
-	EquipToggle(item ItemForUI)
-	DropItemFromInventory(item ItemForUI)
-	PlayerApplyItem(item ItemForUI)
+	EquipToggle(item Item)
+	DropItemFromInventory(item Item)
+	PlayerApplyItem(item Item)
+	PlayerToggleRun()
 	Wait()
 
 	PlayerRangedAttack()
 	PlayerQuickRangedAttack()
 
 	PlayerReloadWeapon()
-	SwitchWeapons()
 	CycleTargetMode()
 	PlayerApplySkill()
 
@@ -66,20 +66,20 @@ type GameForUI interface {
 	GetRangedChanceToHitForUI(target ActorForUI) int
 
 	GetHudStats() map[HudValue]int
-	GetHudFlags() map[special.ActorFlag]int
+	GetHudFlags() map[ActorFlag]int
 	GetMapInfo(pos geometry.Point) HiLiteString
 	LightAt(p geometry.Point) fxtools.HDRColor
 
-	GetInventoryForUI() []ItemForUI
+	GetInventoryForUI() []Item
 
 	GetVisibleActors() []ActorForUI
-	GetVisibleItems() []ItemForUI
+	GetVisibleItems() []Item
 	GetLog() []HiLiteString
 
 	IsActorHostileTowardsPlayer(enemy ActorForUI) bool
 	IsActorAlliedWithPlayer(ally ActorForUI) bool
 
-	GetItemInMainHand() (ItemForUI, bool)
+	GetItemInMainHand() (Item, bool)
 	GetMapDisplayName() string
 
 	IsSomethingInterestingAtLoc(position geometry.Point) bool
@@ -100,7 +100,7 @@ type GameForUI interface {
 
 	ChooseArmorToTakeOff()
 
-	IsEquipped(item ItemForUI) bool
+	IsEquipped(item Item) bool
 
 	// Game State
 	Reset()
@@ -113,7 +113,7 @@ type GameForUI interface {
 	TopEntityAt(loc geometry.Point) EntityType
 
 	MapAt(loc geometry.Point) textiles.TextIcon
-	ItemAt(loc geometry.Point) ItemForUI
+	ItemAt(loc geometry.Point) Item
 	ObjectAt(loc geometry.Point) ObjectForUI
 	ActorAt(loc geometry.Point) ActorForUI
 	DownedActorAt(loc geometry.Point) ActorForUI
@@ -164,17 +164,17 @@ type GameUI interface {
 	SelectBodyPart(previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
 
 	// Menus / Modals / Windows
-	OpenInventoryForManagement(stack []ItemForUI)
-	OpenInventoryForSelection(stack []ItemForUI, prompt string, onSelected func(item ItemForUI))
+	OpenInventoryForManagement(stack []Item)
+	OpenInventoryForSelection(stack []Item, prompt string, onSelected func(item Item))
 	OpenTextWindow(description string)
 	ShowTextFileFullscreen(filename string, onClose func())
 	OpenMenu(actions []MenuItem)
 	OpenMenuWithTitle(title string, actions []MenuItem)
 	OpenKeypad(correctSequence []rune, onCompletion func(success bool))
-	OpenVendorMenu(itemsForSale []fxtools.Tuple[ItemForUI, int], buyItem func(ui ItemForUI, price int))
+	OpenVendorMenu(itemsForSale []fxtools.Tuple[Item, int], buyItem func(ui Item, price int))
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
-	ShowTakeOnlyContainer(name string, containedItems []ItemForUI, transfer func(ui ItemForUI))
-	ShowGiveAndTakeContainer(leftName string, leftItems []ItemForUI, rightName string, rightItems []ItemForUI, transferToLeft func(itemTaken ItemForUI, amount int), transferToRight func(itemTaken ItemForUI, amount int))
+	ShowTakeOnlyContainer(name string, containedItems []Item, transfer func(ui Item))
+	ShowGiveAndTakeContainer(leftName string, leftItems []Item, rightName string, rightItems []Item, transferToLeft func(itemTaken Item, amount int), transferToRight func(itemTaken Item, amount int))
 	OpenAimedShotPicker(actorAt ActorForUI, previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
 
 	SaveGame()
@@ -190,7 +190,7 @@ type GameUI interface {
 	AddAnimations(animations []Animation)
 	AnimatePending() (cancelled bool)
 	SkipAnimations()
-	GetAnimThrow(item ItemForUI, origin geometry.Point, target geometry.Point) (Animation, int)
+	GetAnimThrow(item Item, origin geometry.Point, target geometry.Point) (Animation, int)
 	GetAnimDamage(spreadBlood func(mapPos geometry.Point), actorPos geometry.Point, damage int, bullets int, done func()) Animation
 	GetAnimMove(actor ActorForUI, old geometry.Point, new geometry.Point) Animation
 	GetAnimQuickMove(actor ActorForUI, path []geometry.Point) Animation

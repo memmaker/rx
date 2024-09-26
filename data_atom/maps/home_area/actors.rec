@@ -95,7 +95,7 @@ Name: daniel_harker
 Icon: H
 Foreground: light_gray_2
 Description: Dr. Harker
-Dialogue: home_ripperdoc
+Dialogue: daniel_harker
 LongDescription: 
 Age: 25
 BodyType: 0

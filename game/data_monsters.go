@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, newItemFromString func(string) *Item) *Actor {
+func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, newItemFromString func(string) foundation.Item) *Actor {
 	actor := NewActor()
 
 	var icon textiles.TextIcon
@@ -17,7 +17,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	var useEffects []string
 	var equipment []string
 
-	flags := special.NewActorFlags()
+	flags := foundation.NewActorFlags()
 
 	charSheet := special.NewCharSheet()
 
@@ -54,8 +54,6 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			charSheet.SetStat(special.Intelligence, field.AsInt())
 		case "agility":
 			charSheet.SetStat(special.Agility, field.AsInt())
-		case "luck":
-			charSheet.SetStat(special.Luck, field.AsInt())
 		case "hitpoints":
 			hitpoints = field.AsInt()
 		case "dodge":
@@ -81,7 +79,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			actor.SetChatterFile(field.Value)
 		case "flags":
 			for _, mFlag := range field.AsList("|") {
-				flags.Set(special.ActorFlagFromString(mFlag.Value))
+				flags.Set(foundation.ActorFlagFromString(mFlag.Value))
 			}
 		default:
 			//println("WARNING: Unknown field: " + field.Name)
@@ -109,9 +107,9 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		charSheet.SetDerivedStatAbsoluteValue(special.Dodge, dodge)
 	}
 
-	charSheet.HealCompletely()
+	charSheet.HealAPAndHPCompletely()
 
-	if actor.HasFlag(special.FlagZombie) {
+	if actor.HasFlag(foundation.FlagZombie) {
 		actor.SetHostile()
 	}
 

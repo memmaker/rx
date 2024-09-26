@@ -16,7 +16,7 @@ npc: Wait, I recognize you. You're the contractor I hired.
 + What the hell are *you* doing here?
 #
 o_text: I'm here to collect my reward.
-o_cond: !HasFlag('starter(completed)')
+o_cond: !HasFlag('ClientRewardReceived(starter)')
 o_goto: CollectPayment
 #
 o_text: I'd like to know my client on a more personal level.
@@ -73,3 +73,69 @@ o_goto: GiveMoney
 #
 o_text: Not yet, still working on it.
 o_gogo: DefaultIntroduction
+
+name: GiveMoney
+npc: (He takes the cash, eyes gleaming with greed.)
+npc: Well, well, looks like you're not completely useless after all.
++ Now, I trust you’ll get out of my sight.
+#
+o_text: I'm done with you. Don’t forget our deal.
+o_goto: DefaultIntroduction
+#
+o_text: This better buy me some loyalty, or I’ll be back.
+o_goto: DefaultIntroduction
+
+name: NegotiateContract
+npc: Renegotiate? (He raises an eyebrow, skeptical.)
+npc: The deal was already set. What makes you think you deserve more?
++ I’m not in the habit of paying twice.
+#
+o_text: The risk was higher than expected. I want double.
+o_test: RollSkill('persuade', 15)
+o_succ: NegotiateSuccess
+o_fail: NegotiateFail
+#
+o_text: I know your dirty secrets. Pay up, or I spill them all.
+o_test: RollSkill('intimidate', 10)
+o_succ: NegotiateSuccess
+o_fail: NegotiateFail
+#
+o_text: Fine, I’ll settle for half now, half later.
+o_test: RollSkill('Seduce', 5)
+o_succ: NegotiateSuccess
+o_fail: NegotiateFail
+
+name: NegotiateSuccess
+npc: (He sighs, clearly annoyed but willing to concede.)
+npc: Fine. You drive a hard bargain. I’ll wire the creds now, but don’t expect any favors next time.
++ You better not screw me over.
+#
+o_text: You made the right choice.
+o_goto: DefaultIntroduction
+
+name: NegotiateFail
+npc: (He laughs coldly.)
+npc: You’ve got guts, but no brains. No more cash, choomba. Take the deal or walk.
++ I’m done negotiating.
+#
+o_text: You’ll regret this.
+o_goto: DefaultIntroduction
+
+name: SeduceSuccess
+npc: (He smirks, leaning in slightly.)
+npc: I didn’t think you were that kind of operator... but I’m not complaining.
++ Maybe we can work out a more... intimate arrangement.
+#
+o_text: That’s exactly what I had in mind.
+o_goto: DefaultIntroduction
+#
+o_text: This is strictly business. I just needed to know where I stand.
+o_goto: DefaultIntroduction
+
+name: SeduceFail
+npc: (He looks you up and down, unimpressed.)
+npc: Nice try, but you’re not my type. Stick to the job, maybe you’ll get paid.
++ Don't push your luck.
+#
+o_text: Worth a shot.
+o_goto: DefaultIntroduction

@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/dice_curve"
 	"RogueUI/foundation"
 	"RogueUI/special"
 	"bytes"
@@ -35,7 +34,7 @@ type Actor struct {
 	inventory *Inventory
 	equipment *Equipment
 
-	statusFlags *special.ActorFlags
+	statusFlags *foundation.ActorFlags
 	activeGoal  ActorGoal
 	aiState     foundation.AIState
 	stance      ActorStance
@@ -65,6 +64,7 @@ type Actor struct {
 	currentPath             []geometry.Point
 	currentPathIndex        int
 	bodyAugmentations       map[CyberWare]bool
+	temporaryStatChanges    []*TemporaryStatChange
 }
 
 func (a *Actor) AddCyberWare(ware CyberWare) {
@@ -332,7 +332,7 @@ func NewActor() *Actor {
 		body:              special.HumanBodyParts,
 		bodyDamage:        make(map[special.BodyPart]int),
 		aiState:           foundation.Neutral,
-		statusFlags:       special.NewActorFlags(),
+		statusFlags:       foundation.NewActorFlags(),
 		enemyActors:       make(map[string]bool),
 		enemyTeams:        make(map[string]bool),
 		activeGoal:        NoGoal,
@@ -416,23 +416,6 @@ func (f FlatModifier) SortOrder() int {
 	return 1
 }
 
-func ModFlatWhen(flatMod int, reason string, conditionForApplication func() bool) dice_curve.Modifier {
-	return FlatModifier{
-		flatMod:     flatMod,
-		doesApply:   conditionForApplication,
-		description: fmt.Sprintf("%d - %s", flatMod, reason),
-		persistent:  true,
-	}
-}
-func ModFlat(flatMod int, reason string) dice_curve.Modifier {
-	return FlatModifier{
-		flatMod:     flatMod,
-		doesApply:   func() bool { return true },
-		description: fmt.Sprintf("%d - %s", flatMod, reason),
-		persistent:  false,
-	}
-}
-
 type PercentageModifier struct {
 	factor      float64
 	doesApply   func() bool
@@ -485,7 +468,7 @@ func (a *Actor) GetListInfo() string {
 }
 
 func (a *Actor) GetMainHandDamageAsString() string {
-	item, hasMainHandItem := a.GetEquipment().GetMainHandItem()
+	item, hasMainHandItem := a.GetEquipment().GetMainHandWeapon()
 	damage := strconv.Itoa(a.GetMeleeDamageBonus())
 	if hasMainHandItem && item.IsWeapon() {
 		damage = item.GetWeaponDamage().ShortString()
@@ -494,7 +477,7 @@ func (a *Actor) GetMainHandDamageAsString() string {
 }
 
 func (a *Actor) IsStunned() bool {
-	return a.HasFlag(special.FlagStun)
+	return a.HasFlag(foundation.FlagStun)
 }
 
 func (a *Actor) Position() geometry.Point {
@@ -505,14 +488,14 @@ func (a *Actor) SetPosition(pos geometry.Point) {
 }
 
 func (a *Actor) Name() string {
-	if a.HasFlag(special.FlagInvisible) {
+	if a.HasFlag(foundation.FlagInvisible) {
 		return "something"
 	}
 	return a.name
 }
 
 func (a *Actor) IsVisible(playerCanSeeInvisible bool) bool {
-	return !a.HasFlag(special.FlagInvisible) || playerCanSeeInvisible
+	return !a.HasFlag(foundation.FlagInvisible) || playerCanSeeInvisible
 }
 
 func (a *Actor) GetInventory() *Inventory {
@@ -527,7 +510,7 @@ func (a *Actor) GetDamageResistance() int {
 	return 0
 }
 
-func (a *Actor) GetFlags() *special.ActorFlags {
+func (a *Actor) GetFlags() *foundation.ActorFlags {
 	return a.statusFlags
 }
 
@@ -535,12 +518,12 @@ func (a *Actor) IsAlive() bool {
 	return a.charSheet.IsAlive()
 }
 
-func (a *Actor) HasFlag(flag special.ActorFlag) bool {
+func (a *Actor) HasFlag(flag foundation.ActorFlag) bool {
 	return a.statusFlags.IsSet(flag) || a.GetEquipment().ContainsFlag(flag)
 }
 
 func (a *Actor) TakeDamage(dmg SourcedDamage) (didCripple bool) {
-	if a.HasFlag(special.FlagZombie) && dmg.DamageType != special.DamageTypeExplosive { // explosive damage works as usual
+	if a.HasFlag(foundation.FlagZombie) && dmg.DamageType != special.DamageTypeExplosive { // explosive damage works as usual
 		// headshots with normal damage kill zombies instantly if the damage is high enough
 		if dmg.DamageType == special.DamageTypeNormal && dmg.DamageAmount > 10 {
 			if dmg.BodyPart == special.Head || dmg.BodyPart == special.Eyes {
@@ -568,11 +551,11 @@ func (a *Actor) IsCrippled(part special.BodyPart) bool {
 }
 
 func (a *Actor) IsSleeping() bool {
-	return a.HasFlag(special.FlagSleep)
+	return a.HasFlag(foundation.FlagSleep)
 }
 
 func (a *Actor) WakeUp() {
-	a.statusFlags.Unset(special.FlagSleep)
+	a.statusFlags.Unset(foundation.FlagSleep)
 }
 
 func (a *Actor) SetIntrinsicZapEffects(effects []string) {
@@ -591,9 +574,9 @@ func (a *Actor) GetIntrinsicUseEffects() []string {
 	return a.intrinsicUseEffects
 }
 func (a *Actor) RemoveLevelStatusEffects() {
-	a.statusFlags.Unset(special.FlagSeeFood)
-	a.statusFlags.Unset(special.FlagSeeMagic)
-	a.statusFlags.Unset(special.FlagSeeTraps)
+	a.statusFlags.Unset(foundation.FlagSeeFood)
+	a.statusFlags.Unset(foundation.FlagSeeMagic)
+	a.statusFlags.Unset(foundation.FlagSeeTraps)
 }
 
 func (a *Actor) Heal(amount int) {
@@ -645,7 +628,6 @@ func (a *Actor) GetDetailInfo() string {
 		fxtools.TableRow{Columns: []string{"Cha:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Charisma))}},
 		fxtools.TableRow{Columns: []string{"Int:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Intelligence))}},
 		fxtools.TableRow{Columns: []string{"Agi:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Agility))}},
-		fxtools.TableRow{Columns: []string{"Lck:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Luck))}},
 	}
 
 	derivedStatRows := []fxtools.TableRow{
@@ -685,12 +667,6 @@ func (a *Actor) GetDetailInfo() string {
 	return strings.Join(result, "\n")
 }
 
-func (a *Actor) GetStatModifier(stat special.Stat) int {
-	equipMod := a.GetEquipment().GetStatModifier(stat)
-	//rulesMod := dice_curve.GetStatModifier(stat, a.charSheet, a.GetEncumbrance())
-	return equipMod
-}
-
 func (a *Actor) GetEncumbrance() int {
 	if !a.GetEquipment().HasArmorEquipped() {
 		return 0
@@ -707,15 +683,15 @@ func (a *Actor) SetSizeModifier(modifier int) {
 	a.sizeModifier = modifier
 }
 func (a *Actor) HasGold(price int) bool {
-	return a.statusFlags.Get(special.FlagGold) >= price
+	return a.statusFlags.Get(foundation.FlagGold) >= price
 }
 
 func (a *Actor) RemoveGold(price int) {
-	a.statusFlags.Decrease(special.FlagGold, price)
+	a.statusFlags.Decrease(foundation.FlagGold, price)
 }
 
 func (a *Actor) GetGold() int {
-	return a.statusFlags.Get(special.FlagGold)
+	return a.statusFlags.Get(foundation.FlagGold)
 }
 
 func (a *Actor) IsWounded() bool {
@@ -723,33 +699,33 @@ func (a *Actor) IsWounded() bool {
 }
 
 func (a *Actor) IsHungry() bool {
-	return a.statusFlags.Get(special.FlagHunger) > 0
+	return a.statusFlags.Get(foundation.FlagHunger) > 0
 }
 
 func (a *Actor) IsStarving() bool {
-	return a.statusFlags.Get(special.FlagHunger) > 1
+	return a.statusFlags.Get(foundation.FlagHunger) > 1
 }
 
 func (a *Actor) Satiate() {
-	a.statusFlags.Unset(special.FlagHunger)
-	a.statusFlags.Unset(special.FlagTurnsSinceEating)
+	a.statusFlags.Unset(foundation.FlagHunger)
+	a.statusFlags.Unset(foundation.FlagTurnsSinceEating)
 }
 
 func (a *Actor) SetSleeping() {
 	flags := a.GetFlags()
-	flags.Set(special.FlagSleep)
-	flags.Unset(special.FlagAwareOfPlayer)
-	flags.Unset(special.FlagScared)
+	flags.Set(foundation.FlagSleep)
+	flags.Unset(foundation.FlagAwareOfPlayer)
+	flags.Unset(foundation.FlagScared)
 }
 
 func (a *Actor) SetAware() {
 	flags := a.GetFlags()
-	flags.Unset(special.FlagSleep)
-	flags.Set(special.FlagAwareOfPlayer)
+	flags.Unset(foundation.FlagSleep)
+	flags.Set(foundation.FlagAwareOfPlayer)
 }
 
 func (a *Actor) IsBlind() bool {
-	return a.HasFlag(special.FlagBlind)
+	return a.HasFlag(foundation.FlagBlind)
 }
 
 func (a *Actor) AddTimeEnergy(timeSpent int) {
@@ -765,10 +741,28 @@ func (a *Actor) maximalTimeNeededForActions() int {
 }
 
 func (a *Actor) timeNeededForMeleeAttack() int {
-	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandItem(); hasWeapon {
+	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandWeapon(); hasWeapon {
 		return meleeWeapon.GetCurrentAttackMode().TUCost
 	}
 	return a.timeNeededForActions()
+}
+
+func (a *Actor) timeNeededForMovement() int {
+	speed := a.GetBasicSpeed()
+
+	if a.HasFlag(foundation.FlagRunning) {
+		speed *= 6
+	}
+
+	if a.IsCrippled(special.Legs) {
+		speed = max(1, speed/2)
+	}
+	if a.IsOverEncumbered() {
+		speed = max(1, speed/2)
+	}
+	speed = max(1, speed-a.GetEncumbrance())
+	timeNeeded := 100 / speed
+	return timeNeeded
 }
 
 func (a *Actor) timeNeededForActions() int {
@@ -779,49 +773,53 @@ func (a *Actor) timeNeededForActions() int {
 	if a.IsCrippled(special.Eyes) {
 		speed = max(1, speed-1)
 	}
+	speed = max(1, speed-a.GetEncumbrance())
 	timeNeeded := 100 / speed
 	return timeNeeded
 }
-func (a *Actor) timeNeededForMovement() int {
-	speed := a.GetBasicSpeed()
-	if a.IsCrippled(special.Legs) {
-		speed = max(1, speed/2)
-	}
-	if a.IsOverEncumbered() {
-		speed = max(1, speed/2)
-	}
-	timeNeeded := 100 / speed
-	return timeNeeded
-}
-
 func (a *Actor) SpendTimeEnergy(amount int) {
 	a.timeEnergy -= amount
 }
 
 func (a *Actor) AfterTurn() {
 	a.GetEquipment().AfterTurn()
+	a.decrementStatusEffectCounters()
+	a.decrementTemporaryStatChanges()
+	if a.HasFlag(foundation.FlagRunning) {
+		sheet := a.GetCharSheet()
+		if sheet.GetActionPoints() > 0 {
+			sheet.LooseActionPoints(1)
+		} else {
+			a.UnsetFlag(foundation.FlagRunning)
+		}
+	}
 }
 
 func (a *Actor) decrementStatusEffectCounters() {
 	flags := a.GetFlags()
-	flags.Decrement(special.FlagHaste)
-	flags.Decrement(special.FlagSlow)
-	flags.Decrement(special.FlagConfused)
-	flags.Decrement(special.FlagFly)
-	flags.Decrement(special.FlagSeeInvisible)
-	flags.Decrement(special.FlagHallucinating)
+	flags.Decrement(foundation.FlagHaste)
+	flags.Decrement(foundation.FlagSlow)
+	flags.Decrement(foundation.FlagConfused)
+	flags.Decrement(foundation.FlagFly)
+	flags.Decrement(foundation.FlagSeeInvisible)
+	flags.Decrement(foundation.FlagHallucinating)
 }
 
+func (a *Actor) decrementTemporaryStatChanges() {
+	for i := len(a.temporaryStatChanges) - 1; i >= 0; i-- {
+		statChange := a.temporaryStatChanges[i]
+		statChange.TurnsLeft--
+		if statChange.TurnsLeft <= 0 {
+			a.temporaryStatChanges = append(a.temporaryStatChanges[:i], a.temporaryStatChanges[i+1:]...)
+		}
+	}
+}
 func (a *Actor) GetBasicSpeed() int {
 	return max(1, a.charSheet.GetDerivedStat(special.Speed))
 }
 
 func (a *Actor) GetCharSheet() *special.CharSheet {
 	return a.charSheet
-}
-
-func (a *Actor) IsHuman() bool {
-	return a.internalName == "human" || a.internalName == "player" || a.internalName == ""
 }
 
 func (a *Actor) Kill() {
@@ -996,9 +994,7 @@ func (a *Actor) LookInfo() string {
 }
 
 func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, dtModifierFromAttack int) SourcedDamage {
-	innateDR := a.GetCharSheet().GetDerivedStat(special.DamageResistance)
-
-	reduction := innateDR
+	reduction := a.GetCharSheet().GetDerivedStat(special.DamageResistance)
 	threshold := 0
 	originalDamageAmount := damage.DamageAmount
 
@@ -1014,11 +1010,6 @@ func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, dtModifierFromAttack i
 			reduction += protection.DamageReduction
 		}
 
-		// degrade armor
-		if originalDamageAmount > 10 {
-			reductionFromDamageReceived := float64(originalDamageAmount) * 0.01
-			armor.Degrade(reductionFromDamageReceived)
-		}
 	}
 
 	maxArmorDR := 85
@@ -1027,14 +1018,31 @@ func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, dtModifierFromAttack i
 	reduction = max(0, min(maxArmorDR, reduction))
 	threshold = max(0, min(maxArmorDT, threshold+dtModifierFromAttack))
 
-	newDamageAmount := max(0, originalDamageAmount-threshold)
+	reductionFactor := (100 - float64(reduction)) / 100.0
+	var newDamageAmount int
 
-	if newDamageAmount > 0 {
-		reductionFactor := (100 - float64(reduction)) / 100.0
-		newDamageAmount = int(max(1, float64(newDamageAmount)*reductionFactor))
+	if len(damage.DamagePerBullet) > 0 {
+		for _, bulletDamage := range damage.DamagePerBullet {
+			bulletDamage = int(max(1, float64(bulletDamage)*reductionFactor))
+			bulletDamage = max(0, bulletDamage-threshold)
+			newDamageAmount += bulletDamage
+		}
+	} else {
+		newDamageAmount = int(max(1, float64(originalDamageAmount)*reductionFactor))
+		newDamageAmount = max(0, originalDamageAmount-threshold)
 	}
-	damage.DamageAmount = newDamageAmount
 
+	// degrade armor
+	if a.GetEquipment().HasArmorEquipped() {
+		ablation := 3.3
+		if newDamageAmount > 0 {
+			ablation = 10
+		}
+		armor := a.GetEquipment().GetArmor()
+		armor.Degrade(ablation)
+	}
+
+	damage.DamageAmount = newDamageAmount
 	return damage
 }
 
@@ -1047,7 +1055,7 @@ func (a *Actor) HasStealableItems() bool {
 }
 
 func (a *Actor) IsKnockedDown() bool {
-	return a.HasFlag(special.FlagKnockedDown)
+	return a.HasFlag(foundation.FlagKnockedDown)
 }
 
 func (a *Actor) injuredString() string {
@@ -1117,7 +1125,7 @@ func (a *Actor) HasActiveGoal() bool {
 }
 
 func (a *Actor) GetMeleeTUCost() int {
-	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandItem(); hasWeapon {
+	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandWeapon(); hasWeapon {
 		return meleeWeapon.GetCurrentAttackMode().TUCost
 	}
 	return a.timeNeededForActions()
@@ -1134,7 +1142,7 @@ func (a *Actor) GetWeaponRange() int {
 	return 1
 }
 func (a *Actor) GetMaxRepairQuality() special.Percentage {
-	repairSkill := a.GetCharSheet().GetSkill(special.Repair)
+	repairSkill := a.GetCharSheet().GetSkill(special.Mechanics)
 	return special.Percentage(min(100, int(20+(float64(repairSkill)*0.5))))
 }
 
@@ -1147,7 +1155,7 @@ func (a *Actor) GetRepairQuality(qualityOne, qualityTwo special.Percentage) spec
 		lower = float64(qualityTwo)
 		higher = float64(qualityOne)
 	}
-	repairSkill := float64(a.GetCharSheet().GetSkill(special.Repair))
+	repairSkill := float64(a.GetCharSheet().GetSkill(special.Mechanics))
 	newQuality := 5 + higher + (0.05 * lower) + (0.15 * repairSkill)
 	return min(a.GetMaxRepairQuality(), special.Percentage(newQuality))
 }
@@ -1258,6 +1266,93 @@ func (a *Actor) IsAlliedWith(player *Actor) bool {
 
 func (a *Actor) SetChatterFile(value string) {
 	a.chatterFile = value
+}
+
+func (a *Actor) UnsetFlag(flag foundation.ActorFlag) {
+	a.statusFlags.Unset(flag)
+}
+
+func (a *Actor) SetFlag(flag foundation.ActorFlag) {
+	a.statusFlags.Set(flag)
+}
+
+func (a *Actor) GetTemporarySkillModifiers(skill special.Skill) []special.Modifier {
+	var result []special.Modifier
+	for _, statChange := range a.temporaryStatChanges {
+		if value, exists := statChange.SkillChanges[skill]; exists {
+			result = append(result, special.DefaultModifier{
+				Source:    statChange.Name,
+				Modifier:  value,
+				Order:     1,
+				IsPercent: true,
+				Suffix:    fmt.Sprintf("(%d turns left)", statChange.TurnsLeft),
+			})
+		}
+	}
+
+	if a.HasFlag(foundation.FlagConcentratedAiming) && (skill.IsRangedAttackSkill() || skill.IsMeleeAttackSkill()) {
+		aimingBonus := 10 * a.GetFlags().Get(foundation.FlagConcentratedAiming)
+		result = append(result, special.DefaultModifier{
+			Source:    "Concentrated Aiming",
+			Modifier:  aimingBonus,
+			Order:     2,
+			IsPercent: true,
+		})
+	}
+
+	return result
+}
+
+func (a *Actor) GetTemporaryStatModifiers(stat special.Stat) []special.Modifier {
+	var result []special.Modifier
+	for _, statChange := range a.temporaryStatChanges {
+		if value, exists := statChange.StatChanges[stat]; exists {
+			result = append(result, special.DefaultModifier{
+				Source:   statChange.Name,
+				Modifier: value,
+				Order:    1,
+				Suffix:   fmt.Sprintf("(%d turns left)", statChange.TurnsLeft),
+			})
+		}
+	}
+	return result
+}
+
+func (a *Actor) GetTemporaryDerivedStatModifiers(stat special.DerivedStat) []special.Modifier {
+	var result []special.Modifier
+	for _, statChange := range a.temporaryStatChanges {
+		if value, exists := statChange.DerivedStatChanges[stat]; exists {
+			result = append(result, special.DefaultModifier{
+				Source:   statChange.Name,
+				Modifier: value,
+				Order:    1,
+				Suffix:   fmt.Sprintf("(%d turns left)", statChange.TurnsLeft),
+			})
+		}
+	}
+	return result
+}
+
+func (a *Actor) AddTemporaryStatChange(change *TemporaryStatChange) {
+	for i, existingChange := range a.temporaryStatChanges {
+		if existingChange.Name == change.Name {
+			a.temporaryStatChanges[i] = change
+			return
+		}
+	}
+	a.temporaryStatChanges = append(a.temporaryStatChanges, change)
+}
+
+type StatChange struct {
+	StatChanges        map[special.Stat]int
+	SkillChanges       map[special.Skill]int
+	DerivedStatChanges map[special.DerivedStat]int
+}
+
+type TemporaryStatChange struct {
+	StatChange
+	Name      string
+	TurnsLeft int
 }
 
 type ActorGoal struct {

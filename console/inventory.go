@@ -15,14 +15,14 @@ import (
 
 type TextInventory struct {
 	*cview.Box
-	items                  []foundation.ItemForUI
-	defaultSelection       func(item foundation.ItemForUI)
-	shiftSelection         func(item foundation.ItemForUI)
-	controlSelection       func(item foundation.ItemForUI)
+	items                  []foundation.Item
+	defaultSelection       func(item foundation.Item)
+	shiftSelection         func(item foundation.Item)
+	controlSelection       func(item foundation.Item)
 	listWidth              int
 	listHeight             int
 	closeHandler           func()
-	isEquipped             func(item foundation.ItemForUI) bool
+	isEquipped             func(item foundation.Item) bool
 	style                  tcell.Style
 	closeOnSelect          bool
 	closeOnShiftSelect     bool
@@ -146,7 +146,7 @@ func NewTextInventory(isOverEncumbered func() bool) *TextInventory {
 	//box.SetBorder(true)
 	t := &TextInventory{
 		Box:   box,
-		items: []foundation.ItemForUI{},
+		items: []foundation.Item{},
 		lineColor: func(category foundation.ItemCategory) color.RGBA {
 			return color.RGBA{R: 170, G: 170, B: 170, A: 255}
 		},
@@ -165,19 +165,19 @@ func (i *TextInventory) SetTitle(title string) {
 	i.ourTitle = title
 	i.listWidth = max(i.listWidth, len(title))
 }
-func (i *TextInventory) SetDefaultSelection(onSelect func(item foundation.ItemForUI)) {
+func (i *TextInventory) SetDefaultSelection(onSelect func(item foundation.Item)) {
 	i.defaultSelection = onSelect
 }
 
-func (i *TextInventory) SetShiftSelection(onSelect func(item foundation.ItemForUI)) {
+func (i *TextInventory) SetShiftSelection(onSelect func(item foundation.Item)) {
 	i.shiftSelection = onSelect
 }
 
-func (i *TextInventory) SetControlSelection(onSelect func(item foundation.ItemForUI)) {
+func (i *TextInventory) SetControlSelection(onSelect func(item foundation.Item)) {
 	i.controlSelection = onSelect
 }
 
-func (i *TextInventory) SetItems(invItem []foundation.ItemForUI) {
+func (i *TextInventory) SetItems(invItem []foundation.Item) {
 	i.items = invItem
 	i.updateListBounds()
 }
@@ -185,7 +185,7 @@ func (i *TextInventory) SetItems(invItem []foundation.ItemForUI) {
 func (i *TextInventory) updateListBounds() {
 	labels := make([]fxtools.TableRow, len(i.items))
 	for lineIndex, invItem := range i.items {
-		namePart := invItem.InventoryNameWithColorsAndShortcut(textiles.RGBAToFgColorCode(i.lineColor(invItem.GetCategory())))
+		namePart := invItem.InventoryNameWithColorsAndShortcut(textiles.RGBAToFgColorCode(i.lineColor(invItem.Category())))
 		weightPart := fmt.Sprintf("[#00FF00]%d[-]lbs", invItem.GetCarryWeight())
 		row := fxtools.NewTableRow(namePart, weightPart)
 		labels[lineIndex] = row
@@ -204,7 +204,7 @@ func (i *TextInventory) updateListBounds() {
 	i.listHeight = height
 }
 
-func (i *TextInventory) SetEquippedTest(isEquipped func(item foundation.ItemForUI) bool) {
+func (i *TextInventory) SetEquippedTest(isEquipped func(item foundation.Item) bool) {
 	i.isEquipped = isEquipped
 }
 

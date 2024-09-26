@@ -1,42 +1,69 @@
-cond: !HasItem('home_keys')
-text:
+id: tutorial
+name: Grim's legacy
+xp: 100
+#
+start_cond: !HasItem('home_keys')
+start_text:
 + Grim, your old friend and fellow contractor, wants to retire.
 + He promised to leave you his apartment keys.
+#
+prog_cond: HasItem('home_keys')
+prog_text: You should check out Grim's apartment.
+#
+end_cond: HasFlag('Killed(grim_beard)')
+end_id: grim_dead
+end_text: Grim is dead. His legacy is yours now.
 
-cond: HasItem('home_keys')
-text:
-+ You should check out Grim's apartment.
+### Main Quest Line ###
 
-cond: !HasFlag('Killed(jacob_thorne)') && HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
-text: Jacob wants you to extract $500 from the Ripperdoc in the northside residential area.
+id: end_of_the_world
+name: The end of the World
+xp: 500
+#
+start_cond: HasFlag('KnowsAbout(apocalypse)')
+start_text:
++ You are not sure what to make of these rumors.
++ But if something is going down, you want to know about it.
++ The only person who might know more is this guy Grim mentioned.
 
-cond: HasFlag('Killed(jacob_thorne)')
-text: Jacob is dead. Daniel Harker, the Ripperdoc, will be pleased to hear about it.
+### Starter Quest ###
 
-cond: false && !HasFlag('TalkedTo(dr_winters)')
-text:
-+ You have a referral from your Doctor to see Dr. Winters.
-+ Head to the hospital in the north part of town and look for him there.
+id: starter
+name: Medical Extortion
+xp: 250
+#
+start_cond: !HasFlag('Killed(jacob_thorne)') && HasFlag('JobAccepted(starter)') && !HasFlag('JobCompleted(starter)')
+start_text: Jacob wants you to extract $500 from the Ripperdoc in the northside residential area.
+#
+# Alternative Start: find Drake first
+#
+start_cond: HasFlag('TalkedTo(drake_gallows)') && !HasFlag('drake_freed')
+start_text: Drake Gallows, the original Ripperdoc, is locked away in the cellar of the hospital.
+#
+prog_cond: HasFlag('WorkFor(daniel_harker)')
+prog_text: You agreed to keep Doc Harker safe from Jacob.
+#
+prog_cond: HasFlag('starter(money_collected)') || HasFlag('ContainerRemoved(ripperdoc_stash, gold)')
+prog_text: You have collected the money from the Ripperdoc.
+#
+prog_cond: HasFlag('drake_freed')
+prog_text: You have freed Drake Gallows, the Ripperdoc that was locked away in the cellar of the hospital.
+#
+prog_cond: HasFlag('Killed(daniel_harker)')
+prog_text: Daniel Harker, is dead. Jacob will still want his money though.
+#
+end_cond: HasFlag('ClientRewardReceived(starter)')
+end_text: You have received your payment from Jacob.
+end_id: reward_received
+#
+end_cond: HasFlag('Killed(jacob_thorne)') && HasFlag('WorkFor(daniel_harker)')
+end_text: Jacob is dead. Daniel Harker, the Ripperdoc, will be pleased to hear about it.
+end_id: killed_client_for_daniel
+#
+end_cond: HasFlag('Killed(jacob_thorne)')
+end_text: Your client is dead. So no payment for you.
+end_id: killed_client
 
-cond: HasFlag('TalkedTo(dr_winters)')
-text:
-+ You'll have to deal with your medical condition on your own.
 
-cond: HasFlag('LocationKnown(zombies)')
-text:
-+ You learned about the BioPharmaceuticals Inc. lab at the outskirts of town.
-+ There might be something useful there.
 
-cond: HasFlag('LocationKnown(mansion)')
-text:
-+ You know where the mansion of the rich old man is.
-+ Maybe you should pay him a visit?
-
-cond: HasFlag('LocationKnown(cryolab)')
-text:
-+ You know where the cryolab is.
-+ Time to find yourself a place to sleep.
-
-cond: HasFlag('KnowsAbout(apocalypse)')
-text:
-+ Survive the apocalypse.
+### Side Quests ###

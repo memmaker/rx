@@ -1,4 +1,4 @@
-package game
+package foundation
 
 import (
 	"github.com/memmaker/go/fxtools"

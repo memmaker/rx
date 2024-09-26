@@ -5,6 +5,8 @@
  - Blood & Light flooding the walls, make it hard to tell walls and floors apart
 
 
+ - Shotgun Pellets act as one bullet right now.
+ 
  - Check d100 opposing rolls (blackjack system)
  - Blackjack: Roll under your skill but over the roll of the opponent
  -> If an opponent has a higher skill and rolls over your own skill

@@ -1,7 +1,7 @@
 %rec: default
 
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (7,15)
 
 Category: UnknownContainer
@@ -21,7 +21,7 @@ LockFlag: CHANGEME
 Position: (37,15)
 
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (75,6)
 
 Category: NamedLocation
@@ -69,6 +69,9 @@ Position: (58,3)
 
 Category: UnknownContainer
 Description: doctor's stash
+name: ripperdoc_stash
+flag_removal_of: gold
+# When the gold is removed "ContainerRemoved(ripperdoc_stash, gold)" is set
 item: gold(750)
 item: stimpak
 item: stimpak
@@ -76,7 +79,7 @@ item: stimpak
 Position: (3,2)
 
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (73,5)
 
 Category: Terminal
@@ -90,15 +93,15 @@ LockFlag: CHANGEME
 Position: (11,19)
 
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (11,13)
 
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (10,5)
 
 Category: ClosedDoor
-Description: a closed door
+Description: a door
 Position: (58,7)
 
 Category: Transition

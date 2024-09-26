@@ -34,24 +34,22 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 	healInterval := 2 + (100 / g.Player.charSheet.GetStat(special.Endurance))
 	hungerInterval := 300
 
-	g.Player.decrementStatusEffectCounters()
-
-	if !g.Player.HasFlag(special.FlagSlowDigestion) || g.TurnsTaken()%2 == 0 {
-		g.Player.GetFlags().Increment(special.FlagTurnsSinceEating)
+	if !g.Player.HasFlag(foundation.FlagSlowDigestion) || g.TurnsTaken()%2 == 0 {
+		g.Player.GetFlags().Increment(foundation.FlagTurnsSinceEating)
 	}
 
-	turnsSinceEating := g.Player.GetFlags().Get(special.FlagTurnsSinceEating)
+	turnsSinceEating := g.Player.GetFlags().Get(foundation.FlagTurnsSinceEating)
 
 	if turnsSinceEating%hungerInterval == 0 {
 		wasHungry := g.Player.IsHungry()
-		g.Player.GetFlags().Increment(special.FlagHunger)
+		g.Player.GetFlags().Increment(foundation.FlagHunger)
 		if g.Player.IsHungry() && !wasHungry {
 			g.msg(foundation.Msg("You are hungry."))
 		}
 	}
 
 	if g.Player.IsHungry() && turnsSinceEating%(healInterval*3) == 0 {
-		//g.Player.LooseActionPoints(1)
+		g.Player.GetCharSheet().LooseActionPoints(1)
 	}
 
 	if !g.Player.IsHungry() && g.TurnsTaken()%healInterval == 0 && len(g.playerVisibleActorsByDistance()) == 0 {
@@ -65,7 +63,7 @@ func (g *GameState) removeDeadAndApplyRegeneration() {
 	for i := len(g.currentMap().Actors()) - 1; i >= 0; i-- {
 		actor := g.currentMap().Actors()[i]
 		actor.AfterTurn()
-		if actor.HasFlag(special.FlagRegenerating) && actor.IsWounded() {
+		if actor.HasFlag(foundation.FlagRegenerating) && actor.IsWounded() {
 			actor.Heal(1)
 		}
 	}

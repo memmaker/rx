@@ -18,13 +18,14 @@ Enter -> map_interaction
 i -> inventory
 n -> show_ammo
 k -> repair
+u -> toggle_run
 
 g -> attack
 h -> quick_attack
 
 f -> cycle_target_mode
 r -> reload_weapon
-b -> switch_weapons
+
 
 x -> look
 v -> throw

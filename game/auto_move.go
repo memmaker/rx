@@ -2,13 +2,12 @@ package game
 
 import (
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 )
 
 func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bool) bool {
 	player := g.Player
-	if player.HasFlag(special.FlagConfused) {
+	if player.HasFlag(foundation.FlagConfused) {
 		g.msg(foundation.Msg("You cannot run while confused"))
 		return false
 	}
@@ -67,7 +66,7 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 
 func (g *GameState) RunPlayerPath() bool {
 	player := g.Player
-	if player.HasFlag(special.FlagConfused) {
+	if player.HasFlag(foundation.FlagConfused) {
 		g.Player.RemoveGoal()
 		g.msg(foundation.Msg("You cannot run while confused"))
 		return false

@@ -5,16 +5,8 @@ import (
 	"math/rand"
 )
 
-func itemsForUI(stack []*Item) []foundation.ItemForUI {
-	displayStack := make([]foundation.ItemForUI, len(stack))
-	for index, item := range stack {
-		displayStack[index] = item
-	}
-	return displayStack
-}
-
-func itemStacksForUI(stack []*InventoryStack) []foundation.ItemForUI {
-	displayStack := make([]foundation.ItemForUI, len(stack))
+func itemsForUI(stack []*GenericItem) []foundation.Item {
+	displayStack := make([]foundation.Item, len(stack))
 	for index, item := range stack {
 		displayStack[index] = item
 	}

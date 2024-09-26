@@ -1,68 +1,5 @@
 %rec: default
 
-Name: hero_male
-Description: Hero Male
-LongDescription: 
-Icon: H
-Foreground: light_gray_2
-Age: 25
-BodyType: 0
-XP: 60
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 30
-ActionPoints: 7
-ArmorClass: 5
-MeleeDamage: 1
-CarryWeight: 150
-Sequence: 10
-HealingRate: 1
-CriticalChance: 5
-Strength: 5
-Perception: 5
-Endurance: 5
-Charisma: 5
-Intelligence: 5
-Agility: 5
-Luck: 5
-DREMP: 500
-DRRadiation: 10
-DRPoison: 25
-SourceFile: 00000001.pro
-
-Name: hero_female
-Description: Hero Female
-LongDescription: 
-Icon: H
-Foreground: light_gray_2
-Age: 25
-Gender: 1
-BodyType: 0
-XP: 60
-KillType: 1
-DamageType: 0
-TeamNum: 1
-HitPoints: 30
-ActionPoints: 7
-ArmorClass: 5
-MeleeDamage: 1
-CarryWeight: 150
-Sequence: 10
-HealingRate: 1
-CriticalChance: 5
-Strength: 5
-Perception: 5
-Endurance: 5
-Charisma: 5
-Intelligence: 5
-Agility: 5
-Luck: 5
-DREMP: 500
-DRRadiation: 10
-DRPoison: 25
-SourceFile: 00000002.pro
-
 Name: villager
 Description: Villager
 LongDescription: 
@@ -148,6 +85,7 @@ Name: radscorpion
 Description: Radscorpion
 LongDescription: A small mutated scorpion.
 Icon: R
+audio: radscorpion
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
@@ -186,6 +124,7 @@ Name: radscorpion
 Description: Radscorpion
 LongDescription: A mutated scorpion.
 Icon: R
+audio: radscorpion
 Foreground: light_gray_2
 Age: 25
 BodyType: 1
@@ -227,6 +166,7 @@ SourceFile: 00000006.pro
 Name: deathclaw
 Description: Deathclaw
 LongDescription: An immature Deathclaw.
+audio: baby_deathclaw
 Icon: D
 Foreground: light_gray_2
 Age: 25
@@ -268,6 +208,7 @@ SourceFile: 00000007.pro
 
 Name: deathclaw
 Description: Deathclaw
+audio: baby_deathclaw
 LongDescription: An immature Deathclaw.
 Icon: D
 Foreground: light_gray_2
@@ -310,6 +251,7 @@ SourceFile: 00000008.pro
 
 Name: dog
 Description: Dog
+audio: dog
 LongDescription: A canine, probably of a mixed breed.
 Icon: D
 Foreground: light_gray_2
@@ -348,6 +290,7 @@ SourceFile: 00000009.pro
 
 Name: brahmin
 Description: Brahmin
+audio: brahmin
 LongDescription: A two headed, mutant cow.
 Icon: B
 Foreground: light_gray_2
@@ -423,6 +366,7 @@ SourceFile: 00000011.pro
 
 Name: mantis
 Description: Mantis
+audio: mantis
 LongDescription: A mutated Mantis.
 Icon: M
 Foreground: light_gray_2
@@ -491,80 +435,6 @@ DRRadiation: 10
 DRPoison: 25
 SourceFile: 00000013.pro
 
-Name: hakunin
-Description: Hakunin
-LongDescription: 
-Icon: H
-Foreground: light_gray_2
-Age: 25
-BodyType: 0
-XP: 60
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 20
-ActionPoints: 7
-ArmorClass: 5
-MeleeDamage: 1
-CarryWeight: 125
-Sequence: 10
-HealingRate: 1
-CriticalChance: 5
-Strength: 4
-Perception: 5
-Endurance: 5
-Charisma: 5
-Intelligence: 5
-Agility: 5
-Luck: 5
-SkillBonusFirstAid: 45
-SkillBonusDoctor: 60
-SkillBonusSpeech: 5
-SkillBonusBarter: 20
-SkillBonusOutdoorsman: 40
-DREMP: 500
-DRRadiation: 10
-DRPoison: 25
-SourceFile: 00000014.pro
-
-Name: mynoc
-Description: Mynoc
-LongDescription: 
-Icon: M
-Foreground: light_gray_2
-Age: 25
-BodyType: 0
-XP: 60
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 75
-ActionPoints: 9
-ArmorClass: 8
-MeleeDamage: 3
-CarryWeight: 225
-Sequence: 10
-HealingRate: 1
-CriticalChance: 5
-Strength: 8
-Perception: 5
-Endurance: 5
-Charisma: 5
-Intelligence: 5
-Agility: 8
-Luck: 5
-SkillBonusMelee: 17
-SkillBonusThrowing: 22
-SkillBonusSneak: 17
-SkillBonusSteal: 2
-SkillBonusSpeech: 5
-SkillBonusBarter: 20
-SkillBonusOutdoorsman: 70
-DREMP: 500
-DRRadiation: 10
-DRPoison: 25
-SourceFile: 00000015.pro
-
 Name: spore_plant
 Description: Spore Plant
 LongDescription: A carnivorous plant.
@@ -627,7 +497,7 @@ Intelligence: 3
 Agility: 7
 Luck: 5
 SkillBonusSneak: 28
-SkillBonusLockpick: 5
+SkillBonusMechanics: 5
 SkillBonusBarter: 24
 DREMP: 500
 DRRadiation: 10
@@ -661,7 +531,7 @@ Intelligence: 3
 Agility: 6
 Luck: 5
 SkillBonusSneak: 29
-SkillBonusLockpick: 5
+SkillBonusMechanics: 5
 SkillBonusBarter: 19
 DREMP: 500
 DRRadiation: 10
@@ -941,7 +811,7 @@ Luck: 7
 SkillBonusBigGuns: 25
 SkillBonusEnergyWeapons: 5
 SkillBonusSneak: 20
-SkillBonusLockpick: 15
+SkillBonusMechanics: 15
 SkillBonusScience: 8
 SkillBonusRepair: 30
 SkillBonusSpeech: 26
@@ -983,7 +853,7 @@ SkillBonusSmallGuns: 1
 SkillBonusBigGuns: 26
 SkillBonusEnergyWeapons: 6
 SkillBonusSneak: 18
-SkillBonusLockpick: 19
+SkillBonusMechanics: 19
 SkillBonusSteal: 1
 SkillBonusScience: 14
 SkillBonusRepair: 33
@@ -1058,49 +928,6 @@ DREMP: 500
 DRRadiation: 10
 DRPoison: 25
 SourceFile: 00000028.pro
-
-Name: anna
-Description: Anna
-LongDescription: 
-Icon: A
-Foreground: light_gray_2
-Age: 25
-Gender: 1
-BodyType: 0
-XP: 150
-KillType: 1
-DamageType: 0
-TeamNum: 1
-HitPoints: 38
-ActionPoints: 7
-ArmorClass: 5
-MeleeDamage: 1
-CarryWeight: 150
-Sequence: 10
-HealingRate: 1
-CriticalChance: 5
-Strength: 5
-Perception: 5
-Endurance: 5
-Charisma: 5
-Intelligence: 5
-Agility: 5
-Luck: 5
-DTNormal: 500
-DTLaser: 500
-DTFire: 500
-DTElectrical: 500
-DTEMP: 500
-DTExplosive: 500
-DRNormal: 500
-DRLaser: 500
-DRFire: 500
-DRElectrical: 500
-DREMP: 500
-DRExplosive: 500
-DRRadiation: 10
-DRPoison: 25
-SourceFile: 00000029.pro
 
 Name: tough_thug
 Description: Tough Thug
@@ -2028,7 +1855,7 @@ Agility: 8
 Luck: 7
 SkillBonusThrowing: 72
 SkillBonusSneak: 12
-SkillBonusLockpick: 28
+SkillBonusMechanics: 28
 SkillBonusSteal: 39
 DREMP: 500
 DRRadiation: 8
@@ -2064,7 +1891,7 @@ Agility: 7
 Luck: 8
 SkillBonusThrowing: 63
 SkillBonusSneak: 13
-SkillBonusLockpick: 28
+SkillBonusMechanics: 28
 SkillBonusSteal: 44
 DREMP: 500
 DRRadiation: 6
@@ -2423,40 +2250,6 @@ DREMP: 500
 DRRadiation: 8
 DRPoison: 20
 SourceFile: 00000061.pro
-
-Name: vic
-Description: Vic
-LongDescription: 
-Icon: V
-Foreground: light_gray_2
-Age: 25
-BodyType: 0
-XP: 240
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 70
-ActionPoints: 8
-ArmorClass: 6
-MeleeDamage: 1
-CarryWeight: 150
-Sequence: 12
-HealingRate: 1
-CriticalChance: 5
-Strength: 5
-Perception: 6
-Endurance: 4
-Charisma: 6
-Intelligence: 7
-Agility: 6
-Luck: 5
-SkillBonusSmallGuns: 21
-SkillBonusLockpick: 28
-SkillBonusRepair: 49
-DREMP: 500
-DRRadiation: 8
-DRPoison: 20
-SourceFile: 00000062.pro
 
 Name: weak_peasant
 Description: Weak Peasant
@@ -3096,6 +2889,7 @@ Name: little_gecko
 Description: Little Gecko
 LongDescription: 
 Icon: L
+audio: golden_gecko
 Foreground: light_gray_2
 Age: 25
 BodyType: 0
@@ -3132,7 +2926,8 @@ SourceFile: 00000080.pro
 
 Name: tough_lil_gecko
 Description: Tough Lil Gecko
-LongDescription: 
+audio: golden_gecko
+LongDescription:
 Icon: T
 Foreground: light_gray_2
 Age: 25
@@ -3170,6 +2965,7 @@ SourceFile: 00000081.pro
 
 Name: wild_dog
 Description: Wild Dog
+audio: dog
 LongDescription: A mixed breed feral dog.
 Icon: W
 Foreground: light_gray_2
@@ -3208,6 +3004,7 @@ SourceFile: 00000082.pro
 
 Name: golden_gecko
 Description: Golden Gecko
+audio: golden_gecko
 LongDescription: 
 Icon: G
 Foreground: light_gray_2
@@ -3247,6 +3044,7 @@ SourceFile: 00000083.pro
 
 Name: deathclaw
 Description: Deathclaw
+audio: adult_deathclaw
 LongDescription: 
 Icon: D
 Foreground: light_gray_2
@@ -3365,154 +3163,6 @@ DRExplosive: 20
 DRRadiation: 6
 DRPoison: 15
 SourceFile: 00000086.pro
-
-Name: lynette
-Description: Lynette
-LongDescription: 
-Icon: L
-Foreground: light_gray_2
-Age: 25
-Gender: 1
-BodyType: 0
-XP: 300
-KillType: 1
-DamageType: 0
-TeamNum: 1
-HitPoints: 45
-ActionPoints: 8
-ArmorClass: 21
-MeleeDamage: 1
-CarryWeight: 125
-Sequence: 14
-HealingRate: 1
-CriticalChance: 5
-Strength: 4
-Perception: 7
-Endurance: 5
-Charisma: 7
-Intelligence: 7
-Agility: 6
-Luck: 5
-SkillBonusBigGuns: 13
-SkillBonusEnergyWeapons: 13
-SkillBonusThrowing: 1
-SkillBonusFirstAid: 17
-SkillBonusSpeech: 40
-SkillBonusBarter: 47
-DREMP: 500
-DRRadiation: 10
-DRPoison: 25
-SourceFile: 00000087.pro
-
-Name: dr_troy
-Description: Dr. Troy
-LongDescription: 
-Icon: D
-Foreground: light_gray_2
-Age: 25
-BodyType: 0
-XP: 125
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 45
-ActionPoints: 8
-ArmorClass: 6
-MeleeDamage: 1
-CarryWeight: 125
-Sequence: 16
-HealingRate: 1
-CriticalChance: 7
-Strength: 4
-Perception: 8
-Endurance: 4
-Charisma: 4
-Intelligence: 9
-Agility: 6
-Luck: 7
-SkillBonusEnergyWeapons: 38
-SkillBonusThrowing: 1
-SkillBonusFirstAid: 61
-SkillBonusDoctor: 73
-SkillBonusScience: 49
-SkillBonusSpeech: 30
-DREMP: 500
-DRRadiation: 8
-DRPoison: 20
-SourceFile: 00000088.pro
-
-Name: john_cassidy
-Description: John Cassidy
-LongDescription: 
-Icon: J
-Foreground: light_gray_2
-Age: 25
-BodyType: 0
-XP: 300
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 80
-ActionPoints: 8
-ArmorClass: 6
-MeleeDamage: 1
-CarryWeight: 175
-Sequence: 14
-HealingRate: 1
-CriticalChance: 9
-Strength: 6
-Perception: 7
-Endurance: 4
-Charisma: 5
-Intelligence: 4
-Agility: 6
-Luck: 9
-SkillBonusSmallGuns: 66
-SkillBonusEnergyWeapons: 68
-SkillBonusUnarmed: 26
-SkillBonusMelee: 46
-SkillBonusThrowing: 36
-SkillBonusFirstAid: 4
-SkillBonusBarter: 60
-SkillBonusGambling: 30
-SkillBonusOutdoorsman: 4
-DREMP: 500
-DRRadiation: 8
-DRPoison: 20
-SourceFile: 00000089.pro
-
-Name: gregory
-Description: Gregory
-LongDescription: 
-Icon: G
-Foreground: light_gray_2
-Age: 25
-BodyType: 0
-XP: 350
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 64
-ActionPoints: 7
-ArmorClass: 5
-MeleeDamage: 1
-CarryWeight: 125
-Sequence: 14
-HealingRate: 1
-CriticalChance: 10
-Strength: 4
-Perception: 7
-Endurance: 5
-Charisma: 5
-Intelligence: 9
-Agility: 5
-Luck: 10
-SkillBonusSmallGuns: 55
-SkillBonusEnergyWeapons: 20
-DREMP: 500
-DRRadiation: 10
-DRPoison: 25
-SourceFile: 00000090.pro
 
 Name: citizen_female
 Description: Citizen (Female)
@@ -3903,7 +3553,7 @@ Luck: 5
 SkillBonusUnarmed: 2
 SkillBonusMelee: 12
 SkillBonusFirstAid: 8
-SkillBonusLockpick: 31
+SkillBonusMechanics: 31
 SkillBonusScience: 6
 SkillBonusBarter: 38
 SkillBonusOutdoorsman: 38
@@ -7882,7 +7532,7 @@ Agility: 8
 Luck: 7
 SkillBonusThrowing: 88
 SkillBonusSneak: 16
-SkillBonusLockpick: 30
+SkillBonusMechanics: 30
 SkillBonusSteal: 43
 DREMP: 500
 DRRadiation: 8
@@ -10659,7 +10309,7 @@ SkillBonusBigGuns: 17
 SkillBonusUnarmed: 11
 SkillBonusMelee: 31
 SkillBonusSneak: 19
-SkillBonusLockpick: 21
+SkillBonusMechanics: 21
 SkillBonusSteal: 24
 SkillBonusSpeech: 40
 SkillBonusBarter: 47
@@ -12110,7 +11760,7 @@ Agility: 8
 Luck: 7
 SkillBonusThrowing: 88
 SkillBonusSneak: 16
-SkillBonusLockpick: 30
+SkillBonusMechanics: 30
 SkillBonusSteal: 43
 DREMP: 500
 DRRadiation: 8
@@ -12146,7 +11796,7 @@ Agility: 7
 Luck: 8
 SkillBonusThrowing: 82
 SkillBonusSneak: 19
-SkillBonusLockpick: 30
+SkillBonusMechanics: 30
 SkillBonusSteal: 50
 DREMP: 500
 DRRadiation: 6
@@ -13857,7 +13507,7 @@ SkillBonusMelee: 56
 SkillBonusThrowing: 46
 SkillBonusFirstAid: 8
 SkillBonusSneak: 2
-SkillBonusLockpick: 2
+SkillBonusMechanics: 2
 SkillBonusTraps: 2
 SkillBonusBarter: 60
 SkillBonusGambling: 35
@@ -13900,7 +13550,7 @@ SkillBonusMelee: 76
 SkillBonusThrowing: 56
 SkillBonusFirstAid: 13
 SkillBonusSneak: 2
-SkillBonusLockpick: 2
+SkillBonusMechanics: 2
 SkillBonusBarter: 60
 SkillBonusGambling: 35
 SkillBonusOutdoorsman: 29
@@ -15355,7 +15005,7 @@ Luck: 5
 SkillBonusSmallGuns: 36
 SkillBonusEnergyWeapons: 13
 SkillBonusThrowing: 11
-SkillBonusLockpick: 33
+SkillBonusMechanics: 33
 SkillBonusRepair: 54
 DREMP: 500
 DRRadiation: 8
@@ -15391,7 +15041,7 @@ Luck: 5
 SkillBonusSmallGuns: 46
 SkillBonusEnergyWeapons: 23
 SkillBonusThrowing: 16
-SkillBonusLockpick: 42
+SkillBonusMechanics: 42
 SkillBonusRepair: 66
 DREMP: 500
 DRRadiation: 8
@@ -15427,7 +15077,7 @@ Luck: 6
 SkillBonusSmallGuns: 61
 SkillBonusEnergyWeapons: 53
 SkillBonusThrowing: 21
-SkillBonusLockpick: 52
+SkillBonusMechanics: 52
 SkillBonusRepair: 71
 DREMP: 500
 DRRadiation: 10
@@ -15463,7 +15113,7 @@ Luck: 6
 SkillBonusSmallGuns: 82
 SkillBonusEnergyWeapons: 86
 SkillBonusThrowing: 22
-SkillBonusLockpick: 61
+SkillBonusMechanics: 61
 SkillBonusRepair: 81
 DREMP: 500
 DRRadiation: 10
@@ -15499,7 +15149,7 @@ Luck: 7
 SkillBonusSmallGuns: 97
 SkillBonusEnergyWeapons: 101
 SkillBonusThrowing: 32
-SkillBonusLockpick: 70
+SkillBonusMechanics: 70
 SkillBonusRepair: 88
 DREMP: 500
 DRRadiation: 10
@@ -15535,7 +15185,7 @@ Luck: 8
 SkillBonusSmallGuns: 98
 SkillBonusEnergyWeapons: 129
 SkillBonusThrowing: 33
-SkillBonusLockpick: 74
+SkillBonusMechanics: 74
 SkillBonusRepair: 106
 DREMP: 500
 DRRadiation: 10
@@ -18172,7 +17822,7 @@ SkillBonusUnarmed: 16
 SkillBonusMelee: 31
 SkillBonusThrowing: 41
 SkillBonusSneak: 27
-SkillBonusLockpick: 18
+SkillBonusMechanics: 18
 SkillBonusSteal: 32
 SkillBonusSpeech: 15
 SkillBonusBarter: 46
@@ -18220,7 +17870,7 @@ SkillBonusUnarmed: 16
 SkillBonusMelee: 31
 SkillBonusThrowing: 41
 SkillBonusSneak: 27
-SkillBonusLockpick: 18
+SkillBonusMechanics: 18
 SkillBonusSteal: 32
 SkillBonusSpeech: 15
 SkillBonusBarter: 46
@@ -18268,7 +17918,7 @@ SkillBonusUnarmed: 16
 SkillBonusMelee: 31
 SkillBonusThrowing: 41
 SkillBonusSneak: 27
-SkillBonusLockpick: 18
+SkillBonusMechanics: 18
 SkillBonusSteal: 32
 SkillBonusSpeech: 15
 SkillBonusBarter: 46
@@ -18310,7 +17960,7 @@ SkillBonusUnarmed: 16
 SkillBonusMelee: 31
 SkillBonusThrowing: 41
 SkillBonusSneak: 27
-SkillBonusLockpick: 18
+SkillBonusMechanics: 18
 SkillBonusSteal: 32
 SkillBonusSpeech: 15
 SkillBonusBarter: 46
@@ -18701,7 +18351,7 @@ SkillBonusUnarmed: 31
 SkillBonusMelee: 41
 SkillBonusThrowing: 41
 SkillBonusSneak: 27
-SkillBonusLockpick: 17
+SkillBonusMechanics: 17
 SkillBonusSteal: 32
 SkillBonusSpeech: 30
 SkillBonusBarter: 82
@@ -19762,7 +19412,7 @@ SkillBonusUnarmed: 60
 SkillBonusMelee: 80
 SkillBonusThrowing: 42
 SkillBonusSneak: 19
-SkillBonusLockpick: 21
+SkillBonusMechanics: 21
 SkillBonusSteal: 24
 SkillBonusOutdoorsman: 1
 DTNormal: 2
@@ -19776,41 +19426,6 @@ DRExplosive: 20
 DRRadiation: 12
 DRPoison: 30
 SourceFile: 00000478.pro
-
-Name: marjorie
-Description: Marjorie
-LongDescription: 
-Icon: M
-Foreground: light_gray_2
-Age: 25
-Gender: 1
-BodyType: 0
-XP: 50
-KillType: 1
-DamageType: 0
-TeamNum: 1
-HitPoints: 35
-ActionPoints: 7
-ArmorClass: 5
-MeleeDamage: 1
-CarryWeight: 100
-Sequence: 10
-HealingRate: 1
-CriticalChance: 4
-Strength: 3
-Perception: 5
-Endurance: 4
-Charisma: 4
-Intelligence: 6
-Agility: 5
-Luck: 4
-SkillBonusFirstAid: 33
-SkillBonusDoctor: 9
-SkillBonusScience: 41
-DREMP: 500
-DRRadiation: 8
-DRPoison: 20
-SourceFile: 00000479.pro
 
 Name: auto-cannon
 Description: Auto-Cannon
