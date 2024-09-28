@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
@@ -570,13 +570,13 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 	}
 }
 
-func (g *GameState) playerHackingRoll(difficulty foundation.Difficulty) special.CheckResult {
-	scienceSkill := g.Player.GetCharSheet().GetSkill(special.Technology)
+func (g *GameState) playerHackingRoll(difficulty foundation.Difficulty) d100.CheckResult {
+	scienceSkill := g.Player.GetCharSheet().GetSkill(d100.SkillForHacking)
 	luck := 5
 
 	modifier := difficulty.GetRollModifier()
 	effectiveSkill := scienceSkill + modifier
-	rollResult := special.SuccessRoll(special.Percentage(effectiveSkill), special.Percentage(luck))
+	rollResult := d100.SuccessRoll(d100.Percentage(effectiveSkill), d100.Percentage(luck))
 	return rollResult
 }
 

@@ -1,7 +1,7 @@
 package foundation
 
 import (
-	"RogueUI/special"
+	"RogueUI/d100"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
@@ -57,13 +57,13 @@ type GameForUI interface {
 	// State Queries
 	IsPlayerAndMapInitialized() bool
 	GetPlayerName() string
-	GetPlayerCharSheet() *special.CharSheet
+	GetPlayerCharSheet() *d100.CharSheet
 	GetPlayerPosition() geometry.Point
 	GetCharacterSheet() string
 	IsPlayerOverEncumbered() bool
 
-	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple3[special.BodyPart, bool, int]
-	GetRangedChanceToHitForUI(target ActorForUI) int
+	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple3[d100.BodyPart, bool, int]
+	GetRangedChanceToHitForUI(target ActorForUI) RangedCtH
 
 	GetHudStats() map[HudValue]int
 	GetHudFlags() map[ActorFlag]int
@@ -161,7 +161,7 @@ type GameUI interface {
 	// Targeting
 	SelectTarget(onSelected func(targetPos geometry.Point))
 	SelectDirection(onSelected func(direction geometry.CompassDirection))
-	SelectBodyPart(previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
+	SelectBodyPart(previousAim d100.BodyPart, onSelected func(victim ActorForUI, hitZone d100.BodyPart))
 
 	// Menus / Modals / Windows
 	OpenInventoryForManagement(stack []Item)
@@ -175,7 +175,7 @@ type GameUI interface {
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
 	ShowTakeOnlyContainer(name string, containedItems []Item, transfer func(ui Item))
 	ShowGiveAndTakeContainer(leftName string, leftItems []Item, rightName string, rightItems []Item, transferToLeft func(itemTaken Item, amount int), transferToRight func(itemTaken Item, amount int))
-	OpenAimedShotPicker(actorAt ActorForUI, previousAim special.BodyPart, onSelected func(victim ActorForUI, hitZone special.BodyPart))
+	OpenAimedShotPicker(actorAt ActorForUI, previousAim d100.BodyPart, onSelected func(victim ActorForUI, hitZone d100.BodyPart))
 
 	SaveGame()
 	LoadGame()
@@ -373,4 +373,12 @@ type ChatterSource interface {
 }
 type AudioCuePlayer interface {
 	PlayCue(cueName string)
+}
+
+type RangedCtH struct {
+	HitChance int
+	Mods      d100.RangedModifiers
+	SkillUsed d100.Skill
+	SkillBase int
+	Defender  ActorForUI
 }

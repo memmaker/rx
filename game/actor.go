@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
 	"fmt"
@@ -28,7 +28,7 @@ const (
 type Actor struct {
 	internalName string
 	name         string
-	charSheet    *special.CharSheet
+	charSheet    *d100.CharSheet
 	position     geometry.Point
 
 	inventory *Inventory
@@ -45,8 +45,8 @@ type Actor struct {
 	icon         textiles.TextIcon
 	sizeModifier int
 	timeEnergy   int
-	body         special.BodyStructure
-	bodyDamage   map[special.BodyPart]int
+	body         d100.BodyStructure
+	bodyDamage   map[d100.BodyPart]int
 
 	dialogueFile string
 	chatterFile  string
@@ -95,7 +95,7 @@ func (a *Actor) GetState() foundation.AIState {
 	return a.aiState
 }
 
-func (a *Actor) GetBodyPartIndex(aim special.BodyPart) int {
+func (a *Actor) GetBodyPartIndex(aim d100.BodyPart) int {
 	structure := a.body
 	for i, part := range structure {
 		if part == aim {
@@ -105,10 +105,10 @@ func (a *Actor) GetBodyPartIndex(aim special.BodyPart) int {
 	return -1
 }
 
-func (a *Actor) GetBodyPart(index int) special.BodyPart {
+func (a *Actor) GetBodyPart(index int) d100.BodyPart {
 	structure := a.body
 	if index < 0 || index >= len(structure) {
-		return special.Body
+		return d100.Body
 	}
 	return structure[index]
 }
@@ -304,7 +304,7 @@ func (a *Actor) GobDecode(data []byte) error {
 	return nil
 }
 
-func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet) *Actor {
+func NewPlayer(name string, icon textiles.TextIcon, character *d100.CharSheet) *Actor {
 	player := NewActor()
 	player.SetCharSheet(character)
 	player.SetDisplayName(name)
@@ -317,7 +317,7 @@ func NewPlayer(name string, icon textiles.TextIcon, character *special.CharSheet
 var NoGoal = ActorGoal{}
 
 func NewActor() *Actor {
-	sheet := special.NewCharSheet()
+	sheet := d100.NewCharSheet()
 
 	a := &Actor{
 		name: "Unknown",
@@ -329,8 +329,8 @@ func NewActor() *Actor {
 		equipment:         NewEquipment(),
 		charSheet:         sheet,
 		bodyAugmentations: make(map[CyberWare]bool),
-		body:              special.HumanBodyParts,
-		bodyDamage:        make(map[special.BodyPart]int),
+		body:              d100.HumanBodyParts,
+		bodyDamage:        make(map[d100.BodyPart]int),
 		aiState:           foundation.Neutral,
 		statusFlags:       foundation.NewActorFlags(),
 		enemyActors:       make(map[string]bool),
@@ -346,15 +346,15 @@ func (a *Actor) SetDialogueFile(scriptName string) {
 	a.dialogueFile = scriptName
 }
 
-func (a *Actor) GetBodyPartsAndHitChances(baseHitChance int, isMelee bool) []fxtools.Tuple3[special.BodyPart, bool, int] {
-	var result []fxtools.Tuple3[special.BodyPart, bool, int]
+func (a *Actor) GetBodyPartsAndHitChances(baseHitChance int, isMelee bool) []fxtools.Tuple3[d100.BodyPart, bool, int] {
+	var result []fxtools.Tuple3[d100.BodyPart, bool, int]
 	for _, part := range a.body {
 		penalty := part.AimPenalty()
 		if isMelee {
 			penalty /= 2
 		}
 		hitChanceOnBodyPart := baseHitChance + penalty
-		result = append(result, fxtools.Tuple3[special.BodyPart, bool, int]{Item1: part, Item2: a.IsCrippled(part), Item3: hitChanceOnBodyPart})
+		result = append(result, fxtools.Tuple3[d100.BodyPart, bool, int]{Item1: part, Item2: a.IsCrippled(part), Item3: hitChanceOnBodyPart})
 	}
 	return result
 }
@@ -523,13 +523,13 @@ func (a *Actor) HasFlag(flag foundation.ActorFlag) bool {
 }
 
 func (a *Actor) TakeDamage(dmg SourcedDamage) (didCripple bool) {
-	if a.HasFlag(foundation.FlagZombie) && dmg.DamageType != special.DamageTypeExplosive { // explosive damage works as usual
+	if a.HasFlag(foundation.FlagZombie) && dmg.DamageType != DamageTypeExplosive { // explosive damage works as usual
 		// headshots with normal damage kill zombies instantly if the damage is high enough
-		if dmg.DamageType == special.DamageTypeNormal && dmg.DamageAmount > 10 {
-			if dmg.BodyPart == special.Head || dmg.BodyPart == special.Eyes {
+		if dmg.DamageType == DamageTypeNormal && dmg.DamageAmount > 10 {
+			if dmg.BodyPart == d100.Head || dmg.BodyPart == d100.Eyes {
 				currentHitPoints := a.GetHitPoints()
 				a.charSheet.TakeRawDamage(currentHitPoints)
-			} else if dmg.BodyPart == special.Legs || dmg.BodyPart == special.Arms {
+			} else if dmg.BodyPart == d100.Legs || dmg.BodyPart == d100.Arms {
 				return a.addDamageToBodyPart(dmg) // still able to cripple
 			}
 		}
@@ -546,7 +546,7 @@ func (a *Actor) addDamageToBodyPart(dmg SourcedDamage) (didCripple bool) {
 	return !wasCrippled && a.IsCrippled(dmg.BodyPart)
 }
 
-func (a *Actor) IsCrippled(part special.BodyPart) bool {
+func (a *Actor) IsCrippled(part d100.BodyPart) bool {
 	return a.bodyDamage[part] > part.DamageForCrippled(a.GetHitPointsMax())
 }
 
@@ -622,33 +622,31 @@ func (a *Actor) GetDetailInfo() string {
 
 	// melee attack
 	statRows := []fxtools.TableRow{
-		fxtools.TableRow{Columns: []string{"Str:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Strength))}},
-		fxtools.TableRow{Columns: []string{"Per:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Perception))}},
-		fxtools.TableRow{Columns: []string{"End:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Endurance))}},
-		fxtools.TableRow{Columns: []string{"Cha:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Charisma))}},
-		fxtools.TableRow{Columns: []string{"Int:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Intelligence))}},
-		fxtools.TableRow{Columns: []string{"Agi:", fmt.Sprintf("%d", a.charSheet.GetStat(special.Agility))}},
+		fxtools.TableRow{Columns: []string{"Str:", fmt.Sprintf("%d", a.charSheet.GetStat(d100.Strength))}},
+		fxtools.TableRow{Columns: []string{"Per:", fmt.Sprintf("%d", a.charSheet.GetStat(d100.Perception))}},
+		fxtools.TableRow{Columns: []string{"End:", fmt.Sprintf("%d", a.charSheet.GetStat(d100.Endurance))}},
+		fxtools.TableRow{Columns: []string{"Cha:", fmt.Sprintf("%d", a.charSheet.GetStat(d100.Charisma))}},
+		fxtools.TableRow{Columns: []string{"Int:", fmt.Sprintf("%d", a.charSheet.GetStat(d100.Intelligence))}},
+		fxtools.TableRow{Columns: []string{"Agi:", fmt.Sprintf("%d", a.charSheet.GetStat(d100.Agility))}},
 	}
 
 	derivedStatRows := []fxtools.TableRow{
 		{Columns: []string{"HP:", fmt.Sprintf("%d/%d", a.GetHitPoints(), a.GetHitPointsMax())}},
 		{Columns: []string{"AP:", fmt.Sprintf("%d/%d", a.charSheet.GetActionPoints(), a.charSheet.GetActionPointsMax())}},
-		{Columns: []string{"Speed:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.Speed))}},
-		{Columns: []string{"Dodge:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.Dodge))}},
-		{Columns: []string{"Crit. Chance:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.CriticalChance))}},
-		{Columns: []string{"Carry Weight:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.CarryWeight))}},
+		{Columns: []string{"Speed:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.Speed))}},
+		{Columns: []string{"Dodge:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.Dodge))}},
+		{Columns: []string{"Crit. Chance:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.CriticalChance))}},
+		{Columns: []string{"Carry Weight:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.CarryWeight))}},
 	}
 
 	resistanceRows := []fxtools.TableRow{
-		{Columns: []string{"Physical:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.DamageResistance))}},
-		{Columns: []string{"Energy:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.EnergyResistance))}},
-		{Columns: []string{"Poison :", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.PoisonResistance))}},
-		{Columns: []string{"Radiation:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(special.RadiationResistance))}},
+		{Columns: []string{"Physical:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.DamageResistance))}},
+		{Columns: []string{"Poison :", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.PoisonResistance))}},
 	}
 
 	var skillRows []fxtools.TableRow
-	for skillNo := 0; skillNo < int(special.SkillCount); skillNo++ {
-		skill := special.Skill(skillNo)
+	for skillNo := 0; skillNo < d100.SkillCount(); skillNo++ {
+		skill := d100.Skill(skillNo)
 		skillRows = append(skillRows, fxtools.TableRow{Columns: []string{skill.String() + ":", fmt.Sprintf("%d", a.charSheet.GetSkill(skill))}})
 	}
 
@@ -754,7 +752,7 @@ func (a *Actor) timeNeededForMovement() int {
 		speed *= 6
 	}
 
-	if a.IsCrippled(special.Legs) {
+	if a.IsCrippled(d100.Legs) {
 		speed = max(1, speed/2)
 	}
 	if a.IsOverEncumbered() {
@@ -767,10 +765,10 @@ func (a *Actor) timeNeededForMovement() int {
 
 func (a *Actor) timeNeededForActions() int {
 	speed := a.GetBasicSpeed()
-	if a.IsCrippled(special.Arms) {
+	if a.IsCrippled(d100.Arms) {
 		speed = max(1, speed-2)
 	}
-	if a.IsCrippled(special.Eyes) {
+	if a.IsCrippled(d100.Eyes) {
 		speed = max(1, speed-1)
 	}
 	speed = max(1, speed-a.GetEncumbrance())
@@ -815,10 +813,10 @@ func (a *Actor) decrementTemporaryStatChanges() {
 	}
 }
 func (a *Actor) GetBasicSpeed() int {
-	return max(1, a.charSheet.GetDerivedStat(special.Speed))
+	return max(1, a.charSheet.GetDerivedStat(d100.Speed))
 }
 
-func (a *Actor) GetCharSheet() *special.CharSheet {
+func (a *Actor) GetCharSheet() *d100.CharSheet {
 	return a.charSheet
 }
 
@@ -882,13 +880,13 @@ func (a *Actor) GetDeathAudioCue() string {
 	audioName := a.getAudioName()
 	return fmt.Sprintf("critters/%s/FALLING", audioName)
 }
-func (a *Actor) GetDeathCriticalAudioCue(mode special.TargetingMode, damageType special.DamageType) string {
+func (a *Actor) GetDeathCriticalAudioCue(mode TargetingMode, damageType DamageType) string {
 	audioName := a.getAudioName()
 	actionName := "FALLING"
 	switch damageType {
-	case special.DamageTypeNormal:
+	case DamageTypeNormal:
 		switch mode {
-		case special.TargetingModeFireBurst:
+		case TargetingModeFireBurst:
 			actionName = "PERFORATED_DEATH"
 		default:
 			if rand.Intn(2) == 0 {
@@ -897,23 +895,23 @@ func (a *Actor) GetDeathCriticalAudioCue(mode special.TargetingMode, damageType 
 				actionName = "RIPPING_APART"
 			}
 		}
-	case special.DamageTypeLaser:
+	case DamageTypeLaser:
 		actionName = "SLICE_IN_TWO"
-	case special.DamageTypeFire:
+	case DamageTypeFire:
 		if rand.Intn(2) == 0 { // TODO: not both always available, fallbacks or tests needed..
 			actionName = "BURNED"
 		} else {
 			actionName = "BURNING_DANCE"
 		}
-	case special.DamageTypeExplosive:
+	case DamageTypeExplosive:
 		actionName = "BLOW_EXPLOSION"
-	case special.DamageTypeElectrical:
+	case DamageTypeElectrical:
 		if rand.Intn(2) == 0 {
 			actionName = "ELECTRIC_BURNED"
 		} else {
 			actionName = "ELECTRIC_BURNED_TO_ASHES"
 		}
-	case special.DamageTypePlasma:
+	case DamageTypePlasma:
 		actionName = "MELTDOWN"
 	default:
 		actionName = "FALLING"
@@ -925,7 +923,7 @@ func (a *Actor) GetDodgedAudioCue() string {
 	return fmt.Sprintf("critters/%s/DODGE", audioName)
 }
 func (a *Actor) GetMeleeDamageBonus() int {
-	return a.charSheet.GetDerivedStat(special.MeleeDamageBonus)
+	return a.charSheet.GetDerivedStat(d100.MeleeDamageBonus)
 }
 func (a *Actor) GetMeleeAudioCue(isKick bool) string {
 	audioName := a.getAudioName()
@@ -993,59 +991,6 @@ func (a *Actor) LookInfo() string {
 	return a.Name()
 }
 
-func (a *Actor) ModifyDamageByArmor(damage SourcedDamage, dtModifierFromAttack int) SourcedDamage {
-	reduction := a.GetCharSheet().GetDerivedStat(special.DamageResistance)
-	threshold := 0
-	originalDamageAmount := damage.DamageAmount
-
-	if a.GetEquipment().HasArmorEquipped() {
-		armor := a.GetEquipment().GetArmor()
-		if damage.DamageType.IsEnergy() {
-			protection := armor.GetArmorProtection(special.DamageTypeLaser)
-			threshold = protection.DamageThreshold
-			reduction += protection.DamageReduction
-		} else {
-			protection := armor.GetArmorProtection(special.DamageTypeNormal)
-			threshold = protection.DamageThreshold
-			reduction += protection.DamageReduction
-		}
-
-	}
-
-	maxArmorDR := 85
-	maxArmorDT := 30
-
-	reduction = max(0, min(maxArmorDR, reduction))
-	threshold = max(0, min(maxArmorDT, threshold+dtModifierFromAttack))
-
-	reductionFactor := (100 - float64(reduction)) / 100.0
-	var newDamageAmount int
-
-	if len(damage.DamagePerBullet) > 0 {
-		for _, bulletDamage := range damage.DamagePerBullet {
-			bulletDamage = int(max(1, float64(bulletDamage)*reductionFactor))
-			bulletDamage = max(0, bulletDamage-threshold)
-			newDamageAmount += bulletDamage
-		}
-	} else {
-		newDamageAmount = int(max(1, float64(originalDamageAmount)*reductionFactor))
-		newDamageAmount = max(0, originalDamageAmount-threshold)
-	}
-
-	// degrade armor
-	if a.GetEquipment().HasArmorEquipped() {
-		ablation := 3.3
-		if newDamageAmount > 0 {
-			ablation = 10
-		}
-		armor := a.GetEquipment().GetArmor()
-		armor.Degrade(ablation)
-	}
-
-	damage.DamageAmount = newDamageAmount
-	return damage
-}
-
 func (a *Actor) HasDialogue() bool {
 	return a.dialogueFile != ""
 }
@@ -1083,7 +1028,7 @@ func (a *Actor) SetIcon(icon textiles.TextIcon) {
 	a.icon = icon
 }
 
-func (a *Actor) SetCharSheet(character *special.CharSheet) {
+func (a *Actor) SetCharSheet(character *d100.CharSheet) {
 	a.charSheet = character
 }
 
@@ -1141,12 +1086,12 @@ func (a *Actor) GetWeaponRange() int {
 	}
 	return 1
 }
-func (a *Actor) GetMaxRepairQuality() special.Percentage {
-	repairSkill := a.GetCharSheet().GetSkill(special.Mechanics)
-	return special.Percentage(min(100, int(20+(float64(repairSkill)*0.5))))
+func (a *Actor) GetMaxRepairQuality() d100.Percentage {
+	repairSkill := a.GetCharSheet().GetSkill(d100.SkillForRepairs)
+	return d100.Percentage(min(100, int(20+(float64(repairSkill)*0.5))))
 }
 
-func (a *Actor) GetRepairQuality(qualityOne, qualityTwo special.Percentage) special.Percentage {
+func (a *Actor) GetRepairQuality(qualityOne, qualityTwo d100.Percentage) d100.Percentage {
 	var lower, higher float64
 	if qualityOne < qualityTwo {
 		lower = float64(qualityOne)
@@ -1155,9 +1100,9 @@ func (a *Actor) GetRepairQuality(qualityOne, qualityTwo special.Percentage) spec
 		lower = float64(qualityTwo)
 		higher = float64(qualityOne)
 	}
-	repairSkill := float64(a.GetCharSheet().GetSkill(special.Mechanics))
+	repairSkill := float64(a.GetCharSheet().GetSkill(d100.SkillForRepairs))
 	newQuality := 5 + higher + (0.05 * lower) + (0.15 * repairSkill)
-	return min(a.GetMaxRepairQuality(), special.Percentage(newQuality))
+	return min(a.GetMaxRepairQuality(), d100.Percentage(newQuality))
 }
 
 func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point {
@@ -1221,7 +1166,7 @@ func (a *Actor) hasPathTo(pos geometry.Point) bool {
 }
 
 func (a *Actor) GetMaxThrowRange() int {
-	strength := a.GetCharSheet().GetStat(special.Strength)
+	strength := a.GetCharSheet().GetStat(d100.Strength)
 	return strength * 2
 }
 
@@ -1247,7 +1192,7 @@ func (a *Actor) TryEquipRangedWeaponFirst() {
 }
 
 func (a *Actor) IsOverEncumbered() bool {
-	carryWeight := a.GetCharSheet().GetDerivedStat(special.CarryWeight)
+	carryWeight := a.GetCharSheet().GetDerivedStat(d100.CarryWeight)
 	totalWeight := a.GetInventory().GetTotalWeight()
 	return totalWeight > carryWeight
 }
@@ -1276,11 +1221,11 @@ func (a *Actor) SetFlag(flag foundation.ActorFlag) {
 	a.statusFlags.Set(flag)
 }
 
-func (a *Actor) GetTemporarySkillModifiers(skill special.Skill) []special.Modifier {
-	var result []special.Modifier
+func (a *Actor) GetTemporarySkillModifiers(skill d100.Skill) []d100.Modifier {
+	var result []d100.Modifier
 	for _, statChange := range a.temporaryStatChanges {
 		if value, exists := statChange.SkillChanges[skill]; exists {
-			result = append(result, special.DefaultModifier{
+			result = append(result, d100.DefaultModifier{
 				Source:    statChange.Name,
 				Modifier:  value,
 				Order:     1,
@@ -1289,25 +1234,14 @@ func (a *Actor) GetTemporarySkillModifiers(skill special.Skill) []special.Modifi
 			})
 		}
 	}
-
-	if a.HasFlag(foundation.FlagConcentratedAiming) && (skill.IsRangedAttackSkill() || skill.IsMeleeAttackSkill()) {
-		aimingBonus := 10 * a.GetFlags().Get(foundation.FlagConcentratedAiming)
-		result = append(result, special.DefaultModifier{
-			Source:    "Concentrated Aiming",
-			Modifier:  aimingBonus,
-			Order:     2,
-			IsPercent: true,
-		})
-	}
-
 	return result
 }
 
-func (a *Actor) GetTemporaryStatModifiers(stat special.Stat) []special.Modifier {
-	var result []special.Modifier
+func (a *Actor) GetTemporaryStatModifiers(stat d100.Stat) []d100.Modifier {
+	var result []d100.Modifier
 	for _, statChange := range a.temporaryStatChanges {
 		if value, exists := statChange.StatChanges[stat]; exists {
-			result = append(result, special.DefaultModifier{
+			result = append(result, d100.DefaultModifier{
 				Source:   statChange.Name,
 				Modifier: value,
 				Order:    1,
@@ -1318,11 +1252,11 @@ func (a *Actor) GetTemporaryStatModifiers(stat special.Stat) []special.Modifier 
 	return result
 }
 
-func (a *Actor) GetTemporaryDerivedStatModifiers(stat special.DerivedStat) []special.Modifier {
-	var result []special.Modifier
+func (a *Actor) GetTemporaryDerivedStatModifiers(stat d100.DerivedStat) []d100.Modifier {
+	var result []d100.Modifier
 	for _, statChange := range a.temporaryStatChanges {
 		if value, exists := statChange.DerivedStatChanges[stat]; exists {
-			result = append(result, special.DefaultModifier{
+			result = append(result, d100.DefaultModifier{
 				Source:   statChange.Name,
 				Modifier: value,
 				Order:    1,
@@ -1344,9 +1278,9 @@ func (a *Actor) AddTemporaryStatChange(change *TemporaryStatChange) {
 }
 
 type StatChange struct {
-	StatChanges        map[special.Stat]int
-	SkillChanges       map[special.Skill]int
-	DerivedStatChanges map[special.DerivedStat]int
+	StatChanges        map[d100.Stat]int
+	SkillChanges       map[d100.Skill]int
+	DerivedStatChanges map[d100.DerivedStat]int
 }
 
 type TemporaryStatChange struct {

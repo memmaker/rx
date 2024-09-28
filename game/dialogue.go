@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/special"
+	"RogueUI/d100"
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/recfile"
@@ -126,7 +126,7 @@ func (o *ConversationOption) RollInfo() string {
 	if matches == nil {
 		return ""
 	}
-	skillName := special.SkillFromString(matches[1])
+	skillName := d100.SkillFromString(matches[1])
 	modifier, _ := strconv.Atoi(matches[2])
 	if modifier == 0 {
 		return fmt.Sprintf(" (%s)", skillName.String())

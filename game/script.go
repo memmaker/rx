@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -88,13 +88,16 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 		},
 		"Skill": func(args ...interface{}) (interface{}, error) {
 			skillName := args[0].(string)
-			skillValue := g.Player.GetCharSheet().GetSkill(special.SkillFromString(skillName))
+			skillValue := g.Player.GetCharSheet().GetSkill(d100.SkillFromString(skillName))
 			return (float64)(skillValue), nil
 		},
 		"RollSkill": func(args ...interface{}) (interface{}, error) {
 			skillName := args[0].(string)
-			modifier := args[1].(float64)
-			result := g.Player.GetCharSheet().SkillRoll(special.SkillFromString(skillName), int(modifier))
+			diff := d100.Medium
+			if len(args) > 1 {
+				diff = d100.DifficultyFromString(args[1].(string))
+			}
+			result := g.Player.GetCharSheet().SkillRollVsDiff(d100.SkillFromString(skillName), diff)
 			return (bool)(result.Success), nil
 		},
 

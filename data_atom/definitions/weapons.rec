@@ -17,8 +17,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 25
-weapon_max_range_two: 20
+weapon_max_range_one: 12
+weapon_max_range_two: 12
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 68
@@ -41,7 +41,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 25
+weapon_max_range_one: 12
 weapon_max_range_two: 0
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
@@ -89,7 +89,7 @@ weapon_attack_mode_one: Fire_Burst
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 6
 weapon_ap_cost_two: 0
-weapon_max_range_one: 35
+weapon_max_range_one: 18
 weapon_max_range_two: 0
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
@@ -114,7 +114,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 6
 weapon_ap_cost_two: 0
-weapon_max_range_one: 40
+weapon_max_range_one: 25
 weapon_max_range_two: 0
 weapon_uses_ammo: rocket
 weapon_caliber_index: 1
@@ -163,7 +163,7 @@ weapon_attack_mode_one: Flame
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 6
 weapon_ap_cost_two: 0
-weapon_max_range_one: 5
+weapon_max_range_one: 4
 weapon_max_range_two: 0
 weapon_uses_ammo: flamethrower_fuel
 weapon_caliber_index: 2
@@ -187,7 +187,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 40
+weapon_max_range_one: 30
 weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
@@ -259,7 +259,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 25
+weapon_max_range_one: 20
 weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
@@ -283,7 +283,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 35
+weapon_max_range_one: 18
 weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
@@ -307,7 +307,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 25
+weapon_max_range_one: 18
 weapon_max_range_two: 0
 weapon_uses_ammo: 44_cal
 weapon_caliber_index: 9
@@ -331,7 +331,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: Punch
 weapon_ap_cost_one: 4
 weapon_ap_cost_two: 3
-weapon_max_range_one: 15
+weapon_max_range_one: 7
 weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -403,7 +403,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 24
+weapon_max_range_one: 15
 weapon_max_range_two: 0
 weapon_uses_ammo: 14mm
 weapon_caliber_index: 10
@@ -427,8 +427,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 45
-weapon_max_range_two: 38
+weapon_max_range_one: 30
+weapon_max_range_two: 25
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 72
@@ -451,7 +451,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 20
+weapon_max_range_one: 16
 weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
@@ -477,7 +477,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 4
 weapon_ap_cost_two: 0
-weapon_max_range_one: 15
+weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -503,7 +503,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 4
 weapon_ap_cost_two: 0
-weapon_max_range_one: 15
+weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -527,7 +527,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 4
 weapon_ap_cost_two: 0
-weapon_max_range_one: 15
+weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -551,7 +551,7 @@ weapon_attack_mode_one: Fire_Burst
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 6
 weapon_ap_cost_two: 0
-weapon_max_range_one: 40
+weapon_max_range_one: 25
 weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
@@ -575,7 +575,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: Swing
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 4
-weapon_max_range_one: 16
+weapon_max_range_one: 7
 weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -599,7 +599,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 0
 weapon_ap_cost_two: 0
-weapon_max_range_one: 15
+weapon_max_range_one: 7
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -623,8 +623,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 14
-weapon_max_range_two: 12
+weapon_max_range_one: 12
+weapon_max_range_two: 10
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
@@ -695,8 +695,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 45
-weapon_max_range_two: 20
+weapon_max_range_one: 25
+weapon_max_range_two: 15
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 74
@@ -743,7 +743,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 4
 weapon_ap_cost_two: 0
-weapon_max_range_one: 22
+weapon_max_range_one: 16
 weapon_max_range_two: 0
 weapon_uses_ammo: 9mm
 weapon_caliber_index: 12
@@ -791,7 +791,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 12
+weapon_max_range_one: 7
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -839,7 +839,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 22
+weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -887,7 +887,7 @@ weapon_attack_mode_one: Throw
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 0
 weapon_ap_cost_two: 0
-weapon_max_range_one: 15
+weapon_max_range_one: 7
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -911,7 +911,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 35
+weapon_max_range_one: 28
 weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
@@ -1007,7 +1007,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 30
+weapon_max_range_one: 20
 weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
@@ -1031,8 +1031,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 22
-weapon_max_range_two: 18
+weapon_max_range_one: 16
+weapon_max_range_two: 14
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
@@ -1055,7 +1055,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 22
+weapon_max_range_one: 16
 weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
@@ -1079,8 +1079,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 30
-weapon_max_range_two: 20
+weapon_max_range_one: 20
+weapon_max_range_two: 15
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
@@ -1103,7 +1103,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 3
 weapon_ap_cost_two: 0
-weapon_max_range_one: 30
+weapon_max_range_one: 25
 weapon_max_range_two: 0
 weapon_uses_ammo: rocket
 weapon_caliber_index: 1
@@ -1151,8 +1151,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 32
-weapon_max_range_two: 16
+weapon_max_range_one: 26
+weapon_max_range_two: 13
 weapon_uses_ammo: 45_cal
 weapon_caliber_index: 14
 weapon_sound_id: 72
@@ -1295,8 +1295,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 4
 weapon_ap_cost_two: 5
-weapon_max_range_one: 30
-weapon_max_range_two: 25
+weapon_max_range_one: 20
+weapon_max_range_two: 15
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 72
@@ -1319,7 +1319,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 20
+weapon_max_range_one: 10
 weapon_max_range_two: 0
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
@@ -1439,8 +1439,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 4
 weapon_ap_cost_two: 5
-weapon_max_range_one: 20
-weapon_max_range_two: 15
+weapon_max_range_one: 15
+weapon_max_range_two: 10
 weapon_uses_ammo: 45_cal
 weapon_caliber_index: 14
 weapon_sound_id: 68
@@ -1559,8 +1559,8 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: Fire_Burst
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 6
-weapon_max_range_one: 35
-weapon_max_range_two: 25
+weapon_max_range_one: 25
+weapon_max_range_two: 20
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
@@ -1583,7 +1583,7 @@ weapon_attack_mode_one: Fire_Burst
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 6
 weapon_ap_cost_two: 0
-weapon_max_range_one: 40
+weapon_max_range_one: 30
 weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5

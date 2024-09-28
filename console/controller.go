@@ -3335,7 +3335,8 @@ func (u *UI) startIntro() {
 	u.stateOfIntro = TitleScreen
 	backGroundOverlay.SetBackgroundColor(tcell.ColorWhite)
 	backGroundOverlay.SetTextColor(tcell.ColorBlack)
-	backGroundOverlay.SetText("C O N T R A C T O R\na Fallout Story\na game by Felix Ruzzoli")
+	titleText := "C O N T R A C T O R\na game by Felix Ruzzoli"
+	backGroundOverlay.SetText(titleText)
 
 	u.application.Draw(backGroundOverlay)
 }

@@ -20,7 +20,7 @@ o_cond: !HasFlag('ClientRewardReceived(starter)')
 o_goto: CollectPayment
 #
 o_text: I'd like to know my client on a more personal level.
-o_test: RollSkill('seduce', 10)
+o_test: RollSkill('seduce', 'Easy')
 o_succ: SeduceSuccess
 o_fail: SeduceFail
 #
@@ -28,19 +28,19 @@ o_text: I'm here to renegotiate the terms of our contract.
 o_goto: NegotiateContract
 #
 o_text: You'll leave the Ripperdoc alone, is that clear?
-o_test: RollSkill('intimidate', -10)
+o_test: RollSkill('intimidate', 'Hard')
 o_succ: IntimidateSuccess
 o_fail: IntimidateFail
 #
 o_text: I've got a bullet with your name on it.
 o_cond: HasFlag('took_single_round') && !HasFlag('PlayerKillCount')
-o_test: RollSkill('intimidate', 10)
+o_test: RollSkill('intimidate', 'Easy')
 o_succ: IntimidateSuccess
 o_fail: IntimidateFail
 #
 o_text: I've got a bullet with your name on it.
 o_cond: HasFlag('took_single_round') && HasFlag('PlayerKillCount')
-o_test: RollSkill('intimidate', 30)
+o_test: RollSkill('intimidate', 'Hard')
 o_succ: IntimidateSuccess
 o_fail: IntimidateFail
 
@@ -91,17 +91,17 @@ npc: The deal was already set. What makes you think you deserve more?
 + I’m not in the habit of paying twice.
 #
 o_text: The risk was higher than expected. I want double.
-o_test: RollSkill('persuade', 15)
+o_test: RollSkill('persuade', 'Easy')
 o_succ: NegotiateSuccess
 o_fail: NegotiateFail
 #
 o_text: I know your dirty secrets. Pay up, or I spill them all.
-o_test: RollSkill('intimidate', 10)
+o_test: RollSkill('intimidate', 'Easy')
 o_succ: NegotiateSuccess
 o_fail: NegotiateFail
 #
 o_text: Fine, I’ll settle for half now, half later.
-o_test: RollSkill('Seduce', 5)
+o_test: RollSkill('Seduce', 'Easy')
 o_succ: NegotiateSuccess
 o_fail: NegotiateFail
 

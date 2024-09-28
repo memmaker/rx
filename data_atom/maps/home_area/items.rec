@@ -464,7 +464,7 @@ weapon_attack_mode_one: Fire_Single
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
-weapon_max_range_one: 25
+weapon_max_range_one: 20
 weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4

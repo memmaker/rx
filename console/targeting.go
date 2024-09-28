@@ -1,8 +1,8 @@
 package console
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
@@ -17,7 +17,7 @@ func (u *UI) SelectDirection(onSelected func(direction geometry.CompassDirection
 	u.mapWindow.SetInputCapture(u.handleDirectionalTargetingInput(onSelected))
 }
 
-func (u *UI) SelectBodyPart(previousAim special.BodyPart, onSelected func(victim foundation.ActorForUI, hitZone special.BodyPart)) {
+func (u *UI) SelectBodyPart(previousAim d100.BodyPart, onSelected func(victim foundation.ActorForUI, hitZone d100.BodyPart)) {
 	// we want advanced targeting but only on tiles with actors
 	// we also want to show the body part selection whenever the current target is updated
 	// when the user has confirmed a body part of the currently selected target, we're done
@@ -41,7 +41,7 @@ func (u *UI) SelectBodyPart(previousAim special.BodyPart, onSelected func(victim
 	})
 }
 
-func (u *UI) OpenAimedShotPicker(actorAt foundation.ActorForUI, previousAim special.BodyPart, onSelected func(victim foundation.ActorForUI, hitZone special.BodyPart)) {
+func (u *UI) OpenAimedShotPicker(actorAt foundation.ActorForUI, previousAim d100.BodyPart, onSelected func(victim foundation.ActorForUI, hitZone d100.BodyPart)) {
 	if actorAt != nil {
 		var items []foundation.MenuItem
 		for i, tuple := range u.game.GetBodyPartsAndHitChances(actorAt) {
@@ -68,7 +68,8 @@ func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point)) {
 	u.onTargetUpdated = func(targetPos geometry.Point) {
 		actorAt := u.game.ActorAt(targetPos)
 		if actorAt != nil {
-			hitChance := u.game.GetRangedChanceToHitForUI(actorAt)
+			cth := u.game.GetRangedChanceToHitForUI(actorAt)
+			hitChance := cth.HitChance
 			cthString := fmt.Sprintf("%d%%", hitChance)
 			placeBelow := u.game.GetPlayerPosition().Y < targetPos.Y
 			if placeBelow {
@@ -76,6 +77,13 @@ func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point)) {
 			} else {
 				u.mapOverlay.AddAbove(actorAt.Position(), cthString)
 			}
+
+			//u.Print(foundation.Msg("Select body part"))
+			modString := cth.Mods.String()
+
+			rightBarText := fmt.Sprintf("Attack on %s\n%s: %d%%\n%s", actorAt.Name(), cth.SkillUsed.String(), cth.SkillBase, modString)
+
+			u.rightPanel.SetText(rightBarText)
 		}
 	}
 	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {

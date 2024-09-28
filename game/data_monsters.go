@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
@@ -19,7 +19,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 
 	flags := foundation.NewActorFlags()
 
-	charSheet := special.NewCharSheet()
+	charSheet := d100.NewCharSheet()
 
 	dodge := -1
 	hitpoints := -1
@@ -43,17 +43,17 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		case "use_effect":
 			useEffects = append(useEffects, field.Value)
 		case "strength":
-			charSheet.SetStat(special.Strength, field.AsInt())
+			charSheet.SetStat(d100.Strength, field.AsInt())
 		case "perception":
-			charSheet.SetStat(special.Perception, field.AsInt())
+			charSheet.SetStat(d100.Perception, field.AsInt())
 		case "endurance":
-			charSheet.SetStat(special.Endurance, field.AsInt())
+			charSheet.SetStat(d100.Endurance, field.AsInt())
 		case "charisma":
-			charSheet.SetStat(special.Charisma, field.AsInt())
+			charSheet.SetStat(d100.Charisma, field.AsInt())
 		case "intelligence":
-			charSheet.SetStat(special.Intelligence, field.AsInt())
+			charSheet.SetStat(d100.Intelligence, field.AsInt())
 		case "agility":
-			charSheet.SetStat(special.Agility, field.AsInt())
+			charSheet.SetStat(d100.Agility, field.AsInt())
 		case "hitpoints":
 			hitpoints = field.AsInt()
 		case "dodge":
@@ -84,7 +84,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		default:
 			//println("WARNING: Unknown field: " + field.Name)
 			if strings.HasPrefix(field.Name, "skillbonus") {
-				skill := special.SkillFromBonusString(field.Value)
+				skill := d100.SkillFromString(strings.TrimPrefix(field.Name, "skillbonus"))
 				if skill != -1 {
 					charSheet.SetSkillAdjustment(skill, field.AsInt())
 				}
@@ -95,16 +95,16 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	actor.GetFlags().Init(flags.UnderlyingCopy())
 
 	if hitpoints != -1 {
-		charSheet.SetDerivedStatAbsoluteValue(special.HitPoints, hitpoints)
+		charSheet.SetDerivedStatAbsoluteValue(d100.HitPoints, hitpoints)
 	}
 	if actionpoints != -1 {
-		charSheet.SetDerivedStatAbsoluteValue(special.ActionPoints, actionpoints)
+		charSheet.SetDerivedStatAbsoluteValue(d100.ActionPoints, actionpoints)
 	}
 	if speed != -1 {
-		charSheet.SetDerivedStatAbsoluteValue(special.Speed, speed)
+		charSheet.SetDerivedStatAbsoluteValue(d100.Speed, speed)
 	}
 	if dodge != -1 {
-		charSheet.SetDerivedStatAbsoluteValue(special.Dodge, dodge)
+		charSheet.SetDerivedStatAbsoluteValue(d100.Dodge, dodge)
 	}
 
 	charSheet.HealAPAndHPCompletely()

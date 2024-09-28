@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
 	"fmt"
@@ -15,14 +15,14 @@ type Weapon struct {
 	*GenericItem
 	damageDice       fxtools.Interval
 	weaponType       WeaponType
-	skillUsed        special.Skill
+	skillUsed        d100.Skill
 	magazineSize     int
 	loadedInMagazine *Ammo
 	burstRounds      int
 	caliberIndex     int
 	attackModes      []AttackMode
 	soundID          int32
-	damageType       special.DamageType
+	damageType       DamageType
 	MinSTR           int
 }
 
@@ -238,7 +238,7 @@ func (i *Weapon) GetWeaponType() WeaponType {
 	return i.weaponType
 }
 
-func (i *Weapon) GetSkillUsed() special.Skill {
+func (i *Weapon) GetSkillUsed() d100.Skill {
 	return i.skillUsed
 }
 
@@ -260,12 +260,12 @@ func (i *Weapon) LoadAmmo(ammo *Ammo) *Ammo {
 		return nil
 	}
 	if i.loadedInMagazine.CanStackWith(ammo) {
-		i.loadedInMagazine.MergeCharges(ammo)
+		i.loadedInMagazine.AddStacks(ammo)
 		return nil
 	}
 	oldAmmo := i.loadedInMagazine
 	i.loadedInMagazine = ammo
-	if oldAmmo.Charges() > 0 {
+	if oldAmmo.StackSize() > 0 {
 		return oldAmmo
 	}
 	return nil
@@ -287,19 +287,24 @@ func (i *Weapon) GetLoadedBullets() int {
 	if i.loadedInMagazine == nil {
 		return 0
 	}
-	return i.loadedInMagazine.Charges()
+	return i.loadedInMagazine.StackSize()
 }
 
 func (i *Weapon) GetMagazineSize() int {
 	return i.magazineSize
 }
 
-func (i *Weapon) RemoveBullets(spent int) {
+func (i *Weapon) RemoveBullets(spent int) *Ammo {
 	if i.loadedInMagazine == nil {
-		return
+		return nil
 	}
-
-	i.loadedInMagazine.RemoveCharges(spent)
+	if spent >= i.loadedInMagazine.StackSize() {
+		spentBullets := i.loadedInMagazine
+		i.loadedInMagazine = nil
+		return spentBullets
+	}
+	spentBullets := i.loadedInMagazine.Split(spent)
+	return spentBullets.(*Ammo)
 }
 
 func (i *Weapon) GetBurstRounds() int {
@@ -310,9 +315,9 @@ func (i *Weapon) NeedsAmmo() bool {
 	return i.caliberIndex > 0
 }
 
-func (i *Weapon) GetFireAudioCue(mode special.TargetingMode) string {
+func (i *Weapon) GetFireAudioCue(mode TargetingMode) string {
 	strMode := "single"
-	if (mode == special.TargetingModeFireBurst || mode == special.TargetingModeFireFullAuto) &&
+	if (mode == TargetingModeFireBurst || mode == TargetingModeFireFullAuto) &&
 		len(i.attackModes) > 1 {
 		strMode = "burst"
 	}
@@ -329,7 +334,7 @@ func (i *Weapon) GetMissAudioCue() string {
 	return fmt.Sprintf("weapons/%d_hit_surface", i.soundID)
 }
 
-func (i *Weapon) GetDamageType() special.DamageType {
+func (i *Weapon) GetDamageType() DamageType {
 	return i.damageType
 }
 
@@ -347,7 +352,7 @@ func (i *Weapon) GetLoadedAmmo() *Ammo {
 }
 
 func (i *Weapon) IsLoaded() bool {
-	return i.loadedInMagazine != nil && i.loadedInMagazine.Charges() > 0
+	return i.loadedInMagazine != nil && i.loadedInMagazine.StackSize() > 0
 }
 
 func (i *Weapon) Unload() *Ammo {
@@ -365,6 +370,21 @@ func (i *Weapon) GetTargetDTModifier() int {
 		return 0
 	}
 	return ammo.DTModifier
+}
+
+func (i *Weapon) Range() int {
+	return i.GetCurrentAttackMode().MaxRange
+}
+
+func (i *Weapon) BulletCountForCurrentAttackMode() int {
+	switch i.GetCurrentAttackMode().Mode {
+	case TargetingModeFireBurst:
+		return min(i.GetBurstRounds(), i.GetLoadedBullets())
+	case TargetingModeFireFullAuto:
+		return min(i.GetMagazineSize(), i.GetLoadedBullets())
+	default:
+		return 1
+	}
 }
 
 type WeaponType int
@@ -464,7 +484,7 @@ func WeaponTypeFromString(value string) WeaponType {
 }
 
 type AttackMode struct {
-	Mode     special.TargetingMode
+	Mode     TargetingMode
 	TUCost   int
 	MaxRange int
 	IsAimed  bool
@@ -478,11 +498,11 @@ func (m AttackMode) String() string {
 }
 
 func (m AttackMode) IsThrow() bool {
-	return m.Mode == special.TargetingModeThrow
+	return m.Mode == TargetingModeThrow
 }
-func GetAttackModes(targetModes [2]special.TargetingMode, tuCost [2]int, maxRange [2]int, noAim bool) []AttackMode {
+func GetAttackModes(targetModes [2]TargetingMode, tuCost [2]int, maxRange [2]int, noAim bool) []AttackMode {
 	var modes []AttackMode
-	if targetModes[0] != special.TargetingModeNone {
+	if targetModes[0] != TargetingModeNone {
 		modes = append(modes, AttackMode{
 			Mode:     targetModes[0],
 			TUCost:   tuCost[0],
@@ -498,7 +518,7 @@ func GetAttackModes(targetModes [2]special.TargetingMode, tuCost [2]int, maxRang
 			})
 		}
 	}
-	if targetModes[1] != special.TargetingModeNone {
+	if targetModes[1] != TargetingModeNone {
 		modes = append(modes, AttackMode{
 			Mode:     targetModes[1],
 			TUCost:   tuCost[1],

@@ -1,7 +1,7 @@
 package foundation
 
 import (
-	"RogueUI/special"
+	"RogueUI/d100"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
@@ -12,7 +12,7 @@ import (
 
 type Readable interface {
 	IsSkillBook() bool
-	GetSkillBookValues() (special.Skill, int)
+	GetSkillBookValues() (d100.Skill, int)
 	GetTextFile() string
 	GetText() string
 }
@@ -32,8 +32,8 @@ type Zappable interface {
 type Repairable interface {
 	Name() string
 	CanBeRepairedWith(parts Repairable) bool
-	Quality() special.Percentage
-	SetQuality(quality special.Percentage)
+	Quality() d100.Percentage
+	SetQuality(quality d100.Percentage)
 	NeedsRepair() bool
 	Category() ItemCategory
 	InternalName() string
@@ -77,7 +77,7 @@ type Item interface {
 	LongNameWithColors(colorCode string) string
 	GetIcon() textiles.TextIcon
 	GetCarryWeight() int
-	GetDerivedStatMod(stat special.DerivedStat) (int, bool)
+	GetDerivedStatMod(stat d100.DerivedStat) (int, bool)
 	ShouldActivate(tickCount int) bool
 	IsAlive(tickCount int) bool
 
@@ -117,9 +117,9 @@ type Item interface {
 	UseEffect() string
 	Charges() int
 	SetCharges(count int)
-	SetQuality(qualityInPercent special.Percentage)
+	SetQuality(qualityInPercent d100.Percentage)
 
-	Quality() special.Percentage
+	Quality() d100.Percentage
 	GetEquipFlag() ActorFlag
 	NeedsRepair() bool
 	Color() color.RGBA
@@ -134,17 +134,18 @@ type Item interface {
 	CanBeRepairedWith(parts Repairable) bool
 
 	IsSkillBook() bool
-	GetSkillBookValues() (special.Skill, int)
+	GetSkillBookValues() (d100.Skill, int)
 	GetTextFile() string
 	GetText() string
 	SetAlive(isAlive bool)
-	GetStatMod(stat special.Stat) (int, bool)
-	GetSkillMod(skill special.Skill) (int, bool)
+	GetStatMod(stat d100.Stat) (int, bool)
+	GetSkillMod(skill d100.Skill) (int, bool)
 	IsBreakingNow() bool
 	IsThrowable() bool
 	IsStackable() bool
 	SetInventoryIndex(i int)
 	IsRepairable() bool
+	SetStackSize(count int)
 }
 
 type ItemCategory int

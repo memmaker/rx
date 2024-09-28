@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
 	"fmt"
@@ -21,7 +21,7 @@ type GenericItem struct {
 	position     geometry.Point
 	category     foundation.ItemCategory
 
-	qualityInPercent special.Percentage
+	qualityInPercent d100.Percentage
 
 	useEffectName string
 	zapEffectName string
@@ -60,16 +60,18 @@ func (i *GenericItem) AddStacks(item foundation.Item) {
 	i.stackSize += item.StackSize()
 }
 
+func (i *GenericItem) SetStackSize(count int) {
+	i.stackSize = count
+}
 func (i *GenericItem) IsStackable() bool {
-	return false
+	return i.IsGold() || i.IsLockpick()
 }
 func (i *GenericItem) IsRepairable() bool {
 	return false
 }
-func (i *GenericItem) Quality() special.Percentage {
+func (i *GenericItem) Quality() d100.Percentage {
 	return i.qualityInPercent
 }
-
 func (i *GenericItem) String() string {
 	return fmt.Sprintf("Item: %s(%d)", i.internalName, i.charges)
 }
@@ -269,13 +271,13 @@ func (g *GameState) NewItemFromString(itemName string) foundation.Item {
 			return NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
 		case "note":
 			return NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
-		default: // parametric item name(charges, quality)
+		default: // parametric item name(stackSize, quality)
 			newItem := g.newItemFromName(name)
 			count := args.GetInt(0)
-			newItem.SetCharges(count)
+			newItem.SetStackSize(count)
 			if len(args) > 1 {
 				quality := args.GetInt(1)
-				newItem.SetQuality(special.Percentage(quality))
+				newItem.SetQuality(d100.Percentage(quality))
 			}
 			return newItem
 		}
@@ -284,7 +286,7 @@ func (g *GameState) NewItemFromString(itemName string) foundation.Item {
 	// default item creation from template without parameters
 	newItem := g.newItemFromName(itemName)
 	if newItem.IsRepairable() && newItem.Quality() == -1 {
-		newItem.SetQuality(special.Percentage(rand.Intn(90) + 10))
+		newItem.SetQuality(d100.Percentage(rand.Intn(90) + 10))
 	}
 	return newItem
 }
@@ -365,7 +367,7 @@ func (i *GenericItem) InventoryNameWithColors(colorCode string) string {
 func (i *GenericItem) getStatPairsAsStrings() []string {
 	var statPairs []string
 	if len(i.statChanges.StatChanges) > 0 {
-		for stat := special.Stat(0); stat < special.StatCount; stat++ {
+		for stat := d100.Stat(0); stat < d100.StatCount; stat++ {
 			if chg, hasChg := i.statChanges.StatChanges[stat]; hasChg {
 				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, stat.ToShortString()))
 			}
@@ -373,7 +375,7 @@ func (i *GenericItem) getStatPairsAsStrings() []string {
 	}
 
 	if len(i.statChanges.SkillChanges) > 0 {
-		for skill := special.Skill(0); skill < special.SkillCount; skill++ {
+		for skill := d100.Skill(0); skill < d100.Skill(d100.SkillCount()); skill++ {
 			if chg, hasChg := i.statChanges.SkillChanges[skill]; hasChg {
 				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, skill.ToShortString()))
 			}
@@ -381,7 +383,7 @@ func (i *GenericItem) getStatPairsAsStrings() []string {
 	}
 
 	if len(i.statChanges.DerivedStatChanges) > 0 {
-		for stat := special.DerivedStat(0); stat < special.DerivedStatCount; stat++ {
+		for stat := d100.DerivedStat(0); stat < d100.DerivedStatCount; stat++ {
 			if chg, hasChg := i.statChanges.DerivedStatChanges[stat]; hasChg {
 				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, stat.ToShortString()))
 			}
@@ -390,7 +392,7 @@ func (i *GenericItem) getStatPairsAsStrings() []string {
 	return statPairs
 }
 
-func getQualityIcon(quality special.Percentage) string {
+func getQualityIcon(quality d100.Percentage) string {
 	colorCode := "[green]"
 	// Lower one eighth block
 	char := ""
@@ -435,7 +437,7 @@ func (i *GenericItem) Position() geometry.Point {
 func (i *GenericItem) Name() string {
 	name := i.description
 	if i.IsGold() {
-		name = fmt.Sprintf("$%d", i.charges)
+		name = fmt.Sprintf("$%d", i.stackSize)
 	}
 
 	return name
@@ -580,25 +582,21 @@ func (i *GenericItem) AfterEquippedTurn() {
 
 }
 
-func (i *GenericItem) RemoveCharges(spent int) {
-	i.charges -= spent
-	if i.charges < 0 {
-		i.charges = 0
+func (i *GenericItem) RemoveStacks(spent int) {
+	i.stackSize -= spent
+	if i.stackSize < 0 {
+		i.stackSize = 0
 	}
 }
 
 func (i *GenericItem) Split(bullets int) foundation.Item {
-	if bullets >= i.charges {
+	if bullets >= i.stackSize {
 		return i
 	}
 	clone := *i
-	clone.charges = bullets
-	i.charges -= bullets
+	clone.stackSize = bullets
+	i.stackSize -= bullets
 	return &clone
-}
-
-func (i *GenericItem) MergeCharges(ammo foundation.Item) {
-	i.charges += ammo.Charges()
 }
 
 func (i *GenericItem) IsMissile() bool {
@@ -688,8 +686,8 @@ func (i *GenericItem) GetEffectParameters() foundation.Params {
 	return parameters
 }
 
-func (i *GenericItem) SetQuality(quality special.Percentage) {
-	i.qualityInPercent = special.Percentage(quality)
+func (i *GenericItem) SetQuality(quality d100.Percentage) {
+	i.qualityInPercent = d100.Percentage(quality)
 }
 
 func (i *GenericItem) GetDegradationFactorOfAttack() float64 {
@@ -698,27 +696,27 @@ func (i *GenericItem) GetDegradationFactorOfAttack() float64 {
 }
 
 func (i *GenericItem) Degrade(degrade float64) {
-	i.qualityInPercent -= special.Percentage(degrade)
+	i.qualityInPercent -= d100.Percentage(degrade)
 }
 
-func (i *GenericItem) GetSkillMod(skill special.Skill) (int, bool) {
+func (i *GenericItem) GetSkillMod(skill d100.Skill) (int, bool) {
 	mod, hasMod := i.statChanges.SkillChanges[skill]
 	return mod, hasMod
 }
 
-func (i *GenericItem) GetStatMod(stat special.Stat) (int, bool) {
+func (i *GenericItem) GetStatMod(stat d100.Stat) (int, bool) {
 	mod, hasMod := i.statChanges.StatChanges[stat]
 	return mod, hasMod
 }
 
-func (i *GenericItem) GetDerivedStatMod(stat special.DerivedStat) (int, bool) {
+func (i *GenericItem) GetDerivedStatMod(stat d100.DerivedStat) (int, bool) {
 	mod, hasMod := i.statChanges.DerivedStatChanges[stat]
 	return mod, hasMod
 }
 
-func (i *GenericItem) GetSkillBookValues() (special.Skill, int) {
+func (i *GenericItem) GetSkillBookValues() (d100.Skill, int) {
 	for skill, value := range i.statChanges.SkillChanges {
 		return skill, value
 	}
-	return special.SkillCount, 0
+	return d100.Skill(-1), 0
 }

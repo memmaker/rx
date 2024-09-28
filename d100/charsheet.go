@@ -1,10 +1,11 @@
-package special
+package d100
 
 import (
 	"bytes"
 	"cmp"
 	"encoding/gob"
 	"fmt"
+	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/recfile"
 	"math"
 	"slices"
@@ -20,382 +21,20 @@ import (
 // 5. Environment
 // 6. Status effects
 // 7. Party members
-const SkillCap = 200
-
-type Stat int
-
-func (s Stat) ToShortString() string {
-	switch s {
-	case Strength:
-		return "STR"
-	case Perception:
-		return "PER"
-	case Endurance:
-		return "END"
-	case Charisma:
-		return "CHA"
-	case Intelligence:
-		return "INT"
-	case Agility:
-		return "AGI"
-	}
-	return ""
-}
-
-func (s Stat) GetDescription() string {
-	switch s {
-	case Strength:
-		return "Strength measures the raw physical power of your character. It affects how much you can carry, and the damage of all melee attacks."
-	case Perception:
-		return "Perception affects your ranged combat skills, and your ability to detect traps and enemies."
-	case Endurance:
-		return "Endurance affects your Hit Points, Poison Resistance, and Radiation Resistance."
-	case Charisma:
-		return "Charisma affects your ability to negotiate, and the size of your party."
-	case Intelligence:
-		return "Intelligence affects the number of skill points you receive when you level up, and the number of new Perks you can choose."
-	case Agility:
-		return "Agility affects your Action Points, and your ability to dodge attacks."
-	}
-	return ""
-}
-
-func (s Stat) String() string {
-	switch s {
-	case Strength:
-		return "Strength"
-	case Perception:
-		return "Perception"
-	case Endurance:
-		return "Endurance"
-	case Charisma:
-		return "Charisma"
-	case Intelligence:
-		return "Intelligence"
-	case Agility:
-		return "Agility"
-	}
-	return ""
-}
-
-const (
-	Strength Stat = iota
-	Perception
-	Endurance
-	Charisma
-	Intelligence
-	Agility
-	StatCount
-)
-
-func StatFromString(name string) Stat {
-	name = strings.ToLower(name)
-	switch name {
-	case "strength":
-		return Strength
-	case "perception":
-		return Perception
-	case "endurance":
-		return Endurance
-	case "charisma":
-		return Charisma
-	case "intelligence":
-		return Intelligence
-	case "agility":
-		return Agility
-	}
-	panic("invalid stat name")
-	return 0
-}
-
-type DerivedStat int
-
-func (s DerivedStat) String() string {
-	switch s {
-	case ActionPoints:
-		return "Action Points"
-	case Dodge:
-		return "Dodge"
-	case CarryWeight:
-		return "Carry Weight"
-	case CriticalChance:
-		return "Critical Chance"
-	case DamageResistance:
-		return "Damage Resistance"
-	case EnergyResistance:
-		return "Energy Resistance"
-	case HealingRate:
-		return "Healing Rate"
-	case HitPoints:
-		return "Hit Points"
-	case MeleeDamageBonus:
-		return "Melee Damage"
-	case PartyLimit:
-		return "Party Limit"
-	case PerkRate:
-		return "Perk Rate"
-	case PoisonResistance:
-		return "Poison Resistance"
-	case RadiationResistance:
-		return "Radiation Resistance"
-	case Speed:
-		return "Speed"
-	case SkillRate:
-		return "Skill Rate"
-	}
-	return ""
-}
-
-func DerivedStatFromString(name string) DerivedStat {
-	name = strings.ReplaceAll(strings.ToLower(name), "_", "")
-	switch name {
-	case "actionpoints":
-		return ActionPoints
-	case "dodge":
-		return Dodge
-	case "carryweight":
-		return CarryWeight
-	case "criticalchance":
-		return CriticalChance
-	case "damageresistance":
-		return DamageResistance
-	case "energyresistance":
-		return EnergyResistance
-	case "healingrate":
-		return HealingRate
-	case "hitpoints":
-		return HitPoints
-	case "meleedamagebonus":
-		return MeleeDamageBonus
-	case "partylimit":
-		return PartyLimit
-	case "perkrate":
-		return PerkRate
-	case "poisonresistance":
-		return PoisonResistance
-	case "radiationresistance":
-		return RadiationResistance
-	case "speed":
-		return Speed
-	case "skillrate":
-		return SkillRate
-	}
-	panic("invalid derived stat name")
-	return -1
-}
-
-func (s DerivedStat) ToShortString() any {
-	switch s {
-	case ActionPoints:
-		return "AP"
-	case Dodge:
-		return "DG"
-	case CarryWeight:
-		return "CW"
-	case CriticalChance:
-		return "CC"
-	case DamageResistance:
-		return "DR"
-	case EnergyResistance:
-		return "ER"
-	case HealingRate:
-		return "HR"
-	case HitPoints:
-		return "HP"
-	case MeleeDamageBonus:
-		return "MD"
-	case PartyLimit:
-		return "PL"
-	case PerkRate:
-		return "PR"
-	case PoisonResistance:
-		return "PR"
-	case RadiationResistance:
-		return "RR"
-	case Speed:
-		return "SP"
-	case SkillRate:
-		return "SR"
-	}
-	return ""
-}
-
-const (
-	ActionPoints DerivedStat = iota
-	HitPoints
-	HealingRate
-	Speed
-	Dodge
-	CarryWeight
-	CriticalChance
-	MeleeDamageBonus
-	DamageResistance
-	EnergyResistance
-	PoisonResistance
-	RadiationResistance
-	PartyLimit
-	SkillRate
-	PerkRate
-	DerivedStatCount
-)
-
-var VisibleDerivedStatCount = 12
-
-type Skill int
-
-const (
-	MeleeCombat Skill = iota
-	RangedCombat
-
-	Social
-	Intimidate
-
-	Stealth
-	Mechanics
-
-	Biology
-	Technology
-
-	SkillCount
-)
-
-func (s Skill) ToShortString() string {
-	switch s {
-	case MeleeCombat:
-		return "ML"
-	case RangedCombat:
-		return "RG"
-
-	case Social:
-		return "SO"
-	case Intimidate:
-		return "IN"
-
-	case Stealth:
-		return "ST"
-	case Mechanics:
-		return "MC"
-
-	case Biology:
-		return "BI"
-	case Technology:
-		return "TC"
-
-	}
-	return ""
-}
-
-func (s Skill) ToAdjustmentString() string {
-	return fmt.Sprintf("%s_Adjustment", strings.ReplaceAll(s.String(), " ", ""))
-}
-
-func SkillFromAdjustmentString(name string) Skill {
-	name = strings.TrimSuffix(strings.ToLower(name), "_adjustment")
-	return skillFromShortString(name)
-}
-
-func (s Skill) String() string {
-	switch s {
-	case RangedCombat:
-		return "Ranged Combat"
-	case MeleeCombat:
-		return "Melee Combat"
-	case Biology:
-		return "Biology"
-	case Stealth:
-		return "Stealth"
-	case Technology:
-		return "Technology"
-	case Mechanics:
-		return "Mechanics"
-	case Intimidate:
-		return "Intimidate"
-	case Social:
-		return "Social"
-	}
-	return ""
-}
-
-func skillFromShortString(name string) Skill {
-	switch name {
-	case "rangedcombat":
-		return RangedCombat
-	case "meleecombat":
-		return MeleeCombat
-	case "biology":
-		return Biology
-	case "stealth":
-		return Stealth
-	case "technology":
-		return Technology
-	case "mechanics":
-		return Mechanics
-	case "intimidate":
-		return Intimidate
-	case "social":
-		return Social
-	}
-	panic(fmt.Sprintf("invalid skill name: '%s'", name))
-	return -1
-}
-
-func SkillFromString(name string) Skill {
-	name = strings.ReplaceAll(strings.ToLower(name), "_", "")
-	return skillFromShortString(name)
-}
-
-func SkillFromBonusString(name string) Skill {
-	name = strings.TrimPrefix(strings.ToLower(name), "skillbonus")
-	return skillFromShortString(name)
-}
-
-func (s Skill) IsRangedAttackSkill() bool {
-	return s == RangedCombat
-}
-
-func (s Skill) IsMeleeAttackSkill() bool {
-	return s == MeleeCombat
-}
 
 func (cs *CharSheet) getSkillBase(skill Skill) int {
-	// Str: 2x
-	// Int: 2x
-	// Per: 2x
-	// End: 2x
-	// Cha: 2x
-	// Agi: 2x
-	multiplier := 5
-	switch skill {
-	case MeleeCombat:
-		return ((cs.GetStat(Strength)) + (cs.GetStat(Endurance))) * multiplier
-	case RangedCombat:
-		return (cs.GetStat(Perception) + 5) * multiplier
+	return skill.BaseValue(cs.getStatParameters())
+}
 
-	case Social:
-		return (cs.GetStat(Charisma) + 5) * multiplier
-	case Intimidate:
-		return ((cs.GetStat(Charisma)) + (cs.GetStat(Strength))) * multiplier
-
-	case Stealth:
-		return (cs.GetStat(Agility) + 5) * multiplier
-	case Mechanics:
-		return ((cs.GetStat(Agility)) + (cs.GetStat(Endurance))) * multiplier
-
-	case Biology:
-		return ((cs.GetStat(Intelligence)) + (cs.GetStat(Perception))) * multiplier
-	case Technology:
-		return (cs.GetStat(Intelligence) + 5) * multiplier
-		/*
-			case Barter:
-				return 4 * cs.GetStat(Charisma)
-			case Gambling:
-				return 5 * cs.GetStat(Luck)
-			case Outdoorsman:
-				return 5 + cs.GetStat(Endurance) + cs.GetStat(Intelligence) + cs.GetStat(Luck)
-		*/
+func (cs *CharSheet) getStatParameters() map[string]interface{} {
+	return map[string]interface{}{
+		"str": cs.GetStat(Strength),
+		"per": cs.GetStat(Perception),
+		"end": cs.GetStat(Endurance),
+		"cha": cs.GetStat(Charisma),
+		"int": cs.GetStat(Intelligence),
+		"agi": cs.GetStat(Agility),
 	}
-	panic("invalid skill")
-	return 0
 }
 
 // CreateReports: If the task at hand is simply not possible for someone without a certain level of skill
@@ -557,11 +196,15 @@ func (d DefaultModifier) Apply(i int) int {
 func (d DefaultModifier) SortOrder() int {
 	return d.Order
 }
+func (d DefaultModifier) IsZero() bool {
+	return d.Modifier == 0
+}
 
 type Modifier interface {
 	Description() string
 	Apply(int) int
 	SortOrder() int
+	IsZero() bool
 }
 
 func (cs *CharSheet) GetLevel() int {
@@ -653,6 +296,10 @@ func (cs *CharSheet) GetDerivedStat(ds DerivedStat) int {
 }
 
 func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
+	if expr, exists := derivedBaseValues[ds]; exists {
+		result, _ := expr.Evaluate(cs.getStatParameters())
+		return int(result.(float64))
+	}
 	switch ds {
 	case ActionPoints:
 		return 5 + cs.GetStat(Agility) + (cs.GetStat(Endurance) / 2)
@@ -663,8 +310,6 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 	case CriticalChance:
 		return 5
 	case DamageResistance:
-		return 0
-	case EnergyResistance:
 		return 0
 	case HealingRate:
 		return max(1, cs.GetStat(Endurance)/3)
@@ -678,8 +323,6 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 		return 3
 	case PoisonResistance:
 		return cs.GetStat(Endurance) * 5
-	case RadiationResistance:
-		return cs.GetStat(Endurance) * 2
 	case Speed:
 		return 2 * cs.GetStat(Agility)
 	case SkillRate:
@@ -881,15 +524,25 @@ func (cs *CharSheet) Kill() {
 func (cs *CharSheet) IsSkillHigherOrEqual(skill Skill, difficulty int) bool {
 	return cs.GetSkill(skill) >= difficulty
 }
+
+func (cs *CharSheet) SkillRollVsDiff(skill Skill, diff Difficulty) CheckResult {
+	critChance := cs.GetDerivedStat(CriticalChance)
+	baseSkill := cs.GetSkill(skill)
+	skillModifiedByDiff := applyDifficulty(baseSkill, diff)
+	cappedSuccessChange := max(0, min(SuccessChanceCap, skillModifiedByDiff))
+	return SuccessRoll(Percentage(cappedSuccessChange), Percentage(critChance))
+}
+
 func (cs *CharSheet) SkillRoll(skill Skill, modifiers int) CheckResult {
 	critChance := cs.GetDerivedStat(CriticalChance)
-	return SuccessRoll(Percentage(max(0, min(95, cs.GetSkill(skill)+modifiers))), Percentage(critChance))
+	cappedSuccessChange := max(0, min(SuccessChanceCap, cs.GetSkill(skill)+modifiers))
+	return SuccessRoll(Percentage(cappedSuccessChange), Percentage(critChance))
 }
 
 func (cs *CharSheet) StatRoll(stat Stat, modifiers int) CheckResult {
 	critChance := cs.GetDerivedStat(CriticalChance)
-	statSkill := max(0, min(95, (cs.GetStat(stat)*10)+modifiers))
-	return SuccessRoll(Percentage(statSkill), Percentage(critChance))
+	cappedSuccessChance := max(0, min(SuccessChanceCap, (cs.GetStat(stat)*10)+modifiers))
+	return SuccessRoll(Percentage(cappedSuccessChance), Percentage(critChance))
 }
 func (cs *CharSheet) IsStatHigherOrEqual(stat Stat, difficulty int) bool {
 	return cs.GetStat(stat) >= difficulty
@@ -915,7 +568,7 @@ func (cs *CharSheet) ToRecord() recfile.Record {
 		recfile.Field{Name: "ActionPoints", Value: recfile.IntStr(cs.GetActionPoints())},
 	}
 	// add skills
-	for skillNo := 0; skillNo < int(SkillCount); skillNo++ {
+	for skillNo := 0; skillNo < SkillCount(); skillNo++ {
 		skill := Skill(skillNo)
 		record = append(record, recfile.Field{Name: skill.ToAdjustmentString(), Value: recfile.IntStr(cs.getSkillAdjustment(skill))})
 	}
@@ -1025,33 +678,17 @@ func (cs *CharSheet) CanLevelUp() bool {
 }
 
 func (cs *CharSheet) GetTotalXPForNextLevel(currentLevel int) int {
-	if currentLevel > 21 {
+	if currentLevel >= len(levelTable) {
 		// (n*(n-1)/2) * 1,000 XP
+
+		if afterTableFormula != nil {
+			result, _ := afterTableFormula.Evaluate(map[string]interface{}{"currentLevel": currentLevel})
+			return int(result.(float64))
+		}
+
 		return (currentLevel * (currentLevel - 1) / 2) * 1000
 	}
-	return []int{
-		0,
-		1000,
-		3000,
-		6000,
-		10000,
-		15000,
-		21000,
-		28000,
-		36000,
-		45000,
-		55000,
-		66000,
-		78000,
-		91000,
-		105000,
-		120000,
-		136000,
-		153000,
-		171000,
-		190000,
-		210000,
-	}[currentLevel]
+	return levelTable[currentLevel]
 }
 
 func (cs *CharSheet) GetCurrentXP() int {
@@ -1079,4 +716,95 @@ func (cs *CharSheet) AddSkillPointsTo(skill Skill, increase int) {
 		return
 	}
 	cs.skillAdjustments[skill] = cs.skillAdjustments[skill] + increase
+}
+
+func LoadLevelUpTable(table []int, afterTable string) {
+	levelTable = table
+	levelsAfterTable, err := govaluate.NewEvaluableExpressionWithFunctions(afterTable, standardFuncs)
+	if err != nil {
+		panic(err)
+	}
+	afterTableFormula = levelsAfterTable
+}
+
+var afterTableFormula *govaluate.EvaluableExpression
+var levelTable = []int{
+	0,
+	1000,
+	3000,
+	6000,
+	10000,
+	15000,
+	21000,
+	28000,
+	36000,
+	45000,
+	55000,
+	66000,
+	78000,
+	91000,
+	105000,
+	120000,
+	136000,
+	153000,
+	171000,
+	190000,
+	210000,
+}
+
+type Difficulty int
+
+const (
+	Trivial Difficulty = iota
+	VeryEasy
+	Easy
+	Medium
+	Hard
+	VeryHard
+	SuperHuman
+)
+
+func DifficultyFromString(diff string) Difficulty {
+	switch strings.ToLower(diff) {
+	case "trivial":
+		return Trivial
+	case "veryeasy":
+		return VeryEasy
+	case "easy":
+		return Easy
+	case "medium":
+		return Medium
+	case "hard":
+		return Hard
+	case "veryhard":
+		return VeryHard
+	case "superhuman":
+		return SuperHuman
+	}
+	panic("invalid difficulty")
+}
+
+var skillDiffs = map[Difficulty]*govaluate.EvaluableExpression{
+	Trivial:    panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+90", standardFuncs)),
+	VeryEasy:   panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+60", standardFuncs)),
+	Easy:       panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+30", standardFuncs)),
+	Medium:     panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill", standardFuncs)),
+	Hard:       panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-30", standardFuncs)),
+	VeryHard:   panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-60", standardFuncs)),
+	SuperHuman: panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-90", standardFuncs)),
+}
+
+func applyDifficulty(skill int, diff Difficulty) int {
+	if expr, exists := skillDiffs[diff]; exists {
+		result, _ := expr.Evaluate(map[string]interface{}{"skill": skill})
+		return int(result.(float64))
+	}
+	panic("invalid difficulty")
+}
+
+func panicHandle(expr *govaluate.EvaluableExpression, error error) *govaluate.EvaluableExpression {
+	if error != nil {
+		panic(error)
+	}
+	return expr
 }

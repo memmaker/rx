@@ -66,7 +66,7 @@ o_goto: PlayerIsExpert
 #
 o_text: I'm kind of an expert on the subject myself.
 o_cond: Skill('Doctor') <= 50
-o_test: RollSkill('Speech', 20)
+o_test: RollSkill('Doctor', 'Easy')
 o_fail: PlayerIsAFraud
 o_succ: PlayerIsExpert
 #
@@ -95,19 +95,19 @@ npc:
 #
 o_text: Back in the day, I was a doctor.
 o_cond: Skill('Doctor') > 30
-o_test: RollSkill('Speech', 0)
+o_test: RollSkill('Speech')
 o_fail: UnfriendlyGoodbye
 o_succ: PlayerIsExpert
 #
 o_text: I'm not a doctor, but I know a lot about the subject.
 o_cond: Skill('Speech') > 25
-o_test: RollSkill('Speech', -20)
+o_test: RollSkill('Speech', 'Hard')
 o_fail: UnfriendlyGoodbye
 o_succ: PlayerIsExpert
 #
 o_text: You wouldn't know the place. It's in the city.
 o_cond: Skill('Speech') > 45
-o_test: RollSkill('Speech', -40)
+o_test: RollSkill('Speech', 'VeryHard')
 o_succ: PlayerIsExpert
 o_fail: UnfriendlyGoodbye
 #
@@ -152,7 +152,7 @@ o_goto: SignUpReplacementTherapy
 #
 o_text: That's pretty arbitrary. How about I give you 5000 caps right now?
 o_cond: HasItem('caps', 5000) && !HasFlag('ReplacementTherapyHaggleFailed')
-o_test: RollSkill('Speech', 0)
+o_test: RollSkill('Speech')
 o_succ: SignUpReplacementTherapyHalfPrice
 o_fail: ReplacementTherapyHaggleFailed
 #
@@ -299,7 +299,7 @@ o_goto: FightWinters
 #
 o_text: Maybe you're right. But you can't keep doing this.
 o_cond: Skill('Speech') > 75
-o_test: RollSkill('Speech', 0)
+o_test: RollSkill('Speech')
 o_succ: PersuadeStop
 o_fail: FightWinters
 

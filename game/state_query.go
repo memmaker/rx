@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"cmp"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -10,42 +10,25 @@ import (
 	"slices"
 )
 
-func (g *GameState) GetRangedChanceToHitForUI(target foundation.ActorForUI) int {
+func (g *GameState) GetRangedChanceToHitForUI(target foundation.ActorForUI) foundation.RangedCtH {
 	defender := target.(*Actor)
 	attacker := g.Player
 	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
-	if !hasWeapon {
-		return 0
-	}
-	return g.getRangedChanceToHit(attacker, weapon, defender)
-}
-
-func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Weapon, defender *Actor) int {
-	var posInfos special.PosInfo
-	posInfos.ObstacleCount = 0
-	posInfos.Distance = g.currentMap().MoveDistance(attacker.Position(), defender.Position())
-
-	posInfos.IlluminationPenalty = 0
-
-	brightnessAtTarget := g.LightAt(defender.Position()).Brightness()
-	if brightnessAtTarget < 0.48 {
-		posInfos.IlluminationPenalty = -20
-	} else if brightnessAtTarget < 0.28 {
-		posInfos.IlluminationPenalty = -40
+	if !hasWeapon || !weapon.IsLoaded() {
+		return foundation.RangedCtH{}
 	}
 
-	weaponSkill := equippedWeapon.GetSkillUsed()
+	weaponSkill := weapon.GetSkillUsed()
+	baseSkill := attacker.GetCharSheet().GetSkill(weaponSkill)
 
-	defenderIsHelpless := defender.IsSleeping() || defender.IsStunned() || defender.IsKnockedDown()
-
-	minStrength := 0
-
-	if equippedWeapon != nil && equippedWeapon.IsRangedWeapon() {
-		//skillBonus = equippedWeapon.GetSkillBonus(weaponSkill)
-		minStrength = equippedWeapon.MinSTR
+	cth, modifiers := g.getRangedChanceToHit(attacker, weapon, defender, g.NewAmmo(weapon.GetLoadedAmmo().InternalName(), weapon.BulletCountForCurrentAttackMode()))
+	return foundation.RangedCtH{
+		SkillUsed: weaponSkill,
+		SkillBase: baseSkill,
+		Mods:      modifiers,
+		HitChance: cth,
+		Defender:  defender,
 	}
-
-	return special.RangedChanceToHit(posInfos, attacker.GetCharSheet(), weaponSkill, minStrength, defender.GetCharSheet(), defenderIsHelpless)
 }
 
 func (g *GameState) GetItemInMainHand() (foundation.Item, bool) {
@@ -56,17 +39,17 @@ func (g *GameState) GetItemInMainHand() (foundation.Item, bool) {
 	return item.(foundation.Item), b
 }
 
-func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []fxtools.Tuple3[special.BodyPart, bool, int] {
+func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []fxtools.Tuple3[d100.BodyPart, bool, int] {
 	victim := targeted.(*Actor)
 	mainHandItem, hasMainHandItem := g.Player.GetEquipment().GetMainHandWeapon()
 	if !hasMainHandItem {
-		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(special.MeleeCombat), true)
+		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(d100.SkillForUnarmed), true)
 	}
 	baseChance := 0
 	isMelee := true
-	if mainHandItem.IsRangedWeapon() {
+	if mainHandItem.IsRangedWeapon() && mainHandItem.IsLoaded() {
 		isMelee = false
-		baseChance = g.getRangedChanceToHit(g.Player, mainHandItem, victim)
+		baseChance, _ = g.getRangedChanceToHit(g.Player, mainHandItem, victim, g.NewAmmo(mainHandItem.GetLoadedAmmo().InternalName(), mainHandItem.BulletCountForCurrentAttackMode()))
 	} else if mainHandItem.IsMeleeWeapon() {
 		baseChance = g.getMeleeChanceToHit(g.Player, mainHandItem, victim)
 	}

@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"bytes"
 	"cmp"
 	"encoding/gob"
@@ -181,10 +181,9 @@ func (i *Inventory) RemoveAmmoByCaliber(caliberIndex int, neededBullets int) *Am
 			continue
 		}
 		if ammo.IsAmmoOfCaliber(caliberIndex) {
-			availableBullets := invItem.Charges()
+			availableBullets := invItem.StackSize()
 			if availableBullets > neededBullets {
 				splitBullets := ammo.Split(neededBullets)
-				invItem.SetCharges(availableBullets - neededBullets)
 				return splitBullets.(*Ammo)
 			} else {
 				i.RemoveItem(ammo)
@@ -203,11 +202,10 @@ func (i *Inventory) RemoveAmmoByName(name string, amount int) *Ammo {
 			continue
 		}
 		if ammo.InternalName() == name {
-			availableBullets := ammo.Charges()
+			availableBullets := ammo.StackSize()
 			if availableBullets > amount {
-				splitBullets := ammo.Split(amount).(*Ammo)
-				ammo.SetCharges(availableBullets - amount)
-				return splitBullets
+				splitBullets := ammo.Split(amount)
+				return splitBullets.(*Ammo)
 			} else {
 				i.RemoveItem(ammo)
 				return ammo
@@ -360,15 +358,15 @@ func (i *Inventory) GetItemByName(name string) foundation.Item {
 	return nil
 }
 
-func (i *Inventory) GetSkillModifiersFromItems(skill special.Skill) []special.Modifier {
-	var modifiers []special.Modifier
+func (i *Inventory) GetSkillModifiersFromItems(skill d100.Skill) []d100.Modifier {
+	var modifiers []d100.Modifier
 	for _, invItem := range i.items {
 		first := invItem
 		if first.IsSkillBook() || first.IsConsumable() {
 			continue
 		}
 		if modValue, hasValue := first.GetSkillMod(skill); hasValue {
-			modifiers = append(modifiers, special.DefaultModifier{
+			modifiers = append(modifiers, d100.DefaultModifier{
 				Source:    invItem.Name(),
 				Modifier:  modValue,
 				Order:     0,
@@ -379,15 +377,15 @@ func (i *Inventory) GetSkillModifiersFromItems(skill special.Skill) []special.Mo
 	return modifiers
 }
 
-func (i *Inventory) GetStatModifiersFromItems(stat special.Stat) []special.Modifier {
-	var modifiers []special.Modifier
+func (i *Inventory) GetStatModifiersFromItems(stat d100.Stat) []d100.Modifier {
+	var modifiers []d100.Modifier
 	for _, invItem := range i.items {
 		first := invItem
 		if first.IsConsumable() {
 			continue
 		}
 		if modValue, hasValue := first.GetStatMod(stat); hasValue {
-			modifiers = append(modifiers, special.DefaultModifier{
+			modifiers = append(modifiers, d100.DefaultModifier{
 				Source:   invItem.Name(),
 				Modifier: modValue,
 				Order:    0,
@@ -397,15 +395,15 @@ func (i *Inventory) GetStatModifiersFromItems(stat special.Stat) []special.Modif
 	return modifiers
 }
 
-func (i *Inventory) GetDerivedStatModifiersFromItems(stat special.DerivedStat) []special.Modifier {
-	var modifiers []special.Modifier
+func (i *Inventory) GetDerivedStatModifiersFromItems(stat d100.DerivedStat) []d100.Modifier {
+	var modifiers []d100.Modifier
 	for _, invItem := range i.items {
 		first := invItem
 		if first.IsConsumable() {
 			continue
 		}
 		if modValue, hasValue := first.GetDerivedStatMod(stat); hasValue {
-			modifiers = append(modifiers, special.DefaultModifier{
+			modifiers = append(modifiers, d100.DefaultModifier{
 				Source:   invItem.Name(),
 				Modifier: modValue,
 				Order:    0,
@@ -415,7 +413,7 @@ func (i *Inventory) GetDerivedStatModifiersFromItems(stat special.DerivedStat) [
 	return modifiers
 }
 
-func (i *Inventory) HasSkillModifier(skill special.Skill) bool {
+func (i *Inventory) HasSkillModifier(skill d100.Skill) bool {
 	return len(i.GetSkillModifiersFromItems(skill)) > 0
 }
 

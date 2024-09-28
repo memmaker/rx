@@ -64,7 +64,7 @@ func (g *GameState) NewGold(amount int) *GenericItem {
 		description:  "gold",
 		internalName: "gold",
 		category:     foundation.ItemCategoryGold,
-		charges:      amount,
+		stackSize:    amount,
 		icon:         icon,
 	}
 	return gold

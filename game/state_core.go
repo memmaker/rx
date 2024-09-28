@@ -1,9 +1,9 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
 	"RogueUI/gridmap"
-	"RogueUI/special"
 	"cmp"
 	"fmt"
 	"github.com/Knetic/govaluate"
@@ -180,7 +180,7 @@ type GameState struct {
 	playerFoV         *geometry.FOV
 	playerLightSource *gridmap.LightSource
 	playerDijkstraMap map[geometry.Point]int
-	playerLastAimedAt special.BodyPart
+	playerLastAimedAt d100.BodyPart
 
 	// Map State
 	mapLoader MapLoader
@@ -288,7 +288,7 @@ func (g *GameState) GetPlayerName() string {
 	return g.Player.Name()
 }
 
-func (g *GameState) GetPlayerCharSheet() *special.CharSheet {
+func (g *GameState) GetPlayerCharSheet() *d100.CharSheet {
 	return g.Player.charSheet
 }
 
@@ -332,6 +332,8 @@ func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
 }
 
 func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameState {
+	loadD100Rules(path.Join(config.DataRootDir, "definitions"))
+
 	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
 	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
 	g := &GameState{
@@ -356,6 +358,7 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 	ui.SetGame(g)
 	return g
 }
+
 func (g *GameState) GetPlayerNameAndIcon() (string, textiles.TextIcon) {
 	return g.config.PlayerName, textiles.TextIcon{
 		Char: g.config.PlayerChar,
@@ -436,7 +439,7 @@ func (g *GameState) hookupJournalAndFlags() {
 }
 
 func (g *GameState) initPlayerAndMap() {
-	playerSheet := special.NewCharSheet()
+	playerSheet := d100.NewCharSheet()
 	playerSheet.AddSkillPoints(0)
 
 	//playerSheet.SetSkillAdjustment(special.SmallGuns, 50)
@@ -501,7 +504,7 @@ func (g *GameState) attachHooksToPlayer() {
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
 		g.ui.UpdateStats()
 	})
-	g.Player.GetCharSheet().SetOnStatChangeHandler(func(stat special.Stat) {
+	g.Player.GetCharSheet().SetOnStatChangeHandler(func(stat d100.Stat) {
 		g.ui.UpdateStats()
 	})
 
@@ -509,19 +512,19 @@ func (g *GameState) attachHooksToPlayer() {
 
 	g.Player.GetInventory().SetOnBeforeRemove(equipment.UnEquip)
 
-	g.Player.GetCharSheet().SetSkillModifierHandler(func(skill special.Skill) []special.Modifier {
+	g.Player.GetCharSheet().SetSkillModifierHandler(func(skill d100.Skill) []d100.Modifier {
 		modsFromItems := g.Player.GetInventory().GetSkillModifiersFromItems(skill)
 		modsFromActiveEffects := g.Player.GetTemporarySkillModifiers(skill)
 		return append(modsFromItems, modsFromActiveEffects...)
 	})
 
-	g.Player.GetCharSheet().SetStatModifierHandler(func(stat special.Stat) []special.Modifier {
+	g.Player.GetCharSheet().SetStatModifierHandler(func(stat d100.Stat) []d100.Modifier {
 		modsFromItems := g.Player.GetInventory().GetStatModifiersFromItems(stat)
 		modsFromActiveEffects := g.Player.GetTemporaryStatModifiers(stat)
 		return append(modsFromItems, modsFromActiveEffects...)
 	})
 
-	g.Player.GetCharSheet().SetDerivedStatModifierHandler(func(stat special.DerivedStat) []special.Modifier {
+	g.Player.GetCharSheet().SetDerivedStatModifierHandler(func(stat d100.DerivedStat) []d100.Modifier {
 		modsFromItems := g.Player.GetInventory().GetDerivedStatModifiersFromItems(stat)
 		modsFromActiveEffects := g.Player.GetTemporaryDerivedStatModifiers(stat)
 		return append(modsFromItems, modsFromActiveEffects...)
@@ -729,7 +732,7 @@ func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item foundation.Item, 
 		}
 	}
 
-	skillRoll := g.Player.GetCharSheet().SkillRoll(special.Stealth, itemStealModifier)
+	skillRoll := g.Player.GetCharSheet().SkillRoll(d100.SkillForPickPockets, itemStealModifier)
 	if skillRoll.Success {
 		transferFunc(item)
 		g.StartPickpocket(victim)
@@ -839,7 +842,7 @@ func (g *GameState) actorHitMessage(victim *Actor, damage SourcedDamage, cripple
 		return
 	}
 	baseMessage := fmt.Sprintf("%s was hit for %d hit points", victim.Name(), damage.DamageAmount)
-	if damage.BodyPart != special.Body {
+	if damage.BodyPart != d100.Body {
 		baseMessage += fmt.Sprintf("%s was hit in the %s for %d hit points", victim.Name(), damage.BodyPart.String(), damage.DamageAmount)
 	}
 
@@ -966,4 +969,10 @@ func (g *GameState) actorConsumeDrug(actor *Actor, item *GenericItem) {
 	}
 
 	g.removeItemFromInventory(actor, item)
+}
+
+func (g *GameState) NewAmmo(name string, bullets int) *Ammo {
+	ammo := g.newItemFromName(name).(*Ammo)
+	ammo.SetStackSize(bullets)
+	return ammo
 }

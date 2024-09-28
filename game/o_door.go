@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
 	"fmt"
@@ -68,7 +68,7 @@ func (b *Door) InitWithGameState(g *GameState) {
 						return
 					}
 					g.Player.GetInventory().RemoveLockpick()
-					skill := g.Player.GetCharSheet().GetSkill(special.Mechanics)
+					skill := g.Player.GetCharSheet().GetSkill(d100.SkillForPickLocks)
 					reduction := int(float64(skill) * 0.375)
 					if b.PickByReduceStrength(reduction) {
 						lockPickResult(true)
@@ -78,14 +78,14 @@ func (b *Door) InitWithGameState(g *GameState) {
 					}
 
 				} else {
-					skill := g.Player.GetCharSheet().GetSkill(special.Mechanics)
+					skill := g.Player.GetCharSheet().GetSkill(d100.SkillForPickLocks)
 					modifier := b.lockDiff.GetRollModifier()
 					chance := skill + modifier
 					if chance <= 0 {
 						g.msg(foundation.Msg("You don't have the skill to pick this lock"))
 						return
 					}
-					rollResult := special.SuccessRoll(special.Percentage(chance), 5)
+					rollResult := d100.SuccessRoll(d100.Percentage(chance), 5)
 					if !rollResult.Success && rollResult.Crit {
 						g.Player.GetInventory().RemoveLockpick()
 						g.msg(foundation.Msg("Your lockpick broke!"))
@@ -326,7 +326,7 @@ func (g *GameState) NewDoor(rec recfile.Record) *Door {
 }
 
 func (b *Door) OnDamage(dmg SourcedDamage) []foundation.Animation {
-	if dmg.DamageType == special.DamageTypeEMP || dmg.DamageType == special.DamageTypeRadiation || dmg.DamageType == special.DamageTypePoison {
+	if dmg.DamageType == DamageTypeEMP || dmg.DamageType == DamageTypeRadiation || dmg.DamageType == DamageTypePoison {
 		return nil
 	}
 

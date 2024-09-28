@@ -101,7 +101,7 @@ func (b *Container) ContainsItems() bool {
 func (b *Container) AddItem(item foundation.Item) {
 	for _, containedItem := range b.containedItems {
 		if containedItem.CanStackWith(item) {
-			containedItem.SetCharges(containedItem.Charges() + item.Charges())
+			containedItem.AddStacks(item)
 			return
 		}
 	}
@@ -257,8 +257,6 @@ func (g *GameState) stackTransfer(from ItemContainer, to ItemContainer, item fou
 	}
 
 	splitItem := multiItem.Split(splitAmount)
-
-	multiItem.SetCharges(totalAmount - splitAmount)
 
 	to.AddItem(splitItem)
 }

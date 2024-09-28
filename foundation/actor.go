@@ -1,7 +1,7 @@
 package foundation
 
 import (
-	"RogueUI/special"
+	"RogueUI/d100"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"image/color"
@@ -21,8 +21,8 @@ type ActorForUI interface {
 	GetDetailInfo() string
 	GetInternalName() string
 	IsAlive() bool
-	GetBodyPart(index int) special.BodyPart
-	GetBodyPartIndex(aim special.BodyPart) int
+	GetBodyPart(index int) d100.BodyPart
+	GetBodyPartIndex(aim d100.BodyPart) int
 	GetDamageResistance() int
 	GetMainHandDamageAsString() string
 }

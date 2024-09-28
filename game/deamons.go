@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 )
 
 func (g *GameState) enemyMovement(playerTimeSpent int) {
@@ -31,7 +31,7 @@ func (g *GameState) enemyMovement(playerTimeSpent int) {
 	}
 }
 func (g *GameState) removeDeadAndApplyRegeneration() {
-	healInterval := 2 + (100 / g.Player.charSheet.GetStat(special.Endurance))
+	healInterval := 2 + (100 / g.Player.charSheet.GetStat(d100.Endurance))
 	hungerInterval := 300
 
 	if !g.Player.HasFlag(foundation.FlagSlowDigestion) || g.TurnsTaken()%2 == 0 {

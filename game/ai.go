@@ -19,8 +19,6 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 			enemy.GetFlags().Increment(foundation.FlagStun)
 			return enemy.timeEnergy
 		} else {
-			//turnMod := stunCounter - 1
-			//_, result, _ := dice_curve.SuccessRoll(enemy.GetIntelligence() + turnMod)
 			if true { // result.IsFailure() { TODO
 				enemy.GetFlags().Increment(foundation.FlagStun)
 				return enemy.timeEnergy

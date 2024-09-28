@@ -48,7 +48,7 @@ o_goto: DrWinters
 #
 o_text: Open Administrative Interface
 #o_cond: Skill('Science') > 25
-o_test: RollSkill('Science', 0)
+o_test: RollSkill('Science')
 o_succ: AdminInterface
 o_fail: AdminInterfaceFail
 

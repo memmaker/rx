@@ -1,0 +1,121 @@
+%rec: Global
+
+SkillCap: 200
+#
+SuccessChanceCap: 95
+ChanceForCriticalFailure: 5
+#
+MaxArmorDR: 85
+MaxArmorDT: 30
+#
+AblationWithoutPenetration: 1
+AblationWithPenetration: 2
+
+%rec: SkillDifficulty
+
+#Trivial: skill + 90
+#VeryEasy: skill + 60
+#Easy: skill + 30
+#Medium: skill
+#Hard: skill - 30
+#VeryHard: skill - 60
+#SuperHuman: skill - 90
+
+Trivial: 100
+VeryEasy: skill + 60
+Easy: skill + 30
+Medium: skill
+Hard: skill / 2
+VeryHard: skill / 5
+SuperHuman: 1
+
+%rec: Skills
+
+Name: Melee Combat
+Short: Mle
+Combat: Melee
+BaseValue: (str + end) * 5
+
+Name: Ranged Combat
+Short: Rng
+Combat: Ranged
+BaseValue: (per + 5) * 5
+
+Name: Social
+Short: Soc
+BaseValue: (cha + 5) * 5
+
+Name: Intimidate
+Short: Int
+BaseValue: (cha + str) * 5
+
+Name: Stealth
+Short: Ste
+BaseValue: (agi + 5) * 5
+
+Name: Mechanics
+Short: Mec
+BaseValue: (agi + end) * 5
+
+Name: Biology
+Short: Bio
+BaseValue: (int + per) * 5
+
+Name: Technology
+Short: Tec
+BaseValue: (int + 5) * 5
+
+%rec: SkillMap
+
+unarmed: Melee Combat
+repairs: Mechanics
+picklocks: Mechanics
+pickpockets: Stealth
+sneak: Stealth
+hacking: Technology
+backstabbing: Melee Combat
+
+%rec: DerivedStats
+
+ActionPoints: 5 + (agi + (end / 2))
+Dodge: agi
+CarryWeight: 20 + (15 * str)
+CriticalChance: 5
+DamageResistance: 0
+HealingRate: max(1, end / 3)
+HitPoints: 15 + (2 * end) + str
+MeleeDamageBonus: max(1, str - 5)
+PartyLimit: floor(cha / 2.0)
+PerkRate: 3
+PoisonResistance: end * 5
+Speed: 2 * agi
+SkillRate: 3 + (int * 2)
+
+%rec: LevelTable
+
+xp: 0
+xp: 1000
+xp: 3000
+xp: 6000
+xp: 10000
+xp: 15000
+xp: 21000
+xp: 28000
+xp: 36000
+xp: 45000
+xp: 55000
+xp: 66000
+xp: 78000
+xp: 91000
+xp: 105000
+xp: 120000
+xp: 136000
+xp: 153000
+xp: 171000
+xp: 190000
+xp: 210000
+
+%rec: AfterTable
+
+xp: (currentLevel * (currentLevel - 1) / 2) * 1000
+

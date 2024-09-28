@@ -1,9 +1,9 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
 	"RogueUI/gridmap"
-	"RogueUI/special"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -116,8 +116,8 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 					NameOfThing:     "ice ray",
 					Attacker:        zapper,
 					IsObviousAttack: true,
-					TargetingMode:   special.TargetingModeFireSingle,
-					DamageType:      special.DamageTypePoison,
+					TargetingMode:   TargetingModeFireSingle,
+					DamageType:      DamageTypePoison,
 					DamageAmount:    damage,
 				}
 				damageAnim := g.damageActorWithFollowUp(damageWithSource, actor, freeze, nil)
@@ -151,8 +151,8 @@ func plasmaExplosion(g *GameState, zapper *Actor, loc geometry.Point, params fou
 		NameOfThing:     "plasma_explosion",
 		Attacker:        zapper,
 		IsObviousAttack: true,
-		TargetingMode:   special.TargetingModeFireSingle,
-		DamageType:      special.DamageTypePlasma,
+		TargetingMode:   TargetingModeFireSingle,
+		DamageType:      DamageTypePlasma,
 		DamageAmount:    damageAmount,
 	}
 	for point, _ := range affected {
@@ -188,8 +188,8 @@ func explosion(g *GameState, zapper *Actor, loc geometry.Point, params foundatio
 		NameOfThing:     "explosion",
 		Attacker:        zapper,
 		IsObviousAttack: true,
-		TargetingMode:   special.TargetingModeFireSingle,
-		DamageType:      special.DamageTypeExplosive,
+		TargetingMode:   TargetingModeFireSingle,
+		DamageType:      DamageTypeExplosive,
 		DamageAmount:    damageAmount,
 	}
 	for point, _ := range affected {
@@ -245,8 +245,8 @@ func fireRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 			NameOfThing:     "fire ray",
 			Attacker:        zapper,
 			IsObviousAttack: true,
-			TargetingMode:   special.TargetingModeFireSingle,
-			DamageType:      special.DamageTypeFire,
+			TargetingMode:   TargetingModeFireSingle,
+			DamageType:      DamageTypeFire,
 			DamageAmount:    damageRolled,
 		}
 		return g.damageLocation(damage, hitPos)
@@ -275,8 +275,8 @@ func lightningRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundati
 			NameOfThing:     "lightning ray",
 			Attacker:        zapper,
 			IsObviousAttack: true,
-			TargetingMode:   special.TargetingModeFireSingle,
-			DamageType:      special.DamageTypeElectrical,
+			TargetingMode:   TargetingModeFireSingle,
+			DamageType:      DamageTypeElectrical,
 			DamageAmount:    damageRolled,
 		}
 		damageAnims := g.damageLocation(damage, hitPos)
@@ -507,8 +507,8 @@ func magicMissile(g *GameState, zapper *Actor, targetPos geometry.Point) []found
 		NameOfThing:     "magic missile",
 		Attacker:        zapper,
 		IsObviousAttack: false,
-		TargetingMode:   special.TargetingModeFireSingle,
-		DamageType:      special.DamageTypeRadiation,
+		TargetingMode:   TargetingModeFireSingle,
+		DamageType:      DamageTypeRadiation,
 		DamageAmount:    5,
 	}
 	damageConsequences := g.damageLocation(damage, targetPos)
@@ -542,8 +542,8 @@ func magicItemProjectile(g *GameState, zapper *Actor, targetPos geometry.Point, 
 		NameOfThing:     sourceName,
 		Attacker:        zapper,
 		IsObviousAttack: true,
-		TargetingMode:   special.TargetingModeFireSingle,
-		DamageType:      special.DamageTypePlasma,
+		TargetingMode:   TargetingModeFireSingle,
+		DamageType:      DamageTypePlasma,
 		DamageAmount:    dart.GetThrowDamage().Roll(),
 	}
 	damageConsequences := g.damageLocation(damage, targetPos)
@@ -565,7 +565,7 @@ func nameOfDamageSource(zapper *Actor, otherName string) string {
 }
 
 func (g *GameState) damageLocation(damage SourcedDamage, targetPos geometry.Point) []foundation.Animation {
-	if damage.DamageType == special.DamageTypeExplosive || damage.DamageType == special.DamageTypeFire {
+	if damage.DamageType == DamageTypeExplosive || damage.DamageType == DamageTypeFire {
 		g.makeMapBurned(targetPos)
 	}
 
@@ -592,10 +592,10 @@ type SourcedDamage struct {
 	NameOfThing     string
 	Attacker        *Actor
 	IsObviousAttack bool
-	TargetingMode   special.TargetingMode
-	DamageType      special.DamageType
+	TargetingMode   TargetingMode
+	DamageType      DamageType
 	DamageAmount    int
-	BodyPart        special.BodyPart
+	BodyPart        d100.BodyPart
 	DamagePerBullet []int
 }
 
@@ -760,8 +760,8 @@ func fireBreath(g *GameState, zapper *Actor, pos geometry.Point, params foundati
 			NameOfThing:     "flames",
 			Attacker:        zapper,
 			IsObviousAttack: true,
-			TargetingMode:   special.TargetingModeFireSingle,
-			DamageType:      special.DamageTypeFire,
+			TargetingMode:   TargetingModeFireSingle,
+			DamageType:      DamageTypeFire,
 			DamageAmount:    damageAmount,
 		}
 		damageAnims := g.damageLocation(damage, hitPos)

@@ -1,4 +1,5 @@
 %rec: ui
+
 UIBackground: black
 #UIForeground: light_gray_4
 UIForeground: neon_green_3

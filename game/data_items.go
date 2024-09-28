@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -12,7 +12,7 @@ import (
 )
 
 func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) foundation.Item {
-	NoQualityDefined := special.Percentage(-1)
+	NoQualityDefined := d100.Percentage(-1)
 	item := &GenericItem{
 		qualityInPercent: NoQualityDefined,
 		alive:            true,
@@ -32,7 +32,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	itemWeapon := &Weapon{
 		loadedInMagazine: nil,
 	}
-	var targetModes [2]special.TargetingMode
+	var targetModes [2]TargetingMode
 	var tuCosts [2]int
 	var maxRanges [2]int
 
@@ -57,7 +57,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		case "weight":
 			item.weight = field.AsInt()
 		case "quality":
-			item.qualityInPercent = special.Percentage(field.AsInt())
+			item.qualityInPercent = d100.Percentage(field.AsInt())
 		case "chance_to_break_on_throw":
 			item.chanceToBreakOnThrow = field.AsInt()
 		case "tags":
@@ -87,30 +87,30 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		case "stat_bonus":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				name, args := fxtools.GetNameAndArgs(field.Value)
-				stat := special.StatFromString(name)
+				stat := d100.StatFromString(name)
 				bonus := args.GetInt(0)
 				if item.statChanges.StatChanges == nil {
-					item.statChanges.StatChanges = make(map[special.Stat]int)
+					item.statChanges.StatChanges = make(map[d100.Stat]int)
 				}
 				item.statChanges.StatChanges[stat] = bonus
 			}
 		case "skill_bonus":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				name, args := fxtools.GetNameAndArgs(field.Value)
-				skill := special.SkillFromString(name)
+				skill := d100.SkillFromString(name)
 				bonus := args.GetInt(0)
 				if item.statChanges.SkillChanges == nil {
-					item.statChanges.SkillChanges = make(map[special.Skill]int)
+					item.statChanges.SkillChanges = make(map[d100.Skill]int)
 				}
 				item.statChanges.SkillChanges[skill] = bonus
 			}
 		case "derived_stat_bonus":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				name, args := fxtools.GetNameAndArgs(field.Value)
-				stat := special.DerivedStatFromString(name)
+				stat := d100.DerivedStatFromString(name)
 				bonus := args.GetInt(0)
 				if item.statChanges.DerivedStatChanges == nil {
-					item.statChanges.DerivedStatChanges = make(map[special.DerivedStat]int)
+					item.statChanges.DerivedStatChanges = make(map[d100.DerivedStat]int)
 				}
 				item.statChanges.DerivedStatChanges[stat] = bonus
 			}
@@ -152,13 +152,13 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		case "weapon_type":
 			itemWeapon.weaponType = WeaponTypeFromString(field.Value)
 		case "weapon_damage_type":
-			itemWeapon.damageType = special.DamageTypeFromString(field.Value)
+			itemWeapon.damageType = DamageTypeFromString(field.Value)
 		case "weapon_caliber_index":
 			itemWeapon.caliberIndex = field.AsInt()
 		case "weapon_sound_id":
 			itemWeapon.soundID = field.AsInt32()
 		case "weapon_skill_used":
-			itemWeapon.skillUsed = special.SkillFromString(field.Value)
+			itemWeapon.skillUsed = d100.SkillFromString(field.Value)
 		case "weapon_damage":
 			itemWeapon.damageDice = fxtools.ParseInterval(field.Value)
 		case "weapon_magazine_size":
@@ -166,9 +166,9 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		case "weapon_burst_rounds":
 			itemWeapon.burstRounds = field.AsInt()
 		case "weapon_attack_mode_one":
-			targetModes[0] = special.TargetingModeFromString(field.Value)
+			targetModes[0] = TargetingModeFromString(field.Value)
 		case "weapon_attack_mode_two":
-			targetModes[1] = special.TargetingModeFromString(field.Value)
+			targetModes[1] = TargetingModeFromString(field.Value)
 		case "weapon_ap_cost_one":
 			tuCosts[0] = field.AsInt() * 2
 		case "weapon_ap_cost_two":
@@ -187,19 +187,19 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			itemArmor.radiationReduction = field.AsInt()
 		case "armor_physical":
 			if itemArmor.protection == nil {
-				itemArmor.protection = make(map[special.DamageType]Protection)
+				itemArmor.protection = make(map[DamageType]Protection)
 			}
 			values := field.AsList(",")
-			itemArmor.protection[special.DamageTypeNormal] = Protection{
+			itemArmor.protection[DamageTypeNormal] = Protection{
 				DamageThreshold: values[0].AsInt(),
 				DamageReduction: values[1].AsInt(),
 			}
 		case "armor_energy":
 			if itemArmor.protection == nil {
-				itemArmor.protection = make(map[special.DamageType]Protection)
+				itemArmor.protection = make(map[DamageType]Protection)
 			}
 			values := field.AsList(",")
-			itemArmor.protection[special.DamageTypeLaser] = Protection{
+			itemArmor.protection[DamageTypeLaser] = Protection{
 				DamageThreshold: values[0].AsInt(),
 				DamageReduction: values[1].AsInt(),
 			}
@@ -208,13 +208,13 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 
 	item.charges = charges
 
-	if item.qualityInPercent == NoQualityDefined && (item.IsWeapon() || item.IsArmor()) {
-		item.qualityInPercent = max(10, special.Percentage(rand.Intn(100)+1))
+	if item.qualityInPercent == NoQualityDefined && (itemWeapon.IsValid() || itemArmor.IsValid()) {
+		item.qualityInPercent = max(10, d100.Percentage(rand.Intn(100)+1))
 	}
 
 	if itemAmmo.IsValid() {
 		itemAmmo.GenericItem = item
-		itemAmmo.GenericItem.charges = itemAmmo.RoundsInMagazine
+		itemAmmo.GenericItem.stackSize = itemAmmo.RoundsInMagazine
 		return itemAmmo
 	}
 

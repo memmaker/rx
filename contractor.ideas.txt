@@ -22,9 +22,56 @@ A disguise mechanic similar to Hitman or what FNV tried to do, I wish I could ta
 Want interesting Dialogue and non-combat interactions?
 Look at DISCO ELYSIUM and their skill checks and thought cabinet
 
+Situational modifiers to actions (+10 because you did this or that beforehand)
+
+Contractor Beliefs
+ - I will never fail a mission
+ - I will fight for the Corps
+ - I will bring down the Corps
+ - I will fight for the underdogs
+ - I will fight alongside the winners
+ - I will set this world on fire
+ - I will bring peace to my surroundings
+ - I will be rich
+ - I will be famous
+ - I will be feared
+ - I will be helpful
+
+
+
+"Style over Substance"
+"Attitude is everything"
+"Always take it to the edge"
+"Break the rules"
+
+Instincts
+ - Compulsive Liar
+ - Cannot lie
+ - Always carry two weapons
+ - Will engage in combat if insulted
+
+
+
 Beliefs & Instincts (Mouse Guard)
+
+Attitude is everything
+ - Reward acting in a cyberpunk way
+ - Reward acting towards your beliefs/principles
+
+Style over Substance
+ - One-liners and quips via Hotkey!
+   - More style points if you drop a one-liner before a kill
+ - Reward Stylish gameplay and looking the part
+ - Reward combos and flashy moves
+ - Style Points? Exchange for items or upgrades? Exchange for XP? Equal Reputation?
+
+Live on the Edge
+ - Reward risky behavior
+
 
 Beliefs - A stance the player takes, rewards for acting according to them
 Instincts - Minor instinctive behaviors, can happen without the player directly initiating them
+--> Allow setting your own goals.???
 
 Interesting Faults/Flaws/Traits
+

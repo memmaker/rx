@@ -1,30 +1,8 @@
-package special
+package d100
 
 import (
-	"fmt"
 	"math/rand"
 )
-
-type CheckResult struct {
-	Success bool // Did the check succeed?
-	Crit    bool // Critical success or failure
-	DieRoll int  // The result of the die roll (D100)
-	Degrees int
-}
-
-func (r CheckResult) IsCriticalSuccess() bool {
-	return r.Crit && r.Success
-}
-
-type Percentage float32
-
-func (p Percentage) String() string {
-	return fmt.Sprintf("%d%%", int(p))
-}
-
-func (p Percentage) Normalized() float64 {
-	return float64(p) / 100.0
-}
 
 func SuccessRoll(chanceOfSuccess, successCritChange Percentage) CheckResult {
 	var result CheckResult
@@ -36,8 +14,7 @@ func SuccessRoll(chanceOfSuccess, successCritChange Percentage) CheckResult {
 		result.Crit = dieRoll <= int(successCritChange)
 		result.Degrees = int(chanceOfSuccess) - dieRoll
 	} else {
-		failCritChance := 5
-		result.Crit = dieRoll > (100 - failCritChance)
+		result.Crit = dieRoll > (100 - ChanceForCriticalFailure)
 		result.Degrees = dieRoll - int(chanceOfSuccess)
 	}
 

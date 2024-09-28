@@ -1,8 +1,8 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
-	"RogueUI/special"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
@@ -102,10 +102,10 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 		NameOfThing:     "drain life",
 		Attacker:        user,
 		IsObviousAttack: true,
-		TargetingMode:   special.TargetingModeFireSingle,
-		DamageType:      special.DamageTypeNormal,
+		TargetingMode:   TargetingModeFireSingle,
+		DamageType:      DamageTypeNormal,
 		DamageAmount:    damageDone,
-		BodyPart:        special.Body,
+		BodyPart:        d100.Body,
 	}
 	userDamageAnim := g.damageActorWithFollowUp(damage, user, nil, []foundation.Animation{flyFromUserAnim})
 
@@ -115,10 +115,10 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 		NameOfThing:     "drain life",
 		Attacker:        user,
 		IsObviousAttack: true,
-		TargetingMode:   special.TargetingModeFireSingle,
-		DamageType:      special.DamageTypeRadiation,
+		TargetingMode:   TargetingModeFireSingle,
+		DamageType:      DamageTypeRadiation,
 		DamageAmount:    max(1, damageDone/len(affectedActors)),
-		BodyPart:        special.Body,
+		BodyPart:        d100.Body,
 	}
 	for _, actor := range affectedActors {
 		flyToEnemyAnim, _ := g.ui.GetAnimProjectile('☼', "LightRed", ballPos, actor.Position(), nil)

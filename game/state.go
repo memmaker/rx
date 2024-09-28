@@ -1,9 +1,9 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
 	"RogueUI/gridmap"
-	"RogueUI/special"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -212,7 +212,7 @@ func (g *GameState) checkPlayerCanAct() {
 	}
 
 	if g.Player.HasFlag(foundation.FlagStun) {
-		result := g.Player.GetCharSheet().StatRoll(special.Strength, 0)
+		result := g.Player.GetCharSheet().StatRoll(d100.Strength, 0)
 
 		if result.Success {
 			g.msg(foundation.Msg("You shake off the stun"))
@@ -227,7 +227,7 @@ func (g *GameState) checkPlayerCanAct() {
 		g.endPlayerTurn(g.Player.timeNeededForActions())
 	}
 	if g.Player.HasFlag(foundation.FlagHeld) {
-		result := g.Player.GetCharSheet().StatRoll(special.Strength, 0)
+		result := g.Player.GetCharSheet().StatRoll(d100.Strength, 0)
 
 		if result.Crit {
 			g.msg(foundation.Msg("You break free from the hold"))
@@ -293,7 +293,7 @@ func (g *GameState) checkTilesForHiddenObjects(tiles []geometry.Point) {
 		if g.currentMap().IsObjectAt(tile) {
 			object := g.currentMap().ObjectAt(tile)
 			if object.IsHidden() {
-				perceptionResult := g.Player.GetCharSheet().StatRoll(special.Perception, 0)
+				perceptionResult := g.Player.GetCharSheet().StatRoll(d100.Perception, 0)
 				if perceptionResult.Success {
 					noticedSomething = true
 				}
@@ -347,15 +347,15 @@ func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Poin
 	isProjectile := false
 	sourcePos := attacker.Position()
 	switch weapon.GetDamageType() {
-	case special.DamageTypePlasma:
+	case DamageTypePlasma:
 		flightPath := g.getFlightPath(sourcePos, targetPos)
 		attackAnim, _ = g.ui.GetAnimProjectileWithLight('*', "green_2", flightPath, nil)
 		isProjectile = true
-	case special.DamageTypeExplosive:
+	case DamageTypeExplosive:
 		flightPath := g.getFlightPath(sourcePos, targetPos)
 		attackAnim, _ = g.ui.GetAnimProjectileWithLight('°', "white", flightPath, nil)
 		isProjectile = true
-	case special.DamageTypeLaser:
+	case DamageTypeLaser:
 		flightPath := g.getFlightPath(sourcePos, targetPos)
 		attackAnim = g.ui.GetAnimLaser(flightPath, fxtools.NewColorFromRGBA(g.palette.Get("red_8")).MultiplyWithScalar(2), nil)
 	default:

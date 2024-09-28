@@ -1,7 +1,6 @@
 package game
 
 import (
-	"RogueUI/special"
 	"bytes"
 	"encoding/gob"
 	"fmt"
@@ -11,7 +10,7 @@ import (
 
 type Armor struct {
 	*GenericItem
-	protection         map[special.DamageType]Protection
+	protection         map[DamageType]Protection
 	encumbrance        int
 	radiationReduction int
 }
@@ -52,13 +51,13 @@ func (i *Armor) LongNameWithColors(colorCode string) string {
 	return colorCode + line + "[-]"
 }
 
-func (i *Armor) GetArmorProtection(damageType special.DamageType) Protection {
+func (i *Armor) GetArmorProtection(damageType DamageType) Protection {
 	return i.getRawProtection(damageType).Scaled(i.qualityInPercent.Normalized())
 }
 
 func (i *Armor) GetArmorProtectionValueAsString() string {
-	physical := i.GetArmorProtection(special.DamageTypeNormal)
-	energy := i.GetArmorProtection(special.DamageTypeLaser)
+	physical := i.GetArmorProtection(DamageTypeNormal)
+	energy := i.GetArmorProtection(DamageTypeLaser)
 	return fmt.Sprintf("%s %s", physical.String(), energy.String())
 
 }
@@ -104,7 +103,7 @@ func (i *Armor) GobDecode(data []byte) error {
 	return nil
 }
 
-func (i *Armor) getRawProtection(dType special.DamageType) Protection {
+func (i *Armor) getRawProtection(dType DamageType) Protection {
 	protection := i.protection[dType]
 	return protection
 }
@@ -114,14 +113,20 @@ func (i *Armor) GetEncumbrance() int {
 }
 
 func (i *Armor) GetProtectionRating() int {
-	physical := i.getRawProtection(special.DamageTypeNormal)
-	energy := i.getRawProtection(special.DamageTypeLaser)
+	physical := i.getRawProtection(DamageTypeNormal)
+	energy := i.getRawProtection(DamageTypeLaser)
 
 	return (physical.DamageReduction + energy.DamageReduction) + (physical.DamageThreshold + energy.DamageThreshold)
 }
 
 func (i *Armor) IsValid() bool {
 	return len(i.protection) != 0
+}
+
+func (i *Armor) DegradeDT(ablation int) {
+	for dmg, protection := range i.protection {
+		i.protection[dmg] = protection.WithDTReducedBy(ablation)
+	}
 }
 
 type Protection struct {
@@ -137,5 +142,12 @@ func (p Protection) Scaled(float float64) Protection {
 	return Protection{
 		DamageReduction: int(float * float64(p.DamageReduction)),
 		DamageThreshold: int(float * float64(p.DamageThreshold)),
+	}
+}
+
+func (p Protection) WithDTReducedBy(ablation int) Protection {
+	return Protection{
+		DamageReduction: p.DamageReduction,
+		DamageThreshold: max(0, p.DamageThreshold-ablation),
 	}
 }
