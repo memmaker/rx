@@ -19,6 +19,7 @@ i -> inventory
 n -> show_ammo
 k -> repair
 u -> toggle_run
+o -> toggle_sneak
 
 g -> attack
 h -> quick_attack
@@ -26,6 +27,7 @@ h -> quick_attack
 f -> cycle_target_mode
 r -> reload_weapon
 
+q -> quip
 
 x -> look
 v -> throw

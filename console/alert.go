@@ -4,19 +4,16 @@ import (
 	"github.com/memmaker/go/cview"
 )
 
-func OpenConfirmDialogue(app *cview.Application, panels *cview.Panels, title string, msg string, result func(didConfirm bool)) *cview.Modal {
-	oldBeforeFocusFunc := app.GetBeforeFocusFunc()
-	oldFocus := app.GetFocus()
+func OpenConfirmDialogue(focuser Focuser, app *cview.Application, panels *cview.Panels, title string, msg string, result func(didConfirm bool)) *cview.Modal {
+	focuser.pushFocus()
 
 	modal := NewConfirmDialogue(msg, result, func() {
 		panels.RemovePanel("confirm")
 		// Reset focus changes
-		app.SetBeforeFocusFunc(nil)
-		app.SetFocus(oldFocus)
-		app.SetBeforeFocusFunc(oldBeforeFocusFunc)
+		focuser.popFocus()
 	})
 
-	modal.SetTitle(title)
+	modal.GetFrame().SetTitle(title)
 	panels.AddPanel("confirm", modal, false, true)
 
 	// force focus on the modal
@@ -41,12 +38,12 @@ func NewConfirmDialogue(msg string, result func(didConfirm bool), close func()) 
 	modal := cview.NewModal()
 	modal.SetText(msg)
 	modal.AddButtons([]string{"Cancel", "Confirm"})
+
 	modal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+		close()
 		if result == nil {
-			close()
 			return
 		}
-		close()
 		if buttonLabel == "Confirm" {
 			result(true)
 		} else {

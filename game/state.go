@@ -9,6 +9,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"image/color"
 	"math/rand"
+	"slices"
 	"strings"
 	"text/template"
 )
@@ -189,17 +190,6 @@ func (g *GameState) spreadBloodAround(mapPos geometry.Point) {
 		}
 	}
 }
-func (g *GameState) updatePlayerFoVAndApplyExploration() {
-	g.currentMap().UpdateFieldOfView(g.playerFoV, g.Player.Position(), g.visionRange)
-	g.playerFoV.RemoveFromVisibles(func(p geometry.Point) bool {
-		return g.currentMap().IsDarknessAt(g.gameTime.Time, p) && g.Player.Position() != p
-	})
-
-	for _, pos := range g.playerFoV.Visibles {
-		g.currentMap().SetExplored(pos)
-	}
-}
-
 func (g *GameState) checkPlayerCanAct() {
 	// idea
 	// check if the player can act before giving back control to him
@@ -224,7 +214,7 @@ func (g *GameState) checkPlayerCanAct() {
 		g.msg(foundation.Msg("You are stunned and cannot act"))
 
 		// TODO: animate a small delay here?
-		g.endPlayerTurn(g.Player.timeNeededForActions())
+		g.endPlayerTurn(g.Player.TimeNeededForActions())
 	}
 	if g.Player.HasFlag(foundation.FlagHeld) {
 		result := g.Player.GetCharSheet().StatRoll(d100.Strength, 0)
@@ -244,68 +234,139 @@ func (g *GameState) checkPlayerCanAct() {
 		g.msg(foundation.Msg("You are held and cannot act"))
 
 		// TODO: animate a small delay here?
-		g.endPlayerTurn(g.Player.timeNeededForActions())
+		g.endPlayerTurn(g.Player.TimeNeededForActions())
 	}
 }
 
-func (g *GameState) triggerTileEffectsAfterMovement(actor *Actor, oldPos, newPos geometry.Point) []foundation.Animation {
+func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []foundation.Animation {
+	newPos := actor.Position()
 	isPlayer := actor == g.Player
-	if g.currentMap().IsObjectAt(newPos) {
-		var animations []foundation.Animation
-		objectAt := g.currentMap().ObjectAt(newPos)
-		if objectAt.IsTrap() {
-			if isPlayer {
-				playerMoveAnim := g.ui.GetAnimMove(g.Player, oldPos, newPos)
-				playerMoveAnim.RequestMapUpdateOnFinish()
-				animations = append(animations, playerMoveAnim)
-			}
+
+	g.updateFoVAndDijkstraMap(actor)
+
+	var animations []foundation.Animation
+
+	if objectAt, hasObj := g.currentMap().TryGetObjectAt(newPos); hasObj {
+		if objectAt.IsWalkable(actor) {
 			triggeredEffectAnimations := objectAt.OnWalkOver(actor)
 			animations = append(animations, triggeredEffectAnimations...)
 		}
-		return animations
 	}
-	return nil
-}
 
-func (g *GameState) buyItemFromVendor(item foundation.Item, price int) {
-	player := g.Player
-	if !player.HasGold(price) {
-		g.msg(foundation.Msg("You cannot afford that"))
-		return
+	neighbors := actor.GetAllNeighbors()
+	for _, neighbor := range neighbors {
+		if objectAt, hasObj := g.currentMap().TryGetObjectAt(neighbor); hasObj {
+			if objectAt.IsProximityTriggered() {
+				triggeredEffectAnimations := objectAt.OnProximity(actor)
+				animations = append(animations, triggeredEffectAnimations...)
+			}
+
+			if isPlayer && objectAt.IsHidden() && g.Player.GetCharSheet().GetStat(d100.Perception) > 1 {
+				objectAt.SetHidden(false)
+				g.msg(foundation.HiLite("You notice %s", objectAt.Name()))
+			}
+		}
+		if itemAt, hasItem := g.currentMap().TryGetItemAt(neighbor); isPlayer && hasItem && itemAt.IsHidden() && g.Player.GetCharSheet().GetStat(d100.Perception) > 1 {
+			itemAt.SetHidden(false)
+			g.msg(foundation.HiLite("You notice %s", itemAt.Name()))
+		}
 	}
-	if player.GetInventory().IsFull() {
-		g.msg(foundation.Msg("You cannot carry more items"))
-		return
-	}
-	player.RemoveGold(price)
-	i := item.(*GenericItem)
-	player.GetInventory().AddItem(i)
-}
 
-func (g *GameState) newLevelReached(level int) {
-	//g.Player.AddCharacterPoints(10)
-	g.msg(foundation.HiLite("You've been awarded 10 character points for reaching level %s", fmt.Sprint(level)))
-}
+	observers := g.getObservers(newPos)
+	isSneaking := actor.HasFlag(foundation.FlagSneaking)
+	if len(observers) > 0 {
+		for _, observer := range observers {
+			sameTeam := observer.teamName == actor.teamName
+			observerIsAggressive := observer.IsAggressive()
 
-func (g *GameState) checkTilesForHiddenObjects(tiles []geometry.Point) {
-	var noticedSomething bool
-	for _, tile := range tiles {
-		if g.currentMap().IsObjectAt(tile) {
-			object := g.currentMap().ObjectAt(tile)
-			if object.IsHidden() {
-				perceptionResult := g.Player.GetCharSheet().StatRoll(d100.Perception, 0)
-				if perceptionResult.Success {
-					noticedSomething = true
-				}
-				if perceptionResult.Crit {
-					object.SetHidden(false)
+			outsideDetectionRange := observer.DetectionRange() < g.currentMap().MoveDistance(observer.Position(), newPos)
+
+			if sameTeam || !observerIsAggressive || outsideDetectionRange {
+				continue
+			}
+			if !isSneaking || !g.canSneakPast(actor, observer) {
+				observer.FSM.SendEvent(NewEnemySightedEvent(actor))
+				if isSneaking {
+					g.msg(foundation.HiLite("You have been detected by %s", observer.Name()))
 				}
 			}
 		}
 	}
 
-	if noticedSomething {
-		g.msg(foundation.Msg("you feel like something is wrong with this room"))
+	if isPlayer {
+		g.afterPlayerMoved(oldPos, false)
+	}
+
+	return animations
+}
+
+func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition bool) {
+	// explore the map
+	// print "You see.." message
+	if g.currentMap().IsItemAt(g.Player.Position()) && g.config.AutoPickup {
+		g.PlayerPickupItem()
+	}
+	if g.Player.GetInventory().HasLightSource() || g.Player.IsCyberWareActive(CyberWareLight) {
+		g.playerLightSource.MaxIntensity = 1
+		g.currentMap().MoveLightSource(g.playerLightSource, g.Player.Position())
+	} else {
+		g.playerLightSource.MaxIntensity = 0
+	}
+
+	g.msg(g.GetMapInfoForMovement(g.Player.Position()))
+
+	g.Player.GetFlags().Unset(foundation.FlagConcentratedAiming)
+
+	// automatic door opening/closing sfx handling
+	if !wasMapTransition {
+		if door, exists := g.TryGetDoorAt(g.Player.Position()); exists {
+			if door.IsClosedButNotLocked() {
+				door.PlayOpenSfx()
+			}
+		}
+		if door, exists := g.TryGetDoorAt(oldPos); exists {
+			if door.IsClosedButNotLocked() {
+				door.PlayCloseSfx()
+			}
+		}
+	}
+
+	// check transition
+	if !wasMapTransition {
+		g.CheckTransition()
+	}
+}
+
+func (g *GameState) openVendorMenu(vendor *Actor, onClose func()) {
+	itemsForSale := vendor.GetVendorInventory().Items()
+	title := fmt.Sprintf("Buy from %s", vendor.Name())
+	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendor(vendor, onClose), onClose)
+}
+
+func (g *GameState) buyItemFromVendor(vendor *Actor, onClose func()) func(item foundation.Item, price int) {
+	return func(item foundation.Item, price int) {
+		player := g.Player
+		if !player.HasGold(price) {
+			g.msg(foundation.Msg("You cannot afford that"))
+			g.openVendorMenu(vendor, onClose)
+			return
+		}
+		if player.GetInventory().IsFull() {
+			g.msg(foundation.Msg("You cannot carry more items"))
+			g.openVendorMenu(vendor, onClose)
+			return
+		}
+		vendor.GetVendorInventory().RemoveItem(item)
+
+		vendor.GetInventory().AddItems(player.RemoveGold(price))
+
+		player.GetInventory().AddItem(item)
+
+		g.msg(foundation.HiLite("You bought %s for $%s", item.Name(), fmt.Sprint(price)))
+
+		g.ui.PlayCue("world/pickup")
+
+		g.openVendorMenu(vendor, onClose)
 	}
 }
 
@@ -348,15 +409,15 @@ func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Poin
 	sourcePos := attacker.Position()
 	switch weapon.GetDamageType() {
 	case DamageTypePlasma:
-		flightPath := g.getFlightPath(sourcePos, targetPos)
+		flightPath := g.GetFlightPath(sourcePos, targetPos)
 		attackAnim, _ = g.ui.GetAnimProjectileWithLight('*', "green_2", flightPath, nil)
 		isProjectile = true
 	case DamageTypeExplosive:
-		flightPath := g.getFlightPath(sourcePos, targetPos)
+		flightPath := g.GetFlightPath(sourcePos, targetPos)
 		attackAnim, _ = g.ui.GetAnimProjectileWithLight('°', "white", flightPath, nil)
 		isProjectile = true
 	case DamageTypeLaser:
-		flightPath := g.getFlightPath(sourcePos, targetPos)
+		flightPath := g.GetFlightPath(sourcePos, targetPos)
 		attackAnim = g.ui.GetAnimLaser(flightPath, fxtools.NewColorFromRGBA(g.palette.Get("red_8")).MultiplyWithScalar(2), nil)
 	default:
 		attackAnim = g.ui.GetAnimMuzzleFlash(sourcePos, fxtools.NewColorFromRGBA(g.palette.Get("White")).MultiplyWithScalar(0.7), 2, bulletCount, nil)
@@ -366,12 +427,73 @@ func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Poin
 	return attackAnim, isProjectile
 }
 
-func (g *GameState) getFlightPath(sourcePos geometry.Point, targetPos geometry.Point) []geometry.Point {
+func (g *GameState) GetFlightPath(sourcePos geometry.Point, targetPos geometry.Point) []geometry.Point {
+
+	isValid := func(los []geometry.Point) bool {
+		if len(los) < 2 {
+			return false
+		}
+		startAtOrigin := los[0] == sourcePos
+		endAtTarget := los[len(los)-1] == targetPos
+		return startAtOrigin && endAtTarget
+	}
+	var paths [][]geometry.Point
+	var conflicts []int
+
+	conflictCount := func(fPath []geometry.Point) int {
+		fovConflicts := 0
+		for _, p := range fPath {
+			if !g.Player.CanSee(p) {
+				fovConflicts++
+			}
+		}
+		return fovConflicts
+	}
+
+	flightPath := g.originalLine(sourcePos, targetPos)
+	fovConflicts := conflictCount(flightPath)
+	if isValid(flightPath) {
+		if fovConflicts == 0 {
+			return flightPath
+		}
+		paths = append(paths, flightPath)
+		conflicts = append(conflicts, fovConflicts)
+	}
+
+	flightPath = g.reversedLine(sourcePos, targetPos)
+	fovConflicts = conflictCount(flightPath)
+	if isValid(flightPath) {
+		if fovConflicts == 0 {
+			return flightPath
+		}
+		paths = append(paths, flightPath)
+		conflicts = append(conflicts, fovConflicts)
+	}
+
+	if len(paths) == 0 {
+		return []geometry.Point{}
+	}
+	minIndex := slices.Index(conflicts, slices.Min(conflicts))
+	return paths[minIndex]
+}
+
+func (g *GameState) originalLine(sourcePos geometry.Point, targetPos geometry.Point) []geometry.Point {
 	flightPath := geometry.BresenhamLine(sourcePos, targetPos, func(x, y int) bool {
-		if x == sourcePos.X && y == sourcePos.Y {
+		if x == sourcePos.X && y == sourcePos.Y || x == targetPos.X && y == targetPos.Y {
 			return true
 		}
 		return !g.IsSomethingBlockingTargetingAtLoc(geometry.Point{X: x, Y: y})
 	})
+	return flightPath
+}
+
+func (g *GameState) reversedLine(sourcePos geometry.Point, targetPos geometry.Point) []geometry.Point {
+	flightPath := geometry.BresenhamLine(targetPos, sourcePos, func(x, y int) bool {
+		if x == sourcePos.X && y == sourcePos.Y || x == targetPos.X && y == targetPos.Y {
+			return true
+		}
+		return !g.IsSomethingBlockingTargetingAtLoc(geometry.Point{X: x, Y: y})
+	})
+	slices.Reverse(flightPath)
 	return flightPath
 }

@@ -26,12 +26,16 @@ type GameForUI interface {
 	RunPlayer(direction geometry.CompassDirection, isStarting bool) bool
 	RunPlayerPath() bool
 	// Do stuff
-
 	PlayerPickupItem()
 	EquipToggle(item Item)
 	DropItemFromInventory(item Item)
 	PlayerApplyItem(item Item)
+	PlayerExamineItem(item Item)
+	PlayerDropItem(item Item)
+
 	PlayerToggleRun()
+	PlayerToggleSneak()
+	PlayerQuip()
 	Wait()
 
 	PlayerRangedAttack()
@@ -46,9 +50,12 @@ type GameForUI interface {
 	PlayerInteractAtPosition(pos geometry.Point)
 
 	OpenContextMenuFor(pos geometry.Point) bool
+	OpenContextMenuForItem(item Item, done func())
+
 	OpenTacticsMenu()
 	OpenJournal()
 	OpenRestMenu()
+	OpenPerkSelection(done func())
 	ShowDateTime()
 
 	LoadGame(fromDir string)
@@ -62,8 +69,9 @@ type GameForUI interface {
 	GetCharacterSheet() string
 	IsPlayerOverEncumbered() bool
 
+	CanActorAttackNextTurn(enemy ActorForUI) bool
+
 	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple3[d100.BodyPart, bool, int]
-	GetRangedChanceToHitForUI(target ActorForUI) RangedCtH
 
 	GetHudStats() map[HudValue]int
 	GetHudFlags() map[ActorFlag]int
@@ -75,6 +83,7 @@ type GameForUI interface {
 	GetVisibleActors() []ActorForUI
 	GetVisibleItems() []Item
 	GetLog() []HiLiteString
+	GetFlightPath(origin geometry.Point, pos geometry.Point) []geometry.Point
 
 	IsActorHostileTowardsPlayer(enemy ActorForUI) bool
 	IsActorAlliedWithPlayer(ally ActorForUI) bool
@@ -123,6 +132,8 @@ type GameForUI interface {
 	// Wizard
 	OpenWizardMenu()
 	WizardAdvanceTime()
+
+	DebugClickAt(pos geometry.Point)
 }
 
 type PlayerMoveMode int
@@ -159,7 +170,7 @@ type GameUI interface {
 	UpdateVisibleActors()
 
 	// Targeting
-	SelectTarget(onSelected func(targetPos geometry.Point))
+	SelectTarget(getCth func(target ActorForUI) AttackInfo, onSelected func(targetPos geometry.Point))
 	SelectDirection(onSelected func(direction geometry.CompassDirection))
 	SelectBodyPart(previousAim d100.BodyPart, onSelected func(victim ActorForUI, hitZone d100.BodyPart))
 
@@ -170,11 +181,11 @@ type GameUI interface {
 	ShowTextFileFullscreen(filename string, onClose func())
 	OpenMenu(actions []MenuItem)
 	OpenMenuWithTitle(title string, actions []MenuItem)
-	OpenKeypad(correctSequence []rune, onCompletion func(success bool))
-	OpenVendorMenu(itemsForSale []fxtools.Tuple[Item, int], buyItem func(ui Item, price int))
+	OpenKeypad(specialAction string, correctSequence []rune, onSpecialAction func() bool, onCompletion func(success bool))
+	OpenVendorMenu(title string, itemsForSale []Item, buyItem func(ui Item, price int), onClose func())
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
 	ShowTakeOnlyContainer(name string, containedItems []Item, transfer func(ui Item))
-	ShowGiveAndTakeContainer(leftName string, leftItems []Item, rightName string, rightItems []Item, transferToLeft func(itemTaken Item, amount int), transferToRight func(itemTaken Item, amount int))
+	ShowGiveAndTakeContainer(leftName string, leftItems []Item, rightName string, rightItems []Item, transferToLeft func(itemTaken Item, amount int), transferToRight func(itemTaken Item, amount int), takeAll func())
 	OpenAimedShotPicker(actorAt ActorForUI, previousAim d100.BodyPart, onSelected func(victim ActorForUI, hitZone d100.BodyPart))
 
 	SaveGame()
@@ -223,13 +234,14 @@ type GameUI interface {
 	PlayCue(cue string)
 	SetConversationState(text string, options []MenuItem, conversationPartner ChatterSource, isTerminal bool)
 	CloseConversation()
-	StartHackingGame(identifier uint64, difficulty Difficulty, previousGuesses []string, onCompletion func(previousGuesses []string, success InteractionResult))
-	StartLockpickGame(difficulty Difficulty, getLockpickCount func() int, removeLockpick func(), onCompletion func(result InteractionResult))
 	SetColors(palette textiles.ColorPalette, colors map[ItemCategory]color.RGBA)
 	TryAddChatter(victim ChatterSource, text string) bool
 	FadeToBlack()
 	FadeFromBlack()
+	SetSneakOverlay(overlay map[geometry.Point]fxtools.HDRColor)
+
 	AskForConfirmation(title string, message string, onConfirm func(didConfirm bool))
+	ForceUIRedraw()
 }
 
 type Animation interface {
@@ -324,20 +336,36 @@ func (d Difficulty) GetRollModifier() int {
 	return 0
 }
 
-func (d Difficulty) GetStrength() int {
+func (d Difficulty) LockReductionFactor() float64 {
 	switch d {
 	case VeryEasy:
-		return 20
+		return 1.5
 	case Easy:
-		return 40
+		return 1
 	case Medium:
-		return 60
+		return 0.5
 	case Hard:
-		return 80
+		return 0.35
 	case VeryHard:
-		return 100
+		return 0.1
 	}
-	return 3
+	return 1
+}
+
+func (d Difficulty) EPicksNeeded() int {
+	switch d {
+	case VeryEasy:
+		return 10
+	case Easy:
+		return 20
+	case Medium:
+		return 30
+	case Hard:
+		return 40
+	case VeryHard:
+		return 50
+	}
+	return 1
 }
 
 const (
@@ -375,10 +403,49 @@ type AudioCuePlayer interface {
 	PlayCue(cueName string)
 }
 
-type RangedCtH struct {
-	HitChance int
-	Mods      d100.RangedModifiers
-	SkillUsed d100.Skill
-	SkillBase int
-	Defender  ActorForUI
+type RangedAttackInfo struct {
+	CtH             int
+	Mods            d100.CombatModifiers
+	SkillUsed       d100.Skill
+	SkillBaseValue  int
+	DamageBaseValue fxtools.Interval
+	Victim          ActorForUI
+}
+
+func (r RangedAttackInfo) Skill() d100.Skill {
+	return r.SkillUsed
+}
+
+func (r RangedAttackInfo) SkillBase() int {
+	return r.SkillBaseValue
+}
+
+func (r RangedAttackInfo) HitChance() int {
+	return r.CtH
+}
+
+func (r RangedAttackInfo) DamageBase() fxtools.Interval {
+	return r.DamageBaseValue
+}
+
+func (r RangedAttackInfo) Modifiers() d100.CombatModifiers {
+	return r.Mods
+}
+
+func (r RangedAttackInfo) Defender() ActorForUI {
+	return r.Victim
+}
+
+func (r RangedAttackInfo) DamageWithMods() fxtools.Interval {
+	return r.Mods.DamageMods.ApplyForInterval(r.DamageBaseValue)
+}
+
+type AttackInfo interface {
+	Skill() d100.Skill
+	SkillBase() int
+	HitChance() int
+	DamageBase() fxtools.Interval
+	DamageWithMods() fxtools.Interval
+	Modifiers() d100.CombatModifiers
+	Defender() ActorForUI
 }

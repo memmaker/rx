@@ -1,8 +1,12 @@
 %rec: default
 
-Category: ClosedDoor
-Description: a door
-Position: (7,15)
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (59,20)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (57,20)
 
 Category: UnknownContainer
 Name: dead_drop
@@ -10,34 +14,21 @@ Description: CONTRACTOR dead drop
 item: 10mm_jhp
 Position: (76,17)
 
-Category: LockedDoor
-Description: a door
-LockFlag: CHANGEME
-Position: (37,5)
-
-Category: LockedDoor
-Description: a door
-LockFlag: CHANGEME
-Position: (37,15)
+Category: Transition
+Description: a non-functional toilet
+Location: ripperdoc_toilet
+TargetMap: home_underground
+TargetLocation: secret_ladder
+Position: (19,6)
 
 Category: ClosedDoor
 Description: a door
-Position: (75,6)
-
-Category: NamedLocation
-Identifier: taxi_driver
-Position: (57,20)
-
-Category: Transition
-Description: a man-hole
-Location: man_hole_east
-TargetMap: home_underground
-TargetLocation: man_hole_east
-Position: (47,12)
+Position: (11,13)
 
 Category: LockedDoor
 Description: a door
 LockFlag: home_keys
+NumberLock: 0451
 Position: (62,9)
 
 Category: Terminal
@@ -47,31 +38,86 @@ Dialogue: taxi
 Tags: No_Sound
 Position: (57,21)
 
-Category: Transition
-Description: a non-functional toilet
-Location: ripperdoc_toilet
-TargetMap: home_underground
-TargetLocation: secret_ladder
-Position: (19,6)
+Category: ClosedDoor
+Description: a door
+Position: (20,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (37,13)
+
+Category: ClosedDoor
+Description: a door
+Position: (37,15)
+
+Category: ClosedDoor
+Description: a door
+Position: (7,15)
 
 Category: NamedLocation
-Identifier: taxi_stand
-Position: (59,20)
+Identifier: spawn
+Position: (62,14)
 
 Category: LockedDoor
 Description: a door
 LockFlag: CHANGEME
-Position: (20,3)
+Position: (11,19)
+
+Category: ClosedDoor
+Description: a door
+Position: (37,5)
+
+Category: Terminal
+Description: a terminal
+Dialogue: home_terminal
+Position: (48,7)
+
+Category: Transition
+Description: a man-hole
+Location: man_hole_east
+TargetMap: home_underground
+TargetLocation: man_hole_east
+Position: (47,12)
 
 Category: OpenDoor
 Description: a door
 Position: (58,3)
 
+Category: NamedLocation
+Identifier: behind_counter_hospital
+Position: (31,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (58,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (10,5)
+
+Category: Transition
+Description: a man-hole
+Location: man_hole_west
+TargetMap: home_underground
+TargetLocation: man_hole_west
+Position: (9,9)
+
+Category: ClosedDoor
+Description: a door
+Position: (75,6)
+
+Category: NamedLocation
+Identifier: backroom_hospital
+Position: (10,3)
+
+Category: NamedLocation
+Identifier: dark_alley_meeting_spot_one
+Position: (3,13)
+
 Category: UnknownContainer
+Name: ripperdoc_stash
 Description: doctor's stash
-name: ripperdoc_stash
 flag_removal_of: gold
-# When the gold is removed "ContainerRemoved(ripperdoc_stash, gold)" is set
 item: gold(750)
 item: stimpak
 item: stimpak
@@ -81,37 +127,4 @@ Position: (3,2)
 Category: ClosedDoor
 Description: a door
 Position: (73,5)
-
-Category: Terminal
-Description: a terminal
-Dialogue: home_terminal
-Position: (48,7)
-
-Category: LockedDoor
-Description: a door
-LockFlag: CHANGEME
-Position: (11,19)
-
-Category: ClosedDoor
-Description: a door
-Position: (11,13)
-
-Category: ClosedDoor
-Description: a door
-Position: (10,5)
-
-Category: ClosedDoor
-Description: a door
-Position: (58,7)
-
-Category: Transition
-Description: a man-hole
-Location: man_hole_west
-TargetMap: home_underground
-TargetLocation: man_hole_west
-Position: (9,9)
-
-Category: NamedLocation
-Identifier: spawn
-Position: (62,14)
 

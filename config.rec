@@ -22,6 +22,3 @@ SaveGameDir: savegames
 DefaultToAdvancedTargeting: false
 KeyMap: numpad
 DialogueShortcutsAreNumbers: false
-UseLockpickingMiniGame: false
-UseLockpickingDX: false
-

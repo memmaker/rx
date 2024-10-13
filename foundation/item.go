@@ -50,6 +50,7 @@ type Equippable interface {
 	Charges() int
 	AfterEquippedTurn()
 	InternalName() string
+	IsHeadGear() bool
 }
 
 type Timable interface {
@@ -59,27 +60,27 @@ type Timable interface {
 	SetCharges(turns int)
 
 	ShouldActivate(tickCount int) bool
-	IsAlive(tickCount int) bool
+	IsTimerTicking(tickCount int) bool
 	String() string
 	Position() geometry.Point
 }
 type Item interface {
+	Category() ItemCategory
 	Name() string
 	String() string
-	Category() ItemCategory
 	InventoryNameWithColors(lineColorCode string) string
 	InventoryNameWithColorsAndShortcut(invItemColorCode string) string
-	Description() string
+	LongNameWithColors(colorCode string) string
+	FullDescription(colorCode string) string
 	Shortcut() rune
 	DisplayLength() int
 	Position() geometry.Point
 	SetPosition(position geometry.Point)
-	LongNameWithColors(colorCode string) string
 	GetIcon() textiles.TextIcon
 	GetCarryWeight() int
 	GetDerivedStatMod(stat d100.DerivedStat) (int, bool)
 	ShouldActivate(tickCount int) bool
-	IsAlive(tickCount int) bool
+	IsTimerTicking(tickCount int) bool
 
 	// Type Queries
 	IsLightSource() bool
@@ -100,6 +101,7 @@ type Item interface {
 	IsKey() bool
 	IsWatch() bool
 	IsFood() bool
+	IsHeadGear() bool
 
 	// Stacking
 	IsMultipleStacks() bool
@@ -145,7 +147,11 @@ type Item interface {
 	IsStackable() bool
 	SetInventoryIndex(i int)
 	IsRepairable() bool
+	IsHidden() bool
+	SetHidden(isHidden bool)
 	SetStackSize(count int)
+	Price() int
+	RemoveStacks(amount int)
 }
 
 type ItemCategory int
@@ -168,6 +174,8 @@ func (c ItemCategory) String() string {
 		return "Lockpicks"
 	case ItemCategoryConsumables:
 		return "Consumables"
+	case ItemCategoryHeadgear:
+		return "Headgear"
 	case ItemCategoryKeys:
 		return "Keys"
 	case ItemCategoryOther:
@@ -186,16 +194,21 @@ func (c ItemCategory) IsEasySteal() bool {
 
 func (c ItemCategory) IsHardSteal() bool {
 	switch c {
-	case ItemCategoryWeapons, ItemCategoryArmor:
+	case ItemCategoryWeapons, ItemCategoryArmor, ItemCategoryHeadgear:
 		return true
 	}
 	return false
+}
+
+func (c ItemCategory) IsArmor() bool {
+	return c == ItemCategoryArmor || c == ItemCategoryHeadgear
 }
 
 const (
 	ItemCategoryGold ItemCategory = iota
 	ItemCategoryFood
 	ItemCategoryWeapons
+	ItemCategoryHeadgear
 	ItemCategoryArmor
 	ItemCategoryAmmo
 	ItemCategoryReadables
@@ -227,6 +240,8 @@ func ItemCategoryFromString(s string) ItemCategory {
 		return ItemCategoryReadables
 	case "drinks":
 		return ItemCategoryConsumables
+	case "headgear":
+		return ItemCategoryHeadgear
 	case "consumables":
 		return ItemCategoryConsumables
 	case "keys":

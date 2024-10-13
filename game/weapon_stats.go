@@ -135,6 +135,9 @@ const (
 	DamageTypeExplosive
 	DamageTypeRadiation
 	DamageTypePoison
+	// DamageTypeEnergy is a catch-all for all energy damage types on armors
+	DamageTypeEnergy
+	DamageTypeCount
 )
 
 func DamageTypeFromString(value string) DamageType {

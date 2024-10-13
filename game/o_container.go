@@ -113,7 +113,6 @@ func (g *GameState) NewContainer(rec recfile.Record) Object {
 	container := &Container{
 		BaseObject: &BaseObject{
 			category: foundation.ObjectUnknownContainer,
-			isAlive:  true,
 		},
 	}
 	container.SetWalkable(false)
@@ -206,6 +205,8 @@ func (g *GameState) openContainer(container *Container) {
 	containerItems := StackedFilteredAndSortedItems(container.containedItems, func(item foundation.Item) bool { return true })
 	playerItems := g.Player.GetInventory().Items()
 
+	// PROBLEM: For "Take All", we are calling this function multiple times..
+	// Re-Opening the container multiple times, is not a good idea.
 	transferToPlayer := func(itemTaken foundation.Item, amount int) {
 		itemName := itemTaken.Name()
 
@@ -232,7 +233,13 @@ func (g *GameState) openContainer(container *Container) {
 
 		g.openContainer(container)
 	}
-	g.ui.ShowGiveAndTakeContainer(g.Player.Name(), playerItems, container.Name(), containerItems, transferToPlayer, transferToContainer)
+	takeAll := func() {
+		for _, item := range container.containedItems {
+			g.stackTransfer(container, g.Player.GetInventory(), item, item.StackSize())
+		}
+		g.openContainer(container)
+	}
+	g.ui.ShowGiveAndTakeContainer(g.Player.Name(), playerItems, container.Name(), containerItems, transferToPlayer, transferToContainer, takeAll)
 }
 
 type ItemContainer interface {

@@ -3,6 +3,7 @@ package game
 import (
 	"RogueUI/d100"
 	"RogueUI/foundation"
+	"RogueUI/fsmai"
 	"bytes"
 	"encoding/gob"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type ActorStance uint8
@@ -32,11 +34,13 @@ type Actor struct {
 	position     geometry.Point
 
 	inventory *Inventory
+	vendorInv *Inventory
 	equipment *Equipment
+
+	schedule *Schedule
 
 	statusFlags *foundation.ActorFlags
 	activeGoal  ActorGoal
-	aiState     foundation.AIState
 	stance      ActorStance
 
 	intrinsicZapEffects []string
@@ -55,6 +59,8 @@ type Actor struct {
 	enemyActors map[string]bool
 	enemyTeams  map[string]bool
 
+	isAggressive bool
+
 	audioBaseName string
 
 	xp int
@@ -65,8 +71,23 @@ type Actor struct {
 	currentPathIndex        int
 	bodyAugmentations       map[CyberWare]bool
 	temporaryStatChanges    []*TemporaryStatChange
+
+	DijkstraMap map[geometry.Point]int
+	FoV         map[geometry.Point]bool
+	FSM         *ActorFSM
 }
 
+func (a *Actor) TimeNeededForAttack() int {
+	weapon, hasWeapon := a.GetEquipment().GetMainHandWeapon()
+	if !hasWeapon {
+		return a.TimeNeededForActions()
+	}
+	return weapon.GetCurrentAttackMode().TUCost
+}
+
+func (a *Actor) TimeEnergy() int {
+	return a.timeEnergy
+}
 func (a *Actor) AddCyberWare(ware CyberWare) {
 	a.bodyAugmentations[ware] = false
 }
@@ -91,8 +112,8 @@ func (a *Actor) SetCyberWareActive(ware CyberWare, active bool) {
 	a.bodyAugmentations[ware] = active
 }
 
-func (a *Actor) GetState() foundation.AIState {
-	return a.aiState
+func (a *Actor) GetState() fsmai.StateName {
+	return a.FSM.State()
 }
 
 func (a *Actor) GetBodyPartIndex(aim d100.BodyPart) int {
@@ -171,7 +192,7 @@ func (a *Actor) GobEncode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = encoder.Encode(a.aiState)
+	err = encoder.Encode(a.FSM)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +288,7 @@ func (a *Actor) GobDecode(data []byte) error {
 	if err != nil {
 		return err
 	}
-	err = decoder.Decode(&a.aiState)
+	err = decoder.Decode(&a.FSM)
 	if err != nil {
 		return err
 	}
@@ -331,14 +352,18 @@ func NewActor() *Actor {
 		bodyAugmentations: make(map[CyberWare]bool),
 		body:              d100.HumanBodyParts,
 		bodyDamage:        make(map[d100.BodyPart]int),
-		aiState:           foundation.Neutral,
 		statusFlags:       foundation.NewActorFlags(),
 		enemyActors:       make(map[string]bool),
 		enemyTeams:        make(map[string]bool),
 		activeGoal:        NoGoal,
 		audioBaseName:     "human_male",
+		FoV:               make(map[geometry.Point]bool),
 	}
 	a.inventory = NewInventory(23, a.Position)
+
+	// Hookup automatic un-equip on removal
+	a.GetInventory().SetOnBeforeRemove(a.GetEquipment().UnEquip)
+
 	return a
 }
 
@@ -523,6 +548,7 @@ func (a *Actor) HasFlag(flag foundation.ActorFlag) bool {
 }
 
 func (a *Actor) TakeDamage(dmg SourcedDamage) (didCripple bool) {
+	wasHeavilyInjured := a.IsHeavilyInjured()
 	if a.HasFlag(foundation.FlagZombie) && dmg.DamageType != DamageTypeExplosive { // explosive damage works as usual
 		// headshots with normal damage kill zombies instantly if the damage is high enough
 		if dmg.DamageType == DamageTypeNormal && dmg.DamageAmount > 10 {
@@ -536,6 +562,10 @@ func (a *Actor) TakeDamage(dmg SourcedDamage) (didCripple bool) {
 		return
 	}
 	a.charSheet.TakeRawDamage(dmg.DamageAmount)
+
+	if !wasHeavilyInjured && a.IsHeavilyInjured() && dmg.Attacker != nil && a.FSM != nil {
+		a.FSM.SendEvent(NewHeavilyInjuredEvent(dmg.Attacker))
+	}
 
 	return a.addDamageToBodyPart(dmg)
 }
@@ -619,7 +649,7 @@ func (a *Actor) GetDetailInfo() string {
 
 	var result []string
 	result = append(result, fmt.Sprintf("Name: %s", a.Name()))
-
+	result = a.appendStateInfo(result)
 	// melee attack
 	statRows := []fxtools.TableRow{
 		fxtools.TableRow{Columns: []string{"Str:", fmt.Sprintf("%d", a.charSheet.GetStat(d100.Strength))}},
@@ -681,15 +711,19 @@ func (a *Actor) SetSizeModifier(modifier int) {
 	a.sizeModifier = modifier
 }
 func (a *Actor) HasGold(price int) bool {
-	return a.statusFlags.Get(foundation.FlagGold) >= price
+	return a.GetInventory().HasItemWithNameAndCount("gold", price)
 }
 
-func (a *Actor) RemoveGold(price int) {
-	a.statusFlags.Decrease(foundation.FlagGold, price)
+func (a *Actor) RemoveGold(price int) []foundation.Item {
+	return a.GetInventory().RemoveItemsByNameAndCount("gold", price)
 }
 
 func (a *Actor) GetGold() int {
-	return a.statusFlags.Get(foundation.FlagGold)
+	gold := a.GetInventory().GetItemByName("gold")
+	if gold == nil {
+		return 0
+	}
+	return gold.StackSize()
 }
 
 func (a *Actor) IsWounded() bool {
@@ -712,14 +746,6 @@ func (a *Actor) Satiate() {
 func (a *Actor) SetSleeping() {
 	flags := a.GetFlags()
 	flags.Set(foundation.FlagSleep)
-	flags.Unset(foundation.FlagAwareOfPlayer)
-	flags.Unset(foundation.FlagScared)
-}
-
-func (a *Actor) SetAware() {
-	flags := a.GetFlags()
-	flags.Unset(foundation.FlagSleep)
-	flags.Set(foundation.FlagAwareOfPlayer)
 }
 
 func (a *Actor) IsBlind() bool {
@@ -735,17 +761,24 @@ func (a *Actor) HasEnergyForActions() bool {
 }
 
 func (a *Actor) maximalTimeNeededForActions() int {
-	return max(a.timeNeededForActions(), a.timeNeededForMovement())
+	return max(a.TimeNeededForActions(), a.TimeNeededForMovement())
 }
 
+func (a *Actor) minimalTimeNeededForAction() int {
+	return min(a.TimeNeededForActions(), a.TimeNeededForMovement())
+}
 func (a *Actor) timeNeededForMeleeAttack() int {
 	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandWeapon(); hasWeapon {
 		return meleeWeapon.GetCurrentAttackMode().TUCost
 	}
-	return a.timeNeededForActions()
+	return a.TimeNeededForActions()
 }
 
-func (a *Actor) timeNeededForMovement() int {
+func (a *Actor) TimeNeededForMovement() int {
+	return 100 / a.MovementSpeed()
+}
+
+func (a *Actor) MovementSpeed() int {
 	speed := a.GetBasicSpeed()
 
 	if a.HasFlag(foundation.FlagRunning) {
@@ -759,11 +792,10 @@ func (a *Actor) timeNeededForMovement() int {
 		speed = max(1, speed/2)
 	}
 	speed = max(1, speed-a.GetEncumbrance())
-	timeNeeded := 100 / speed
-	return timeNeeded
+	return speed
 }
 
-func (a *Actor) timeNeededForActions() int {
+func (a *Actor) TimeNeededForActions() int {
 	speed := a.GetBasicSpeed()
 	if a.IsCrippled(d100.Arms) {
 		speed = max(1, speed-2)
@@ -775,14 +807,15 @@ func (a *Actor) timeNeededForActions() int {
 	timeNeeded := 100 / speed
 	return timeNeeded
 }
+
 func (a *Actor) SpendTimeEnergy(amount int) {
 	a.timeEnergy -= amount
 }
 
-func (a *Actor) AfterTurn() {
+func (a *Actor) AfterTurn() []string {
 	a.GetEquipment().AfterTurn()
 	a.decrementStatusEffectCounters()
-	a.decrementTemporaryStatChanges()
+	wornOff := a.decrementTemporaryStatChanges()
 	if a.HasFlag(foundation.FlagRunning) {
 		sheet := a.GetCharSheet()
 		if sheet.GetActionPoints() > 0 {
@@ -791,6 +824,7 @@ func (a *Actor) AfterTurn() {
 			a.UnsetFlag(foundation.FlagRunning)
 		}
 	}
+	return wornOff
 }
 
 func (a *Actor) decrementStatusEffectCounters() {
@@ -803,14 +837,17 @@ func (a *Actor) decrementStatusEffectCounters() {
 	flags.Decrement(foundation.FlagHallucinating)
 }
 
-func (a *Actor) decrementTemporaryStatChanges() {
+func (a *Actor) decrementTemporaryStatChanges() []string {
+	var wornOffEffects []string
 	for i := len(a.temporaryStatChanges) - 1; i >= 0; i-- {
 		statChange := a.temporaryStatChanges[i]
 		statChange.TurnsLeft--
 		if statChange.TurnsLeft <= 0 {
+			wornOffEffects = append(wornOffEffects, statChange.Name)
 			a.temporaryStatChanges = append(a.temporaryStatChanges[:i], a.temporaryStatChanges[i+1:]...)
 		}
 	}
+	return wornOffEffects
 }
 func (a *Actor) GetBasicSpeed() int {
 	return max(1, a.charSheet.GetDerivedStat(d100.Speed))
@@ -829,11 +866,7 @@ func (a *Actor) HasKey(identifier string) bool {
 }
 
 func (a *Actor) IsInCombat() bool {
-	return a.HasActiveGoal() && (a.aiState == foundation.AttackEverything || a.aiState == foundation.AttackEnemies)
-}
-
-func (a *Actor) SetAIState(relation foundation.AIState) {
-	a.aiState = relation
+	return a.HasActiveGoal() && a.activeGoal.IsCombatGoal()
 }
 
 func (a *Actor) SetDisplayName(name string) {
@@ -842,11 +875,6 @@ func (a *Actor) SetDisplayName(name string) {
 
 func (a *Actor) GetDialogueFile() string {
 	return a.dialogueFile
-}
-
-func (a *Actor) SetHostile() {
-	a.aiState = foundation.AttackEverything
-	a.tryEquipWeapon()
 }
 
 func (a *Actor) tryEquipWeapon() {
@@ -859,8 +887,16 @@ func (a *Actor) tryEquipWeapon() {
 }
 
 func (a *Actor) tryEquipRangedWeapon() {
-	if !a.GetEquipment().HasWeaponEquipped() {
+	if !a.GetEquipment().HasRangedWeaponEquipped() {
 		weapon := a.GetInventory().GetBestRangedWeapon()
+		if weapon != nil {
+			a.GetEquipment().Equip(weapon)
+		}
+	}
+}
+func (a *Actor) tryEquipMeleeWeapon() {
+	if !a.GetEquipment().HasMeleeWeaponEquipped() {
+		weapon := a.GetInventory().GetBestMeleeWeapon()
 		if weapon != nil {
 			a.GetEquipment().Equip(weapon)
 		}
@@ -956,10 +992,10 @@ func (a *Actor) AddToEnemyTeams(name string) {
 }
 
 func (a *Actor) IsHostileTowards(attacker *Actor) bool {
-	if a.aiState == foundation.Neutral || a.aiState == foundation.Panic || !a.HasActiveGoal() {
-		return false
+	if a.activeGoal.IsHostilityTowards(attacker) {
+		return true
 	}
-	if a.aiState == foundation.AttackEverything {
+	if a.IsAggressive() && attacker.teamName != a.teamName {
 		return true
 	}
 	if _, exists := a.enemyActors[attacker.GetInternalName()]; exists {
@@ -972,7 +1008,7 @@ func (a *Actor) IsHostileTowards(attacker *Actor) bool {
 }
 
 func (a *Actor) IsPanicking() bool {
-	return a.aiState == foundation.Panic
+	return a.FSM.State() == fsmai.StatePanic
 }
 
 func (a *Actor) LookInfo() string {
@@ -985,10 +1021,51 @@ func (a *Actor) LookInfo() string {
 	if a.IsKnockedDown() {
 		return fmt.Sprintf("%s (knocked down)", a.Name())
 	}
+
+	displayName := a.Name()
 	if a.IsWounded() {
-		return fmt.Sprintf("%s (%s)", a.Name(), a.injuredString())
+		displayName = fmt.Sprintf("%s (%s)", a.Name(), a.injuredString())
 	}
-	return a.Name()
+
+	return a.ActionDescription(displayName) + "\n" + a.OutfitDescription()
+}
+
+func (a *Actor) ActionDescription(displayName string) string {
+	if a.HasActiveGoal() {
+		return a.activeGoal.Description(displayName)
+	}
+	if a.schedule != nil && a.schedule.LastSlotID.Index != -1 {
+		return a.schedule.CurrentTimeSlot().Description(displayName)
+	}
+	return fmt.Sprintf("%s is standing there", displayName)
+}
+
+func (a *Actor) OutfitDescription() string {
+	armor := a.GetEquipment().GetArmor()
+	helmet := a.GetEquipment().GetHelmet()
+	clothes := ""
+	if armor == nil && helmet == nil {
+		clothes = fmt.Sprintf("%s is not wearing anything", a.Name())
+	}
+	if armor != nil && helmet != nil {
+		clothes = fmt.Sprintf("%s is wearing %s and %s", a.Name(), armor.Name(), helmet.Name())
+	}
+	if armor != nil {
+		clothes = fmt.Sprintf("%s is wearing %s", a.Name(), armor.Name())
+	}
+	if helmet != nil {
+		clothes = fmt.Sprintf("%s is wearing %s", a.Name(), helmet.Name())
+	}
+
+	hands := ""
+	item, hasItem := a.GetEquipment().GetMainHandItem()
+	if hasItem {
+		hands = fmt.Sprintf("%s is holding %s", a.Name(), item.Name())
+	} else {
+		hands = fmt.Sprintf("%s is not holding anything", a.Name())
+	}
+
+	return fmt.Sprintf("%s\n%s", clothes, hands)
 }
 
 func (a *Actor) HasDialogue() bool {
@@ -1050,19 +1127,19 @@ func (a *Actor) ToRecord() recfile.Record {
 	return actorRecord
 }
 
-func (a *Actor) ActOnGoal(g *GameState) int {
+func (a *Actor) ActOnGoal(g *GameState) (fsmai.TransitionEvent, int) {
 	if a.activeGoal.IsEmpty() {
-		return 0
+		return fsmai.NoEvent, 0
 	}
 	if a.activeGoal.Achieved(g, a) {
 		a.activeGoal = NoGoal
-		return 0
+		return fsmai.NoEvent, 0
 	}
-	tuSpent := a.activeGoal.Action(g, a)
+	event, tuSpent := a.activeGoal.Action(g, a)
 	if a.activeGoal.Achieved(g, a) {
 		a.activeGoal = NoGoal
 	}
-	return tuSpent
+	return event, tuSpent
 }
 
 func (a *Actor) HasActiveGoal() bool {
@@ -1073,7 +1150,7 @@ func (a *Actor) GetMeleeTUCost() int {
 	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandWeapon(); hasWeapon {
 		return meleeWeapon.GetCurrentAttackMode().TUCost
 	}
-	return a.timeNeededForActions()
+	return a.TimeNeededForActions()
 }
 
 func (a *Actor) SetGoal(goal ActorGoal) {
@@ -1109,30 +1186,55 @@ func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point 
 	if a.Position() == pos {
 		return a.Position()
 	}
+
 	if !a.hasPathTo(pos) {
 		a.calcAndSetPath(g, pos)
 	}
 
-	if !a.hasPathTo(pos) {
+	if a.currentPathIndex < 0 || a.currentPathIndex >= len(a.currentPath) {
 		return a.Position()
 	}
 
-	if a.currentPathIndex >= len(a.currentPath) {
-		a.currentPath = nil
+	nextStep := a.currentPath[a.currentPathIndex]
+	if !g.currentMap().IsWalkableFor(nextStep, a) {
+		a.calcAndSetPath(g, pos)
+		if a.currentPathIndex == -1 {
+			return a.Position()
+		}
+		nextStep = a.currentPath[a.currentPathIndex]
+	}
+	a.currentPathBlockedCount = 0
+	a.currentPathIndex++
+	return nextStep
+
+}
+
+func (a *Actor) getMoveTowardsActor(g *GameState, other *Actor) geometry.Point {
+	moveDist := g.currentMap().MoveDistance(a.Position(), other.Position())
+	if moveDist <= 1 {
 		return a.Position()
 	}
-	nextStep := a.currentPath[a.currentPathIndex]
+
+	nextStep := g.currentMap().GetMoveOnOtherDijkstraMap(a.Position(), true, other.DijkstraMap)
 
 	if !g.currentMap().IsWalkableFor(nextStep, a) {
 		a.currentPathBlockedCount++
 		if a.currentPathBlockedCount <= 3 {
 			return a.Position()
-		} else {
-			a.calcAndSetPath(g, pos)
-			if !a.hasPathTo(pos) {
-				return a.Position()
-			}
-			nextStep = a.currentPath[a.currentPathIndex]
+		}
+	}
+	a.currentPathBlockedCount = 0
+	a.currentPathIndex++
+	return nextStep
+}
+
+func (a *Actor) getMoveAwayFromActor(g *GameState, other *Actor) geometry.Point {
+	nextStep := g.currentMap().GetMoveOnOtherDijkstraMap(a.Position(), false, other.DijkstraMap)
+
+	if !g.currentMap().IsWalkableFor(nextStep, a) {
+		a.currentPathBlockedCount++
+		if a.currentPathBlockedCount <= 3 {
+			return a.Position()
 		}
 	}
 	a.currentPathBlockedCount = 0
@@ -1160,6 +1262,9 @@ func (a *Actor) hasPathTo(pos geometry.Point) bool {
 	if a.currentPath == nil || len(a.currentPath) == 0 {
 		return false
 	}
+	if a.currentPathIndex < 0 || a.currentPathIndex >= len(a.currentPath) {
+		return false
+	}
 	targetOfPath := a.currentPath[len(a.currentPath)-1]
 	isNear := geometry.DistanceChebyshev(targetOfPath, pos) <= 1
 	return isNear
@@ -1172,16 +1277,6 @@ func (a *Actor) GetMaxThrowRange() int {
 
 func (a *Actor) GetXP() int {
 	return a.xp
-}
-
-func (a *Actor) SetNeutral() {
-	a.aiState = foundation.Neutral
-}
-
-func (a *Actor) SetHostileTowards(sourceOfTrouble *Actor) {
-	a.aiState = foundation.AttackEnemies
-
-	a.AddToEnemyActors(sourceOfTrouble.GetInternalName())
 }
 
 func (a *Actor) TryEquipRangedWeaponFirst() {
@@ -1277,6 +1372,101 @@ func (a *Actor) AddTemporaryStatChange(change *TemporaryStatChange) {
 	a.temporaryStatChanges = append(a.temporaryStatChanges, change)
 }
 
+func (a *Actor) GetVendorInventory() *Inventory {
+	return a.vendorInv
+}
+
+func (a *Actor) GetMeleeSkillUsed() d100.Skill {
+	if meleeWeapon, hasWeapon := a.GetEquipment().GetMainHandWeapon(); hasWeapon {
+		return meleeWeapon.GetSkillUsed()
+	}
+	return d100.SkillForUnarmed
+}
+
+func (a *Actor) DetectionRange() int {
+	return a.GetCharSheet().GetStat(d100.Perception) + 2
+}
+
+func (a *Actor) CanSee(pos geometry.Point) bool {
+	if geometry.DistanceChebyshev(a.Position(), pos) <= 1 {
+		return true
+	}
+	return a.inFov(pos)
+}
+
+func (a *Actor) ResetFov() {
+	clear(a.FoV)
+}
+func (a *Actor) inFov(pos geometry.Point) bool {
+	value, exists := a.FoV[pos]
+	return exists && value // new
+
+}
+
+func (a *Actor) Visibles() []geometry.Point {
+	var visibles []geometry.Point
+	for pos, value := range a.FoV {
+		if value {
+			visibles = append(visibles, pos)
+		}
+	}
+	return visibles
+
+}
+
+func (a *Actor) SetVisible(point geometry.Point) {
+	a.FoV[point] = true
+}
+
+func (a *Actor) GetAllNeighbors() []geometry.Point {
+	var neighbors []geometry.Point
+	for pos, dist := range a.DijkstraMap {
+		if dist == 10 || dist == 14 {
+			neighbors = append(neighbors, pos)
+		}
+	}
+	return neighbors
+}
+
+func (a *Actor) MoveToNextTimeSlot(time time.Time) (TimeSlot, bool) {
+	if a.schedule == nil {
+		return TimeSlot{}, false
+	}
+	return a.schedule.MoveToNextTimeSlot(time)
+}
+
+func (a *Actor) appendStateInfo(result []string) []string {
+	fsmState := a.FSM.currentBehavior.AssociatedState().ToString()
+	goal := a.activeGoal.Description(a.name)
+	result = append(result, fmt.Sprintf("State: %s", fsmState))
+	result = append(result, fmt.Sprintf("Goal: %s", goal))
+	return result
+}
+
+func (a *Actor) IsHeavilyInjured() bool {
+	return a.GetHitPoints() < a.GetHitPointsMax()/3
+}
+
+func (a *Actor) IsAggressive() bool {
+	return a.isAggressive
+}
+
+func (a *Actor) SetNeutral() {
+	a.isAggressive = false
+}
+
+func (a *Actor) SetAggressive() {
+	a.isAggressive = true
+}
+
+func (a *Actor) HasPerk(perk d100.Perk) bool {
+	return a.charSheet.HasPerk(perk)
+}
+
+func (a *Actor) GetPerkLevel(perk d100.Perk) int {
+	return a.charSheet.GetPerkLevel(perk)
+}
+
 type StatChange struct {
 	StatChanges        map[d100.Stat]int
 	SkillChanges       map[d100.Skill]int
@@ -1290,55 +1480,100 @@ type TemporaryStatChange struct {
 }
 
 type ActorGoal struct {
-	Action   func(g *GameState, a *Actor) int
-	Achieved func(g *GameState, a *Actor) bool
+	Action             func(g *GameState, a *Actor) (fsmai.TransitionEvent, int)
+	Achieved           func(g *GameState, a *Actor) bool
+	ActionFormatString string
+	IsCombat           bool
+	IsCombatTarget     func(attacker *Actor) bool
 }
 
 func (g ActorGoal) IsEmpty() bool {
 	return g.Action == nil && g.Achieved == nil
 }
 
+func (g ActorGoal) Description(actorName string) string {
+	if g.IsEmpty() {
+		return "no goal"
+	}
+	return fmt.Sprintf(g.ActionFormatString, actorName)
+}
+
+func (g ActorGoal) IsCombatGoal() bool {
+	return g.IsCombat
+}
+
+func (g ActorGoal) IsHostilityTowards(attacker *Actor) bool {
+	if !g.IsCombatGoal() {
+		return false
+	}
+	return g.IsCombatTarget(attacker)
+}
+
 func GoalMoveToSpawn() ActorGoal {
 	return ActorGoal{
-		Action: func(g *GameState, a *Actor) int {
+		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
 			targetPos := a.SpawnPosition
 			return moveTowards(g, a, targetPos)
 		},
 		Achieved: func(g *GameState, a *Actor) bool {
 			return a.Position() == a.SpawnPosition
 		},
+		ActionFormatString: "%s is moving",
 	}
 }
 
 func GoalMoveIntoShootingRange(target *Actor) ActorGoal {
 	return ActorGoal{
-		Action: func(g *GameState, a *Actor) int {
-			return moveIntoShootingRange(g, a, target)
+		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
+			return moveTowardsActor(g, a, target)
 		},
 		Achieved: func(g *GameState, a *Actor) bool {
 			return g.IsInShootingRange(a, target)
 		},
+		ActionFormatString: "%s is moving aggressively",
+		IsCombat:           true,
+		IsCombatTarget:     IsActor(target),
+	}
+}
+
+func IsActor(target *Actor) func(actor *Actor) bool {
+	return func(actor *Actor) bool { return actor == target }
+}
+
+func GoalFleeFromActor(actor *Actor, threat *Actor) ActorGoal {
+	return ActorGoal{
+		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
+			return moveAwayFromActor(g, a, threat)
+		},
+		Achieved: func(g *GameState, a *Actor) bool {
+			return !threat.IsAlive() || !actor.IsAlive()
+		},
+		ActionFormatString: "%s is fleeing",
 	}
 }
 
 func GoalKillActor(attacker *Actor, victim *Actor) ActorGoal {
 	return ActorGoal{
-		Action: func(g *GameState, a *Actor) int {
+		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
 			return tryKill(g, a, victim)
 		},
 		Achieved: func(g *GameState, a *Actor) bool {
 			return !victim.IsAlive() || !attacker.IsAlive()
 		},
+		ActionFormatString: "%s is attacking",
+		IsCombat:           true,
+		IsCombatTarget:     IsActor(victim),
 	}
 }
 
 func GoalMoveToLocation(loc geometry.Point) ActorGoal {
 	return ActorGoal{
-		Action: func(g *GameState, a *Actor) int {
+		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
 			return moveTowards(g, a, loc)
 		},
 		Achieved: func(g *GameState, a *Actor) bool {
 			return a.Position() == loc
 		},
+		ActionFormatString: "%s is moving",
 	}
 }

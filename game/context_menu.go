@@ -7,13 +7,32 @@ import (
 	"fmt"
 )
 
+func (g *GameState) animatedActionFromMenu(action func()) func() {
+	return func() {
+		g.ui.ForceUIRedraw()
+		action()
+	}
+}
+
 func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, actor *Actor) []foundation.MenuItem {
 	distance := g.currentMap().MoveDistance(g.Player.Position(), actor.Position())
 
 	if actor.HasDialogue() && !actor.IsSleeping() && distance <= 4 {
 		buffer = append(buffer, foundation.MenuItem{
-			Name:       "Talk To",
+			Name:       "[white]Talk To[-]",
 			Action:     func() { g.StartDialogue(actor.GetDialogueFile(), actor, false) },
+			CloseMenus: true,
+		})
+	}
+
+	if g.Player.HasPerk(d100.PerkDisarm) && actor.GetEquipment().HasWeaponEquipped() && distance == 1 {
+		chances := formatContestSkSk(g.Player, actor, d100.SkillForUnarmed, d100.SkillForUnarmed)
+		label := fmt.Sprintf("Disarm (%s)", chances)
+		buffer = append(buffer, foundation.MenuItem{
+			Name: label,
+			Action: g.animatedActionFromMenu(func() {
+				g.actorDisarm(g.Player, actor)
+			}),
 			CloseMenus: true,
 		})
 	}
@@ -21,37 +40,41 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 	if actor.IsHostileTowards(g.Player) || distance > 1 {
 		return buffer
 	}
-
-	buffer = append(buffer, foundation.MenuItem{
-		Name: "Pickpocket",
-		Action: func() {
-			g.StartPickpocket(actor)
-		},
-		CloseMenus: true,
-	})
+	if g.Player.HasPerk(d100.PerkPickpocket) {
+		buffer = append(buffer, foundation.MenuItem{
+			Name: "Pickpocket",
+			Action: g.animatedActionFromMenu(func() {
+				g.StartPickpocket(actor)
+			}),
+			CloseMenus: true,
+		})
+	}
 
 	if !actor.IsSleeping() {
 		buffer = append(buffer, foundation.MenuItem{
 			Name: "Melee Attack",
-			Action: func() {
+			Action: g.animatedActionFromMenu(func() {
 				g.playerMeleeAttack(actor)
-			},
+			}),
 			CloseMenus: true,
 		})
-		nonLethalChanceString := formatContestStSt(g.Player, actor, d100.Strength, d100.Strength)
-		buffer = append(buffer, foundation.MenuItem{
-			Name: fmt.Sprintf("Non-Lethal Takedown (%s)", nonLethalChanceString),
-			Action: func() {
-				g.playerNonLethalTakedown(actor)
-			},
-			CloseMenus: true,
-		})
+		if g.Player.HasPerk(d100.PerkNonLethalTakeDown) {
+			nonLethalChanceString := formatContestStSt(g.Player, actor, d100.Strength, d100.Strength)
+			buffer = append(buffer, foundation.MenuItem{
+				Name: fmt.Sprintf("Non-Lethal Takedown (%s)", nonLethalChanceString),
+				Action: g.animatedActionFromMenu(func() {
+					g.playerNonLethalTakedown(actor)
+				}),
+				CloseMenus: true,
+			})
+		}
 	} else {
 		buffer = append(buffer, foundation.MenuItem{
 			Name: "Wake Up",
 			Action: func() {
 				g.msg(foundation.Msg("You shake the sleeping figure awake."))
 				actor.WakeUp()
+				g.endPlayerTurn(g.Player.TimeNeededForActions())
 			},
 			CloseMenus: true,
 		})
@@ -66,14 +89,14 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 
 		buffer = append(buffer, foundation.MenuItem{
 			Name: label,
-			Action: func() {
+			Action: g.animatedActionFromMenu(func() {
 				g.playerDrown(actor)
-			},
+			}),
 			CloseMenus: true,
 		})
 	}
 
-	if g.Player.GetEquipment().HasMeleeWeaponEquipped() {
+	if g.Player.HasPerk(d100.PerkBackstab) && g.Player.GetEquipment().HasMeleeWeaponEquipped() {
 		label := "Backstab"
 		if !actor.IsSleeping() {
 			stabChanceString := formatContestSkSt(g.Player, actor, d100.SkillForBackstabbing, d100.Perception)
@@ -81,9 +104,9 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 		}
 		buffer = append(buffer, foundation.MenuItem{
 			Name: label,
-			Action: func() {
+			Action: g.animatedActionFromMenu(func() {
 				g.playerBackstab(actor)
-			},
+			}),
 			CloseMenus: true,
 		})
 	}
@@ -102,76 +125,26 @@ func formatContestSkSt(one *Actor, two *Actor, skillOne d100.Skill, statTwo d100
 	return fmt.Sprintf("%d%% vs %d%%", int(percentOne), int(percentTwo))
 }
 
-// Currently not in use
-func (g *GameState) openContextMenuForItem(uiItem foundation.Item) {
+func formatContestSkSk(one *Actor, two *Actor, skillOne d100.Skill, skillTwo d100.Skill) string {
+	percentOne := d100.Percentage(two.GetCharSheet().GetSkill(skillOne))
+	percentTwo := d100.Percentage(one.GetCharSheet().GetSkill(skillTwo))
+	return fmt.Sprintf("%d%% vs %d%%", int(percentOne), int(percentTwo))
+}
+
+func (g *GameState) OpenContextMenuForItem(uiItem foundation.Item, done func()) {
 	item := uiItem
-
 	contextActions := []foundation.MenuItem{
-		{Name: "Inspect", Action: g.inspectItem(item)},
-		{
-			Name: "Drop",
-			Action: func() {
-				g.actorDropItem(g.Player, item)
-			},
-			CloseMenus: true,
-		},
-	}
-	if item.IsEquippable() {
-		equipment := g.Player.GetEquipment()
-
-		var equipAction foundation.MenuItem
-		if equipment.IsEquipped(item) {
-			equipAction = foundation.MenuItem{
-				Name: "Unequip",
-				Action: func() {
-					g.actorUnequipItem(g.Player, item)
-				},
-				CloseMenus: false,
-			}
-		} else {
-			equipAction = foundation.MenuItem{
-				Name: "Equip",
-				Action: func() {
-					g.actorEquipItem(g.Player, item)
-				},
-				CloseMenus: false,
-			}
-		}
-
-		contextActions = append(contextActions, equipAction)
-	}
-	if item.IsUsable() {
-		useAction := foundation.MenuItem{
-			Name: "Use",
-			Action: func() {
-				g.actorUseItem(g.Player, item)
-			},
-			CloseMenus: true,
-		}
-		contextActions = append(contextActions, useAction)
+		{Name: "Inspect", Action: func() {
+			g.inspectItem(item)
+		}},
 	}
 
-	if item.IsZappable() {
-		zapAction := foundation.MenuItem{
-			Name: "Zap",
-			Action: func() {
-				g.startZapItem(item)
-			},
-			CloseMenus: true,
-		}
-		contextActions = append(contextActions, zapAction)
+	if len(contextActions) == 0 {
+		return
 	}
-
-	if item.IsThrowable() {
-		throwAction := foundation.MenuItem{
-			Name: "Throw",
-			Action: func() {
-				g.startThrowItem(item)
-			},
-			CloseMenus: true,
-		}
-		contextActions = append(contextActions, throwAction)
+	if len(contextActions) == 1 {
+		contextActions[0].Action()
+		return
 	}
-
 	g.ui.OpenMenu(contextActions)
 }

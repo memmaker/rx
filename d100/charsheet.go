@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/Knetic/govaluate"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
 	"math"
 	"slices"
@@ -61,6 +62,10 @@ func NewCharSheet() *CharSheet {
 	return c
 }
 
+type PerkLevel struct {
+	Perk  Perk
+	Level int
+}
 type CharSheet struct {
 	level int
 
@@ -69,6 +74,7 @@ type CharSheet struct {
 	availablePerks       int
 
 	stats map[Stat]int
+	perks []PerkLevel
 
 	derivedStatAdjustments map[DerivedStat]int
 	skillAdjustments       map[Skill]int
@@ -177,6 +183,10 @@ type DefaultModifier struct {
 	Suffix    string
 }
 
+func (d DefaultModifier) ApplyForInterval(value fxtools.Interval) fxtools.Interval {
+	return fxtools.Interval{Min: d.Apply(value.Min), Max: d.Apply(value.Max)}
+}
+
 func (d DefaultModifier) Description() string {
 	var line string
 	if d.IsPercent {
@@ -200,11 +210,41 @@ func (d DefaultModifier) IsZero() bool {
 	return d.Modifier == 0
 }
 
+var NoModifierList []Modifier
+
+var NoCombatModifier = CombatModifiers{}
+
+type CombatModifiers struct {
+	ChanceToHitMods Modifiers
+	DamageMods      Modifiers
+}
+
+type Modifiers []Modifier
+
+func (r Modifiers) appendIfNonZero(mod Modifier) Modifiers {
+	if mod.IsZero() {
+		return r
+	}
+	return append(r, mod)
+}
+
+func (r Modifiers) String() string {
+	return ModsToString(r)
+}
+
+func (r Modifiers) ApplyForInterval(value fxtools.Interval) fxtools.Interval {
+	for _, mod := range r {
+		value = mod.ApplyForInterval(value)
+	}
+	return value
+}
+
 type Modifier interface {
 	Description() string
 	Apply(int) int
 	SortOrder() int
 	IsZero() bool
+	ApplyForInterval(value fxtools.Interval) fxtools.Interval
 }
 
 func (cs *CharSheet) GetLevel() int {
@@ -718,9 +758,78 @@ func (cs *CharSheet) AddSkillPointsTo(skill Skill, increase int) {
 	cs.skillAdjustments[skill] = cs.skillAdjustments[skill] + increase
 }
 
+func (cs *CharSheet) GetPerks() []PerkLevel {
+	return cs.perks
+}
+
+func (cs *CharSheet) AddPerk(perkID Perk) {
+	if cs.availablePerks <= 0 {
+		return
+	}
+	cs.availablePerks--
+
+	for i, perk := range cs.perks {
+		if perk.Perk == perkID {
+			cs.perks[i] = PerkLevel{Perk: perkID, Level: perk.Level + 1}
+			return
+		}
+	}
+	cs.perks = append(cs.perks, PerkLevel{Perk: perkID, Level: 1})
+}
+
+func (cs *CharSheet) HasPerk(perkID Perk) bool {
+	for _, perk := range cs.perks {
+		if perk.Perk == perkID {
+			return true
+		}
+	}
+	return false
+}
+
+func (cs *CharSheet) AddPerkPoints(count int) {
+	cs.availablePerks += count
+}
+
+func (cs *CharSheet) CanChooseNewPerk() bool {
+	return cs.availablePerks > 0
+}
+
+func (cs *CharSheet) GetPerkLevel(perkID Perk) int {
+	for _, perk := range cs.perks {
+		if perk.Perk == perkID {
+			return perk.Level
+		}
+	}
+	return 0
+}
+
+func (cs *CharSheet) MeetsRequirements(requirements PerkRequirements) bool {
+	for stat, neededValue := range requirements.Stats {
+		if cs.GetStat(stat) < neededValue {
+			return false
+		}
+	}
+	for skill, neededValue := range requirements.Skills {
+		if cs.GetSkill(skill) < neededValue {
+			return false
+		}
+	}
+	for derivedStat, neededValue := range requirements.DerivedStats {
+		if cs.GetDerivedStat(derivedStat) < neededValue {
+			return false
+		}
+	}
+	for perk, neededLevel := range requirements.Perks {
+		if cs.GetPerkLevel(perk) < neededLevel {
+			return false
+		}
+	}
+	return true
+}
+
 func LoadLevelUpTable(table []int, afterTable string) {
 	levelTable = table
-	levelsAfterTable, err := govaluate.NewEvaluableExpressionWithFunctions(afterTable, standardFuncs)
+	levelsAfterTable, err := govaluate.NewEvaluableExpressionWithFunctions(afterTable, standardFunctions())
 	if err != nil {
 		panic(err)
 	}
@@ -785,13 +894,13 @@ func DifficultyFromString(diff string) Difficulty {
 }
 
 var skillDiffs = map[Difficulty]*govaluate.EvaluableExpression{
-	Trivial:    panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+90", standardFuncs)),
-	VeryEasy:   panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+60", standardFuncs)),
-	Easy:       panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+30", standardFuncs)),
-	Medium:     panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill", standardFuncs)),
-	Hard:       panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-30", standardFuncs)),
-	VeryHard:   panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-60", standardFuncs)),
-	SuperHuman: panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-90", standardFuncs)),
+	Trivial:    panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+90", standardFunctions())),
+	VeryEasy:   panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+60", standardFunctions())),
+	Easy:       panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill+30", standardFunctions())),
+	Medium:     panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill", standardFunctions())),
+	Hard:       panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-30", standardFunctions())),
+	VeryHard:   panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-60", standardFunctions())),
+	SuperHuman: panicHandle(govaluate.NewEvaluableExpressionWithFunctions("skill-90", standardFunctions())),
 }
 
 func applyDifficulty(skill int, diff Difficulty) int {

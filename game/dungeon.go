@@ -61,6 +61,8 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 
 	g.afterPlayerMoved(geometry.Point{}, true)
 
+	g.updateAllFoVsAndDijkstras()
+
 	if firstTimeInit != nil {
 		firstTimeInit()
 	}

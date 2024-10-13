@@ -8,37 +8,106 @@ import (
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
+	"math/rand"
 	"strings"
 )
 
+type WeaponConcealability uint8
+
+func (c WeaponConcealability) String() string {
+	switch c {
+	case ConcealabilityLongCoat:
+		return "Long Coat"
+	case ConcealabilityJacket:
+		return "Jacket"
+	case ConcealabilityPants:
+		return "Pants"
+	case ConcealabilityHidden:
+		return "Hidden"
+	}
+	return "None"
+}
+
+const (
+	ConcealabilityNone WeaponConcealability = iota
+	ConcealabilityLongCoat
+	ConcealabilityJacket
+	ConcealabilityPants
+	ConcealabilityHidden
+)
+
+func ConcealabilityFromString(input string) WeaponConcealability {
+	switch strings.ToLower(input) {
+	case "longcoat":
+		return ConcealabilityLongCoat
+	case "jacket":
+		return ConcealabilityJacket
+	case "pants":
+		return ConcealabilityPants
+	case "hidden":
+		return ConcealabilityHidden
+	}
+	return ConcealabilityNone
+}
+
 type Weapon struct {
 	*GenericItem
-	damageDice       fxtools.Interval
-	weaponType       WeaponType
+	damageDice fxtools.Interval
+	weaponType WeaponType
+
 	skillUsed        d100.Skill
 	magazineSize     int
 	loadedInMagazine *Ammo
-	burstRounds      int
-	caliberIndex     int
-	attackModes      []AttackMode
-	soundID          int32
-	damageType       DamageType
-	MinSTR           int
+
+	burstRounds  int
+	caliberIndex int
+
+	attackModes []AttackMode
+	soundID     int32
+	damageType  DamageType
+	MinSTR      int
+
+	reliability    d100.Percentage
+	concealability WeaponConcealability
+	accuracyMod    d100.Percentage
 }
 
+func (i *Weapon) FullDescription(colorCode string) string {
+	basicRows := i.GenericItem.fullDescriptionRows()
+
+	basicRows = append(basicRows, fxtools.NewTableRow("Quality", fmt.Sprintf("%d%%", int(i.qualityInPercent))))
+
+	if i.damageType == DamageTypeNormal {
+		basicRows = append(basicRows, fxtools.NewTableRow("Damage", fmt.Sprintf("%s", i.damageDice.Scaled(i.qualityInPercent.Normalized()).ShortString())))
+	} else {
+		basicRows = append(basicRows, fxtools.NewTableRow("Damage", fmt.Sprintf("%s (%s)", i.damageDice.Scaled(i.qualityInPercent.Normalized()).ShortString(), i.damageType.String())))
+	}
+
+	if i.accuracyMod != 0 {
+		basicRows = append(basicRows, fxtools.NewTableRow("Accuracy Modifier", fmt.Sprintf("%+d%%", int(i.accuracyMod))))
+	}
+
+	basicRows = append(basicRows, fxtools.NewTableRow("Min. Strength", fmt.Sprintf("%d", i.MinSTR)))
+
+	basicRows = append(basicRows, fxtools.NewTableRow("Reliability", fmt.Sprintf("%d%%", int(i.reliability))))
+
+	basicRows = append(basicRows, fxtools.NewTableRow("Concealability", fmt.Sprintf("%s", i.concealability.String())))
+
+	for _, attackMode := range i.attackModes {
+		modeVal := fmt.Sprintf("Range: %d, TU: %d", attackMode.MaxRange, attackMode.TUCost)
+		modeLabel := attackMode.String()
+		basicRows = append(basicRows, fxtools.NewTableRow(modeLabel, modeVal))
+	}
+
+	lines := fxtools.TableLayout(basicRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
+	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+	return strings.Join(lines, "\n")
+}
 func (i *Weapon) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
 	return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
 }
 func (i *Weapon) InventoryNameWithColors(colorCode string) string {
-	line := cview.Escape(i.Name())
-
-	line = cview.Escape(fmt.Sprintf("%s (%s Dmg.)", i.Name(), i.GetWeaponDamage().ShortString()))
-
-	statPairs := i.getStatPairsAsStrings()
-
-	if len(statPairs) > 0 {
-		line = fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|"))
-	}
+	line := cview.Escape(fmt.Sprintf("%s [%s]", i.Name(), i.GetWeaponDamage().ShortString()))
 
 	lineWithColor := colorCode + line + "[-]"
 
@@ -56,7 +125,9 @@ func (i *Weapon) LongNameWithColors(colorCode string) string {
 	line := cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, i.GetWeaponDamage().ShortString(), bullets))
 	return colorCode + line + "[-]"
 }
-
+func (i *Weapon) DisplayLength() int {
+	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut("[red]"))
+}
 func (i *Weapon) GetDegradationFactorOfAttack() float64 {
 	factor := 1.0
 	weapon := i
@@ -84,6 +155,16 @@ func (i *Weapon) IsRangedWeapon() bool {
 
 func (i *Weapon) IsMeleeWeapon() bool {
 	return i.weaponType.IsMelee()
+}
+
+func (i *Weapon) DoesJam() bool {
+	if !i.IsAutomaticWeapon() {
+		return false
+	}
+
+	reliability := int(i.reliability)
+	isReliableOnThisShot := rand.Intn(100)+1 <= reliability
+	return !isReliableOnThisShot
 }
 
 func (i *Weapon) GetEffectParameters() foundation.Params {
@@ -121,6 +202,11 @@ func (i *Weapon) IsLoadedWeapon() bool {
 
 func (i *Weapon) GetWeaponDamage() fxtools.Interval {
 	return i.getRawDamage().Scaled(i.qualityInPercent.Normalized())
+}
+
+func (i *Weapon) GetWeaponDamageForCurrentAttackMode() fxtools.Interval {
+	perBullet := i.getRawDamage().Scaled(i.qualityInPercent.Normalized())
+	return perBullet.Scaled(float64(i.BulletCountForCurrentAttackMode()))
 }
 
 func (i *Weapon) GobEncode() ([]byte, error) {
@@ -385,6 +471,10 @@ func (i *Weapon) BulletCountForCurrentAttackMode() int {
 	default:
 		return 1
 	}
+}
+
+func (i *Weapon) IsAutomaticWeapon() bool {
+	return i.GetBurstRounds() > 1
 }
 
 type WeaponType int

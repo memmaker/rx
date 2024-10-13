@@ -22,6 +22,12 @@ Foreground: dark_gray_4
 InventoryColor: light_blue
 Background: light_gray_7
 
+Name: Headgear
+Icon: ∞
+Foreground: dark_gray_3
+InventoryColor: light_blue_2
+Background: light_gray_6
+
 Name: Notes
 Icon: ≡
 Foreground: gray_3

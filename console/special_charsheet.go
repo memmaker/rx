@@ -21,8 +21,10 @@ const (
 
 type CharsheetViewer struct {
 	*cview.Grid
-	charName           string
-	sheet              *d100.CharSheet
+	charName string
+	sheet    *d100.CharSheet
+
+	perkSelection      func(done func())
 	close              func()
 	nameAgeSexBar      *cview.TextView
 	derivedStatsWindow *cview.TextView
@@ -30,7 +32,7 @@ type CharsheetViewer struct {
 	statList           *cview.List
 	skillList          *cview.List
 	charPointsDisplay  *cview.TextView
-	traitsList         *cview.List
+	perksList          *cview.List
 	buttonBar          *cview.Grid
 	mode               SheetMode
 	conf               Confirmer
@@ -43,7 +45,7 @@ type Confirmer interface {
 	AskForConfirmation(title, message string, choice func(didConfirm bool))
 }
 
-func NewCharsheetViewer(name string, sheet *d100.CharSheet, close func()) *CharsheetViewer {
+func NewCharsheetViewer(name string, sheet *d100.CharSheet, close func(), perkSelection func(done func())) *CharsheetViewer {
 	c := &CharsheetViewer{
 		Grid:                      cview.NewGrid(),
 		sheet:                     sheet,
@@ -51,6 +53,7 @@ func NewCharsheetViewer(name string, sheet *d100.CharSheet, close func()) *Chars
 		charName:                  name,
 		virtuallySpentSkillPoints: make(map[d100.Skill]int),
 		virtualFocus:              0,
+		perkSelection:             perkSelection,
 	}
 	c.Grid.SetBorder(true)
 	c.Grid.SetBorderColor(tcell.ColorGreen)
@@ -274,6 +277,35 @@ func (c *CharsheetViewer) setupUI() {
 	traitsList.ShowSecondaryText(false)
 	traitsList.SetScrollBarVisibility(cview.ScrollBarNever)
 	traitsList.SetHighlightDisabled(true)
+	traitsList.SetMouseCapture(func(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
+		if action == cview.MouseLeftClick {
+			x, y := event.Position()
+			// to local coordinates
+			startX, startY, _, _ := traitsList.GetInnerRect()
+			x -= startX
+			y -= startY
+			// to list item index
+			i := y
+
+			perks := c.sheet.GetPerks()
+			if c.sheet.CanChooseNewPerk() {
+				if i == 0 {
+					c.perkSelection(c.updateUIFromSheet)
+					return action, event
+				}
+				i--
+			}
+			if i < 0 || i >= len(perks) {
+				return action, event
+			}
+
+			perk := d100.Perk(perks[i].Perk)
+			traitDesc := fmt.Sprintf("%s\n%s", perk.String(), perk.Description())
+			c.descriptionWindow.SetText(traitDesc)
+			return action, nil
+		}
+		return action, event
+	})
 
 	buttonBar := cview.NewGrid()
 	buttonBar.SetColumns(0, 0)
@@ -306,7 +338,7 @@ func (c *CharsheetViewer) setupUI() {
 	c.statList = statList
 	c.skillList = skillList
 	c.charPointsDisplay = charPointsDisplay
-	c.traitsList = traitsList
+	c.perksList = traitsList
 	c.buttonBar = buttonBar
 }
 
@@ -341,7 +373,7 @@ func (c *CharsheetViewer) increaseSkill(skill d100.Skill) {
 func (c *CharsheetViewer) toggleTagSkill(skill d100.Skill) {
 	if c.sheet.IsTagSkill(skill) {
 		c.sheet.UntagSkill(skill)
-	} else {
+	} else if c.sheet.GetUnmodifiedSkill(skill) > 0 {
 		c.sheet.TagSkill(skill)
 	}
 	c.updateUIFromSheet()
@@ -406,7 +438,7 @@ func (c *CharsheetViewer) updateUIFromSheet() {
 		statVal, mods := c.sheet.GetStatWithModInfo(stat)
 		statCC := "[-:-:-]"
 		if c.mode == ModeCreate {
-			if statVal < 5 {
+			if statVal <= 3 {
 				statCC = "[red:black:]"
 			} else if statVal > 5 {
 				statCC = "[green:black:]"
@@ -527,9 +559,24 @@ func (c *CharsheetViewer) updateUIFromSheet() {
 	   c.traitsList.SetItems(c.sheet.TraitsList)
 
 	*/
-	c.traitsList.Clear()
-	c.traitsList.AddItem(cview.NewListItem("No Traits"))
-	c.traitsList.AddItem(cview.NewListItem("No Perks"))
+	c.perksList.Clear()
+	if c.sheet.CanChooseNewPerk() {
+		c.perksList.AddItem(cview.NewListItem("[green]*New perk*[-]"))
+	}
+	listOfPerks := c.sheet.GetPerks()
+	if len(listOfPerks) == 0 {
+		c.perksList.AddItem(cview.NewListItem("No perks"))
+	} else {
+		perkRows := make([]fxtools.TableRow, len(listOfPerks))
+		for i, perkLevel := range listOfPerks {
+			perk := d100.Perk(perkLevel.Perk)
+			perkRows[i] = fxtools.NewTableRow(perk.String(), strconv.Itoa(perkLevel.Level))
+		}
+		perkLines := fxtools.TableLayoutLastRight(perkRows)
+		for _, line := range perkLines {
+			c.perksList.AddItem(cview.NewListItem(line))
+		}
+	}
 }
 
 func (c *CharsheetViewer) getSkillPointsAvailable() int {

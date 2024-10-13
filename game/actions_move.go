@@ -7,14 +7,15 @@ import (
 
 // MOVEMENT
 
-func (g *GameState) playerMove(oldPos geometry.Point, newPos geometry.Point) {
+func (g *GameState) playerMove(newPos geometry.Point) {
+	if g.Player.Position() == newPos {
+		return
+	}
 	directConsequencesOfMove := g.actorMove(g.Player, newPos)
-
-	g.afterPlayerMoved(oldPos, false)
 
 	g.ui.AddAnimations(directConsequencesOfMove)
 
-	g.endPlayerTurn(g.Player.timeNeededForMovement())
+	g.endPlayerTurn(g.Player.TimeNeededForMovement())
 }
 func (g *GameState) actorMoveAnimated(actor *Actor, newPos geometry.Point) []foundation.Animation {
 	oldPos := actor.Position()
@@ -36,7 +37,7 @@ func (g *GameState) actorMove(actor *Actor, newPos geometry.Point) []foundation.
 	}
 	g.currentMap().MoveActor(actor, newPos)
 	if actor.Position() == newPos {
-		return g.triggerTileEffectsAfterMovement(actor, oldPos, newPos)
+		return g.afterActorMovedOnMap(actor, oldPos)
 	}
 	return nil
 }

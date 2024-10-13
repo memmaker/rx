@@ -20,7 +20,11 @@ npc: Welcome to Big Bob's Supplies!
 + So for now, I can only offer you a limited selection of items.
 #
 o_text: Show me what you have.
-o_goto: ShowBasicItems
+o_effect: StartTrading
+#
+o_text: I'll need exactly 1 round of ammo.
+o_cond: !HasFlag('took_single_round')
+o_goto: BuySingleRound
 #
 o_text: Tell me about your 'problem'.
 o_goto: TellMeAboutProblem
@@ -30,26 +34,6 @@ o_goto: TellMeAboutNeighborhood
 #
 o_text: I see, goodbye.
 o_goto: Exit
-
-name: ShowBasicItems
-npc: Here's what I can offer:
-+ a 10mm SMG for $500
-+ and some 10mm ammo for $50 per mag.
-#
-o_text: I'll take the SMG.
-o_cond: HasItem('gold', 500)
-o_goto: BuySMG
-#
-o_text: I'll take some ammo.
-o_cond: HasItem('gold', 50)
-o_goto: BuyAmmo
-#
-o_text: I'll need exactly 1 round of ammo.
-o_cond: !HasFlag('took_single_round')
-o_goto: BuySingleRound
-#
-o_text: I'll pass for now.
-o_goto: BasicSupply
 
 name: BuySMG
 npc: Good choice! It's a reliable weapon. You'll need some ammo for it, too.
@@ -100,4 +84,42 @@ o_text: This bullet is all I need.
 o_goto: Exit
 #
 o_text: I'll have some engraving to do, excuse me.
+o_goto: Exit
+
+name: TellMeAboutProblem
+npc: I have a delivery coming in from the north, but the road is blocked.
++ I can't get in touch with the driver, either.
++ I am starting to get worried.
+#
+o_text: I can help you with that.
+o_goto: OfferToHelp
+#
+o_text: I see, goodbye.
+o_goto: Exit
+
+name: OfferToHelp
+npc: That would be great! I can't offer much in return, but I can give you a discount on your next purchase.
++ I'll mark the location on your map.
+#
+effect: SetFlag('offered_to_help')
+#
+o_text: I'll be back soon.
+o_goto: Exit
+#
+o_text: Why don't you join me?
+o_test: GetSkill('social') >= 25
+o_succ: AcceptJoin
+o_fail: DeclineJoin
+
+name: AcceptJoin
+npc: That's very kind of you! I'll grab my gear.
+effect: JoinParty
+#
+o_text: Let's go.
+o_goto: Exit
+
+name: DeclineJoin
+npc: I appreciate the offer, but I have to stay here.
+#
+o_text: I understand. I'll be back soon.
 o_goto: Exit

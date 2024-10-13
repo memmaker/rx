@@ -24,7 +24,7 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
-Name: none
+Name: sewer floor
 Char: ·
 Foreground: olive_5
 Background: olive_6

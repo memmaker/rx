@@ -1,15 +1,10 @@
 package d100
 
-import "strings"
-
-type RangedModifiers []Modifier
-
-func (r RangedModifiers) appendIfNonZero(mod Modifier) RangedModifiers {
-	if mod.IsZero() {
-		return r
-	}
-	return append(r, mod)
+func NewRangedModsFromSituation(mods []Modifier) RangedModifiers {
+	return RangedModifiers(mods)
 }
+
+type RangedModifiers Modifiers
 
 func (r RangedModifiers) WithRangeMods(distance int, weaponRange int, fullAuto bool, bulletCount int) RangedModifiers {
 	mods := r
@@ -18,12 +13,12 @@ func (r RangedModifiers) WithRangeMods(distance int, weaponRange int, fullAuto b
 
 	switch {
 	case distance <= 1:
-		mods = r.appendIfNonZero(DefaultRangedMod(RngModRangePointBlank))
+		mods = appendIfNonZero(r, DefaultRangedMod(RngModRangePointBlank))
 		isClose = true
 		isMedium = true
 	case distance <= (weaponRange / 4):
 		delta := (weaponRange - distance) / 2
-		mods = r.appendIfNonZero(DefaultModifier{
+		mods = appendIfNonZero(r, DefaultModifier{
 			Source:    RngModRangeNearPerMeter.String(),
 			Modifier:  definedRangedModifiers[RngModRangeNearPerMeter] * delta,
 			IsPercent: true,
@@ -32,7 +27,7 @@ func (r RangedModifiers) WithRangeMods(distance int, weaponRange int, fullAuto b
 		isMedium = true
 	case distance <= (weaponRange / 2):
 		delta := (weaponRange - distance) / 2
-		mods = r.appendIfNonZero(DefaultModifier{
+		mods = appendIfNonZero(r, DefaultModifier{
 			Source:    RngModRangeNearPerMeter.String(),
 			Modifier:  definedRangedModifiers[RngModRangeNearPerMeter] * delta,
 			IsPercent: true,
@@ -40,14 +35,14 @@ func (r RangedModifiers) WithRangeMods(distance int, weaponRange int, fullAuto b
 		isMedium = true
 	case distance <= weaponRange:
 		delta := (weaponRange - distance) / 2
-		mods = r.appendIfNonZero(DefaultModifier{
+		mods = appendIfNonZero(r, DefaultModifier{
 			Source:    RngModRangeNearPerMeter.String(),
 			Modifier:  definedRangedModifiers[RngModRangeNearPerMeter] * delta,
 			IsPercent: true,
 		})
 	default:
 		delta := (distance - weaponRange) / 2
-		mods = r.appendIfNonZero(DefaultModifier{
+		mods = appendIfNonZero(r, DefaultModifier{
 			Source:    RngModRangeFarPerMeter.String(),
 			Modifier:  definedRangedModifiers[RngModRangeFarPerMeter] * delta,
 			IsPercent: true,
@@ -55,18 +50,18 @@ func (r RangedModifiers) WithRangeMods(distance int, weaponRange int, fullAuto b
 	}
 
 	if !fullAuto && bulletCount == 3 && isMedium {
-		mods = r.appendIfNonZero(DefaultRangedMod(RngModThreeRoundBurstMediumRange))
+		mods = appendIfNonZero(r, DefaultRangedMod(RngModThreeRoundBurstMediumRange))
 	}
 
 	if fullAuto {
 		if isClose {
-			mods = r.appendIfNonZero(DefaultModifier{
+			mods = appendIfNonZero(r, DefaultModifier{
 				Source:    RngModFullAutoCloseRangePerTenBullets.String(),
 				Modifier:  definedRangedModifiers[RngModFullAutoCloseRangePerTenBullets] * (bulletCount / 10),
 				IsPercent: true,
 			})
 		} else {
-			mods = r.appendIfNonZero(
+			mods = appendIfNonZero(r,
 				DefaultModifier{
 					Source:    RngModFullAutoFarRangePerTenBullets.String(),
 					Modifier:  definedRangedModifiers[RngModFullAutoFarRangePerTenBullets] * (bulletCount / 10),
@@ -89,11 +84,11 @@ func (r RangedModifiers) With(modActive RangedAttackModifier) RangedModifiers {
 	if modActive == 0 {
 		return r
 	}
-	return r.appendIfNonZero(DefaultRangedMod(modActive))
+	return appendIfNonZero(r, DefaultRangedMod(modActive))
 }
 
 func (r RangedModifiers) WithAimTurns(turns int) RangedModifiers {
-	return r.appendIfNonZero(DefaultModifier{
+	return appendIfNonZero(r, DefaultModifier{
 		Source:    "Aiming",
 		Modifier:  definedRangedModifiers[RngModPerAimTurn] * turns,
 		IsPercent: true,
@@ -101,19 +96,19 @@ func (r RangedModifiers) WithAimTurns(turns int) RangedModifiers {
 }
 
 func (r RangedModifiers) WithObstacles(obstacles int) RangedModifiers {
-	return r.appendIfNonZero(DefaultModifier{
+	return appendIfNonZero(r, DefaultModifier{
 		Source:    "Obstacles",
 		Modifier:  definedRangedModifiers[RngModPerObstacle] * obstacles,
 		IsPercent: true,
 	})
 }
 
-func (r RangedModifiers) String() string {
-	var mods []string
-	for _, mod := range r {
-		mods = append(mods, mod.Description())
-	}
-	return strings.Join(mods, "\n")
+func (r RangedModifiers) WithSpeedMods(speedDelta int) RangedModifiers {
+	return appendIfNonZero(r, DefaultModifier{
+		Source:    "Target Speed",
+		Modifier:  definedRangedModifiers[RngModPerTargetVelocityDelta] * speedDelta,
+		IsPercent: true,
+	})
 }
 
 type RangedAttackModifier uint32
@@ -133,7 +128,7 @@ const (
 	RngModLightDarkness
 
 	RngModTargetVelocityStationary
-	RngModTargetVelocityVeryFast
+	RngModPerTargetVelocityDelta
 
 	RngModPerObstacle
 	RngModPerAimTurn
@@ -174,7 +169,7 @@ func (m RangedAttackModifier) String() string {
 		return "Darkness"
 	case RngModTargetVelocityStationary:
 		return "Stationary Target"
-	case RngModTargetVelocityVeryFast:
+	case RngModPerTargetVelocityDelta:
 		return "Very Fast Target"
 	case RngModPerObstacle:
 		return "Obstacles"
@@ -214,29 +209,29 @@ var definedRangedModifiers = map[RangedAttackModifier]int{
 	RngModRangeNearPerMeter: 1,
 	RngModRangeFarPerMeter:  -5,
 
-	RngModSizeVerySmall: 20,
-	RngModSizeSmall:     10,
+	RngModSizeVerySmall: -20,
+	RngModSizeSmall:     -10,
 	RngModSizeNormal:    0,
-	RngModSizeLarge:     -10,
-	RngModSizeVeryLarge: -20,
+	RngModSizeLarge:     10,
+	RngModSizeVeryLarge: 20,
 
-	RngModLightDim:      10,
-	RngModLightDarkness: 20,
+	RngModLightDim:      -20,
+	RngModLightDarkness: -40,
 
 	RngModTargetVelocityStationary: 0,
-	RngModTargetVelocityVeryFast:   -20,
 
-	RngModPerObstacle: -10,
-	RngModPerAimTurn:  10,
+	RngModPerTargetVelocityDelta: -4,
+	RngModPerObstacle:            -10,
+	RngModPerAimTurn:             10,
 
 	RngModFullAutoCloseRangePerTenBullets: 10,
 	RngModFullAutoFarRangePerTenBullets:   -10,
 
 	RngModThreeRoundBurstMediumRange: 10,
 
-	RngModFastDraw:           20,
+	RngModFastDraw:           -20,
 	RngModAmbush:             20,
-	RngModCalledShot:         20,
+	RngModCalledShot:         -20,
 	RngModFiringWhileRunning: -20,
 	RngModLaserSight:         20,
 	RngModTelescopicSight:    20,

@@ -1,5 +1,24 @@
+On Speech Checks:
+ - Loosing with high investment on average checks is frustrating
+ - Lucking with low investment on checks is rewarding
+ - Combination?
+    - If you are above the threshold and/or can provide conclusive evidence, you will always succeed
+    - if you are below, you can roll for a lucky success
+ - Almost require circumstantial evidence to succeed
+ - Don't just remove content with speech checks, but change the outcome in a meaningful way
+
+
+On Hacking:
+ - Deus Ex (Spending Resources to hack, more powerful hacks require more skill)
+ - Watch Dogs (Manipulating the Environment instead of just bypassing locks)
+   - https://watchdogs.fandom.com/wiki/Category:Hackable
+ - Vampire: The Masquerade (Hacking is like using a real shell)
+ - Start out using cables, then upgrade to wireless hacking
+ - There must be a risk involved in hacking (trace, alert, etc.)
 
 Weapons:
+ - Min should be about half of the max damage
+ - Add grazing shots as additional chance (so a miss can still be a graze)
  - Accuracy
  - Reliability
  - Concealability
@@ -50,7 +69,10 @@ Instincts
  - Always carry two weapons
  - Will engage in combat if insulted
 
-
+Fashion matters
+ - Combat gear is obvious and will get you in trouble
+ - Dressing up/down will get you into places you shouldn't be
+ - Heat management - Dressing for the weather
 
 Beliefs & Instincts (Mouse Guard)
 
@@ -65,9 +87,25 @@ Style over Substance
  - Reward combos and flashy moves
  - Style Points? Exchange for items or upgrades? Exchange for XP? Equal Reputation?
 
+Combat Style System:
+ - Combat Actions
+   - Ranged Attack / Trick Shot
+   - Melee Attack / Environmental Melee
+   - Dodge
+   - Parry
+   - Charge/Slide
+   - Special Moves / Attacks
+   - One-Liners & Quips
+ - What breaks the combo?
+   - Any critical failure
+   - Being knocked back/down
+   - A turn of non-combat action
+   - Being hit by a critical hit
+ - Reward the player with combat style points for chaining together actions
+ - Combat style points can be exchanged for combat gear & skills & Perks
+
 Live on the Edge
  - Reward risky behavior
-
 
 Beliefs - A stance the player takes, rewards for acting according to them
 Instincts - Minor instinctive behaviors, can happen without the player directly initiating them
@@ -75,3 +113,16 @@ Instincts - Minor instinctive behaviors, can happen without the player directly 
 
 Interesting Faults/Flaws/Traits
 
+Organic Save System:
+ - Saving is only possible at designated save points ("Bio Constructors")
+ - Saving is done by going there
+ - How can we deduct the fee not on saving, but on restoring?
+ - Playthrough with the char needs a unique id. Game will set a flag if the char dies.
+   -> Reloading the char will then cost a fee (reloading when the player just quits the game is free)
+   -> If there is no money, the char is lost
+   -> Money and deaths have to be tracked outside the individual save files
+ - Do we only save the character state or also the world state? Both
+ - But, do we restore the only the character state or also the world state?
+   > If the character dies, just restore the character state
+     -> This is disabled in iron man mode, saving = quitting
+   > If the player quits, restore the world state

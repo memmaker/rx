@@ -1,0 +1,22 @@
+%rec: OpeningBranch
+
+# Flag: solved_bobs_problems
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: Exit
+npc: Come back soon!
+effect: EndConversation
+
+name: DefaultIntroduction
+npc: Hello, I'm Anna Whitaker. I'm a fashion expert here to help you out.
++ What can I do for you today?
+#
+o_text: I'm looking for some new clothes.
+o_effect: StartTrading
+#
+o_text: Nothing, I'm good.
+o_effect: Exit

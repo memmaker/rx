@@ -25,13 +25,16 @@ Use_Effect: show_time
 Charges: -1
 
 Description: bobby pin
-Name: bobby_pin
+Name: mechanical_lockpick
 Category: lockpicks
-skill_bonus: mechanics(20)
+
+Description: e-pick
+Name: electronic_lockpick
+Category: lockpicks
 
 Description: aviator sunglasses
 Name: aviator_sunglasses
-Category: Other
+Category: Headgear
 stat_bonus: charisma(1)
 Text: These make you look ridiculously cool.
 

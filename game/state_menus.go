@@ -7,10 +7,8 @@ import (
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
-	"math/rand"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -116,7 +114,7 @@ func (g *GameState) PlayerRest(duration time.Duration) {
 	g.ui.FadeToBlack()
 	g.advanceTime(duration)
 	if g.Player.GetInventory().HasWatch() {
-		g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Time.Format("15:04"))))
+		g.printTime()
 	}
 	g.ui.FadeFromBlack()
 }
@@ -263,9 +261,8 @@ func (g *GameState) OpenRestMenu() {
 func (g *GameState) OpenWizardMenu() {
 	g.ui.OpenMenu([]foundation.MenuItem{
 		{
-			Name:       "Show Map",
-			Action:     g.revealAll,
-			CloseMenus: true,
+			Name:   "Show Map",
+			Action: g.revealAll,
 		},
 		{
 			Name: "Load Test Map",
@@ -275,48 +272,30 @@ func (g *GameState) OpenWizardMenu() {
 			CloseMenus: true,
 		},
 		{
-			Name: "Test Keypad",
-			Action: func() {
-				g.ui.OpenKeypad([]rune{'1', '2', '3', '4'}, func(sequence bool) {
-					g.msg(foundation.HiLite("Keypad result: %s", strconv.FormatBool(sequence)))
-				})
-			},
-			CloseMenus: true,
-		},
-		{
-			Name: "Test Lockpick (VeryEasy)",
-			Action: func() {
-				g.ui.StartLockpickGame(foundation.VeryEasy, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
-					g.msg(foundation.HiLite("Lockpick result: %s", result.String()))
-				})
-			},
-		},
-		{
-			Name: "Test Lockpick (Medium)",
-			Action: func() {
-				g.ui.StartLockpickGame(foundation.Medium, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
-					g.msg(foundation.HiLite("Lockpick result: %s", result.String()))
-				})
-			},
-		},
-		{
-			Name: "Test Lockpick (Very Hard)",
-			Action: func() {
-				g.ui.StartLockpickGame(foundation.VeryHard, g.Player.GetInventory().GetLockpickCount, g.Player.GetInventory().RemoveLockpick, func(result foundation.InteractionResult) {
-					g.msg(foundation.HiLite("Lockpick result: %s", result.String()))
-				})
-			},
-		},
-		{
 			Name: "10 Skill Points",
 			Action: func() {
 				g.Player.GetCharSheet().AddSkillPoints(10)
 			},
 		},
 		{
+			Name: "Filthy Rich",
+			Action: func() {
+				g.Player.GetInventory().AddItem(g.NewGold(1000000))
+			},
+		},
+		{
 			Name: "1000 XP",
 			Action: func() {
 				g.awardXP(1000, "for testing")
+			},
+		},
+		{
+			Name: "Add all Perks",
+			Action: func() {
+				g.Player.GetCharSheet().AddPerkPoints(int(d100.PerkCount))
+				for p := d100.Perk(0); p < d100.PerkCount; p++ {
+					g.Player.GetCharSheet().AddPerk(p)
+				}
 			},
 		},
 		{
@@ -353,10 +332,6 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
-			Name:   "Create Trap",
-			Action: g.openWizardCreateTrapMenu,
-		},
-		{
 			Name: "Game Save",
 			Action: func() {
 				err := g.Save("savegame")
@@ -369,12 +344,6 @@ func (g *GameState) OpenWizardMenu() {
 			Name: "Game Load",
 			Action: func() {
 				g.Load("savegame")
-			},
-		},
-		{
-			Name: "Run Test Script",
-			Action: func() {
-				g.RunScriptByName("jeff_kills_winters")
 			},
 		},
 	})
@@ -422,17 +391,17 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 
 	nodeText := g.fillTemplatedText(currentNode.NpcText)
 
+	var nodeOptions []foundation.MenuItem
 	var effectCalls []func()
 	for _, effect := range currentNode.Effects {
 		if effect == "StartCombat" { // simple parameterless dialogue only effects
 			if actor, isActor := conversationPartner.(*Actor); isActor {
-				g.trySetHostile(actor, g.Player)
+				actor.FSM.SendEvent(NewProvokedEvent(g.Player))
 			}
 			instantEndWithChatter = true
 		} else if effect == "EndHostility" {
 			if actor, isActor := conversationPartner.(*Actor); isActor {
-				actor.RemoveEnemy(g.Player)
-				actor.SetNeutral()
+				actor.FSM.SendEvent(NewCalmedEvent(g.Player))
 			}
 		} else if effect == "EndWithChatter" {
 			instantEndWithChatter = true
@@ -541,7 +510,6 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 		return
 	}
 
-	var nodeOptions []foundation.MenuItem
 	if endConversation {
 		nodeOptions = append(nodeOptions, foundation.MenuItem{
 			Name:       "<Leave>",
@@ -552,12 +520,26 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 		for _, o := range currentNode.Options {
 			option := o
 			if option.CanDisplay(conversation.Variables) {
+				onChoice := func() {
+					nextNode := conversation.GetNextNode(option)
+					g.OpenDialogueNode(conversation, currentNode, nextNode, conversationPartner, isTerminal)
+				}
+
+				if len(option.effects) > 0 {
+					onChoice = func() {
+						for _, effect := range option.effects {
+							switch effect {
+							case "StartTrading":
+								followUp := func() { g.ui.SetConversationState(nodeText, nodeOptions, conversationPartner, isTerminal) }
+								g.openVendorMenu(conversationPartner.(*Actor), followUp)
+
+							}
+						}
+					}
+				}
 				nodeOptions = append(nodeOptions, foundation.MenuItem{
-					Name: g.fillTemplatedText(option.playerText) + option.RollInfo(),
-					Action: func() {
-						nextNode := conversation.GetNextNode(option)
-						g.OpenDialogueNode(conversation, currentNode, nextNode, conversationPartner, isTerminal)
-					},
+					Name:       g.fillTemplatedText(option.playerText) + option.RollInfo(),
+					Action:     onChoice,
 					CloseMenus: true,
 				})
 			}
@@ -568,36 +550,6 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 	for _, effectCall := range effectCalls {
 		effectCall()
 	}
-}
-
-func (g *GameState) playerHackingRoll(difficulty foundation.Difficulty) d100.CheckResult {
-	scienceSkill := g.Player.GetCharSheet().GetSkill(d100.SkillForHacking)
-	luck := 5
-
-	modifier := difficulty.GetRollModifier()
-	effectiveSkill := scienceSkill + modifier
-	rollResult := d100.SuccessRoll(d100.Percentage(effectiveSkill), d100.Percentage(luck))
-	return rollResult
-}
-
-func (g *GameState) openWizardCreateTrapMenu() {
-	trapTypes := foundation.GetAllTrapCategories()
-	var menuActions []foundation.MenuItem
-	for _, def := range trapTypes {
-		trapType := def
-		menuActions = append(menuActions, foundation.MenuItem{
-			Name: trapType.String(),
-			Action: func() {
-				random := rand.New(rand.NewSource(time.Now().UnixNano()))
-				trapPos := g.currentMap().GetRandomFreeAndSafeNeighbor(random, g.Player.Position())
-				newTrap := g.NewTrap(trapType)
-				newTrap.SetHidden(false)
-				g.currentMap().AddObject(newTrap, trapPos)
-			},
-			CloseMenus: true,
-		})
-	}
-	g.ui.OpenMenu(menuActions)
 }
 
 func (g *GameState) OpenJournal() {

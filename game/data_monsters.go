@@ -6,16 +6,18 @@ import (
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
+	"path"
 	"strings"
 )
 
-func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, newItemFromString func(string) foundation.Item) *Actor {
+func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, scheduleDir string, newItemFromString func(string) foundation.Item) *Actor {
 	actor := NewActor()
-
 	var icon textiles.TextIcon
 	var zapEffects []string
 	var useEffects []string
 	var equipment []string
+	var vendorInv []string
+	fashionVendorStyle := FashionStyle(-2)
 
 	flags := foundation.NewActorFlags()
 
@@ -66,17 +68,25 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			actor.SetSizeModifier(field.AsInt())
 		case "equipment":
 			equipment = append(equipment, field.Value)
-		case "default_relation":
-			actor.SetAIState(foundation.AIStateFromString(field.Value))
+		case "selling":
+			vendorInv = append(vendorInv, field.Value)
+		case "fashion_vendor_style":
+			fashionVendorStyle = FashionStyleFromString(field.Value)
+		case "aggressive":
+			actor.isAggressive = field.AsBool()
 		case "position":
 			pos, _ := geometry.NewPointFromEncodedString(field.Value)
 			actor.SetPosition(pos)
 		case "audio":
 			actor.audioBaseName = field.Value
+		case "schedule":
+			actor.schedule = NewScheduleFromFile(path.Join(scheduleDir, field.Value+".rec"))
 		case "dialogue":
 			actor.SetDialogueFile(field.Value)
 		case "chatter":
 			actor.SetChatterFile(field.Value)
+		case "faction":
+			actor.teamName = field.Value
 		case "flags":
 			for _, mFlag := range field.AsList("|") {
 				flags.Set(foundation.ActorFlagFromString(mFlag.Value))
@@ -110,7 +120,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	charSheet.HealAPAndHPCompletely()
 
 	if actor.HasFlag(foundation.FlagZombie) {
-		actor.SetHostile()
+		actor.isAggressive = true
 	}
 
 	actor.SetCharSheet(charSheet)
@@ -122,7 +132,26 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		item := newItemFromString(itemName)
 		if item != nil {
 			actor.GetInventory().AddItem(item)
+			if item.IsEquippable() {
+				actor.GetEquipment().Equip(item)
+			}
 		}
 	}
+
+	if len(vendorInv) > 0 {
+		actor.vendorInv = NewInventory(40, actor.Position)
+		for _, itemName := range vendorInv {
+			item := newItemFromString(itemName)
+			if item != nil {
+				actor.GetVendorInventory().AddItem(item)
+			}
+		}
+	}
+
+	if fashionVendorStyle != -2 {
+		actor.vendorInv = NewInventory(40, actor.Position)
+		actor.GetVendorInventory().AddItems(newFashionInventory(fashionVendorStyle))
+	}
+
 	return actor
 }

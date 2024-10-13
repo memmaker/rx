@@ -16,7 +16,7 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-default_relation: neutral
+aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak
@@ -39,7 +39,7 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-default_relation: neutral
+aggressive: false
 SkillBonusSmallGuns: 20
 equipment: 10mm_pistol
 equipment: 10mm_jhp
@@ -65,7 +65,7 @@ HitPoints: 20
 dodge: 5
 ActionPoints: 4
 SkillBonusSmallGuns: 30
-default_relation: neutral
+aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak
@@ -88,7 +88,7 @@ HitPoints: 20
 dodge: 5
 ActionPoints: 4
 SkillBonusSmallGuns: 20
-default_relation: neutral
+aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak
@@ -111,7 +111,7 @@ HitPoints: 20
 dodge: 5
 ActionPoints: 4
 SkillBonusSmallGuns: 30
-default_relation: neutral
+aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak
@@ -134,7 +134,7 @@ HitPoints: 20
 dodge: 5
 ActionPoints: 4
 SkillBonusSmallGuns: 25
-default_relation: neutral
+aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak
@@ -157,7 +157,7 @@ HitPoints: 20
 dodge: 5
 ActionPoints: 4
 SkillBonusSmallGuns: 25
-default_relation: neutral
+aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak
@@ -179,7 +179,7 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-default_relation: neutral
+aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak

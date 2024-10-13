@@ -67,6 +67,7 @@ func (u *UI) setupCommandTable() {
 
 	u.commandTable["inventory"] = u.game.OpenInventory
 	u.commandTable["tactics"] = u.game.OpenTacticsMenu
+	u.commandTable["quip"] = u.game.PlayerQuip
 	//u.commandTable["character"] = u.ShowCharacterSheet // OLD
 	u.commandTable["character"] = u.openCharSheet
 	u.commandTable["wizard"] = u.game.OpenWizardMenu
@@ -76,6 +77,7 @@ func (u *UI) setupCommandTable() {
 	u.commandTable["journal"] = u.game.OpenJournal
 
 	u.commandTable["toggle_run"] = u.game.PlayerToggleRun
+	u.commandTable["toggle_sneak"] = u.game.PlayerToggleSneak
 
 	u.commandTable["log"] = u.ShowLog
 	u.commandTable["monsters"] = u.ShowVisibleActors
@@ -168,11 +170,13 @@ func (u *UI) showKeyBindings() {
 		"wizard":            "Wizard",
 		"themes":            "Themes",
 		"log":               "Log",
+		"quip":              "Drop Quip",
 		"monsters":          "Monster List",
 		"items":             "Item List",
 		"help":              "Help",
 		"show_key_bindings": "Key Bindings",
 		"toggle_run":        "Toggle Run",
+		"toggle_sneak":      "Toggle Sneak",
 		"north":             "North",
 		"south":             "South",
 		"west":              "West",
@@ -234,6 +238,7 @@ func (u *UI) showKeyBindings() {
 		"run_southeast",
 		"run_direction",
 		"toggle_run",
+		"toggle_sneak",
 		"system_menu",
 		"quit",
 	}
@@ -248,6 +253,7 @@ func (u *UI) showKeyBindings() {
 		"reload_weapon",
 		"attack",
 		"quick_attack",
+		"quip",
 		"look",
 		"inventory",
 		"show_ammo",

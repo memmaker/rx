@@ -6,6 +6,13 @@ Description: a door
 Category: ClosedDoor
 Description: a door
 
+Name: frag_mine
+Category: Trap
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+
 Category: LockedDoor
 Description: a door
 LockFlag: CHANGEME

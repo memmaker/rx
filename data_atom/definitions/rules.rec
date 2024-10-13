@@ -10,6 +10,8 @@ MaxArmorDT: 30
 #
 AblationWithoutPenetration: 1
 AblationWithPenetration: 2
+#
+LockStrengthReductionPerSkill: 0.375
 
 %rec: SkillDifficulty
 
@@ -34,36 +36,36 @@ SuperHuman: 1
 Name: Melee Combat
 Short: Mle
 Combat: Melee
-BaseValue: (str + end) * 5
+BaseValue: (str + end) * 3
 
 Name: Ranged Combat
 Short: Rng
 Combat: Ranged
-BaseValue: (per + 5) * 5
+BaseValue: (per + 5) * 3 * if(per > 3, 1, 0)
 
 Name: Social
 Short: Soc
-BaseValue: (cha + 5) * 5
+BaseValue: (cha + 5) * 3 * if(cha > 3, 1, 0)
 
 Name: Intimidate
 Short: Int
-BaseValue: (cha + str) * 5
+BaseValue: (cha + str) * 3 * if(str > 3, 1, 0)
 
 Name: Stealth
 Short: Ste
-BaseValue: (agi + 5) * 5
+BaseValue: (agi + 5) * 3 * if(agi > 3, 1, 0)
 
 Name: Mechanics
 Short: Mec
-BaseValue: (agi + end) * 5
+BaseValue: (agi + end) * 3 * if(agi > 3, 1, 0) * if(end > 3, 1, 0)
 
 Name: Biology
 Short: Bio
-BaseValue: (int + per) * 5
+BaseValue: (int + per) * 3 * if(int > 3, 1, 0)
 
 Name: Technology
 Short: Tec
-BaseValue: (int + 5) * 5
+BaseValue: (int + 5) * 3 * if(int > 3, 1, 0)
 
 %rec: SkillMap
 
@@ -74,6 +76,8 @@ pickpockets: Stealth
 sneak: Stealth
 hacking: Technology
 backstabbing: Melee Combat
+throwing: Ranged Combat
+traps: Mechanics
 
 %rec: DerivedStats
 
@@ -119,3 +123,16 @@ xp: 210000
 
 xp: (currentLevel * (currentLevel - 1) / 2) * 1000
 
+%rec: PerkRequirements
+
+Perk: pickpocket
+RequireSkill: Stealth(50)
+
+Perk: disarm
+RequireSkill: MeleeCombat(50)
+
+Perk: takedown
+RequireSkill: MeleeCombat(30)
+
+Perk: backstab
+RequireSkill: MeleeCombat(50)

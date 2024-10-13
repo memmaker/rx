@@ -1,9 +1,12 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
 	"bytes"
+	"cmp"
 	"encoding/gob"
+	"slices"
 )
 
 type Equipment struct {
@@ -55,7 +58,9 @@ func (e *Equipment) IsEquipped(item foundation.Equippable) bool {
 }
 
 func slotFromItem(item foundation.Equippable) foundation.EquipSlot {
-	if item.IsArmor() {
+	if item.IsHeadGear() {
+		return foundation.SlotNameArmorHead
+	} else if item.IsArmor() {
 		return foundation.SlotNameArmorTorso
 	} else if item.IsLightSource() {
 		return foundation.SlotNameLightSource
@@ -91,14 +96,6 @@ func (e *Equipment) unEquipBySlot(hand foundation.EquipSlot) {
 
 func (e *Equipment) GetBySlot(hand foundation.EquipSlot) foundation.Equippable {
 	return e.slots[hand]
-}
-
-func (e *Equipment) GetArmor() *Armor {
-	slotItem := e.GetBySlot(foundation.SlotNameArmorTorso)
-	if !slotItem.IsArmor() {
-		return nil
-	}
-	return slotItem.(*Armor)
 }
 
 func (e *Equipment) CanEquip(item foundation.Equippable) bool {
@@ -263,4 +260,85 @@ func (e *Equipment) GetMainHandWeapon() (*Weapon, bool) {
 		return weapon, isWeapon
 	}
 	return nil, false
+}
+
+func (e *Equipment) GetArmor() *Armor {
+	item, exists := e.slots[foundation.SlotNameArmorTorso]
+	if exists {
+		armor, isArmor := item.(*Armor)
+		if isArmor {
+			return armor
+		}
+	}
+	return nil
+}
+
+func (e *Equipment) GetHelmet() *Armor {
+	item, exists := e.slots[foundation.SlotNameArmorHead]
+	if exists {
+		armor, isArmor := item.(*Armor)
+		if isArmor {
+			return armor
+		}
+	}
+	return nil
+}
+
+func (e *Equipment) GetSkillModifiersFromEquippedItems(skill d100.Skill) []d100.Modifier {
+	var modifiers []d100.Modifier
+	for _, invItem := range e.slots {
+		item := invItem.(foundation.Item)
+		if modValue, hasValue := item.GetSkillMod(skill); hasValue {
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    invItem.Name(),
+				Modifier:  modValue,
+				Order:     0,
+				IsPercent: true,
+			})
+		}
+	}
+	slices.SortStableFunc(modifiers, func(i, j d100.Modifier) int {
+		return cmp.Compare(i.Description(), j.Description())
+	})
+	return modifiers
+}
+
+func (e *Equipment) GetStatModifiersFromEquippedItems(stat d100.Stat) []d100.Modifier {
+	var modifiers []d100.Modifier
+	for _, invItem := range e.slots {
+		item := invItem.(foundation.Item)
+		if modValue, hasValue := item.GetStatMod(stat); hasValue {
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    invItem.Name(),
+				Modifier:  modValue,
+				Order:     0,
+				IsPercent: true,
+			})
+		}
+	}
+	slices.SortStableFunc(modifiers, func(i, j d100.Modifier) int {
+		return cmp.Compare(i.Description(), j.Description())
+	})
+	return modifiers
+
+}
+
+func (e *Equipment) GetDerivedStatModifiersFromEquippedItems(stat d100.DerivedStat) []d100.Modifier {
+	var modifiers []d100.Modifier
+	for _, invItem := range e.slots {
+		item := invItem.(foundation.Item)
+		if modValue, hasValue := item.GetDerivedStatMod(stat); hasValue {
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    invItem.Name(),
+				Modifier:  modValue,
+				Order:     0,
+				IsPercent: true,
+			})
+		}
+	}
+	slices.SortStableFunc(modifiers, func(i, j d100.Modifier) int {
+		return cmp.Compare(i.Description(), j.Description())
+	})
+	return modifiers
+
 }

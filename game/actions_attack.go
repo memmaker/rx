@@ -46,15 +46,15 @@ func (g *GameState) PlayerRangedAttack() {
 		g.ui.SelectBodyPart(g.playerLastAimedAt, func(victim foundation.ActorForUI, bodyPart d100.BodyPart) {
 			g.playerLastAimedAt = bodyPart
 			target := victim.(*Actor)
-			shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, bodyPart)
+			shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, bodyPart, d100.NoCombatModifier)
 			g.ui.AddAnimations(shotAnim)
 			g.endPlayerTurn(attackMode.TUCost)
 		})
 	} else {
-		g.ui.SelectTarget(func(targetPos geometry.Point) {
+		g.ui.SelectTarget(g.getRangedChanceToHitForUI, func(targetPos geometry.Point) {
 			if g.currentMap().IsActorAt(targetPos) {
 				target := g.currentMap().ActorAt(targetPos)
-				shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, d100.Body)
+				shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, d100.Body, d100.NoCombatModifier)
 				g.ui.AddAnimations(shotAnim)
 				g.endPlayerTurn(attackMode.TUCost)
 			} else {
@@ -88,7 +88,7 @@ func (g *GameState) PlayerQuickRangedAttack() {
 	}
 
 	mode := mainHandItem.GetCurrentAttackMode()
-	shotAnim := g.actorRangedAttack(g.Player, mainHandItem, mode, enemies[0], d100.Body)
+	shotAnim := g.actorRangedAttack(g.Player, mainHandItem, mode, enemies[0], d100.Body, d100.NoCombatModifier)
 	g.ui.AddAnimations(shotAnim)
 	g.endPlayerTurn(mode.TUCost)
 }
@@ -165,7 +165,50 @@ func (g *GameState) playerBackstab(defender *Actor) {
 		g.playerMeleeAttack(defender)
 	}
 }
+func (g *GameState) actorDisarm(attacker, victim *Actor) {
+	weaponTaken, hasWeapon := victim.GetEquipment().GetMainHandWeapon()
+	if !hasWeapon {
+		g.msg(foundation.Msg("Target has no weapon equipped"))
+		return
+	}
 
+	attackerLuckChance := d100.Percentage(attacker.GetCharSheet().GetDerivedStat(d100.CriticalChance))
+	defenderLuckChance := d100.Percentage(victim.GetCharSheet().GetDerivedStat(d100.CriticalChance))
+
+	atkSkill := d100.Percentage(attacker.GetCharSheet().GetSkill(d100.SkillForUnarmed))
+	defSkill := d100.Percentage(victim.GetCharSheet().GetSkill(d100.SkillForUnarmed))
+
+	contestResult := d100.SkillContest(atkSkill, attackerLuckChance, defSkill, defenderLuckChance)
+
+	if contestResult == 0 {
+
+		victim.GetInventory().RemoveItem(weaponTaken)
+		attacker.GetInventory().AddItem(weaponTaken)
+		attacker.GetEquipment().Equip(weaponTaken)
+
+		if attacker == g.Player {
+			g.trySetHostile(victim, attacker)
+			g.msg(foundation.HiLite("You take the %s from %s", weaponTaken.Name(), victim.Name()))
+			g.endPlayerTurn(attacker.timeNeededForMeleeAttack())
+		} else if victim == g.Player {
+			g.msg(foundation.HiLite("%s takes the %s from you", attacker.Name(), weaponTaken.Name()))
+		} else {
+			g.trySetHostile(victim, attacker)
+			g.msg(foundation.HiLite("%s takes the %s from %s", attacker.Name(), weaponTaken.Name(), victim.Name()))
+		}
+	} else {
+		if attacker == g.Player {
+			g.trySetHostile(victim, attacker)
+			g.msg(foundation.HiLite("%s is able to resist your attempt", victim.Name()))
+			g.endPlayerTurn(attacker.timeNeededForMeleeAttack())
+		} else if victim == g.Player {
+			g.msg(foundation.HiLite("You defend against %s's disarm attempt", attacker.Name()))
+		} else {
+			g.trySetHostile(victim, attacker)
+			g.msg(foundation.HiLite("%s is resisting %s's disarm attempt", victim.Name(), attacker.Name()))
+		}
+	}
+}
 func (g *GameState) playerNonLethalTakedown(victim *Actor) {
 	attackerLuckChance := d100.Percentage(g.Player.GetCharSheet().GetDerivedStat(d100.CriticalChance))
 	defenderLuckChance := d100.Percentage(victim.GetCharSheet().GetDerivedStat(d100.CriticalChance))
@@ -190,7 +233,7 @@ func (g *GameState) playerMeleeAttackLocation(targetPos geometry.Point) {
 		g.playerMeleeAttack(defender)
 	} else if g.currentMap().IsObjectAt(targetPos) {
 		objectAt := g.currentMap().ObjectAt(targetPos)
-		damageWithSource := g.getMeleeDamage(g.Player, 100, d100.Body)
+		damageWithSource := g.getMeleeDamage(g.Player, 100, d100.Body, nil)
 		var attackAudioCue string
 		if weapon, hasMeleeWeapon := g.Player.GetEquipment().GetMeleeWeapon(); hasMeleeWeapon {
 			weapon.Degrade(1)
@@ -210,10 +253,7 @@ func (g *GameState) playerMeleeAttackLocation(targetPos geometry.Point) {
 }
 func (g *GameState) playerMeleeAttack(defender *Actor) {
 	doMeleeAttack := func(part d100.BodyPart) {
-		consequences := g.actorMeleeAttack(g.Player, defender, part)
-		if !g.Player.HasFlag(foundation.FlagInvisible) {
-			defender.GetFlags().Set(foundation.FlagAwareOfPlayer)
-		}
+		consequences := g.actorMeleeAttack(g.Player, defender, part, d100.NoCombatModifier)
 		g.ui.AddAnimations(consequences)
 		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	}
@@ -228,7 +268,7 @@ func (g *GameState) playerMeleeAttack(defender *Actor) {
 	}
 }
 
-func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100.BodyPart) []foundation.Animation {
+func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100.BodyPart, mods d100.CombatModifiers) []foundation.Animation {
 	if !defender.IsAlive() {
 		return nil
 	}
@@ -236,10 +276,10 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100
 
 	mainHandItem, hasMeleeWeapon := attacker.GetEquipment().GetMeleeWeapon()
 
-	chanceToHit := g.getMeleeChanceToHit(attacker, mainHandItem, defender)
-	chanceToHit += part.AimPenalty() / 2
+	chanceToHit, _ := g.getMeleeChanceToHit(attacker, mainHandItem, defender, mods.ChanceToHitMods)
+	chanceToHit += part.AimPenalty() / 2 // melee attacks are more precise
 
-	damageWithSource := g.getMeleeDamage(attacker, chanceToHit, part)
+	damageWithSource := g.getMeleeDamage(attacker, chanceToHit, part, mods.DamageMods)
 
 	var attackAudioCue string
 	if hasMeleeWeapon {
@@ -263,22 +303,23 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100
 }
 
 // actorRangedAttack logic and animation of a ranged attack with the equipped weapon
-func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attackMode AttackMode, defender *Actor, bodyPart d100.BodyPart) []foundation.Animation {
+func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attackMode AttackMode, defender *Actor, bodyPart d100.BodyPart, situationalMods d100.CombatModifiers) []foundation.Animation {
 	if !defender.IsAlive() {
 		return nil
 	}
-
+	// Bookkeeping
 	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
 
+	// Generate the attack animation based on the weapon and damage type
 	attackAnimations, isProjectileAnimation := g.getWeaponAttackAnim(attacker, defender.Position(), weaponItem, attackMode, bulletsSpent.StackSize())
 
-	baseChanceToHit, _ := g.getRangedChanceToHit(attacker, weaponItem, defender, bulletsSpent)
+	// Calculate the chance to hit
+	baseChanceToHit, _ := g.getRangedChanceToHit(attacker, weaponItem, defender, bulletsSpent, situationalMods.ChanceToHitMods)
 	chanceToHit := baseChanceToHit + bodyPart.AimPenalty()
 
-	damageWithSource := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, defender, bodyPart)
-
+	// Pass the weapon damage to the effect
 	weaponEffectParams := foundation.Params{
-		"damage": damageWithSource.DamageAmount,
+		"damage_interval": weaponItem.GetWeaponDamage(),
 	}
 	var hitAnimations []foundation.Animation
 	if weapon.GetDamageType() == DamageTypeExplosive {
@@ -286,11 +327,20 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attac
 	} else if weapon.GetDamageType() == DamageTypeFire && attackMode.Mode == TargetingModeFlame {
 		hitAnimations = fireBreath(g, attacker, defender.Position(), weaponEffectParams)
 	} else {
+		// Calculate the default bullet damage
+		damageWithSource, rollResult := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, defender, bodyPart, situationalMods.DamageMods)
+		if rollResult.IsCriticalFailure() {
+			// TODO: Apply critical fail effect..
+		} else if rollResult.IsCriticalSuccess() {
+			damageWithSource = damageWithSource.WithCritical()
+		}
 		hitAnimations = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender)
 	}
 
+	// Reset aiming flag
 	attacker.GetFlags().Unset(foundation.FlagConcentratedAiming)
 
+	// Return animations based on whether there is a projectile or not
 	if isProjectileAnimation {
 		attackAnimations.SetFollowUp(hitAnimations)
 		return []foundation.Animation{attackAnimations}
@@ -307,7 +357,7 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Weapo
 
 	chanceToHit := 100
 
-	damageWithSource := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, nil, d100.Body)
+	damageWithSource, _ := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, nil, d100.Body, nil)
 	weaponEffectParams := weaponItem.GetEffectParameters()
 	var consequenceOfHit []foundation.Animation
 	if weapon.GetDamageType() == DamageTypeExplosive {
@@ -416,7 +466,7 @@ func (g *GameState) Throw() {
 
 // Target Selection Stage
 func (g *GameState) startThrowItem(item foundation.Item) {
-	g.ui.SelectTarget(func(targetPos geometry.Point) {
+	g.ui.SelectTarget(g.getThrownChanceToHitForUI, func(targetPos geometry.Point) {
 		g.actorThrowItem(g.Player, item, g.Player.Position(), targetPos)
 	})
 }
@@ -460,7 +510,7 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile foundation.Item, orig
 	} else {
 		attackMode = AttackMode{
 			Mode:     TargetingModeThrow,
-			TUCost:   thrower.timeNeededForActions(),
+			TUCost:   thrower.TimeNeededForActions(),
 			MaxRange: thrower.GetMaxThrowRange(),
 			IsAimed:  false,
 		}
@@ -494,6 +544,6 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile foundation.Item, orig
 	g.ui.AddAnimations([]foundation.Animation{throwAnim})
 
 	if thrower == g.Player {
-		g.endPlayerTurn(g.Player.timeNeededForActions())
+		g.endPlayerTurn(g.Player.TimeNeededForActions())
 	}
 }

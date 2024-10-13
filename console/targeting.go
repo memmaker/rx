@@ -58,18 +58,18 @@ func (u *UI) OpenAimedShotPicker(actorAt foundation.ActorForUI, previousAim d100
 				CloseMenus: true,
 			})
 		}
-		menu := u.openSimpleMenu(items)
+		menu := u.openSimpleMenu(items, nil)
 		menu.SetCurrentItem(actorAt.GetBodyPartIndex(previousAim))
 	}
 }
 
-func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point)) {
+func (u *UI) SelectTarget(getAttackInfo func(target foundation.ActorForUI) foundation.AttackInfo, onSelected func(targetPos geometry.Point)) {
 	u.state = StateTargeting
 	u.onTargetUpdated = func(targetPos geometry.Point) {
 		actorAt := u.game.ActorAt(targetPos)
 		if actorAt != nil {
-			cth := u.game.GetRangedChanceToHitForUI(actorAt)
-			hitChance := cth.HitChance
+			attackInfo := getAttackInfo(actorAt)
+			hitChance := attackInfo.HitChance()
 			cthString := fmt.Sprintf("%d%%", hitChance)
 			placeBelow := u.game.GetPlayerPosition().Y < targetPos.Y
 			if placeBelow {
@@ -79,11 +79,22 @@ func (u *UI) SelectTarget(onSelected func(targetPos geometry.Point)) {
 			}
 
 			//u.Print(foundation.Msg("Select body part"))
-			modString := cth.Mods.String()
+			cthModString := attackInfo.Modifiers().ChanceToHitMods.String()
 
-			rightBarText := fmt.Sprintf("Attack on %s\n%s: %d%%\n%s", actorAt.Name(), cth.SkillUsed.String(), cth.SkillBase, modString)
+			cthText := fmt.Sprintf("Attack on %s\n%s: %d%%\n%s", actorAt.Name(), attackInfo.Skill().String(), attackInfo.SkillBase(), cthModString)
 
-			u.rightPanel.SetText(rightBarText)
+			var damageText string
+			if len(attackInfo.Modifiers().DamageMods) > 0 {
+				baseDamage := fmt.Sprintf("Base damage: %s", attackInfo.DamageBase().ShortString())
+				damageModString := attackInfo.Modifiers().DamageMods.String()
+				finalDamage := fmt.Sprintf("Damage Range: %s", attackInfo.DamageWithMods().ShortString())
+				damageText = fmt.Sprintf("%s\n%s\n%s", baseDamage, damageModString, finalDamage)
+			} else {
+				damageText = fmt.Sprintf("Damage Range: %s", attackInfo.DamageBase().ShortString())
+			}
+			fullText := fmt.Sprintf("%s\n\n%s", cthText, damageText)
+
+			u.rightPanel.SetText(fullText)
 		}
 	}
 	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {
@@ -226,26 +237,48 @@ func (u *UI) cancelTargeting() {
 
 func (u *UI) updateTarget(targetPos geometry.Point) {
 	origin := u.game.GetPlayerPosition()
+
 	clear(u.targetingTiles)
 
 	if origin == targetPos {
 		u.targetPos = targetPos
 		return
 	}
-	line := geometry.BresenhamLine(origin, targetPos, func(x, y int) bool {
-		curPos := geometry.Point{X: x, Y: y}
-		if origin == curPos {
-			return true
+
+	line := u.game.GetFlightPath(origin, targetPos)
+
+	if len(line) == 0 {
+		return
+	}
+
+	line = line[1:] // remove origin
+
+	if len(line) == 0 {
+		return
+	}
+
+	targetPos = line[len(line)-1]
+
+	if len(line) == 1 {
+		onePointLine := line[0]
+		if onePointLine == origin {
+			u.targetPos = targetPos
+			return
 		}
-		return !u.game.IsSomethingBlockingTargetingAtLoc(curPos)
-	})
-	if len(line) > 1 {
-		line = line[1:]
-		targetPos = line[len(line)-1]
+		dir := onePointLine.Sub(origin)
+		u.targetingTiles[onePointLine] = charFromDirection(dir)
+	} else {
+		for i, point := range line {
+			var directionOfLine geometry.Point
+			if i == 0 {
+				directionOfLine = line[i+1].Sub(line[i])
+			} else {
+				directionOfLine = line[i].Sub(line[i-1])
+			}
+			u.targetingTiles[point] = charFromDirection(directionOfLine)
+		}
 	}
-	for _, point := range line {
-		u.targetingTiles[point] = true
-	}
+
 	u.targetPos = targetPos
 	if u.onTargetUpdated != nil {
 		u.onTargetUpdated(targetPos)

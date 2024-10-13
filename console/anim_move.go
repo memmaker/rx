@@ -19,6 +19,7 @@ type MovementAnimation struct {
 	isQuickMove   bool
 	quickMovePath []geometry.Point
 	getColor      func(colorName string) color.RGBA
+	mapLookup     func(loc geometry.Point) textiles.TextIcon
 }
 
 func NewMovementAnimation(actorIcon textiles.TextIcon, old, new geometry.Point, getColor func(colorName string) color.RGBA, done func()) *MovementAnimation {
@@ -93,16 +94,22 @@ func (p *MovementAnimation) quickMoveAnimation() map[geometry.Point]textiles.Tex
 		if i == len(p.quickMovePath)-1 {
 			drawables[pos] = p.icon
 		} else {
-			black := p.getColor("Black")
 			white := p.getColor("White")
 			percent := fxtools.Clamp(0.1, 1.0, float64(i+1)/float64(len(p.quickMovePath)))
-			lerpColorRGBA := fxtools.LerpColorRGBA(black, white, percent)
+			mapIconHere := p.mapLookup(pos)
+			fg := fxtools.LerpColorRGBA(mapIconHere.Fg, white, percent)
+			bg := fxtools.LerpColorRGBA(mapIconHere.Bg, white, percent)
+
 			drawables[pos] = textiles.TextIcon{
-				Char: ' ',
-				Fg:   lerpColorRGBA,
-				Bg:   lerpColorRGBA,
+				Char: mapIconHere.Char,
+				Fg:   fg,
+				Bg:   bg,
 			}
 		}
 	}
 	return drawables
+}
+
+func (p *MovementAnimation) SetMapLookup(lookup func(loc geometry.Point) textiles.TextIcon) {
+	p.mapLookup = lookup
 }

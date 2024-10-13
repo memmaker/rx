@@ -36,6 +36,16 @@ func loadD100Rules(definitionDirectory string) {
 	skillMap := rulesRecords["SkillMap"][0].ToMap(",")
 	d100.LoadSkillMap(skillMap)
 
+	// Perk Requirements are mandatory
+	perkRequirements := rulesRecords["PerkRequirements"]
+	perkReqMap := make(map[d100.Perk]d100.PerkRequirements)
+	for _, perkReqRecord := range perkRequirements {
+		perkName := d100.PerkFromString(perkReqRecord.FindValueForKeyIgnoreCase("perk"))
+		reqs := NewPerkRequirements(perkReqRecord)
+		perkReqMap[perkName] = reqs
+	}
+	d100.LoadPerkRequirements(perkReqMap)
+
 	// The rest are optional
 	if _, ok := rulesRecords["Global"]; ok {
 		globalRules := rulesRecords["Global"][0].ToMap(",")
@@ -43,6 +53,8 @@ func loadD100Rules(definitionDirectory string) {
 		d100.SkillCap = globalRules.GetIntOrDefault("SkillCap", 200)
 		d100.ChanceForCriticalFailure = globalRules.GetIntOrDefault("ChanceForCriticalFailure", 5)
 		d100.SuccessChanceCap = globalRules.GetIntOrDefault("SuccessChanceCap", 95)
+		d100.LockStrengthReductionPerSkill = globalRules.GetFloatOrDefault("LockStrengthReductionPerSkill", 0.375)
+
 		maxArmorDR = globalRules.GetIntOrDefault("MaxArmorDR", 85)
 		maxArmorDT = globalRules.GetIntOrDefault("MaxArmorDT", 30)
 		ablationWithoutPenetration = globalRules.GetIntOrDefault("AblationWithoutPenetration", 1)
@@ -68,6 +80,55 @@ func loadD100Rules(definitionDirectory string) {
 		derivedStatsBaseValues := rulesRecords["DerivedStats"][0].ToMap(",")
 		d100.LoadDerivedBaseValues(derivedStatsBaseValues)
 	}
+}
+
+func NewPerkRequirements(record recfile.Record) d100.PerkRequirements {
+	reqs := d100.PerkRequirements{}
+	for _, field := range record {
+		switch strings.ToLower(field.Name) {
+		case "requirestat":
+			if fxtools.LooksLikeAFunction(field.Value) {
+				if reqs.Stats == nil {
+					reqs.Stats = make(map[d100.Stat]int)
+				}
+
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				stat := d100.StatFromString(name)
+				reqs.Stats[stat] = args.GetInt(0)
+			}
+		case "requireskill":
+			if fxtools.LooksLikeAFunction(field.Value) {
+				if reqs.Skills == nil {
+					reqs.Skills = make(map[d100.Skill]int)
+				}
+
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				skill := d100.SkillFromString(name)
+				reqs.Skills[skill] = args.GetInt(0)
+			}
+		case "requirederivedstat":
+			if fxtools.LooksLikeAFunction(field.Value) {
+				if reqs.DerivedStats == nil {
+					reqs.DerivedStats = make(map[d100.DerivedStat]int)
+				}
+
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				derivedStat := d100.DerivedStatFromString(name)
+				reqs.DerivedStats[derivedStat] = args.GetInt(0)
+			}
+		case "requireperk":
+			if fxtools.LooksLikeAFunction(field.Value) {
+				if reqs.Perks == nil {
+					reqs.Perks = make(map[d100.Perk]int)
+				}
+
+				name, args := fxtools.GetNameAndArgs(field.Value)
+				perk := d100.PerkFromString(name)
+				reqs.Perks[perk] = args.GetInt(0)
+			}
+		}
+	}
+	return reqs
 }
 
 func SkillDefFromRecord(def recfile.Record) (string, string, d100.CombatSkillType, string) {

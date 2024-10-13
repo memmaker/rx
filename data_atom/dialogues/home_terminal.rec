@@ -18,7 +18,7 @@ o_goto: starter_mission
 #
 # Dead Man's Switch
 o_text: (IMPORTANT) Last message from Grim
-o_cond: HasFlag(Killed(grim_beard))
+o_cond: HasFlag('Killed(grim_beard)')
 o_goto: DeadMansSwitch
 #
 o_text: Leave.

@@ -25,6 +25,8 @@ func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.
 		return elevator
 	case "unknowncontainer":
 		return g.NewContainer(record)
+	case "trap":
+		return g.NewTrap(record)
 	case "terminal":
 		return g.NewTerminal(record)
 	case "readable":
@@ -61,7 +63,7 @@ func (g *GameState) addItemToMap(item foundation.Item, mapPos geometry.Point) {
 func (g *GameState) NewGold(amount int) *GenericItem {
 	icon := g.iconForItem(foundation.ItemCategoryGold)
 	gold := &GenericItem{
-		description:  "gold",
+		name:         "gold",
 		internalName: "gold",
 		category:     foundation.ItemCategoryGold,
 		stackSize:    amount,

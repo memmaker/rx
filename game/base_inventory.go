@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"cmp"
 	"encoding/gob"
+	"fmt"
 	"github.com/memmaker/go/geometry"
 	"slices"
 )
@@ -205,6 +206,7 @@ func (i *Inventory) RemoveAmmoByName(name string, amount int) *Ammo {
 			availableBullets := ammo.StackSize()
 			if availableBullets > amount {
 				splitBullets := ammo.Split(amount)
+				i.changed()
 				return splitBullets.(*Ammo)
 			} else {
 				i.RemoveItem(ammo)
@@ -230,21 +232,28 @@ func (i *Inventory) HasAmmo(caliber int, name string) bool {
 	return false
 }
 
-func (i *Inventory) GetLockpickCount() int {
-	count := 0
-	for _, invItem := range i.items {
-		if invItem.IsLockpick() {
-			count += invItem.Charges()
-		}
+type LockType bool
+
+const (
+	LockTypeMechanical LockType = false
+	LockTypeElectronic LockType = true
+)
+
+func (l LockType) String() string {
+	if l == LockTypeMechanical {
+		return "mechanical"
 	}
-	return count
+	return "electronic"
 }
 
-func (i *Inventory) RemoveLockpick() {
+func (i *Inventory) RemoveLockpicks(lock LockType, count int) {
+	pickName := lockpickName(lock)
 	for _, invItem := range i.items {
-		if invItem.IsLockpick() {
-			invItem.ConsumeCharge()
-			if invItem.Charges() == 0 {
+		if invItem.IsLockpick() && invItem.InternalName() == pickName {
+			if invItem.StackSize() > count {
+				invItem.RemoveStacks(count)
+				i.changed()
+			} else {
 				i.RemoveItem(invItem)
 			}
 			break
@@ -252,6 +261,21 @@ func (i *Inventory) RemoveLockpick() {
 	}
 }
 
+func lockpickName(lock LockType) string {
+	pickName := fmt.Sprintf("%s_lockpick", lock.String())
+	return pickName
+}
+
+func (i *Inventory) GetLockpickCount(lock LockType) int {
+	count := 0
+	pickName := lockpickName(lock)
+	for _, invItem := range i.items {
+		if invItem.IsLockpick() && invItem.InternalName() == pickName {
+			count += invItem.StackSize()
+		}
+	}
+	return count
+}
 func (i *Inventory) HasKey(identifier string) bool {
 	for _, invItem := range i.items {
 		if invItem.IsKey() && invItem.GetLockFlag() == identifier {
@@ -292,6 +316,22 @@ func (i *Inventory) GetBestRangedWeapon() *Weapon {
 	var bestWeapon *Weapon
 	for _, invItem := range i.items {
 		if invItem.IsRangedWeapon() {
+			weapon := invItem.(*Weapon)
+			damage := weapon.GetWeaponDamage().ExpectedValue()
+			if damage > maxDamage {
+				maxDamage = damage
+				bestWeapon = weapon
+			}
+		}
+	}
+	return bestWeapon
+}
+
+func (i *Inventory) GetBestMeleeWeapon() *Weapon {
+	maxDamage := 0
+	var bestWeapon *Weapon
+	for _, invItem := range i.items {
+		if invItem.IsMeleeWeapon() {
 			weapon := invItem.(*Weapon)
 			damage := weapon.GetWeaponDamage().ExpectedValue()
 			if damage > maxDamage {
@@ -362,7 +402,7 @@ func (i *Inventory) GetSkillModifiersFromItems(skill d100.Skill) []d100.Modifier
 	var modifiers []d100.Modifier
 	for _, invItem := range i.items {
 		first := invItem
-		if first.IsSkillBook() || first.IsConsumable() {
+		if first.IsConsumable() || first.IsSkillBook() || first.IsEquippable() {
 			continue
 		}
 		if modValue, hasValue := first.GetSkillMod(skill); hasValue {
@@ -381,7 +421,7 @@ func (i *Inventory) GetStatModifiersFromItems(stat d100.Stat) []d100.Modifier {
 	var modifiers []d100.Modifier
 	for _, invItem := range i.items {
 		first := invItem
-		if first.IsConsumable() {
+		if first.IsConsumable() || first.IsSkillBook() || first.IsEquippable() {
 			continue
 		}
 		if modValue, hasValue := first.GetStatMod(stat); hasValue {
@@ -399,7 +439,7 @@ func (i *Inventory) GetDerivedStatModifiersFromItems(stat d100.DerivedStat) []d1
 	var modifiers []d100.Modifier
 	for _, invItem := range i.items {
 		first := invItem
-		if first.IsConsumable() {
+		if first.IsConsumable() || first.IsSkillBook() || first.IsEquippable() {
 			continue
 		}
 		if modValue, hasValue := first.GetDerivedStatMod(stat); hasValue {
@@ -478,6 +518,18 @@ func (i *Inventory) AddItems(player []foundation.Item) {
 		i.addItemInternally(item)
 	}
 	i.changed()
+}
+
+func (i *Inventory) HasAmmoWithCaliber(caliber int) bool {
+	for _, invItem := range i.items {
+		if invItem.IsAmmo() {
+			ammo := invItem.(*Ammo)
+			if ammo.IsAmmoOfCaliber(caliber) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func SortInventory(stacks []foundation.Item) {

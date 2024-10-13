@@ -455,7 +455,8 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) getDijkstraMapperWithActorsNo
 			})
 		},
 		cost: func(point geometry.Point, point2 geometry.Point) int {
-			return int(geometry.Distance(point, point2) * 10)
+			dist := int(geometry.Distance(point, point2) * 10)
+			return dist
 		},
 	}
 }
@@ -480,7 +481,8 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) getDijkstraMapper(passable fu
 			})
 		},
 		cost: func(point geometry.Point, point2 geometry.Point) int {
-			return int(geometry.Distance(point, point2) * 10)
+			dist := int(geometry.Distance(point, point2) * 10)
+			return dist
 		},
 	}
 }
@@ -1784,7 +1786,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetListExplored(tiles []geome
 	}
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnPlayerDijkstraMap(from geometry.Point, towardsPlayer bool, dijkstraMap map[geometry.Point]int) geometry.Point {
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnOtherDijkstraMap(from geometry.Point, towardsMapOrigin bool, dijkstraMap map[geometry.Point]int) geometry.Point {
 	if dijkstraMap == nil {
 		return from
 	}
@@ -1793,7 +1795,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnPlayerDijkstraMap(fr
 		return from
 	}
 	var compareFunc func(a, b int) bool
-	if towardsPlayer {
+	if towardsMapOrigin {
 		compareFunc = func(a, b int) bool { return a < b }
 	} else {
 		compareFunc = func(a, b int) bool { return a > b }
@@ -1833,7 +1835,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnPlayerDijkstraMap(fr
 	// which of these is the closest to the player?
 
 	nearestDist := math.MaxInt
-	if !towardsPlayer {
+	if !towardsMapOrigin {
 		nearestDist = 0
 	}
 	nearestPos := from
@@ -1849,7 +1851,51 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnPlayerDijkstraMap(fr
 
 	return nearestPos
 }
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnOwnDijkstraMap(from geometry.Point, to geometry.Point, dijkstraMap map[geometry.Point]int) geometry.Point {
+	if dijkstraMap == nil {
+		return to
+	}
+	currentDistanceToPlayer, exist := dijkstraMap[to]
+	if !exist {
+		return to
+	}
 
+	currentLoc := to
+
+	//rolldown
+	for {
+		neighbors := m.GetFilteredNeighborsForMovement(currentLoc, func(pos geometry.Point) bool {
+			if !m.IsCurrentlyPassable(pos) {
+				return false
+			}
+			if _, existsTransition := m.GetTransitionAt(pos); existsTransition {
+				return false
+			}
+			neighborDist, neighborExists := dijkstraMap[pos]
+			if !neighborExists {
+				return false
+			}
+			return neighborDist < currentDistanceToPlayer
+		})
+		if len(neighbors) == 0 {
+			break
+		}
+		nearestDist := math.MaxInt
+		nearestPos := currentLoc
+		for _, neighbor := range neighbors {
+			if m.MoveDistance(from, neighbor) == 1 {
+				return neighbor
+			}
+			neighborDist, _ := dijkstraMap[neighbor]
+			if neighborDist < nearestDist {
+				nearestDist = neighborDist
+				nearestPos = neighbor
+			}
+		}
+		currentLoc = nearestPos
+	}
+	return currentLoc
+}
 func (m *GridMap[ActorType, ItemType, ObjectType]) HasWalkableNeighbor(point geometry.Point) bool {
 	neighbors := m.NeighborsAll(point, m.IsTileWalkable)
 	return len(neighbors) > 0
@@ -2009,6 +2055,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) TryGetTileAt(pos geometry.Poi
 		return Tile{}, false
 	}
 	return m.cells[pos.Y*m.mapWidth+pos.X].TileType, true
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsEmptyTile(pos geometry.Point) bool {
+	return !m.IsActorAt(pos) && !m.IsObjectAt(pos) && !m.IsItemAt(pos)
 }
 
 type JumpOverInfo struct {

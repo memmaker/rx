@@ -134,7 +134,7 @@ func (g *GameState) OpenTacticsMenu() {
 			Name: "Concentrate on target",
 			Action: func() {
 				g.Player.GetFlags().Increment(foundation.FlagConcentratedAiming)
-				g.endPlayerTurn(g.Player.timeNeededForActions())
+				g.endPlayerTurn(g.Player.TimeNeededForActions())
 			},
 			CloseMenus: true,
 		})
@@ -170,13 +170,17 @@ func (g *GameState) OpenTacticsMenu() {
 
 // ITEM MANAGEMENT & APPLICATION
 func (g *GameState) startZapItem(item foundation.Zappable) {
-	g.ui.SelectTarget(func(targetPos geometry.Point) {
+	g.ui.SelectTarget(g.getThrownChanceToHitForUI, func(targetPos geometry.Point) {
 		g.playerZapItemAndEndTurn(item, targetPos)
 	})
 }
 
 func (g *GameState) startZapEffect(zapEffectName string, payCost func(), params foundation.Params) {
-	g.ui.SelectTarget(func(targetPos geometry.Point) {
+
+	// TODO: This needs to depend on the zap effect
+	targetingFunc := g.getThrownChanceToHitForUI
+
+	g.ui.SelectTarget(targetingFunc, func(targetPos geometry.Point) {
 		if payCost != nil {
 			payCost()
 		}
@@ -187,7 +191,9 @@ func (g *GameState) startZapEffect(zapEffectName string, payCost func(), params 
 func (g *GameState) PlayerApplyItem(uiItem foundation.Item) {
 	g.playerUseOrZapItem(uiItem)
 }
-
+func (g *GameState) PlayerExamineItem(uiItem foundation.Item) {
+	g.inspectItem(uiItem)
+}
 func (g *GameState) playerUseOrZapItem(item foundation.Item) {
 	if item.IsDrug() {
 		g.actorConsumeDrug(g.Player, item.(*GenericItem))
@@ -256,7 +262,7 @@ func (g *GameState) playerRepairItemWith(toRepair foundation.Repairable, sparePa
 
 	toRepair.SetQuality(newQuality)
 
-	g.msg(foundation.HiLite("You repaired %s to %s", toRepair.Name(), fmt.Sprintf("%d%%", newQuality)))
+	g.msg(foundation.HiLite("You repaired %s to %s", toRepair.Name(), fmt.Sprintf("%d%%", int(newQuality))))
 
 	g.ui.UpdateInventory()
 }
@@ -300,7 +306,7 @@ func (g *GameState) actorUseItem(user *Actor, item foundation.Usable) {
 
 	if user == g.Player {
 		if actionEndsTurn {
-			g.endPlayerTurn(g.Player.timeNeededForActions())
+			g.endPlayerTurn(g.Player.TimeNeededForActions())
 		}
 	}
 }
@@ -380,6 +386,10 @@ func (g *GameState) DropItemFromInventory(uiItem foundation.Item) {
 	g.OpenInventory()
 }
 
+func (g *GameState) PlayerDropItem(uiItem foundation.Item) {
+	g.actorDropItem(g.Player, uiItem)
+}
+
 func (g *GameState) dropItemFromUI(uiItem foundation.Item) {
 	g.actorDropItem(g.Player, uiItem)
 }
@@ -403,17 +413,15 @@ func (g *GameState) actorDropItem(holder *Actor, item foundation.Item) {
 		if item.DropFlag() != "" {
 			g.gameFlags.Increment(item.DropFlag())
 		}
-		g.endPlayerTurn(g.Player.timeNeededForActions() / 2)
+		g.endPlayerTurn(g.Player.TimeNeededForActions() / 2)
 		g.ui.PlayCue("world/drop")
 	} else {
 		g.msg(foundation.HiLite("%s dropped %s", holder.Name(), item.Name()))
 	}
 }
 
-func (g *GameState) inspectItem(item foundation.Item) func() {
-	return func() {
-		g.ui.OpenTextWindow(fmt.Sprintf("%s: %s", item.Name(), item.Description()))
-	}
+func (g *GameState) inspectItem(item foundation.Item) {
+	g.ui.OpenTextWindow(item.FullDescription(g.inventoryColorCode(item)))
 }
 
 // EQUIP / UNEQUIP

@@ -53,7 +53,7 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 
 	currentDirection := targetPos.Sub(currentPos).ToDirection()
 
-	g.playerMove(currentPos, targetPos)
+	g.playerMove(targetPos)
 	g.gameFlags.Increment("playerRunSteps")
 	g.ui.AfterPlayerMoved(foundation.MoveInfo{
 		Direction: currentDirection,
@@ -93,8 +93,7 @@ func (g *GameState) RunPlayerPath() bool {
 	}
 
 	direction := newPos.Sub(oldPos).ToDirection()
-	g.afterPlayerMoved(oldPos, false)
-	g.endPlayerTurn(g.Player.timeNeededForMovement())
+	g.endPlayerTurn(g.Player.TimeNeededForMovement())
 	g.gameFlags.Increment("playerRunSteps")
 	g.ui.AfterPlayerMoved(foundation.MoveInfo{
 		Direction: direction,

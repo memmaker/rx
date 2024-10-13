@@ -10,24 +10,78 @@ import (
 	"slices"
 )
 
-func (g *GameState) GetRangedChanceToHitForUI(target foundation.ActorForUI) foundation.RangedCtH {
+func (g *GameState) getRangedChanceToHitForUI(target foundation.ActorForUI) foundation.AttackInfo {
 	defender := target.(*Actor)
 	attacker := g.Player
 	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
 	if !hasWeapon || !weapon.IsLoaded() {
-		return foundation.RangedCtH{}
+		return foundation.RangedAttackInfo{}
 	}
 
 	weaponSkill := weapon.GetSkillUsed()
 	baseSkill := attacker.GetCharSheet().GetSkill(weaponSkill)
 
-	cth, modifiers := g.getRangedChanceToHit(attacker, weapon, defender, g.NewAmmo(weapon.GetLoadedAmmo().InternalName(), weapon.BulletCountForCurrentAttackMode()))
-	return foundation.RangedCtH{
-		SkillUsed: weaponSkill,
-		SkillBase: baseSkill,
-		Mods:      modifiers,
-		HitChance: cth,
-		Defender:  defender,
+	cth, modifiers := g.getRangedChanceToHit(attacker, weapon, defender, g.NewAmmo(weapon.GetLoadedAmmo().InternalName(), weapon.BulletCountForCurrentAttackMode()), d100.NoModifierList)
+
+	return foundation.RangedAttackInfo{
+		SkillUsed:      weaponSkill,
+		SkillBaseValue: baseSkill,
+		Mods: d100.CombatModifiers{
+			ChanceToHitMods: modifiers,
+			DamageMods:      nil,
+		},
+		CtH:             cth,
+		DamageBaseValue: weapon.GetWeaponDamageForCurrentAttackMode(),
+		Victim:          defender,
+	}
+}
+
+func (g *GameState) getThrownChanceToHitForUI(target foundation.ActorForUI) foundation.AttackInfo {
+	defender := target.(*Actor)
+	attacker := g.Player
+
+	distance := int(geometry.Distance(attacker.Position(), defender.Position()))
+	strength := attacker.GetCharSheet().GetStat(d100.Strength)
+
+	perception := attacker.GetCharSheet().GetStat(d100.Perception)
+
+	agility := attacker.GetCharSheet().GetStat(d100.Agility)
+
+	baseChance := min(perception, agility) * 10
+
+	maxDist := strength * 2
+
+	var cthMods []d100.Modifier
+	cth := baseChance
+	if distance > 1 && distance > maxDist {
+		delta := distance - maxDist
+		cth = baseChance - (delta * 3)
+		cthMods = append(cthMods, d100.DefaultModifier{
+			Source:    "Distance",
+			Modifier:  -(delta * 3),
+			Order:     0,
+			IsPercent: true,
+		})
+	} else if distance == 1 {
+		cth = baseChance + 100
+		cthMods = append(cthMods, d100.DefaultModifier{
+			Source:    "Point Blank",
+			Modifier:  +100,
+			Order:     0,
+			IsPercent: true,
+		})
+	}
+
+	return foundation.RangedAttackInfo{
+		SkillUsed:      d100.SkillForThrowing,
+		SkillBaseValue: baseChance,
+		Mods: d100.CombatModifiers{
+			ChanceToHitMods: cthMods,
+			DamageMods:      nil,
+		},
+		CtH:             cth,
+		DamageBaseValue: fxtools.Interval{},
+		Victim:          defender,
 	}
 }
 
@@ -49,9 +103,9 @@ func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []
 	isMelee := true
 	if mainHandItem.IsRangedWeapon() && mainHandItem.IsLoaded() {
 		isMelee = false
-		baseChance, _ = g.getRangedChanceToHit(g.Player, mainHandItem, victim, g.NewAmmo(mainHandItem.GetLoadedAmmo().InternalName(), mainHandItem.BulletCountForCurrentAttackMode()))
+		baseChance, _ = g.getRangedChanceToHit(g.Player, mainHandItem, victim, g.NewAmmo(mainHandItem.GetLoadedAmmo().InternalName(), mainHandItem.BulletCountForCurrentAttackMode()), d100.NoModifierList)
 	} else if mainHandItem.IsMeleeWeapon() {
-		baseChance = g.getMeleeChanceToHit(g.Player, mainHandItem, victim)
+		baseChance, _ = g.getMeleeChanceToHit(g.Player, mainHandItem, victim, d100.NoModifierList)
 	}
 	return victim.GetBodyPartsAndHitChances(baseChance, isMelee)
 }
@@ -109,7 +163,9 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 	if !g.currentMap().Contains(loc) {
 		return false
 	}
-
+	if g.showEverything {
+		return true
+	}
 	// special abilities
 	canSeeFood := g.Player.HasFlag(foundation.FlagSeeFood)
 	if g.IsFoodAt(loc) && canSeeFood {
@@ -132,7 +188,7 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 	if !g.currentMap().IsExplored(loc) {
 		return false
 	}
-	isVisibleToPlayer := g.canPlayerSee(loc) || g.showEverything
+	isVisibleToPlayer := g.canPlayerSee(loc)
 
 	return isVisibleToPlayer
 }
@@ -230,11 +286,11 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	}
 	if g.currentMap().IsActorAt(pos) && g.Player.Position() != pos {
 		actor := g.currentMap().ActorAt(pos)
-		return foundation.HiLite("You see %s", actor.LookInfo())
+		return foundation.HiLite(actor.LookInfo())
 	}
 	if g.currentMap().IsDownedActorAt(pos) && g.Player.Position() != pos {
 		actor := g.currentMap().DownedActorAt(pos)
-		return foundation.HiLite("You see %s", actor.LookInfo())
+		return foundation.HiLite(actor.LookInfo())
 	}
 	if g.currentMap().IsItemAt(pos) {
 		item := g.currentMap().ItemAt(pos)
@@ -289,7 +345,10 @@ func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 	}
 
 	if mapCell.Item != nil {
-		return foundation.EntityTypeItem
+		item := *mapCell.Item
+		if !item.IsHidden() {
+			return foundation.EntityTypeItem
+		}
 	}
 
 	if mapCell.Object != nil {
@@ -343,7 +402,7 @@ func (g *GameState) playerVisibleItemsByDistance() []foundation.Item {
 }
 
 func (g *GameState) canPlayerSee(pos geometry.Point) bool {
-	return g.playerFoV.Visible(pos)
+	return g.Player.CanSee(pos)
 }
 
 func (g *GameState) GetFilteredInventory(filter func(item foundation.Item) bool) []foundation.Item {

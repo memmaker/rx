@@ -3,8 +3,8 @@ package game
 import (
 	"RogueUI/d100"
 	"RogueUI/foundation"
+	"RogueUI/fsmai"
 	"RogueUI/gridmap"
-	"cmp"
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/cview"
@@ -15,154 +15,10 @@ import (
 	"image/color"
 	"math/rand"
 	"path"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
 )
-
-type PointInTime struct {
-	Turns int
-	Time  time.Time
-}
-
-func (t PointInTime) AddDuration(duration time.Duration) PointInTime {
-	return PointInTime{
-		Turns: t.Turns,
-		Time:  t.Time.Add(duration),
-	}
-}
-
-func (t PointInTime) AddDurationAndTurn(duration time.Duration) PointInTime {
-	return PointInTime{
-		Turns: t.Turns + 1,
-		Time:  t.Time.Add(duration),
-	}
-}
-
-func (t PointInTime) WithTurns(turns int) PointInTime {
-	return PointInTime{
-		Turns: turns,
-		Time:  t.Time,
-	}
-}
-
-func (t PointInTime) WithTime(time time.Time) PointInTime {
-	return PointInTime{
-		Turns: t.Turns,
-		Time:  time,
-	}
-}
-
-func (t PointInTime) TurnsSince(inTime PointInTime) int {
-	return t.Turns - inTime.Turns
-}
-
-func (t PointInTime) MinutesSince(inTime PointInTime) int {
-	return int(t.Time.Sub(inTime.Time).Minutes())
-}
-
-func (t PointInTime) HoursSince(inTime PointInTime) int {
-	return int(t.Time.Sub(inTime.Time).Hours())
-}
-
-func (t PointInTime) DaysSince(inTime PointInTime) int {
-	return int(t.Time.Sub(inTime.Time).Hours() / 24)
-}
-
-type TimeTracker map[string]PointInTime
-
-func (t TimeTracker) String() string {
-	if len(t) == 0 {
-		return "No time tracked"
-	}
-	out := make([]string, len(t))
-	i := 0
-	for key, value := range t {
-		out[i] = fmt.Sprintf("%s: %s", key, value.Time.Format("2006-01-02 15:04"))
-		i++
-	}
-	slices.SortStableFunc(out, func(i, j string) int {
-		return cmp.Compare(i, j)
-	})
-	return strings.Join(out, "\n")
-}
-
-type Timed interface {
-	ShouldActivate(tickCount int) bool
-	IsAlive(tickCount int) bool
-	String() string
-}
-type TimedFunc struct {
-	Timed
-	ActionOnThing            func()
-	TickCount                int
-	ActivateBeforeLeavingMap bool
-}
-
-func (f TimedFunc) WithTickCount(i int) TimedFunc {
-	f.TickCount = i
-	return f
-}
-
-type Metronome struct {
-	timed []TimedFunc
-}
-
-func (m *Metronome) AddTimed(timed Timed, activateOnLeave bool, action func()) {
-	m.timed = append(m.timed, TimedFunc{
-		Timed:                    timed,
-		ActionOnThing:            action,
-		TickCount:                0,
-		ActivateBeforeLeavingMap: activateOnLeave,
-	})
-}
-func (m *Metronome) LeavingMapEvents() bool {
-	activate := fxtools.FilterSlice(m.timed, func(timed TimedFunc) bool {
-		return timed.ActivateBeforeLeavingMap
-	})
-	if len(activate) == 0 {
-		return false
-	}
-	for _, timed := range activate {
-		timed.ActionOnThing()
-	}
-	m.timed = fxtools.FilterSlice(m.timed, func(timed TimedFunc) bool {
-		return timed.IsAlive(timed.TickCount)
-	})
-	return true
-}
-func (m *Metronome) Tick() {
-	m.timed = fxtools.FilterSlice(m.timed, func(timed TimedFunc) bool {
-		return timed.IsAlive(timed.TickCount)
-	})
-	for i, timed := range m.timed {
-		if timed.ShouldActivate(timed.TickCount) {
-			timed.ActionOnThing()
-		}
-		m.timed[i] = timed.WithTickCount(timed.TickCount + 1)
-	}
-}
-
-func (m *Metronome) HasTimed(item Timed) bool {
-	for _, timed := range m.timed {
-		if timed.Timed == item {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *Metronome) String() string {
-	if len(m.timed) == 0 {
-		return "No timed things"
-	}
-	out := make([]string, len(m.timed))
-	for i, timed := range m.timed {
-		out[i] = fmt.Sprintf("%d: %s", timed.TickCount, timed.Timed.String())
-	}
-	return fmt.Sprintf("Timed things:\n%s", strings.Join(out, "\n"))
-}
 
 type GameState struct {
 	// Global State (Needs to be saved)
@@ -177,9 +33,7 @@ type GameState struct {
 
 	// Player State (Needs to be saved)
 	Player            *Actor
-	playerFoV         *geometry.FOV
 	playerLightSource *gridmap.LightSource
-	playerDijkstraMap map[geometry.Point]int
 	playerLastAimedAt d100.BodyPart
 
 	// Map State
@@ -212,14 +66,98 @@ type GameState struct {
 
 	// Temporary State
 	chatterCache map[*Actor]map[foundation.ChatterType][]EntriesWithCondition
+	quipCache    map[string][]string
+	// Once a trap type has been successfully disarmed once, it can be disarmed again
+	knownTraps map[string]bool
 }
 
+func (g *GameState) OpenPerkSelection(done func()) {
+	var menuItems []foundation.MenuItem
+	for p := d100.Perk(0); p < d100.PerkCount; p++ {
+		if g.canSelectPerk(g.Player, p) {
+			menuItems = append(menuItems, foundation.MenuItem{
+				Name: p.String(),
+				Action: func() {
+					g.ui.AskForConfirmation("Choose this?", p.Description(), func(didConfirm bool) {
+						if didConfirm {
+							g.Player.GetCharSheet().AddPerk(p)
+							g.msg(foundation.HiLite("You have received the %s perk", p.String()))
+							done()
+						}
+					})
+				},
+				CloseMenus: true,
+			})
+		}
+	}
+	if len(menuItems) == 0 {
+		g.msg(foundation.Msg("You have no perks to select"))
+		return
+	}
+	g.ui.OpenMenu(menuItems)
+}
+
+func (g *GameState) DebugClickAt(pos geometry.Point) {
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Clicked; %s", pos.String()))
+	lines = append(lines, fmt.Sprintf("Light Brightness: %.2f", g.LightAt(pos).Brightness()))
+
+	g.msg(foundation.Msg(strings.Join(lines, "\n")))
+}
+
+func (g *GameState) CanActorAttackNextTurn(enemy foundation.ActorForUI) bool {
+	enemyActor := enemy.(*Actor)
+	if !enemyActor.IsHostileTowards(g.Player) {
+		return false
+	}
+	minTime := g.Player.minimalTimeNeededForAction()
+	enemyTU := enemy.TimeEnergy() + minTime
+	enemyNeeds := enemy.TimeNeededForAttack()
+
+	return enemyTU >= enemyNeeds
+}
+
+func (g *GameState) PlayerQuip() {
+	attitudes := []string{"quotes", "respectful", "indifferent", "snarky", "aggressive"}
+	attitude := attitudes[rand.Intn(len(attitudes))]
+
+	quips, exist := g.quipCache[attitude]
+
+	if !exist {
+		quipFile := path.Join(g.config.DataRootDir, "quips", attitude+".txt")
+		quips = fxtools.ReadFileAsLines(quipFile)
+		if g.quipCache == nil {
+			g.quipCache = make(map[string][]string)
+		}
+		g.quipCache[attitude] = quips
+	}
+
+	if len(quips) == 0 {
+		g.tryAddChatter(g.Player, "I have nothing to say.")
+		return
+	}
+
+	randomQuip := quips[rand.Intn(len(quips))]
+	g.tryAddChatter(g.Player, randomQuip)
+}
 func (g *GameState) PlayerToggleRun() {
 	if g.Player.HasFlag(foundation.FlagRunning) {
 		g.Player.UnsetFlag(foundation.FlagRunning)
 	} else if g.Player.GetCharSheet().GetActionPoints() > 0 {
 		g.Player.SetFlag(foundation.FlagRunning)
+		g.Player.UnsetFlag(foundation.FlagSneaking)
 	}
+	g.ui.UpdateVisibleActors()
+}
+
+func (g *GameState) PlayerToggleSneak() {
+	if g.Player.HasFlag(foundation.FlagSneaking) {
+		g.Player.UnsetFlag(foundation.FlagSneaking)
+	} else if g.Player.GetCharSheet().GetActionPoints() > 0 {
+		g.Player.UnsetFlag(foundation.FlagRunning)
+		g.Player.SetFlag(foundation.FlagSneaking)
+	}
+	g.ui.UpdateVisibleActors()
 }
 
 func (g *GameState) SetIronMan() {
@@ -245,39 +183,41 @@ func (g *GameState) IsActorAlliedWithPlayer(ally foundation.ActorForUI) bool {
 }
 
 func (g *GameState) PlayerInteractAtPosition(pos geometry.Point) {
-	isContextAvailable := g.OpenContextMenuFor(pos)
-
-	if !isContextAvailable {
-		moveDistance := g.currentMap().MoveDistance(g.Player.Position(), pos)
-		if moveDistance == 1 {
-			direction := pos.Sub(g.Player.Position())
-			g.ManualMovePlayer(direction.ToDirection())
-			return
-		}
-		if g.currentMap().IsCurrentlyPassable(pos) {
-			g.Player.RemoveGoal()
-
-			pathTo := g.currentMap().GetJPSPath(g.Player.Position(), pos, func(point geometry.Point) bool {
-				return g.currentMap().IsWalkableFor(point, g.Player)
-			})
-
-			if len(pathTo) > 0 {
-				g.Player.currentPath = pathTo
-				g.Player.currentPathIndex = 0
-				g.Player.currentPathBlockedCount = 0
-				g.Player.SetGoal(ActorGoal{
-					Action: func(g *GameState, a *Actor) int {
-						return moveTowards(g, a, pos)
-					},
-					Achieved: func(g *GameState, a *Actor) bool {
-						return a.Position() == pos || a.cannotFindPath()
-					},
-				})
-				g.RunPlayerPath()
-			}
-		}
-		// assume movement to this position..
+	if g.OpenContextMenuFor(pos) {
+		return
 	}
+	// Move..
+
+	moveDistance := g.currentMap().MoveDistance(g.Player.Position(), pos)
+	if moveDistance == 1 {
+		direction := pos.Sub(g.Player.Position())
+		g.ManualMovePlayer(direction.ToDirection())
+		return
+	}
+	if g.currentMap().IsCurrentlyPassable(pos) {
+		g.Player.RemoveGoal()
+
+		pathTo := g.currentMap().GetJPSPath(g.Player.Position(), pos, func(point geometry.Point) bool {
+			return g.currentMap().IsWalkableFor(point, g.Player)
+		})
+
+		if len(pathTo) > 0 {
+			g.Player.currentPath = pathTo
+			g.Player.currentPathIndex = 0
+			g.Player.currentPathBlockedCount = 0
+			g.Player.SetGoal(ActorGoal{
+				Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
+					return moveTowards(g, a, pos)
+				},
+				Achieved: func(g *GameState, a *Actor) bool {
+					return a.Position() == pos || a.cannotFindPath()
+				},
+				ActionFormatString: "%s moves",
+			})
+			g.RunPlayerPath()
+		}
+	}
+	// assume movement to this position..
 }
 
 func (g *GameState) IsPlayerOverEncumbered() bool {
@@ -302,7 +242,11 @@ func (g *GameState) currentMap() *gridmap.GridMap[*Actor, foundation.Item, Objec
 
 func (g *GameState) WizardAdvanceTime() {
 	g.advanceTime(time.Minute * 30)
-	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Time.Format("15:04"))))
+	g.printTime()
+}
+
+func (g *GameState) printTime() {
+	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Time.Format("Monday 15:04, 2006-01-02"))))
 }
 
 func (g *GameState) LightAt(p geometry.Point) fxtools.HDRColor {
@@ -337,9 +281,8 @@ func NewGameState(ui foundation.GameUI, config *foundation.Configuration) *GameS
 	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
 	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
 	g := &GameState{
-		config:    config,
-		ui:        ui,
-		playerFoV: geometry.NewFOV(geometry.NewRect(0, 0, config.MapWidth, config.MapHeight)),
+		config: config,
+		ui:     ui,
 		playerLightSource: &gridmap.LightSource{
 			Pos:          geometry.Point{},
 			Radius:       5,
@@ -366,14 +309,24 @@ func (g *GameState) GetPlayerNameAndIcon() (string, textiles.TextIcon) {
 	}
 }
 func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
-	newActor := NewActorFromRecord(rec, g.palette, g.NewItemFromString)
+	scheduleDir := path.Join(g.config.DataRootDir, "schedules")
+	newActor := NewActorFromRecord(rec, g.palette, scheduleDir, g.NewItemFromString)
 	if newActor != nil {
+		g.FSMInit(newActor)
 		spawnPos := newActor.Position()
 		newActor.SpawnPosition = spawnPos
 		return newActor, spawnPos
 	}
 	panic(fmt.Sprintf("Could not create actor from record: %v", rec))
 	return nil, geometry.Point{}
+}
+
+func (g *GameState) FSMInit(newActor *Actor) {
+	defaultState := fsmai.StateNeutral
+	if newActor.IsAggressive() {
+		defaultState = fsmai.StateAggressive
+	}
+	newActor.FSM = NewActorFSM(g, newActor, defaultState, DefaultBehaviorFactory)
 }
 func (g *GameState) NewItem(rec recfile.Record) (foundation.Item, geometry.Point) {
 	newItem := NewItemFromRecord(rec, g.iconForItem)
@@ -407,6 +360,9 @@ func (g *GameState) init() {
 		g.NewItem,
 		g.NewObject,
 	)
+	g.activeMaps = make(map[string]*gridmap.GridMap[*Actor, foundation.Item, Object])
+	g.chatterCache = make(map[*Actor]map[foundation.ChatterType][]EntriesWithCondition)
+	g.knownTraps = make(map[string]bool)
 
 	g.gameTime = PointInTime{
 		Turns: 0,
@@ -445,6 +401,8 @@ func (g *GameState) initPlayerAndMap() {
 	//playerSheet.SetSkillAdjustment(special.SmallGuns, 50)
 	playerName, playerIcon := g.GetPlayerNameAndIcon()
 	g.Player = NewPlayer(playerName, playerIcon, playerSheet)
+	g.FSMInit(g.Player)
+
 	var spawnMap, spawnLocation string
 	playerStartInfo := path.Join(g.config.DataRootDir, "definitions", "player_start.rec")
 	if fxtools.FileExists(playerStartInfo) {
@@ -493,9 +451,9 @@ func (g *GameState) initPlayerAndMap() {
 
 	g.journal.Update()
 
-	g.updatePlayerFoVAndApplyExploration()
-
 	playerSheet.HealAPAndHPCompletely()
+
+	g.updateAllFoVsAndDijkstras()
 
 	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", loadedMap.GetMeta().MusicFile+".ogg"))
 }
@@ -503,6 +461,14 @@ func (g *GameState) attachHooksToPlayer() {
 	equipment := g.Player.GetEquipment()
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
 		g.ui.UpdateStats()
+
+		if flag == foundation.FlagSneaking {
+			if g.Player.HasFlag(foundation.FlagSneaking) {
+				g.ui.SetSneakOverlay(g.createSneakOverlay())
+			} else {
+				g.ui.SetSneakOverlay(nil)
+			}
+		}
 	})
 	g.Player.GetCharSheet().SetOnStatChangeHandler(func(stat d100.Stat) {
 		g.ui.UpdateStats()
@@ -510,24 +476,25 @@ func (g *GameState) attachHooksToPlayer() {
 
 	g.Player.GetInventory().SetOnChangeHandler(g.ui.UpdateInventory)
 
-	g.Player.GetInventory().SetOnBeforeRemove(equipment.UnEquip)
-
 	g.Player.GetCharSheet().SetSkillModifierHandler(func(skill d100.Skill) []d100.Modifier {
 		modsFromItems := g.Player.GetInventory().GetSkillModifiersFromItems(skill)
+		modsFromEquipment := equipment.GetSkillModifiersFromEquippedItems(skill)
 		modsFromActiveEffects := g.Player.GetTemporarySkillModifiers(skill)
-		return append(modsFromItems, modsFromActiveEffects...)
+		return append(append(modsFromItems, modsFromEquipment...), modsFromActiveEffects...)
 	})
 
 	g.Player.GetCharSheet().SetStatModifierHandler(func(stat d100.Stat) []d100.Modifier {
 		modsFromItems := g.Player.GetInventory().GetStatModifiersFromItems(stat)
+		modsFromEquipment := equipment.GetStatModifiersFromEquippedItems(stat)
 		modsFromActiveEffects := g.Player.GetTemporaryStatModifiers(stat)
-		return append(modsFromItems, modsFromActiveEffects...)
+		return append(append(modsFromItems, modsFromEquipment...), modsFromActiveEffects...)
 	})
 
 	g.Player.GetCharSheet().SetDerivedStatModifierHandler(func(stat d100.DerivedStat) []d100.Modifier {
 		modsFromItems := g.Player.GetInventory().GetDerivedStatModifiersFromItems(stat)
+		modsFromEquipment := equipment.GetDerivedStatModifiersFromEquippedItems(stat)
 		modsFromActiveEffects := g.Player.GetTemporaryDerivedStatModifiers(stat)
-		return append(modsFromItems, modsFromActiveEffects...)
+		return append(append(modsFromItems, modsFromEquipment...), modsFromActiveEffects...)
 	})
 
 	equipment.SetOnChangeHandler(g.updateUIStatus)
@@ -592,6 +559,7 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 
 	g.metronome.Tick()
 
+	//g.msg(foundation.Msg(fmt.Sprintf("PlayerTimeSpent: %d", playerTimeTakenForTurn)))
 	g.enemyMovement(playerTimeTakenForTurn)
 
 	if didCancel {
@@ -609,11 +577,15 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 
 	g.checkJournal()
 
-	g.updateUIStatus()
-
 	g.checkPlayerCanAct()
 
-	g.updatePlayerFoVAndApplyExploration()
+	if g.Player.HasFlag(foundation.FlagSneaking) {
+		g.ui.SetSneakOverlay(g.createSneakOverlay())
+	} else {
+		g.ui.SetSneakOverlay(nil)
+	}
+
+	g.updateUIStatus()
 }
 
 func (g *GameState) checkJournal() {
@@ -650,13 +622,6 @@ func (g *GameState) gameOver(death string) {
 	g.ui.ShowGameOver(scoreInfo, highScores)
 }
 
-func (g *GameState) canActorSee(victim *Actor, position geometry.Point) bool {
-	if geometry.DistanceChebyshev(victim.Position(), position) <= 1 {
-		return true
-	}
-	return g.currentMap().IsLineOfSightClear(victim.Position(), position, g.IsSomethingBlockingTargetingAtLoc)
-}
-
 func (g *GameState) tryAddRandomChatter(actor *Actor, textType foundation.ChatterType) bool {
 	chatter := g.GetRandomChatter(actor, textType)
 	return g.tryAddChatter(actor, chatter)
@@ -686,7 +651,9 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 			return
 		}
 		itemStack := itemUI
-		g.PlayerStealOrPlantItem(actor, itemStack, true)
+		if g.PlayerStealOrPlantItem(actor, itemStack, true) {
+			g.StartPickpocket(actor)
+		}
 	}
 
 	leftToRight := func(itemUI foundation.Item, amount int) {
@@ -694,17 +661,35 @@ func (g *GameState) StartPickpocket(actor *Actor) {
 			return
 		}
 		itemStack := itemUI
-		g.PlayerStealOrPlantItem(actor, itemStack, false)
+		if g.PlayerStealOrPlantItem(actor, itemStack, false) {
+			g.StartPickpocket(actor)
+		}
 	}
 
 	leftName := g.Player.Name()
 	rightName := actor.Name()
 	playerItems := g.Player.GetInventory().Items()
 
-	g.ui.ShowGiveAndTakeContainer(leftName, playerItems, rightName, stealableItems, rightToLeft, leftToRight)
+	stealAll := func() {
+		loot := actor.GetInventory().StackedItemsWithFilter(func(item foundation.Item) bool {
+			return actorEquipment.IsNotEquipped(item)
+		})
+		caught := false
+		for _, lootItem := range loot {
+			if !g.PlayerStealOrPlantItem(actor, lootItem, false) {
+				caught = true
+				break
+			}
+		}
+		if !caught {
+			g.StartPickpocket(actor)
+		}
+	}
+
+	g.ui.ShowGiveAndTakeContainer(leftName, playerItems, rightName, stealableItems, rightToLeft, leftToRight, stealAll)
 }
 
-func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item foundation.Item, isSteal bool) {
+func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item foundation.Item, isSteal bool) bool {
 	itemStealModifier := 0
 	if item.Category().IsEasySteal() {
 		itemStealModifier = 10
@@ -735,19 +720,20 @@ func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item foundation.Item, 
 	skillRoll := g.Player.GetCharSheet().SkillRoll(d100.SkillForPickPockets, itemStealModifier)
 	if skillRoll.Success {
 		transferFunc(item)
-		g.StartPickpocket(victim)
+		return true
 	} else {
 		g.msg(foundation.HiLite("%s notices your hands in his pockets", victim.Name()))
 		if victim.IsSleeping() {
 			victim.WakeUp()
 		}
 		g.trySetHostile(victim, g.Player)
+		return false
 	}
 }
 
 func (g *GameState) ShowDateTime() {
 	// full date
-	g.msg(foundation.HiLite("The time is %s", g.gameTime.Time.Format("2006-01-02 15:04")))
+	g.printTime()
 }
 func (g *GameState) getItemTemplateByName(shortString string) recfile.Record {
 	if record, ok := g.mapItemTemplates[shortString]; ok {
@@ -772,7 +758,7 @@ func (g *GameState) IsInShootingRange(attacker *Actor, defender *Actor) bool {
 
 	inRange := moveDistance <= weaponRange
 
-	visible := g.canActorSee(attacker, defenderPos)
+	visible := attacker.CanSee(defenderPos)
 
 	return inRange && visible
 }
@@ -784,7 +770,7 @@ func (g *GameState) IsInTalkingRange(one *Actor, two *Actor) bool {
 
 	inRange := moveDistance <= 6
 
-	visible := g.canActorSee(one, twoPos)
+	visible := one.CanSee(twoPos)
 
 	return inRange && visible
 }
@@ -801,7 +787,7 @@ func (g *GameState) getShootingRangePosition(attacker *Actor, weaponRange int, v
 	bestDistance := geometry.Distance(attackerPos, victimPos)
 
 	for pos, _ := range mapAroundVictim {
-		if !g.canActorSee(victim, pos) || pos == victimPos {
+		if !victim.CanSee(pos) || pos == victimPos {
 			continue
 		}
 
@@ -824,7 +810,7 @@ func (g *GameState) advanceTimeAndTurn(duration time.Duration) {
 func (g *GameState) advanceTime(duration time.Duration) {
 	g.gameTime = g.gameTime.AddDuration(duration)
 	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
-	g.updatePlayerFoVAndApplyExploration()
+	g.updateFoVAndDijkstraMap(g.Player)
 }
 
 func (g *GameState) awardXP(xp int, text string) {
@@ -967,12 +953,105 @@ func (g *GameState) actorConsumeDrug(actor *Actor, item *GenericItem) {
 	} else {
 		g.msg(foundation.HiLite("%s consumes %s", actor.Name(), item.Name()))
 	}
-
-	g.removeItemFromInventory(actor, item)
+	if item.StackSize() > 1 {
+		item.RemoveStacks(1)
+		g.ui.UpdateInventory()
+	} else {
+		g.removeItemFromInventory(actor, item)
+	}
 }
 
 func (g *GameState) NewAmmo(name string, bullets int) *Ammo {
 	ammo := g.newItemFromName(name).(*Ammo)
 	ammo.SetStackSize(bullets)
 	return ammo
+}
+
+func (g *GameState) createSneakOverlay() map[geometry.Point]fxtools.HDRColor {
+	canBeDetectedHere := func(pos geometry.Point) bool {
+		for _, actor := range g.currentMap().Actors() {
+			dist := geometry.Distance(pos, actor.Position())
+			if actor != g.Player && actor.CanSee(pos) && dist <= float64(actor.DetectionRange()) {
+				return true
+			}
+		}
+		return false
+	}
+	var marked map[geometry.Point]fxtools.HDRColor
+	for _, visPos := range g.Player.Visibles() {
+		if !g.currentMap().IsTileWalkable(visPos) {
+			continue
+		}
+		if canBeDetectedHere(visPos) {
+			if marked == nil {
+				marked = make(map[geometry.Point]fxtools.HDRColor)
+			}
+			// dark orange-red
+			marked[visPos] = fxtools.HDRColor{R: 1.4, G: 0.3, B: 0.3, A: 1}
+		}
+	}
+	return marked
+}
+
+func (g *GameState) updateAllFoVsAndDijkstras() {
+	for _, actor := range g.currentMap().Actors() {
+		g.updateFoVAndDijkstraMap(actor)
+	}
+
+	if g.Player.HasFlag(foundation.FlagSneaking) {
+		g.ui.SetSneakOverlay(g.createSneakOverlay())
+	}
+}
+
+func (g *GameState) inventoryColorCode(item foundation.Item) string {
+	return textiles.RGBAToFgColorCode(g.inventoryColors[item.Category()])
+}
+
+func (g *GameState) SetNeutral(actor *Actor) {
+	actor.SetNeutral()
+	g.FSMInit(actor)
+}
+
+func (g *GameState) SetAggressive(actor *Actor) {
+	actor.SetAggressive()
+	g.FSMInit(actor)
+}
+
+func (g *GameState) canSneakPast(actor *Actor, observer *Actor) bool {
+	actorPos := actor.Position()
+	forcedDelta := 0
+	lightAtActorPos := g.LightAt(actorPos).Brightness()
+	if lightAtActorPos < 1.0 {
+		forcedDelta += int((1.0 - lightAtActorPos) * 50)
+	}
+
+	sneakSkill := actor.GetCharSheet().GetSkill(d100.SkillForSneak)
+	perception := observer.GetCharSheet().GetStat(d100.Perception) * 10
+
+	sneakSkill, perception = advantageForOne(sneakSkill, perception, forcedDelta)
+
+	result := d100.SkillContest(d100.Percentage(sneakSkill), 0, d100.Percentage(perception), 0)
+	return result == 0
+}
+
+func (g *GameState) canSelectPerk(player *Actor, perk d100.Perk) bool {
+	currentLevel := player.GetPerkLevel(perk)
+	if currentLevel >= perk.MaxLevel() {
+		return false
+	}
+	requirements := d100.GetPerkRequirements(perk)
+	return player.GetCharSheet().MeetsRequirements(requirements)
+}
+
+func advantageForOne(one int, two int, advantage int) (int, int) {
+	if two > advantage {
+		two -= advantage
+	} else if 100-one > advantage {
+		one += advantage
+	} else {
+		one = 100
+		two = 0
+	}
+
+	return one, two
 }

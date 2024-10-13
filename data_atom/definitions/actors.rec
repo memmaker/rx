@@ -333,7 +333,8 @@ Description: Rat
 LongDescription: A typical large rat.
 Icon: R
 Flags: Is_Animal
-default_relation: hostile
+faction: rats
+aggressive: true
 audio: rat
 Foreground: light_gray_1
 Age: 25

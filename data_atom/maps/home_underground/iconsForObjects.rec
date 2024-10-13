@@ -70,3 +70,6 @@ Icon: Θ
 Foreground: red_8
 Background: magenta_5
 
+Name: frag_mine
+Icon: ☼
+Foreground: yellow_2

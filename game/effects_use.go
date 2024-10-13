@@ -16,7 +16,6 @@ func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foun
 		"hallucination":                  endTurn(true, noAnim(hallucination)),
 		"levitation":                     endTurn(true, noAnim(levitation)),
 		"see_invisible":                  endTurn(true, noAnim(seeInvisible)),
-		"confuse_monster_on_next_attack": endTurn(true, noAnim(confuseEnemyOnNextAttack)),
 		"reveal_map":                     endTurn(true, revealMap),
 		"freeze_monsters_in_room":        endTurn(true, holdAllVisibleMonsters),
 		"sleep_monsters_in_room":         endTurn(true, sleepAllVisibleMonsters),
@@ -307,7 +306,7 @@ func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
 
 		g.ui.AddAnimations([]foundation.Animation{animation})
 
-		g.endPlayerTurn(g.Player.timeNeededForActions())
+		g.endPlayerTurn(g.Player.TimeNeededForActions())
 
 	}
 
@@ -341,7 +340,7 @@ func playerEnchantWeapon(g *GameState, actor *Actor) []foundation.Animation {
 
 		g.ui.AddAnimations([]foundation.Animation{animation})
 
-		g.endPlayerTurn(g.Player.timeNeededForActions())
+		g.endPlayerTurn(g.Player.TimeNeededForActions())
 	}
 
 	g.ui.OpenInventoryForSelection(inventory, "Enchant which weapon?", onSelected)
@@ -401,16 +400,6 @@ func confuse(g *GameState, target *Actor) []foundation.Animation {
 	return OneAnimation(confuseAnim)
 }
 
-func confuseEnemyOnNextAttack(g *GameState, user *Actor) {
-	user.GetFlags().Set(foundation.FlagCanConfuse)
-	var msg foundation.HiLiteString
-	if user == g.Player {
-		msg = foundation.HiLite("%s start glowing red", "You")
-	} else {
-		msg = foundation.HiLite("%s starts glowing red", user.Name())
-	}
-	g.msg(msg)
-}
 func revealMap(g *GameState, user *Actor) []foundation.Animation {
 	dMap := g.currentMap().GetDijkstraMap(user.Position(), 1000, func(point geometry.Point) bool {
 		return g.currentMap().IsTileWalkable(point) || g.currentMap().HasWalkableNeighbor(point)
@@ -475,7 +464,7 @@ func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 		if actor == g.Player {
 			continue
 		}
-		actor.GetFlags().Set(foundation.FlagScared)
+		actor.FSM.SendEvent(NewHeavilyInjuredEvent(user))
 	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
@@ -491,9 +480,6 @@ func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 	return animations
 }
 
-func (g *GameState) removePlayerCanConfuse() {
-	g.Player.GetFlags().Unset(foundation.FlagCanConfuse)
-}
 
 // Adapted from: https://github.com/memmaker/rogue-pc-modern-C/blob/582340fcaef32dd91595721efb2d5db41ff3cb05/src/potions.c#L47
 // and

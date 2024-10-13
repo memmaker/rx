@@ -1,0 +1,31 @@
+# idea:
+# define when a NPC should be where
+# and optionally what he does there
+
+%rec: meta
+
+map: home_area
+
+%rec: slots
+
+day: every_day
+time: 08:00
+location: behind_counter_hospital
+description: %s is busy looking through some medical records
+
+day: every_day
+time: 18:00
+location: backroom_hospital
+description: %s is working on some cyberware
+
+day: monday
+time: 12:00
+location: dark_alley_meeting_spot_one
+description: %s is waiting, looking around nervously
+observation_flag: Knows(daniel_dark_alley_meeting)
+
+day: monday
+time: 12:10
+location: behind_counter_hospital
+description: %s is busy looking through some medical records
+

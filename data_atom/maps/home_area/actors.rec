@@ -1,5 +1,46 @@
 %rec: default
 
+Name: anna_whitaker
+Icon: A
+Foreground: light_gray_2
+Description: a fashionista
+Dialogue: anna_whitaker
+fashion_vendor_style: edgerunner
+LongDescription: 
+Age: 25
+Gender: 1
+BodyType: 0
+XP: 50
+KillType: 1
+DamageType: 0
+TeamNum: 1
+HitPoints: 46
+ActionPoints: 8
+ArmorClass: 6
+MeleeDamage: 1
+CarryWeight: 150
+Sequence: 12
+HealingRate: 1
+CriticalChance: 5
+Strength: 5
+Perception: 6
+Endurance: 4
+Charisma: 7
+Intelligence: 7
+Agility: 6
+Luck: 5
+SkillBonusSmallGuns: 35
+SkillBonusBigGuns: 12
+SkillBonusUnarmed: 8
+SkillBonusMelee: 29
+SkillBonusSpeech: 41
+SkillBonusBarter: 57
+DREMP: 500
+DRRadiation: 8
+DRPoison: 20
+SourceFile: 00000059.pro
+Position: (32,11)
+
 Name: taxi_driver
 Icon: T
 Foreground: yellow_2
@@ -53,6 +94,7 @@ SourceFile: 00000137.pro
 equipment: 10mm_pistol
 equipment: 10mm_jhp
 equipment: stimpak
+equipment: worn_jacket
 Position: (57,20)
 
 Name: duck
@@ -96,6 +138,7 @@ Icon: H
 Foreground: light_gray_2
 Description: Dr. Harker
 Dialogue: daniel_harker
+Schedule: daniel_harker
 LongDescription: 
 Age: 25
 BodyType: 0
@@ -281,11 +324,11 @@ DREMP: 500
 DRExplosive: 20
 DRRadiation: 10
 DRPoison: 25
-Equipment: 10mm_smg
-Equipment: 10mm_smg
-Equipment: 10mm_jhp(240)
+Selling: 10mm_smg(70)
+Selling: 10mm_jhp(240)
+Selling: 10mm_smg(70)
 Equipment: explosive_rocket(5)
-Equipment: rocket_launcher
+Equipment: rocket_launcher(70)
 SourceFile: 00000038.pro
 Position: (28,15)
 

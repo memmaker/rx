@@ -1,20 +1,16 @@
 %rec: default
 
-Category: ExplodingPushBox
-Description: a box
-Position: (54,20)
+Category: Trap
+Name: frag_mine
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+Position: (55,3)
 
 Category: ExplodingPushBox
 Description: a box
 Position: (76,9)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (53,18)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (18,20)
 
 Category: LockedDoor
 Description: a door
@@ -26,13 +22,44 @@ Category: BakedLight
 Radius: 5
 Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
-Position: (41,5)
+Position: (10,9)
+
+Category: Trap
+Name: frag_mine
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+Position: (71,3)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (53,18)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (18,20)
 
 Category: BakedLight
 Radius: 5
 Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
-Position: (10,9)
+Position: (41,5)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (21,18)
+
+Category: Transition
+Description: a ladder up
+Location: secret_ladder
+TargetMap: home_area
+TargetLocation: ripperdoc_toilet
+Position: (19,6)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (54,20)
 
 Category: Transition
 Description: a ladder up
@@ -47,9 +74,13 @@ Color: (1.0, 1.0, 1.0)
 Max_Intensity: 1.0
 Position: (21,5)
 
-Category: ExplodingPushBox
-Description: a box
-Position: (21,18)
+Category: Trap
+Name: frag_mine
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+Position: (76,20)
 
 Category: ExplodingPushBox
 Description: a box
@@ -67,11 +98,4 @@ Location: man_hole_east
 TargetMap: home_area
 TargetLocation: man_hole_east
 Position: (47,12)
-
-Category: Transition
-Description: a ladder up
-Location: secret_ladder
-TargetMap: home_area
-TargetLocation: ripperdoc_toilet
-Position: (19,6)
 

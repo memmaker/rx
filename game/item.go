@@ -16,7 +16,7 @@ import (
 )
 
 type GenericItem struct {
-	description  string
+	name         string
 	internalName string
 	position     geometry.Point
 	category     foundation.ItemCategory
@@ -51,6 +51,8 @@ type GenericItem struct {
 	alive                  bool
 	effectParameters       foundation.Params
 	invIndex               int
+
+	isHidden bool
 }
 
 func (i *GenericItem) SetInventoryIndex(index int) {
@@ -64,7 +66,17 @@ func (i *GenericItem) SetStackSize(count int) {
 	i.stackSize = count
 }
 func (i *GenericItem) IsStackable() bool {
-	return i.IsGold() || i.IsLockpick()
+	return i.IsGold() || i.IsLockpick() || i.IsFood() || i.IsConsumable()
+}
+
+func (i *GenericItem) Price() int {
+	return i.cost
+}
+func (i *GenericItem) IsHidden() bool {
+	return i.isHidden
+}
+func (i *GenericItem) SetHidden(hidden bool) {
+	i.isHidden = hidden
 }
 func (i *GenericItem) IsRepairable() bool {
 	return false
@@ -80,7 +92,7 @@ func (i *GenericItem) ShouldActivate(tickCount int) bool {
 	return i.charges == tickCount
 }
 
-func (i *GenericItem) IsAlive(tickCount int) bool {
+func (i *GenericItem) IsTimerTicking(tickCount int) bool {
 	return tickCount <= i.charges && i.alive
 }
 
@@ -101,7 +113,7 @@ func (i *GenericItem) GobEncode() ([]byte, error) {
 	encoder := gob.NewEncoder(&buf)
 
 	// Encode each field of the struct in order
-	if err := encoder.Encode(i.description); err != nil {
+	if err := encoder.Encode(i.name); err != nil {
 		return nil, err
 	}
 	if err := encoder.Encode(i.internalName); err != nil {
@@ -185,7 +197,7 @@ func (i *GenericItem) GobDecode(data []byte) error {
 	decoder := gob.NewDecoder(buf)
 
 	// Decode each field of the struct in order
-	if err := decoder.Decode(&i.description); err != nil {
+	if err := decoder.Decode(&i.name); err != nil {
 		return err
 	}
 	if err := decoder.Decode(&i.internalName); err != nil {
@@ -273,12 +285,17 @@ func (g *GameState) NewItemFromString(itemName string) foundation.Item {
 			return NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
 		default: // parametric item name(stackSize, quality)
 			newItem := g.newItemFromName(name)
-			count := args.GetInt(0)
-			newItem.SetStackSize(count)
-			if len(args) > 1 {
-				quality := args.GetInt(1)
-				newItem.SetQuality(d100.Percentage(quality))
+			valOne := args.GetInt(0)
+			if newItem.IsStackable() {
+				newItem.SetStackSize(valOne)
+				if len(args) > 1 {
+					quality := args.GetInt(1)
+					newItem.SetQuality(d100.Percentage(quality))
+				}
+			} else if newItem.IsRepairable() {
+				newItem.SetQuality(d100.Percentage(valOne))
 			}
+
 			return newItem
 		}
 	}
@@ -311,7 +328,7 @@ func (g *GameState) newItemFromName(itemName string) foundation.Item {
 }
 func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *GenericItem {
 	return &GenericItem{
-		description:  description,
+		name:         description,
 		internalName: fileName,
 		category:     foundation.ItemCategoryReadables,
 		textFile:     fileName,
@@ -320,7 +337,7 @@ func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *Gene
 }
 func NewKey(keyID, description string, icon textiles.TextIcon) *GenericItem {
 	return &GenericItem{
-		description:  description,
+		name:         description,
 		internalName: keyID,
 		lockFlag:     keyID,
 		category:     foundation.ItemCategoryKeys,
@@ -338,25 +355,43 @@ func (i *GenericItem) Shortcut() rune {
 }
 
 func (i *GenericItem) DisplayLength() int {
-	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut(""))
+	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut("[red]"))
 }
 
-func (i *GenericItem) Description() string {
-	return i.description
+func (i *GenericItem) FullDescription(colorCode string) string {
+	rows := i.fullDescriptionRows()
+	lines := fxtools.TableLayout(rows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
+	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+	return strings.Join(lines, "\n")
+}
+
+func (i *GenericItem) fullDescriptionRows() []fxtools.TableRow {
+	var rows []fxtools.TableRow
+	statPairs := i.getStatPairsAsRows()
+	rows = append(rows, statPairs...)
+
+	if i.IsConsumable() {
+		rows = append(rows, fxtools.NewTableRow("Duration", fmt.Sprintf("%d turns", i.charges)))
+	}
+	return rows
 }
 
 func (i *GenericItem) LongNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
+	statPairs := i.getStatPairsAsStrings()
+
+	if len(statPairs) > 0 {
+		line = cview.Escape(fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|")))
+	}
+
 	return colorCode + line + "[-]"
 }
 
 func (i *GenericItem) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 
-	statPairs := i.getStatPairsAsStrings()
-
-	if len(statPairs) > 0 {
-		line = fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|"))
+	if i.StackSize() > 1 && !i.IsGold() {
+		line = fmt.Sprintf("%s (x%d)", line, i.StackSize())
 	}
 
 	lineWithColor := colorCode + line + "[-]"
@@ -369,7 +404,9 @@ func (i *GenericItem) getStatPairsAsStrings() []string {
 	if len(i.statChanges.StatChanges) > 0 {
 		for stat := d100.Stat(0); stat < d100.StatCount; stat++ {
 			if chg, hasChg := i.statChanges.StatChanges[stat]; hasChg {
-				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, stat.ToShortString()))
+				var statName string
+				statName = stat.ToShortString()
+				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, statName))
 			}
 		}
 	}
@@ -377,7 +414,10 @@ func (i *GenericItem) getStatPairsAsStrings() []string {
 	if len(i.statChanges.SkillChanges) > 0 {
 		for skill := d100.Skill(0); skill < d100.Skill(d100.SkillCount()); skill++ {
 			if chg, hasChg := i.statChanges.SkillChanges[skill]; hasChg {
-				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, skill.ToShortString()))
+				var skillName string
+				skillName = skill.ToShortString()
+
+				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, skillName))
 			}
 		}
 	}
@@ -385,13 +425,47 @@ func (i *GenericItem) getStatPairsAsStrings() []string {
 	if len(i.statChanges.DerivedStatChanges) > 0 {
 		for stat := d100.DerivedStat(0); stat < d100.DerivedStatCount; stat++ {
 			if chg, hasChg := i.statChanges.DerivedStatChanges[stat]; hasChg {
-				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, stat.ToShortString()))
+				var statName string
+				statName = stat.ToShortString()
+				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, statName))
 			}
 		}
 	}
 	return statPairs
 }
+func (i *GenericItem) getStatPairsAsRows() []fxtools.TableRow {
+	var statPairs []fxtools.TableRow
+	if len(i.statChanges.StatChanges) > 0 {
+		for stat := d100.Stat(0); stat < d100.StatCount; stat++ {
+			if chg, hasChg := i.statChanges.StatChanges[stat]; hasChg {
+				var statName string
+				statName = stat.String()
+				statPairs = append(statPairs, fxtools.NewTableRow(statName, fmt.Sprintf("%+d", chg)))
+			}
+		}
+	}
 
+	if len(i.statChanges.SkillChanges) > 0 {
+		for skill := d100.Skill(0); skill < d100.Skill(d100.SkillCount()); skill++ {
+			if chg, hasChg := i.statChanges.SkillChanges[skill]; hasChg {
+				var skillName string
+				skillName = skill.String()
+				statPairs = append(statPairs, fxtools.NewTableRow(skillName, fmt.Sprintf("%+d", chg)))
+			}
+		}
+	}
+
+	if len(i.statChanges.DerivedStatChanges) > 0 {
+		for stat := d100.DerivedStat(0); stat < d100.DerivedStatCount; stat++ {
+			if chg, hasChg := i.statChanges.DerivedStatChanges[stat]; hasChg {
+				var statName string
+				statName = stat.String()
+				statPairs = append(statPairs, fxtools.NewTableRow(statName, fmt.Sprintf("%+d", chg)))
+			}
+		}
+	}
+	return statPairs
+}
 func getQualityIcon(quality d100.Percentage) string {
 	colorCode := "[green]"
 	// Lower one eighth block
@@ -435,7 +509,7 @@ func (i *GenericItem) Position() geometry.Point {
 }
 
 func (i *GenericItem) Name() string {
-	name := i.description
+	name := i.name
 	if i.IsGold() {
 		name = fmt.Sprintf("$%d", i.stackSize)
 	}
@@ -489,7 +563,7 @@ func (i *GenericItem) Color() color.RGBA {
 }
 
 func (i *GenericItem) CanStackWith(other foundation.Item) bool {
-	if i.description != other.Description() || i.category != other.Category() {
+	if i.category != other.Category() {
 		return false
 	}
 
@@ -549,6 +623,10 @@ func (i *GenericItem) Charges() int {
 
 func (i *GenericItem) IsFood() bool {
 	return i.category == foundation.ItemCategoryFood
+}
+
+func (i *GenericItem) IsHeadGear() bool {
+	return i.category == foundation.ItemCategoryHeadgear
 }
 
 func (i *GenericItem) IsConsumable() bool {

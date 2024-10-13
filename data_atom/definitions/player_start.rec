@@ -6,7 +6,8 @@ item: 10mm_jhp
 item: 10mm_ap
 #item: food_ration
 item: 10mm_smg
-item: bobby_pin
+item: mechanical_lockpick(5)
+item: electronic_lockpick(5)
 item: aviator_sunglasses
 item: watch
 #

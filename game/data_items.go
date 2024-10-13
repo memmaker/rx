@@ -18,6 +18,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		alive:            true,
 		effectParameters: make(foundation.Params),
 		statChanges:      StatChange{},
+		isHidden:         false,
 	}
 
 	charges := 1
@@ -46,7 +47,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
 			item.position = spawnPos
 		case "description":
-			item.description = field.Value
+			item.name = field.Value
 		case "category":
 			item.category = foundation.ItemCategoryFromString(field.Value)
 			item.icon = icon(item.category)
@@ -60,6 +61,8 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			item.qualityInPercent = d100.Percentage(field.AsInt())
 		case "chance_to_break_on_throw":
 			item.chanceToBreakOnThrow = field.AsInt()
+		case "hidden":
+			item.isHidden = field.AsBool()
 		case "tags":
 			item.tags |= foundation.ItemTagFromString(field.Value)
 		case "thrown_damage":
@@ -179,36 +182,44 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			maxRanges[1] = field.AsInt()
 		case "weapon_min_str":
 			itemWeapon.MinSTR = field.AsInt()
+		case "weapon_reliability":
+			itemWeapon.reliability = d100.Percentage(field.AsInt())
+		case "weapon_concealability":
+			itemWeapon.concealability = ConcealabilityFromString(field.Value)
+		case "weapon_accuracy":
+			itemWeapon.accuracyMod = d100.Percentage(field.AsInt())
 
 		// ARMOR FIELDS
 		case "armor_encumbrance":
 			itemArmor.encumbrance = field.AsInt()
 		case "armor_radiation_reduction":
 			itemArmor.radiationReduction = field.AsInt()
-		case "armor_physical":
+		case "armor_physical_reduction":
 			if itemArmor.protection == nil {
 				itemArmor.protection = make(map[DamageType]Protection)
 			}
-			values := field.AsList(",")
-			itemArmor.protection[DamageTypeNormal] = Protection{
-				DamageThreshold: values[0].AsInt(),
-				DamageReduction: values[1].AsInt(),
-			}
-		case "armor_energy":
+			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithReduction(field.AsInt())
+		case "armor_physical_threshold":
 			if itemArmor.protection == nil {
 				itemArmor.protection = make(map[DamageType]Protection)
 			}
-			values := field.AsList(",")
-			itemArmor.protection[DamageTypeLaser] = Protection{
-				DamageThreshold: values[0].AsInt(),
-				DamageReduction: values[1].AsInt(),
+			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithThreshold(field.AsInt())
+		case "armor_energy_reduction":
+			if itemArmor.protection == nil {
+				itemArmor.protection = make(map[DamageType]Protection)
 			}
+			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithReduction(field.AsInt())
+		case "armor_energy_threshold":
+			if itemArmor.protection == nil {
+				itemArmor.protection = make(map[DamageType]Protection)
+			}
+			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithThreshold(field.AsInt())
 		}
 	}
 
 	item.charges = charges
 
-	if item.qualityInPercent == NoQualityDefined && (itemWeapon.IsValid() || itemArmor.IsValid()) {
+	if item.qualityInPercent == NoQualityDefined {
 		item.qualityInPercent = max(10, d100.Percentage(rand.Intn(100)+1))
 	}
 
@@ -225,7 +236,7 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		return itemWeapon
 	}
 
-	if itemArmor.IsValid() {
+	if item.Category().IsArmor() {
 		itemArmor.GenericItem = item
 		return itemArmor
 	}

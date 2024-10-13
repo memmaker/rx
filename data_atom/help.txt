@@ -1,6 +1,26 @@
-Welcome, Contractor
+[#00ff00]Welcome, Contractor[-]
 
-In the year 2077, America has descended into chaos, ruled by powerful corporations that care little for the people they oppress. You are a "Contractor," a shadowy freelancer who takes on dangerous jobs in exchange for survival in a world where morality is a luxury few can afford.
+It’s 2077.
+
+Humanity has sown the seeds of its own destruction.
+
+Greed and unchecked growth consumed the planet's resources, pushing the ecosystem beyond the point of collapse.
+
+Corporate law replaced governance as the rich seized everything, while the poor were left to rot.
+
+When the world became uninhabitable, the USA sealed its borders, turning its guns on refugees desperate to escape.
+
+They stole what remained from the world to keep their empire afloat — literally.
+
+Rising seas swallowed cities. Wildfires razed the rest. Billions died. Nations fell, and corporations moved in to fill the void.
+
+Where there's power, there's exploitation.
+
+And where there's exploitation, there’s always someone willing to pay for dirty work.
+
+That’s when they will reach for a contractor.
+
+That’s where you come in.
 
 [#00ff00]Your Role[-]
 

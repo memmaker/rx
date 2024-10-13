@@ -22,7 +22,7 @@ weapon_max_range_two: 12
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 68
-###
+weapon_skill_used: ranged_combat
 
 Name: 10mm_pistol
 Description: 10mm Pistol
@@ -46,7 +46,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 65
-###
+weapon_skill_used: ranged_combat
 
 Name: sledgehammer
 Description: Sledgehammer
@@ -70,7 +70,6 @@ weapon_max_range_two: 2
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 55
-###
 
 Name: minigun
 Description: Minigun
@@ -94,7 +93,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 76
-###
+weapon_skill_used: ranged_combat
 
 Name: rocket_launcher
 Description: Rocket Launcher
@@ -103,7 +102,6 @@ Category: Weapons
 Size: 6
 Weight: 15
 Cost: 2300
-tags: no_aim
 weapon_type: RocketLauncher
 weapon_damage: 35-100
 weapon_magazine_size: 1
@@ -119,7 +117,8 @@ weapon_max_range_two: 0
 weapon_uses_ammo: rocket
 weapon_caliber_index: 1
 weapon_sound_id: 78
-###
+weapon_skill_used: ranged_combat
+tags: no_aim
 
 Name: club
 Description: Club
@@ -143,7 +142,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 54
-###
 
 Name: flamer
 Description: Flamer
@@ -152,7 +150,6 @@ Category: Weapons
 Size: 6
 Weight: 18
 Cost: 2000
-zap_effect: fire_breath
 weapon_type: BigGun
 weapon_damage: 45-90
 weapon_magazine_size: 5
@@ -168,7 +165,8 @@ weapon_max_range_two: 0
 weapon_uses_ammo: flamethrower_fuel
 weapon_caliber_index: 2
 weapon_sound_id: 73
-###
+weapon_skill_used: ranged_combat
+zap_effect: fire_breath
 
 Name: hunting_rifle
 Description: Hunting Rifle
@@ -192,7 +190,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
 weapon_sound_id: 71
-###
+weapon_skill_used: ranged_combat
 
 Name: knife
 Description: Knife
@@ -216,7 +214,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 51
-###
 
 Name: spear
 Description: Spear
@@ -240,7 +237,6 @@ weapon_max_range_two: 8
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 56
-###
 
 Name: plasma_rifle
 Description: Plasma Rifle
@@ -264,7 +260,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 75
-###
+weapon_skill_used: ranged_combat
 
 Name: laser_pistol
 Description: Laser Pistol
@@ -288,7 +284,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 67
-###
+weapon_skill_used: ranged_combat
 
 Name: desert_eagle_44
 Description: Desert Eagle .44
@@ -312,7 +308,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 44_cal
 weapon_caliber_index: 9
 weapon_sound_id: 66
-###
+weapon_skill_used: ranged_combat
 
 Name: rock
 Description: Rock
@@ -336,7 +332,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 50
-###
 
 Name: crowbar
 Description: Crowbar
@@ -360,7 +355,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 53
-###
 
 Name: brass_knuckles
 Description: Brass Knuckles
@@ -384,7 +378,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 49
-###
 
 Name: 14mm_pistol
 Description: 14mm Pistol
@@ -408,7 +401,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 14mm
 weapon_caliber_index: 10
 weapon_sound_id: 69
-###
+weapon_skill_used: ranged_combat
 
 Name: assault_rifle
 Description: Assault Rifle
@@ -432,7 +425,7 @@ weapon_max_range_two: 25
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: plasma_pistol
 Description: Plasma Pistol
@@ -456,7 +449,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 70
-###
+weapon_skill_used: ranged_combat
 
 Name: grenade_frag
 Description: Grenade (Frag)
@@ -465,8 +458,6 @@ Category: Weapons
 Size: 1
 Weight: 1
 Cost: 150
-zap_effect: explode
-chance_to_break_on_throw: 100
 weapon_type: Throwing
 weapon_damage: 20-35
 weapon_magazine_size: 0
@@ -482,7 +473,8 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 79
-###
+zap_effect: explode
+chance_to_break_on_throw: 100
 
 Name: grenade_plasma
 Description: Grenade (Plasma)
@@ -491,8 +483,6 @@ Category: Weapons
 Size: 1
 Weight: 1
 Cost: 300
-zap_effect: plasma_explode
-chance_to_break_on_throw: 100
 weapon_type: Energy
 weapon_damage: 40-90
 weapon_magazine_size: 0
@@ -508,7 +498,8 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 80
-###
+zap_effect: plasma_explode
+chance_to_break_on_throw: 100
 
 Name: grenade_pulse
 Description: Grenade (Pulse)
@@ -532,7 +523,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 81
-###
 
 Name: gatling_laser
 Description: Gatling Laser
@@ -556,7 +546,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 77
-###
+weapon_skill_used: ranged_combat
 
 Name: throwing_knife
 Description: Throwing Knife
@@ -580,7 +570,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 52
-###
 
 Name: flare
 Description: Flare
@@ -604,7 +593,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 52
-###
 
 Name: shotgun
 Description: Shotgun
@@ -628,7 +616,7 @@ weapon_max_range_two: 10
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
-###
+weapon_skill_used: ranged_combat
 
 Name: super_sledge
 Description: Super Sledge
@@ -652,7 +640,6 @@ weapon_max_range_two: 2
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 55
-###
 
 Name: ripper
 Description: Ripper
@@ -676,7 +663,7 @@ weapon_max_range_two: 1
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 48
-###
+weapon_skill_used: ranged_combat
 
 Name: laser_rifle
 Description: Laser Rifle
@@ -700,7 +687,7 @@ weapon_max_range_two: 15
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 74
-###
+weapon_skill_used: ranged_combat
 
 Name: alien_blaster
 Description: Alien Blaster
@@ -724,7 +711,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 83
-###
+weapon_skill_used: ranged_combat
 
 Name: 9mm_mauser
 Description: 9mm Mauser
@@ -748,7 +735,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 9mm
 weapon_caliber_index: 12
 weapon_sound_id: 66
-###
+weapon_skill_used: ranged_combat
 
 Name: sniper_rifle
 Description: Sniper Rifle
@@ -772,7 +759,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
 weapon_sound_id: 71
-###
+weapon_skill_used: ranged_combat
 
 Name: molotov_cocktail
 Description: Molotov Cocktail
@@ -796,7 +783,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 79
-###
 
 Name: cattle_prod
 Description: Cattle Prod
@@ -820,7 +806,7 @@ weapon_max_range_two: 1
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 57
-###
+weapon_skill_used: ranged_combat
 
 Name: red_ryder_bb_gun
 Description: Red Ryder BB Gun
@@ -844,7 +830,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 85
-###
 
 Name: red_ryder_le_bb_gun
 Description: Red Ryder LE BB Gun
@@ -868,7 +853,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 85
-###
 
 Name: flare
 Description: Flare
@@ -892,7 +876,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 52
-###
 
 Name: turbo_plasma_rifle
 Description: Turbo Plasma Rifle
@@ -916,7 +899,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 75
-###
+weapon_skill_used: ranged_combat
 
 Name: spiked_knuckles
 Description: Spiked Knuckles
@@ -940,7 +923,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 49
-###
 
 Name: power_fist
 Description: Power Fist
@@ -964,7 +946,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 49
-###
+weapon_skill_used: ranged_combat
 
 Name: combat_knife
 Description: Combat Knife
@@ -988,7 +970,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 51
-###
 
 Name: 223_pistol
 Description: .223 Pistol
@@ -1012,7 +993,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
 weapon_sound_id: 69
-###
+weapon_skill_used: ranged_combat
 
 Name: combat_shotgun
 Description: Combat Shotgun
@@ -1036,7 +1017,7 @@ weapon_max_range_two: 14
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
-###
+weapon_skill_used: ranged_combat
 
 Name: jonnys_bb_gun
 Description: Jonny's BB Gun
@@ -1060,7 +1041,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 85
-###
 
 Name: h&k_caws
 Description: H&K CAWS
@@ -1084,7 +1064,7 @@ weapon_max_range_two: 15
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
-###
+weapon_skill_used: ranged_combat
 
 Name: robo_rocket_launcher
 Description: Robo Rocket Launcher
@@ -1108,7 +1088,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: rocket
 weapon_caliber_index: 1
 weapon_sound_id: 78
-###
+weapon_skill_used: ranged_combat
 
 Name: sharpened_spear
 Description: Sharpened Spear
@@ -1132,7 +1112,6 @@ weapon_max_range_two: 8
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 56
-###
 
 Name: tommy_gun
 Description: Tommy Gun
@@ -1156,7 +1135,7 @@ weapon_max_range_two: 13
 weapon_uses_ammo: 45_cal
 weapon_caliber_index: 14
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: scoped_hunting_rifle
 Description: Scoped Hunting Rifle
@@ -1180,7 +1159,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
 weapon_sound_id: 71
-###
+weapon_skill_used: ranged_combat
 
 Name: robo_melee_weapon_1
 Description: Robo Melee Weapon 1
@@ -1204,7 +1183,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 0
-###
 
 Name: robo_melee_weapon_2
 Description: Robo Melee Weapon 2
@@ -1228,7 +1206,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 0
-###
 
 Name: boxing_gloves
 Description: Boxing Gloves
@@ -1252,7 +1229,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 49
-###
 
 Name: plated_boxing_gloves
 Description: Plated Boxing Gloves
@@ -1276,7 +1252,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 49
-###
 
 Name: hk_p90c
 Description: HK P90c
@@ -1300,7 +1275,7 @@ weapon_max_range_two: 15
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: pipe_rifle
 Description: Pipe Rifle
@@ -1324,7 +1299,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 71
-###
+weapon_skill_used: ranged_combat
 
 Name: zip_gun
 Description: Zip Gun
@@ -1348,7 +1323,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 86
-###
+weapon_skill_used: ranged_combat
 
 Name: 44_magnum_revolver
 Description: .44 Magnum Revolver
@@ -1372,7 +1347,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 44_cal
 weapon_caliber_index: 9
 weapon_sound_id: 69
-###
+weapon_skill_used: ranged_combat
 
 Name: switchblade
 Description: Switchblade
@@ -1396,7 +1371,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 51
-###
 
 Name: sharpened_pole
 Description: Sharpened Pole
@@ -1420,7 +1394,6 @@ weapon_max_range_two: 8
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 56
-###
 
 Name: m3a1_grease_gun_smg
 Description: M3A1 "Grease Gun" SMG
@@ -1444,7 +1417,7 @@ weapon_max_range_two: 10
 weapon_uses_ammo: 45_cal
 weapon_caliber_index: 14
 weapon_sound_id: 68
-###
+weapon_skill_used: ranged_combat
 
 Name: bozar
 Description: Bozar
@@ -1468,7 +1441,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
 weapon_sound_id: 76
-###
+weapon_skill_used: ranged_combat
 
 Name: fn_fal
 Description: FN FAL
@@ -1492,7 +1465,7 @@ weapon_max_range_two: 30
 weapon_uses_ammo: 762mm
 weapon_caliber_index: 18
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: h&k_g11
 Description: H&K G11
@@ -1516,7 +1489,7 @@ weapon_max_range_two: 30
 weapon_uses_ammo: 47mm_caseless
 weapon_caliber_index: 16
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: xl70e3
 Description: XL70E3
@@ -1540,7 +1513,7 @@ weapon_max_range_two: 30
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: pancor_jackhammer
 Description: Pancor Jackhammer
@@ -1564,7 +1537,7 @@ weapon_max_range_two: 20
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
-###
+weapon_skill_used: ranged_combat
 
 Name: light_support_weapon
 Description: Light Support Weapon
@@ -1588,7 +1561,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
 weapon_sound_id: 76
-###
+weapon_skill_used: ranged_combat
 
 Name: plant_spike
 Description: Plant Spike
@@ -1612,7 +1585,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 50
-###
 
 Name: claw
 Description: Claw
@@ -1636,7 +1608,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 48
-###
 
 Name: claw
 Description: Claw
@@ -1660,7 +1631,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 48
-###
 
 Name: shiv
 Description: Shiv
@@ -1684,7 +1654,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 51
-###
 
 Name: wrench
 Description: Wrench
@@ -1708,7 +1677,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 53
-###
 
 Name: sawed-off_shotgun
 Description: Sawed-Off Shotgun
@@ -1732,7 +1700,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 12-gauge
 weapon_caliber_index: 11
 weapon_sound_id: 82
-###
+weapon_skill_used: ranged_combat
 
 Name: louisville_slugger
 Description: Louisville Slugger
@@ -1756,7 +1724,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 54
-###
 
 Name: m60
 Description: M60
@@ -1780,7 +1747,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 762mm
 weapon_caliber_index: 18
 weapon_sound_id: 82
-###
+weapon_skill_used: ranged_combat
 
 Name: needler_pistol
 Description: Needler Pistol
@@ -1804,7 +1771,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: hn_needler
 weapon_caliber_index: 17
 weapon_sound_id: 90
-###
+weapon_skill_used: ranged_combat
 
 Name: avenger_minigun
 Description: Avenger Minigun
@@ -1828,7 +1795,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 76
-###
+weapon_skill_used: ranged_combat
 
 Name: solar_scorcher
 Description: Solar Scorcher
@@ -1852,7 +1819,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 67
-###
 
 Name: h&k_g11e
 Description: H&K G11E
@@ -1876,7 +1842,7 @@ weapon_max_range_two: 35
 weapon_uses_ammo: 47mm_caseless
 weapon_caliber_index: 16
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: m72_gauss_rifle
 Description: M72 Gauss Rifle
@@ -1900,7 +1866,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 2mm
 weapon_caliber_index: 15
 weapon_sound_id: 87
-###
+weapon_skill_used: ranged_combat
 
 Name: phazer
 Description: Phazer
@@ -1924,7 +1890,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 67
-###
+weapon_skill_used: ranged_combat
 
 Name: ppk12_gauss_pistol
 Description: PPK12 Gauss Pistol
@@ -1948,7 +1914,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 2mm
 weapon_caliber_index: 15
 weapon_sound_id: 89
-###
+weapon_skill_used: ranged_combat
 
 Name: vindicator_minigun
 Description: Vindicator Minigun
@@ -1972,7 +1938,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 47mm_caseless
 weapon_caliber_index: 16
 weapon_sound_id: 76
-###
+weapon_skill_used: ranged_combat
 
 Name: yk32_pulse_pistol
 Description: YK32 Pulse Pistol
@@ -1996,7 +1962,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 35
-###
+weapon_skill_used: ranged_combat
 
 Name: yk42b_pulse_rifle
 Description: YK42B Pulse Rifle
@@ -2020,7 +1986,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 88
-###
+weapon_skill_used: ranged_combat
 
 Name: 44_magnum_speed_load
 Description: .44 Magnum (Speed Load)
@@ -2044,7 +2010,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 44_cal
 weapon_caliber_index: 9
 weapon_sound_id: 69
-###
+weapon_skill_used: ranged_combat
 
 Name: super_cattle_prod
 Description: Super Cattle Prod
@@ -2068,7 +2034,7 @@ weapon_max_range_two: 1
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 57
-###
+weapon_skill_used: ranged_combat
 
 Name: improved_flamer
 Description: Improved Flamer
@@ -2077,7 +2043,6 @@ Category: Weapons
 Size: 6
 Weight: 19
 Cost: 2000
-zap_effect: fire_breath
 weapon_type: BigGun
 weapon_damage: 45-90
 weapon_magazine_size: 5
@@ -2093,7 +2058,8 @@ weapon_max_range_two: 0
 weapon_uses_ammo: flamethrower_fuel
 weapon_caliber_index: 2
 weapon_sound_id: 73
-###
+weapon_skill_used: ranged_combat
+zap_effect: fire_breath
 
 Name: laser_rifle_ext_cap
 Description: Laser Rifle (Ext. Cap.)
@@ -2117,7 +2083,7 @@ weapon_max_range_two: 20
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 74
-###
+weapon_skill_used: ranged_combat
 
 Name: magneto-laser_pistol
 Description: Magneto-Laser Pistol
@@ -2141,7 +2107,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 67
-###
+weapon_skill_used: ranged_combat
 
 Name: fn_fal_night_sight
 Description: FN FAL (Night Sight)
@@ -2165,7 +2131,7 @@ weapon_max_range_two: 30
 weapon_uses_ammo: 762mm
 weapon_caliber_index: 18
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: desert_eagle_exp_mag
 Description: Desert Eagle (Exp. Mag.)
@@ -2189,7 +2155,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 44_cal
 weapon_caliber_index: 9
 weapon_sound_id: 66
-###
+weapon_skill_used: ranged_combat
 
 Name: assault_rifle_exp_mag
 Description: Assault Rifle (Exp. Mag.)
@@ -2213,7 +2179,7 @@ weapon_max_range_two: 38
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: plasma_pistol_ext_cap
 Description: Plasma Pistol (Ext. Cap.)
@@ -2237,7 +2203,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 70
-###
+weapon_skill_used: ranged_combat
 
 Name: mega_power_fist
 Description: Mega Power Fist
@@ -2261,7 +2227,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 49
-###
+weapon_skill_used: ranged_combat
 
 Name: holy_hand_grenade
 Description: Holy Hand Grenade
@@ -2285,7 +2251,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 80
-###
 
 Name: gold_nugget
 Description: Gold Nugget
@@ -2309,7 +2274,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 50
-###
 
 Name: uranium_ore
 Description: Uranium Ore
@@ -2333,11 +2297,9 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 50
-###
 
 Name: flame_breath
 Description: Flame Breath
-LongDescription: 
 Category: Weapons
 Size: 1
 Weight: 1
@@ -2357,7 +2319,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 73
-###
 
 Name: refined_uranium_ore
 Description: Refined Uranium Ore
@@ -2381,11 +2342,9 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 50
-###
 
 Name: special_boxer_weapon
 Description: Special Boxer Weapon
-LongDescription: 
 Category: Weapons
 Size: 1
 Weight: 0
@@ -2405,7 +2364,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 49
-###
 
 Name: boxing_gloves
 Description: Boxing Gloves
@@ -2429,7 +2387,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 49
-###
 
 Name: plated_boxing_gloves
 Description: Plated Boxing Gloves
@@ -2453,7 +2410,6 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 49
-###
 
 Name: dual_plasma_cannon
 Description: Dual Plasma Cannon
@@ -2477,11 +2433,9 @@ weapon_max_range_two: 0
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 75
-###
 
 Name: fn_fal_hpfa
 Description: FN FAL HPFA
-LongDescription: 
 Category: Weapons
 Size: 5
 Weight: 10
@@ -2501,7 +2455,7 @@ weapon_max_range_two: 30
 weapon_uses_ammo: 762mm
 weapon_caliber_index: 18
 weapon_sound_id: 72
-###
+weapon_skill_used: ranged_combat
 
 Name: little_jesus
 Description: "Little Jesus"
@@ -2525,7 +2479,6 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 51
-###
 
 Name: dual_minigun
 Description: Dual Minigun
@@ -2549,7 +2502,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 76
-###
+weapon_skill_used: ranged_combat
 
 Name: heavy_dual_minigun
 Description: Heavy Dual Minigun
@@ -2573,7 +2526,7 @@ weapon_max_range_two: 0
 weapon_uses_ammo: 223
 weapon_caliber_index: 5
 weapon_sound_id: 76
-###
+weapon_skill_used: ranged_combat
 
 Name: wakizashi_blade
 Description: Wakizashi Blade
@@ -2597,11 +2550,9 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 51
-###
 
 Name: end_boss_knife
 Description: End Boss Knife
-LongDescription: 
 Category: Weapons
 Size: 1
 Weight: 1
@@ -2621,11 +2572,9 @@ weapon_max_range_two: 1
 weapon_uses_ammo: none
 weapon_caliber_index: 0
 weapon_sound_id: 36
-###
 
 Name: end_boss_plasma_gun
 Description: End Boss Plasma Gun
-LongDescription: 
 Category: Weapons
 Size: 1
 Weight: 1
@@ -2645,5 +2594,5 @@ weapon_max_range_two: 30
 weapon_uses_ammo: d_energy_cell
 weapon_caliber_index: 4
 weapon_sound_id: 64
-###
+weapon_skill_used: ranged_combat
 

@@ -1,17 +1,71 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
+	"RogueUI/fsmai"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
 
-func (g *GameState) TryAIAction(enemy *Actor) int {
-	if enemy.timeEnergy <= 0 {
-		return 0 // not enough time energy for any action, spend 0 to accumulate
+type Behaviour struct {
+	StateName       fsmai.StateName
+	BehaviourAction func(g *GameState, actor *Actor, event fsmai.TransitionEvent) (fsmai.TransitionEvent, int)
+	InitAction      func(g *GameState, actor *Actor, event fsmai.TransitionEvent)
+	InitEvent       fsmai.TransitionEvent
+}
+
+func (b *Behaviour) AssociatedState() fsmai.StateName {
+	return b.StateName
+}
+
+func (b *Behaviour) Init(state *GameState, actor *Actor, event fsmai.TransitionEvent) {
+	b.InitEvent = event
+	if b.InitAction != nil {
+		b.InitAction(state, actor, event)
 	}
+}
+
+func (b *Behaviour) Execute(state *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
+	return b.BehaviourAction(state, actor, b.InitEvent)
+}
+
+func DefaultBehaviorFactory(state fsmai.StateName) ActorBehavior {
+	var BehaviorTable = map[fsmai.StateName]ActorBehavior{
+		fsmai.StateNeutral: &Behaviour{
+			StateName:       fsmai.StateNeutral,
+			BehaviourAction: BehaviourNeutralIdle,
+			InitAction:      BehaviourNeutralIdleInit,
+		},
+		fsmai.StateAggressive: &Behaviour{
+			StateName:       fsmai.StateAggressive,
+			BehaviourAction: BehaviourAggressiveIdle,
+			InitAction:      BehaviourAggressiveIdleInit,
+		},
+		fsmai.StateKill: &Behaviour{
+			StateName:       fsmai.StateKill,
+			BehaviourAction: BehaviourKill,
+			InitAction:      BehaviourKillInit,
+		},
+		fsmai.StatePanic: &Behaviour{
+			StateName:       fsmai.StatePanic,
+			BehaviourAction: BehaviourPanic,
+			InitAction:      BehaviourPanicInit,
+		},
+	}
+	return BehaviorTable[state]
+}
+
+func (g *GameState) TryAIAction(enemy *Actor) int {
 	enemy.GetFlags().Increment(foundation.FlagTurnsSinceLastIdleChatter)
 
+	if enemy.timeEnergy <= 0 || enemy.timeEnergy < enemy.maximalTimeNeededForActions() {
+		return 0 // not enough time energy for any action, spend 0 to accumulate
+	}
+
+	return enemy.FSM.ExecuteBehavior()
+
+	// Status Effects
 	if enemy.HasFlag(foundation.FlagStun) {
 		stunCounter := enemy.GetFlags().Get(foundation.FlagStun)
 		if stunCounter == 1 {
@@ -50,11 +104,6 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		}
 	}
 
-	if enemy.HasFlag(foundation.FlagCanConfuse) && rand.Intn(4) == 0 {
-		enemy.GetFlags().Unset(foundation.FlagCanConfuse)
-		g.msg(foundation.HiLite("%s stops glowing red", enemy.Name()))
-	}
-
 	if enemy.HasFlag(foundation.FlagConfused) {
 		consequencesOfConfusion := g.actConfused(enemy)
 		if len(consequencesOfConfusion) > 0 {
@@ -63,21 +112,6 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		}
 	}
 
-	if enemy.HasFlag(foundation.FlagScared) {
-		if !nearEachOther && rand.Intn(3) == 0 {
-			enemy.GetFlags().Unset(foundation.FlagScared)
-			g.msg(foundation.HiLite("%s regains its courage", enemy.Name()))
-		} else {
-			newPos := g.currentMap().GetMoveOnPlayerDijkstraMap(enemy.Position(), false, g.playerDijkstraMap)
-			consequencesOfMonsterMove := g.actorMoveAnimated(enemy, newPos)
-			g.ui.AddAnimations(consequencesOfMonsterMove)
-			return enemy.timeNeededForMovement()
-		}
-	}
-
-	if enemy.HasActiveGoal() {
-		return enemy.ActOnGoal(g)
-	}
 	inCombat := enemy.IsInCombat()
 	if !inCombat {
 
@@ -96,17 +130,13 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 			}
 		}
 
+		if slot, move := enemy.MoveToNextTimeSlot(g.gameTime.Time); move {
+			loc := g.currentMap().GetNamedLocation(slot.Location)
+			g.msg(foundation.HiLite("%s moves to %s", enemy.Name(), slot.Location))
+			enemy.SetGoal(GoalMoveToLocation(loc))
+		}
+
 		return enemy.timeEnergy // just wait and spend all time energy
-	}
-
-	losToPlayer := g.canPlayerSee(enemy.Position())
-	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) && nearEachOther && losToPlayer && CanPerceive(enemy, g.Player) {
-		enemy.GetFlags().Set(foundation.FlagAwareOfPlayer)
-		g.msg(foundation.HiLite("%s notices you", enemy.Name()))
-	}
-
-	if !enemy.HasFlag(foundation.FlagAwareOfPlayer) {
-		return enemy.timeEnergy
 	}
 
 	if !enemy.IsHostileTowards(g.Player) {
@@ -118,69 +148,7 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		return enemy.timeEnergy
 	}
 
-	if customBehaviour, exists := g.customBehaviours(enemy.GetInternalName()); exists {
-		return customBehaviour(enemy)
-	} else if enemy.HasActiveGoal() {
-		return enemy.ActOnGoal(g)
-	} else {
-		return g.defaultBehaviour(enemy)
-	}
-}
-
-func (g *GameState) defaultBehaviour(enemy *Actor) int {
-	distanceToPlayer := g.currentMap().MoveDistance(enemy.Position(), g.Player.Position())
-
-	sameRoom := distanceToPlayer <= 1
-
-	rangedWeapon, hasRangedWeapon := enemy.GetEquipment().GetRangedWeapon()
-	if hasRangedWeapon {
-		attackMode := rangedWeapon.GetCurrentAttackMode()
-		weaponRange := attackMode.MaxRange - 1
-		if distanceToPlayer <= weaponRange && g.canPlayerSee(enemy.Position()) {
-			consequencesOfMonsterRangedAttack := g.actorRangedAttack(enemy, rangedWeapon, attackMode, g.Player, 0)
-			g.ui.AddAnimations(consequencesOfMonsterRangedAttack)
-			return attackMode.TUCost
-		}
-	}
-
-	if distanceToPlayer <= 1 {
-		consequencesOfMonsterAttack := g.actorMeleeAttack(enemy, g.Player, 0)
-		g.ui.AddAnimations(consequencesOfMonsterAttack)
-		return enemy.GetMeleeTUCost()
-	}
-
-	// has skills?
-	zaps := enemy.GetIntrinsicZapEffects()
-	canZap := len(zaps) > 0 && !enemy.HasFlag(foundation.FlagCancel)
-	if canZap && sameRoom { //rand.Intn(3) == 0 {
-		// zap
-		zap := zaps[rand.Intn(len(zaps))]
-		targetPos := g.Player.Position()
-		consequencesOfMonsterZap := g.actorInvokeZapEffect(enemy, zap, targetPos, foundation.Params{})
-		g.ui.AddAnimations(consequencesOfMonsterZap)
-		return enemy.timeNeededForActions()
-	}
-
-	aiUseEffects := enemy.GetIntrinsicUseEffects()
-	canUse := len(aiUseEffects) > 0 && !enemy.HasFlag(foundation.FlagCancel)
-	if canUse && sameRoom {
-		useEffect := aiUseEffects[rand.Intn(len(aiUseEffects))]
-		_, consequencesOfMonsterUseEffect := g.actorInvokeUseEffect(enemy, useEffect)
-		g.ui.AddAnimations(consequencesOfMonsterUseEffect)
-		return enemy.timeNeededForActions()
-	}
-
-	gridMap := g.currentMap()
-	var newPos geometry.Point
-	if !gridMap.IsTileWalkable(enemy.Position()) {
-		newPos = gridMap.GetRandomFreeAndSafeNeighbor(rand.New(rand.NewSource(23)), enemy.Position())
-	} else {
-		newPos = gridMap.GetMoveOnPlayerDijkstraMap(enemy.Position(), true, g.playerDijkstraMap)
-	}
-	consequencesOfMonsterMove := g.actorMoveAnimated(enemy, newPos)
-	g.ui.AddAnimations(consequencesOfMonsterMove)
-
-	return enemy.timeNeededForMovement()
+	return enemy.timeEnergy
 }
 
 func (g *GameState) actConfused(enemy *Actor) []foundation.Animation {
@@ -190,7 +158,7 @@ func (g *GameState) actConfused(enemy *Actor) []foundation.Animation {
 		actionDirection := geometry.RandomDirection()
 		targetPos := enemy.Position().Add(actionDirection.ToPoint())
 		if g.currentMap().IsActorAt(targetPos) {
-			return g.actorMeleeAttack(enemy, g.currentMap().ActorAt(targetPos), 0)
+			return g.actorMeleeAttack(enemy, g.currentMap().ActorAt(targetPos), d100.Body, d100.NoCombatModifier)
 		} else if g.currentMap().IsCurrentlyPassable(targetPos) {
 			return g.actorMoveAnimated(enemy, targetPos)
 		} else {
@@ -198,13 +166,4 @@ func (g *GameState) actConfused(enemy *Actor) []foundation.Animation {
 		}
 	}
 	return nil
-}
-
-func (g *GameState) customBehaviours(internalName string) (func(actor *Actor) int, bool) {
-	switch internalName {
-	case "xeroc_2":
-		return nil, false
-	}
-	return nil, false
-
 }

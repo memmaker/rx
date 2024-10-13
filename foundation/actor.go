@@ -2,6 +2,7 @@ package foundation
 
 import (
 	"RogueUI/d100"
+	"RogueUI/fsmai"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"image/color"
@@ -17,7 +18,7 @@ type ActorForUI interface {
 	GetHitPoints() int
 	GetHitPointsMax() int
 	HasFlag(held ActorFlag) bool
-	GetState() AIState
+	GetState() fsmai.StateName
 	GetDetailInfo() string
 	GetInternalName() string
 	IsAlive() bool
@@ -25,6 +26,11 @@ type ActorForUI interface {
 	GetBodyPartIndex(aim d100.BodyPart) int
 	GetDamageResistance() int
 	GetMainHandDamageAsString() string
+	TimeEnergy() int
+	TimeNeededForMovement() int
+	TimeNeededForActions() int
+	TimeNeededForAttack() int
+	ActionDescription(name string) string
 }
 
 type ChatterType int
@@ -49,26 +55,4 @@ func NewChatterTypeFromString(str string) ChatterType {
 		return ChatterBeingAroundPlayer
 	}
 	return ChatterOnTheWayToAKill
-}
-
-type AIState uint8
-
-const (
-	Neutral AIState = iota
-	AttackEverything
-	AttackEnemies
-	Panic
-)
-
-func AIStateFromString(str string) AIState {
-	str = strings.ToLower(str)
-	switch str {
-	case "neutral":
-		return Neutral
-	case "hostile":
-		return AttackEverything
-	case "ally":
-		return Panic
-	}
-	return Neutral
 }

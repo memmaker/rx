@@ -19,6 +19,7 @@ type TextInventory struct {
 	defaultSelection       func(item foundation.Item)
 	shiftSelection         func(item foundation.Item)
 	controlSelection       func(item foundation.Item)
+	contextMenu            func(item foundation.Item, done func())
 	listWidth              int
 	listHeight             int
 	closeHandler           func()
@@ -36,6 +37,9 @@ type TextInventory struct {
 	afterClose             func()
 }
 
+func (i *TextInventory) SetContextMenu(contextMenu func(item foundation.Item, done func())) {
+	i.contextMenu = contextMenu
+}
 func (i *TextInventory) SetLineColor(lineColor func(foundation.ItemCategory) color.RGBA) {
 	i.lineColor = lineColor
 }
@@ -49,9 +53,8 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 	drawBackgroundAndBorderWithTitleForInventory(screen, startX, startY, i.listWidth+2, i.listHeight+2, i.ourTitle, i.style, runes)
 
 	listOffset := geometry.Point{X: 2, Y: 1}
-	var equipRunes []rune
-	var unequipRunes []rune
-	var useRunes []rune
+	var equipAndUseRunes []rune
+	var inspectRunes []rune
 	var dropRunes []rune
 	var totalWeight int
 	for lineIndex, invItem := range i.items {
@@ -74,16 +77,10 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 		}
 		cview.PrintStyle(screen, []byte(line), drawX, drawY, width, cview.AlignLeft, drawStyle)
 
-		if item.IsEquippable() && i.isEquipped != nil {
-			if i.isEquipped(item) {
-				unequipRunes = append(unequipRunes, shortcut)
-			} else {
-				equipRunes = append(equipRunes, shortcut)
-			}
+		if item.IsEquippable() || item.IsUsableOrZappable() || item.IsConsumable() || item.IsReadable() {
+			equipAndUseRunes = append(equipAndUseRunes, shortcut)
 		}
-		if item.IsUsableOrZappable() {
-			useRunes = append(useRunes, shortcut)
-		}
+		inspectRunes = append(inspectRunes, shortcut)
 		dropRunes = append(dropRunes, shortcut)
 	}
 
@@ -113,17 +110,14 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 
 	infoLines = append(infoLines, getWeightLine())
 
-	if len(unequipRunes) > 0 {
-		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[%s] Unequip", string(unequipRunes))))
+	if len(equipAndUseRunes) > 0 {
+		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[%s] (Un)Equip / Use", string(equipAndUseRunes))))
 	}
-	if len(equipRunes) > 0 {
-		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[%s] Equip", string(equipRunes))))
-	}
-	if len(useRunes) > 0 {
-		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[<CTRL> + %s] Use", string(useRunes))))
+	if len(inspectRunes) > 0 {
+		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[<CTRL> + letter] Examine")))
 	}
 	if len(dropRunes) > 0 {
-		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[%s] Drop", strings.ToUpper(string(dropRunes)))))
+		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[<SHFT> + letter] Drop")))
 	}
 
 	additionalLines := len(infoLines)
@@ -243,13 +237,25 @@ func (i *TextInventory) handleInput(event *tcell.EventKey) *tcell.EventKey {
 		}
 	}
 
+	if event.Key() == tcell.KeyRune && event.Rune() == ' ' {
+		if i.defaultSelection != nil && i.cursorAtIndex >= 0 && i.cursorAtIndex < len(i.items) {
+			i.contextMenu(i.items[i.cursorAtIndex], i.updateListBounds)
+			return nil
+		}
+	}
+
+	event = parseControlCodes(event)
+
 	runeReceived := event.Rune()
-	// to upper
+
 	modCtrl := event.Modifiers() == tcell.ModAlt || event.Modifiers() == tcell.ModCtrl || event.Modifiers() == tcell.ModMeta
-	if modCtrl { // 1 == a, 2 == b, etc
+
+	if modCtrl && runeReceived < 97 { // 1 == a, 2 == b, etc
 		runeReceived = runeReceived + 96
 	}
+
 	modShift := unicode.IsUpper(runeReceived)
+
 	if modShift {
 		runeReceived = unicode.ToLower(runeReceived)
 	}
@@ -279,6 +285,63 @@ func (i *TextInventory) handleInput(event *tcell.EventKey) *tcell.EventKey {
 			i.updateListBounds()
 			return nil
 		}
+	}
+	return event
+}
+
+func parseControlCodes(event *tcell.EventKey) *tcell.EventKey {
+	if event.Key() == tcell.KeyCtrlA {
+		return tcell.NewEventKey(tcell.KeyRune, 'a', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlB {
+		return tcell.NewEventKey(tcell.KeyRune, 'b', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlC {
+		return tcell.NewEventKey(tcell.KeyRune, 'c', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlD {
+		return tcell.NewEventKey(tcell.KeyRune, 'd', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlE {
+		return tcell.NewEventKey(tcell.KeyRune, 'e', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlF {
+		return tcell.NewEventKey(tcell.KeyRune, 'f', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlG {
+		return tcell.NewEventKey(tcell.KeyRune, 'g', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlH {
+		return tcell.NewEventKey(tcell.KeyRune, 'h', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlI {
+		return tcell.NewEventKey(tcell.KeyRune, 'i', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlJ {
+		return tcell.NewEventKey(tcell.KeyRune, 'j', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlK {
+		return tcell.NewEventKey(tcell.KeyRune, 'k', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlL {
+		return tcell.NewEventKey(tcell.KeyRune, 'l', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlM {
+		return tcell.NewEventKey(tcell.KeyRune, 'm', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlN {
+		return tcell.NewEventKey(tcell.KeyRune, 'n', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlO {
+		return tcell.NewEventKey(tcell.KeyRune, 'o', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlP {
+		return tcell.NewEventKey(tcell.KeyRune, 'p', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlQ {
+		return tcell.NewEventKey(tcell.KeyRune, 'q', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlR {
+		return tcell.NewEventKey(tcell.KeyRune, 'r', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlS {
+		return tcell.NewEventKey(tcell.KeyRune, 's', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlT {
+		return tcell.NewEventKey(tcell.KeyRune, 't', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlU {
+		return tcell.NewEventKey(tcell.KeyRune, 'u', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlV {
+		return tcell.NewEventKey(tcell.KeyRune, 'v', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlW {
+		return tcell.NewEventKey(tcell.KeyRune, 'w', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlX {
+		return tcell.NewEventKey(tcell.KeyRune, 'x', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlY {
+		return tcell.NewEventKey(tcell.KeyRune, 'y', tcell.ModCtrl)
+	} else if event.Key() == tcell.KeyCtrlZ {
+		return tcell.NewEventKey(tcell.KeyRune, 'z', tcell.ModCtrl)
 	}
 	return event
 }

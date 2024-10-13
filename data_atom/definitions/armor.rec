@@ -1,59 +1,47 @@
+## Very generic clothing
+
 Description: street wear
 Name: street_wear
 Category: Armor
-slot: torso
-armor_physical: 0, 0
-armor_energy: 0, 0
-armor_radiation_reduction: 0
-armor_encumbrance: 0
 chance: 20
+
+Description: worn brown jacket
+Name: worn_jacket
+Category: Armor
+
+## Fallout Style Armor
 
 Description: vault suit
 Name: vault_suit
 Category: Armor
-slot: torso
-armor_physical: 0, 5
-armor_energy: 0, 0
-armor_radiation_reduction: 0
-armor_encumbrance: 0
+armor_physical_threshold: 5
 chance: 20
 
 Description: leather armor
 Name: leather_armor
 Category: Armor
-slot: torso
-armor_physical: 0, 5
-armor_energy: 0, 0
-armor_radiation_reduction: 0
-armor_encumbrance: 0
+armor_physical_threshold: 5
 chance: 75
 
 Description: metal armor
 Name: metal_armor
 Category: Armor
-slot: torso
-armor_physical: 0, 5
-armor_energy: 0, 0
-armor_radiation_reduction: 0
-armor_encumbrance: 0
+armor_physical_threshold: 5
 chance: 63
 
 Description: combat armor
 Name: combat_armor
 Category: Armor
-slot: torso
-armor_physical: 0, 5
-armor_energy: 0, 0
-armor_radiation_reduction: 0
-armor_encumbrance: 0
+armor_physical_threshold: 5
 chance: 95
 
 Description: combat armor mk2
 Name: combat_armor_mk2
 Category: Armor
-slot: torso
-armor_physical: 4, 50
-armor_energy: 3, 30
+armor_physical_threshold: 3
+armor_physical_reduction: 10
+armor_energy_threshold: 3
+armor_energy_reduction: 10
 armor_radiation_reduction: 0
 armor_encumbrance: 3
 chance: 100
@@ -61,9 +49,12 @@ chance: 100
 Description: tesla armor
 Name: tesla_armor
 Category: Armor
-slot: torso
 armor_physical: 3, 40
 armor_energy: 4, 50
+armor_physical_threshold: 3
+armor_physical_reduction: 10
+armor_energy_threshold: 3
+armor_energy_reduction: 10
 armor_radiation_reduction: 0
 armor_encumbrance: 4
 chance: 100
@@ -71,10 +62,80 @@ chance: 100
 Description: Chitin Armor
 Name: ant_chitin_armor
 Category: Armor
-slot: torso
-armor_physical: 3, 40
-armor_energy: 3, 30
-armor_radiation_reduction: 0
+armor_physical_threshold: 3
+armor_physical_reduction: 10
+armor_energy_threshold: 3
+armor_energy_reduction: 10
 armor_encumbrance: 3
 chance: 100
 tags: no_loot
+
+## Cyberpunk Fashion
+#
+# **Popular Clothesmakers and Their Quality Ratings**
+#
+# **Levi**
+# - Generic and leisurewear.
+# - Quality: Average to Good.
+#
+# **Nu-Tek**
+# - Generic, Urban Flash.
+# - Quality: Average to Very Good.
+#
+# **Uniwear**
+# - Generic.
+# - Quality: Good.
+#
+# **Image Fashionware**
+# - Urban Flash, Edgerunner, and High Fashion.
+# - Quality: Very Good to Superchic.
+#
+# **Icon America**
+# - Urban Flash and Edgerunner.
+# - Quality: Good to Very Good; limited Designer.
+#
+# **Gibson Battlegear**
+# - Generic, sometimes Urban Flash.
+# - Quality: Good; limited Designer.
+#
+# **Takanaka**
+# - Businesswear.
+# - Quality: Very Good to Superchic.
+#
+# **Eji of Japan**
+# - Leisurewear, Urban Flash.
+# - Quality: Good to Designer.
+#
+# **Cryo-Max**
+# - Urban Flash, Edgerunner, sometimes High Fashion.
+# - Quality: Very Good; limited Superchic.
+#
+# **Jordashe/Boy**
+# - Generic, Leisurewear, Urban Flash.
+# - Quality: Good to Designer.
+
+# Example for head piece
+
+Description: Takanaka Business Hat (Superchic)
+Name: takanaka_business_hat_superchic
+Category: Headgear
+armor_physical_threshold: 0
+armor_physical_reduction: 0
+armor_energy_threshold: 0
+armor_energy_reduction: 0
+armor_encumbrance: 0
+quality: 95
+cost: 350
+
+# Example for body piece
+
+Description: Levi Leisurewear Jacket (Good)
+Name: levi_leisurewear_jacket_good
+Category: Armor
+armor_physical_threshold: 0
+armor_physical_reduction: 0
+armor_energy_threshold: 0
+armor_energy_reduction: 0
+armor_encumbrance: 0
+quality: 85
+cost: 450

@@ -3,6 +3,7 @@ package game
 import (
 	"RogueUI/d100"
 	"RogueUI/foundation"
+	"RogueUI/fsmai"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -403,47 +404,47 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 	}
 }
 
-func tryKill(g *GameState, a *Actor, target *Actor) int {
-	if !g.IsInShootingRange(a, target) {
-		return moveIntoShootingRange(g, a, target)
-	}
-	if !a.GetEquipment().HasRangedWeaponInMainHand() {
-		a.tryEquipRangedWeapon()
-	}
-	mainHandItem, hasMainHandItem := a.GetEquipment().GetMainHandWeapon()
-	if hasMainHandItem && mainHandItem.IsRangedWeapon() {
-
-		if !mainHandItem.HasAmmo() && mainHandItem.NeedsAmmo() {
-			g.actorReloadMainHandWeapon(a)
-			return a.timeNeededForActions()
-		}
-
-		g.ui.AddAnimations(g.actorRangedAttack(a, mainHandItem, mainHandItem.GetCurrentAttackMode(), target, 0))
-		return mainHandItem.GetCurrentAttackMode().TUCost
-	}
-
-	return a.timeNeededForActions()
-}
-func moveIntoShootingRange(g *GameState, a *Actor, target *Actor) int {
-	weaponRange := a.GetWeaponRange()
-	targetPos := g.getShootingRangePosition(a, weaponRange, target)
-
-	return moveTowards(g, a, targetPos)
-}
-
-func moveTowards(g *GameState, a *Actor, targetPos geometry.Point) int {
-	nextMovePos := a.getMoveTowards(g, targetPos)
+func moveAwayFromActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int) {
+	nextMovePos := a.getMoveAwayFromActor(g, target)
 	if nextMovePos == a.Position() {
-		return a.timeEnergy
+		return fsmai.NoEvent, a.TimeNeededForMovement()
 	}
 
 	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
-		return a.timeEnergy
+		return fsmai.NoEvent, a.TimeNeededForMovement()
 	}
 
 	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
 
-	return a.timeNeededForMovement()
+	return fsmai.NoEvent, a.TimeNeededForMovement()
+}
+func moveTowardsActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int) {
+	nextMovePos := a.getMoveTowardsActor(g, target)
+	if nextMovePos == a.Position() {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+
+	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+
+	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
+
+	return fsmai.NoEvent, a.TimeNeededForMovement()
+}
+func moveTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
+	nextMovePos := a.getMoveTowards(g, targetPos)
+	if nextMovePos == a.Position() {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+
+	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+
+	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
+
+	return fsmai.NoEvent, a.TimeNeededForMovement()
 }
 
 func LoadScript(dataDir string, name string, condFuncs map[string]govaluate.ExpressionFunction) ActionScript {

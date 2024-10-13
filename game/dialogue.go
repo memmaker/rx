@@ -7,7 +7,6 @@ import (
 	"github.com/memmaker/go/recfile"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -80,6 +79,7 @@ type ConversationOption struct {
 	branchCondition  *govaluate.EvaluableExpression
 	successBranch    string // will default to the current node if not set
 	failureBranch    string
+	effects          []string
 }
 
 func (o *ConversationOption) CanDisplay(params map[string]interface{}) bool {
@@ -119,7 +119,7 @@ func (o *ConversationOption) RollInfo() string {
 	}
 	conditionAsString := o.branchCondition.String()
 	// format : RollSkill('skillName', -10)
-	regexPattern := `RollSkill\('([^']*)',\s*([-0-9]+)\)`
+	regexPattern := `RollSkill\('([^']+)',\s*'([^']+)'\)`
 	// extract skill name
 	// extract modifier
 	matches := regexp.MustCompile(regexPattern).FindStringSubmatch(conditionAsString)
@@ -127,11 +127,8 @@ func (o *ConversationOption) RollInfo() string {
 		return ""
 	}
 	skillName := d100.SkillFromString(matches[1])
-	modifier, _ := strconv.Atoi(matches[2])
-	if modifier == 0 {
-		return fmt.Sprintf(" (%s)", skillName.String())
-	}
-	return fmt.Sprintf(" (%s%+d)", skillName.String(), modifier)
+	difficulty := matches[2]
+	return fmt.Sprintf(" (%s - %s)", skillName.String(), difficulty)
 }
 
 func ParseConversation(filename string, conditionFuncs map[string]govaluate.ExpressionFunction) (*Conversation, error) {
@@ -147,9 +144,10 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 	for _, branchRecords := range records["OpeningBranch"] {
 		var branch OpeningBranch
 		for _, fields := range branchRecords {
-			if fields.Name == "cond" {
+			fieldName := strings.ToLower(fields.Name)
+			if fieldName == "cond" {
 				branch.branchCondition, _ = govaluate.NewEvaluableExpressionWithFunctions(fields.Value, conditionFuncs)
-			} else if fields.Name == "goto" {
+			} else if fieldName == "goto" {
 				branch.branchName = fields.Value
 			}
 		}
@@ -161,14 +159,15 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 		var conversationNode ConversationNode
 		var currentOption ConversationOption
 		for _, field := range nodeRecord {
-			if field.Name == "name" {
+			fieldName := strings.ToLower(field.Name)
+			if fieldName == "name" {
 				conversationNode.Name = field.Value
-			} else if field.Name == "npc" {
+			} else if fieldName == "npc" {
 				conversationNode.NpcText = strings.TrimSpace(field.Value)
-			} else if field.Name == "effect" {
+			} else if fieldName == "effect" {
 				conversationNode.Effects = append(conversationNode.Effects, field.Value)
-			} else if strings.HasPrefix(field.Name, "o_") {
-				if field.Name == "o_text" {
+			} else if strings.HasPrefix(fieldName, "o_") {
+				if fieldName == "o_text" {
 					if currentOption.playerText != "" {
 						conversationNode.Options = append(conversationNode.Options, currentOption)
 					}
@@ -177,24 +176,22 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 					currentOption.successBranch = ""
 					currentOption.failureBranch = ""
 					currentOption.displayCondition = nil
-				} else if field.Name == "o_cond" {
+					currentOption.effects = nil
+				} else if fieldName == "o_cond" {
 					currentOption.displayCondition, _ = govaluate.NewEvaluableExpressionWithFunctions(field.Value, conditionFuncs)
-				} else if field.Name == "o_goto" || field.Name == "o_succ" {
+				} else if fieldName == "o_goto" || fieldName == "o_succ" {
 					currentOption.successBranch = field.Value
-				} else if field.Name == "o_fail" {
+				} else if fieldName == "o_effect" {
+					currentOption.effects = append(currentOption.effects, field.Value)
+				} else if fieldName == "o_fail" {
 					currentOption.failureBranch = field.Value
-				} else if field.Name == "o_test" {
+				} else if fieldName == "o_test" {
 					currentOption.branchCondition, _ = govaluate.NewEvaluableExpressionWithFunctions(field.Value, conditionFuncs)
 				}
 			}
 		}
 		if currentOption.playerText != "" {
 			conversationNode.Options = append(conversationNode.Options, currentOption)
-			currentOption.playerText = ""
-			currentOption.branchCondition = nil
-			currentOption.successBranch = ""
-			currentOption.failureBranch = ""
-			currentOption.displayCondition = nil
 		}
 		allNodes[conversationNode.Name] = conversationNode
 	}
