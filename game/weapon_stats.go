@@ -7,16 +7,29 @@ import (
 type TargetingMode int
 
 const (
-	TargetingModeNone         TargetingMode = 0
-	TargetingModePunch        TargetingMode = 1
-	TargetingModeKick         TargetingMode = 2
-	TargetingModeSwing        TargetingMode = 4
-	TargetingModeThrust       TargetingMode = 8
-	TargetingModeThrow        TargetingMode = 16
-	TargetingModeFireSingle   TargetingMode = 32
-	TargetingModeFireBurst    TargetingMode = 64
-	TargetingModeFireFullAuto TargetingMode = 128
-	TargetingModeFlame        TargetingMode = 256
+	TargetingModeNone TargetingMode = iota
+	TargetingModePunch
+	TargetingModeKick
+	TargetingModeSwing
+	TargetingModeThrust
+	TargetingModeThrow
+	TargetingModeFireSingle
+	TargetingModeFireBurst
+	TargetingModeFireFullAuto
+	TargetingModeFlame
+
+	// unique for bowel disruptor
+	TargetingModeBDLoose
+	TargetingModeBDWatery
+	TargetingModeBDFiery
+	TargetingModeBDBurningAnalGeyser
+	TargetingModeBDRectalVolcano
+	TargetingModeBDProlapse
+	TargetingModeBDUnspeakableGutHorror
+	TargetingModeBDShatIntoUnconsciousness
+	TargetingModeBDFatalIntestinalMaelstrom
+
+	TargetingModeCount
 )
 
 func TargetingModeFromString(value string) TargetingMode {
@@ -40,6 +53,25 @@ func TargetingModeFromString(value string) TargetingMode {
 		return TargetingModeFireBurst
 	case "flame":
 		return TargetingModeFlame
+
+	case "bd_loose":
+		return TargetingModeBDLoose
+	case "bd_watery":
+		return TargetingModeBDWatery
+	case "bd_fiery":
+		return TargetingModeBDFiery
+	case "bd_burning_anal_geyser":
+		return TargetingModeBDBurningAnalGeyser
+	case "bd_rectal_volcano":
+		return TargetingModeBDRectalVolcano
+	case "bd_prolapse":
+		return TargetingModeBDProlapse
+	case "bd_unspeakable_gut_horror":
+		return TargetingModeBDUnspeakableGutHorror
+	case "bd_shat_into_unconsciousness":
+		return TargetingModeBDShatIntoUnconsciousness
+	case "bd_fatal_intestinal_maelstrom":
+		return TargetingModeBDFatalIntestinalMaelstrom
 	}
 	panic("Invalid targeting mode: " + value)
 	return TargetingModeNone
@@ -48,8 +80,8 @@ func (t TargetingMode) Next() TargetingMode {
 	if t == TargetingModeNone {
 		return TargetingModePunch
 	}
-	nextVal := t << 1
-	if nextVal > TargetingModeFlame {
+	nextVal := t + 1
+	if nextVal >= TargetingModeCount {
 		nextVal = TargetingModePunch
 	}
 	return nextVal
@@ -75,6 +107,24 @@ func (t TargetingMode) ToString() string {
 		return "Fire Burst"
 	case TargetingModeFlame:
 		return "Flame"
+	case TargetingModeBDLoose:
+		return "Loose"
+	case TargetingModeBDWatery:
+		return "Watery"
+	case TargetingModeBDFiery:
+		return "Fiery"
+	case TargetingModeBDBurningAnalGeyser:
+		return "Burning Anal Geyser"
+	case TargetingModeBDRectalVolcano:
+		return "Rectal Volcano"
+	case TargetingModeBDProlapse:
+		return "Prolapse"
+	case TargetingModeBDUnspeakableGutHorror:
+		return "Unspeakable Gut Horror"
+	case TargetingModeBDShatIntoUnconsciousness:
+		return "Shat Into Unconsciousness"
+	case TargetingModeBDFatalIntestinalMaelstrom:
+		return "Fatal Intestinal Maelstrom"
 	}
 	return "Unknown"
 }
@@ -99,6 +149,7 @@ type DamageType int32
 
 func (t DamageType) IsEnergy() bool {
 	return t == DamageTypeLaser || t == DamageTypePlasma || t == DamageTypeElectrical || t == DamageTypeEMP
+
 }
 
 func (t DamageType) String() string {

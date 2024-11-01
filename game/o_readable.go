@@ -70,6 +70,8 @@ func (g *GameState) NewReadable(rec recfile.Record) *ReadableObject {
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
 		case "name":
+			sign.internalName = field.Value
+		case "iconoverride":
 			customIcon = g.iconForObject(field.Value)
 		case "icon":
 			customIcon.Char = field.AsRune()

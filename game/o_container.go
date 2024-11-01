@@ -1,6 +1,7 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
 	"bytes"
 	"encoding/gob"
@@ -9,6 +10,7 @@ import (
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
 	"strings"
+	"time"
 )
 
 type Container struct {
@@ -19,6 +21,10 @@ type Container struct {
 	show           func()
 	isPlayer       func(actor *Actor) bool
 	lockFlag       string
+
+	isVendingMachine bool
+	refill           func()
+	lastRefillTime   time.Time
 
 	flagRemovalOf string
 	flagCall      func()
@@ -124,6 +130,8 @@ func (g *GameState) NewContainer(rec recfile.Record) Object {
 			container.internalName = field.Value
 		case "description":
 			container.displayName = field.Value
+		case "iconoverride":
+			container.customIcon = g.iconForObject(field.Value)
 		case "position":
 			container.position, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "item":
@@ -131,6 +139,8 @@ func (g *GameState) NewContainer(rec recfile.Record) Object {
 			if item != nil {
 				container.AddItem(item)
 			}
+		case "isvendingmachine":
+			container.isVendingMachine = recfile.StrBool(field.Value)
 		case "flag_removal_of":
 			container.flagRemovalOf = field.Value
 		case "lockflag":
@@ -145,13 +155,44 @@ func (b *Container) InitWithGameState(g *GameState) {
 	b.iconForObject = g.iconForObject
 	b.isPlayer = func(actor *Actor) bool { return actor == g.Player }
 	b.show = func() {
-		g.openContainer(b)
+		if b.isVendingMachine {
+			g.openVendingMachineMenu(b)
+		} else {
+			g.openContainer(b)
+		}
 	}
 	if b.flagRemovalOf != "" {
 		b.flagCall = func() {
 			g.gameFlags.Increment(fmt.Sprintf("ContainerRemoved(%s, %s)", b.internalName, b.flagRemovalOf))
 		}
 	}
+}
+
+func (b *Container) AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem {
+	if b.isVendingMachine {
+		items = append(items, foundation.MenuItem{
+			Name: "Buy",
+			Action: func() {
+				g.openVendingMachineMenu(b)
+			},
+			CloseMenus: true,
+		})
+
+		hackDifficulty := d100.Hard
+
+		picksNeeded := d100.ElectronicLockpicksNeeded(hackDifficulty, g.Player.GetCharSheet().GetSkill(d100.SkillForPickLocks))
+		hackLabel := fmt.Sprintf("Hack (%d)", picksNeeded)
+		items = append(items, foundation.MenuItem{
+			Name: hackLabel,
+			Action: func() {
+				if g.playerPickElectronicLock(hackDifficulty) {
+					g.openContainer(b) // TODO: Remove the money instead..
+				}
+			},
+			CloseMenus: true,
+		})
+	}
+	return items
 }
 
 func (b *Container) HasItemsWithName(name string, stackSize int) bool {
@@ -201,9 +242,18 @@ func (b *Container) AddItems(items []foundation.Item) {
 	}
 }
 
+func (b *Container) Items() []foundation.Item {
+	return b.containedItems
+
+}
+
+func (b *Container) ItemsFiltered(keep func(item foundation.Item) bool) []foundation.Item {
+	return StackedFilteredAndSortedItems(b.containedItems, keep)
+}
+
 func (g *GameState) openContainer(container *Container) {
 	containerItems := StackedFilteredAndSortedItems(container.containedItems, func(item foundation.Item) bool { return true })
-	playerItems := g.Player.GetInventory().Items()
+	playerItems := StackedFilteredAndSortedItems(g.Player.GetInventory().Items(), func(item foundation.Item) bool { return true })
 
 	// PROBLEM: For "Take All", we are calling this function multiple times..
 	// Re-Opening the container multiple times, is not a good idea.
@@ -211,7 +261,7 @@ func (g *GameState) openContainer(container *Container) {
 		itemName := itemTaken.Name()
 
 		if amount > 0 {
-			g.stackTransfer(container, g.Player.GetInventory(), itemTaken, amount)
+			stackTransfer(container, g.Player.GetInventory(), itemTaken, amount)
 
 			g.ui.PlayCue("world/pickup")
 
@@ -224,7 +274,7 @@ func (g *GameState) openContainer(container *Container) {
 		itemName := itemTaken.Name()
 
 		if amount > 0 {
-			g.stackTransfer(g.Player.GetInventory(), container, itemTaken, amount)
+			stackTransfer(g.Player.GetInventory(), container, itemTaken, amount)
 
 			g.ui.PlayCue("world/drop")
 
@@ -235,7 +285,7 @@ func (g *GameState) openContainer(container *Container) {
 	}
 	takeAll := func() {
 		for _, item := range container.containedItems {
-			g.stackTransfer(container, g.Player.GetInventory(), item, item.StackSize())
+			stackTransfer(container, g.Player.GetInventory(), item, item.StackSize())
 		}
 		g.openContainer(container)
 	}
@@ -247,7 +297,7 @@ type ItemContainer interface {
 	RemoveItem(item foundation.Item)
 }
 
-func (g *GameState) stackTransfer(from ItemContainer, to ItemContainer, item foundation.Item, splitAmount int) {
+func stackTransfer(from ItemContainer, to ItemContainer, item foundation.Item, splitAmount int) {
 	if splitAmount == 0 {
 		return
 	}

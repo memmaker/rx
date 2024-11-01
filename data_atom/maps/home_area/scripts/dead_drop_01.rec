@@ -13,10 +13,10 @@ do: Hilite('>>> You have mail <<<')
 
 %rec: frames
 
-if: IsItemInContainer(DD, 'gold', 500)
+if: IsItemInContainer(DD, 'gold', 250)
 do: SaveTimeNow('dd_01_deposited')
 
-if: IsHoursAfter('dd_01_deposited', 6)
-do: ContainerRemoveItem(DD, 'gold', 500)
-do: ContainerAddItem(DD, 'leather_armor')
+if: IsHoursAfter('dd_01_deposited', 6) && IsItemInContainer(DD, 'gold', 250)
+do: ContainerRemoveItem(DD, 'gold', 250)
+do: ContainerAddItem(DD, 'binge', 3)
 do: SetFlag('ClientRewardReceived(starter)')

@@ -51,7 +51,7 @@ type DialogueChecker struct {
 }
 
 func ValidateDialogue(rootDir string) {
-	checker := NewDialogueChecker(rootDir)
+	checker := NewDialogueChecker(path.Join(rootDir, "dialogues"))
 	reports := checker.CreateReports()
 	for _, report := range reports {
 		missing := report.MissingNodes()
@@ -89,7 +89,7 @@ func (dc *DialogueChecker) CreateReports() []DialogueReport {
 			continue
 		}
 		filePath := path.Join(dc.rootDir, entry.Name())
-		records := recfile.ReadMulti(fxtools.MustOpen(filePath))
+		records := recfile.ReadMultiAndClose(fxtools.MustOpen(filePath))
 		openingBranchRecords := records["OpeningBranch"]
 		nodeRecords := records["Nodes"]
 		nodeNamesPresent := make(map[string]bool)

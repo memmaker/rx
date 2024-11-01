@@ -60,3 +60,42 @@ Icon: ≡
 Foreground: gray_3
 Background: light_blue_2
 
+Name: WoodenSign
+Icon: ≡
+Foreground: gray_3
+Background: light_blue_2
+
+Name: BlueLight
+Icon: ☼
+Foreground: yellow_2
+Background: black
+
+Name: RedLight
+Icon: ☼
+Foreground: yellow_2
+Background: black
+
+Name: BakedLight
+Icon: ☼
+Foreground: yellow_2
+Background: black
+
+Name: Trap
+Icon: ☼
+Foreground: yellow_2
+
+Name: PushBox
+Icon: Θ
+Foreground: red_8
+Background: magenta_5
+
+Name: ExplodingPushBox
+Icon: Θ
+Foreground: red_8
+Background: magenta_5
+
+Name: Bed
+Icon: ▓
+Foreground: rust_3
+Background: orange_7
+

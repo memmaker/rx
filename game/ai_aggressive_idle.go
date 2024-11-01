@@ -3,8 +3,6 @@ package game
 import (
 	"RogueUI/foundation"
 	"RogueUI/fsmai"
-	"github.com/memmaker/go/geometry"
-	"math/rand"
 )
 
 func BehaviourAggressiveIdleInit(g *GameState, actor *Actor, event fsmai.TransitionEvent) {
@@ -17,14 +15,9 @@ func BehaviourAggressiveIdle(g *GameState, actor *Actor, event fsmai.TransitionE
 		return actor.ActOnGoal(g)
 	}
 
-	distanceToPlayer := geometry.DistanceChebyshev(actor.Position(), g.Player.Position())
-	nearEachOther := distanceToPlayer <= 7
-
 	// barks
-	if nearEachOther && g.canPlayerSee(actor.Position()) && actor.chatterFile != "" && actor.GetFlags().Get(foundation.FlagTurnsSinceLastIdleChatter) > 40 && rand.Intn(4) == 0 {
-		if g.tryAddRandomChatter(actor, foundation.ChatterBeingAroundPlayer) {
-			actor.GetFlags().Unset(foundation.FlagTurnsSinceLastIdleChatter)
-		}
+	if g.shouldActorBark(actor) && g.tryAddRandomChatter(actor, foundation.ChatterBeingAroundPlayer) {
+		actor.GetFlags().Unset(foundation.FlagTurnsSinceLastIdleChatter)
 	}
 
 	// random animal movement
@@ -36,12 +29,40 @@ func BehaviourAggressiveIdle(g *GameState, actor *Actor, event fsmai.TransitionE
 		}
 	}
 
-	// scheduled actions
+	return fsmai.NoEvent, actor.timeEnergy
+}
+
+func (g *GameState) trySetGoalFromSchedule(actor *Actor) {
+	if actor.schedule == nil || actor == g.Player {
+		return
+	}
+
+	if g.hasNewGoalFromSchedule(actor) {
+		return
+	}
+
+	if !actor.HasActiveGoal() {
+		currentSlot := actor.schedule.CurrentTimeSlot()
+		loc := g.currentMap().GetNamedLocation(currentSlot.Location)
+		if actor.Position() != loc {
+			g.msg(foundation.HiLite("%s moves to %s", actor.Name(), currentSlot.Location))
+			actor.SetGoal(GoalStrideToLocation(loc))
+		}
+	}
+}
+
+func (g *GameState) hasNewGoalFromSchedule(actor *Actor) bool {
 	if slot, move := actor.MoveToNextTimeSlot(g.gameTime.Time); move {
 		loc := g.currentMap().GetNamedLocation(slot.Location)
 		g.msg(foundation.HiLite("%s moves to %s", actor.Name(), slot.Location))
-		actor.SetGoal(GoalMoveToLocation(loc))
+		actor.SetGoal(GoalStrideToLocation(loc))
+		if g.currentMap().IsTransitionAt(loc) {
+			actor.SetFlag(foundation.FlagWantsToTransition)
+		}
+		if actor.IsSleeping() {
+			actor.WakeUp()
+		}
+		return true
 	}
-
-	return fsmai.NoEvent, actor.timeEnergy
+	return false
 }

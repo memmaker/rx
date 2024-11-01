@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
+	"github.com/memmaker/go/textiles"
 	"image/color"
 	"math/rand"
 	"slices"
@@ -76,11 +77,18 @@ func (g *GameState) hasPaidWithCharge(user *Actor, item foundation.Item) bool {
 		g.msg(foundation.Msg("The item is out of charges"))
 		return false
 	}
-	if item.Charges() > 0 {
-		item.ConsumeCharge()
-		if item.Charges() == 0 { // destroy
+	if item.Charges() == 1 {
+		if item.IsMultipleStacks() {
+			item.RemoveStacks(1)
+		} else {
 			g.removeItemFromInventory(user, item)
 		}
+		return true
+	}
+
+	item.ConsumeCharge()
+	if item.Charges() == 0 { // destroy
+		g.removeItemFromInventory(user, item)
 	}
 	return true
 }
@@ -272,23 +280,27 @@ func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []
 		}
 	}
 
+	currentZone := g.currentMap().FirstZoneAt(newPos)
 	observers := g.getObservers(newPos)
 	isSneaking := actor.HasFlag(foundation.FlagSneaking)
+
 	if len(observers) > 0 {
 		for _, observer := range observers {
-			sameTeam := observer.teamName == actor.teamName
-			observerIsAggressive := observer.IsAggressive()
-
-			outsideDetectionRange := observer.DetectionRange() < g.currentMap().MoveDistance(observer.Position(), newPos)
-
-			if sameTeam || !observerIsAggressive || outsideDetectionRange {
+			if observer.teamName == actor.teamName {
 				continue
 			}
-			if !isSneaking || !g.canSneakPast(actor, observer) {
+
+			if !g.isDetectedByObserver(actor, observer) {
+				continue
+			}
+
+			if observer.IsAggressive() {
 				observer.FSM.SendEvent(NewEnemySightedEvent(actor))
 				if isSneaking {
 					g.msg(foundation.HiLite("You have been detected by %s", observer.Name()))
 				}
+			} else if observer.IsGuarding(currentZone) {
+				g.reactToMinorCrime(observer, foundation.ChatterTrespassing)
 			}
 		}
 	}
@@ -306,12 +318,7 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	if g.currentMap().IsItemAt(g.Player.Position()) && g.config.AutoPickup {
 		g.PlayerPickupItem()
 	}
-	if g.Player.GetInventory().HasLightSource() || g.Player.IsCyberWareActive(CyberWareLight) {
-		g.playerLightSource.MaxIntensity = 1
-		g.currentMap().MoveLightSource(g.playerLightSource, g.Player.Position())
-	} else {
-		g.playerLightSource.MaxIntensity = 0
-	}
+	g.updatePlayerLightSource()
 
 	g.msg(g.GetMapInfoForMovement(g.Player.Position()))
 
@@ -337,14 +344,70 @@ func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition boo
 	}
 }
 
-func (g *GameState) openVendorMenu(vendor *Actor, onClose func()) {
-	itemsForSale := vendor.GetVendorInventory().Items()
-	title := fmt.Sprintf("Buy from %s", vendor.Name())
-	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendor(vendor, onClose), onClose)
+func (g *GameState) updatePlayerLightSource() {
+	if g.Player.GetInventory().HasLightSource() || g.Player.IsCyberWareActive(CyberWareLight) {
+		wasOff := g.playerLightSource.MaxIntensity == 0
+		wasAtPos := g.playerLightSource.Pos == g.Player.Position()
+		g.playerLightSource.MaxIntensity = 1
+		g.currentMap().MoveLightSource(g.playerLightSource, g.Player.Position())
+		if wasAtPos && wasOff {
+			g.currentMap().UpdateDynamicLights()
+		}
+	} else if g.playerLightSource.MaxIntensity > 0 {
+		g.playerLightSource.MaxIntensity = 0
+		g.currentMap().UpdateDynamicLights()
+	}
 }
 
-func (g *GameState) buyItemFromVendor(vendor *Actor, onClose func()) func(item foundation.Item, price int) {
-	return func(item foundation.Item, price int) {
+func (g *GameState) openCyberwareMenu(vendor *Actor, onClose func()) {
+	itemsForSale := vendor.OffersCyberWare
+	if len(itemsForSale) == 0 {
+		g.msg(foundation.Msg("Nothing for sale"))
+		return
+	}
+	var tableRows []fxtools.TableRow
+	var menuItems []foundation.MenuItem
+	for _, item := range itemsForSale {
+		tableRows = append(tableRows, fxtools.NewTableRow(item.GetItem1().String(), fmt.Sprintf("$%d", item.GetItem2())))
+	}
+
+	labelLines := fxtools.TableLayoutLastRight(tableRows)
+
+	for index, item := range itemsForSale {
+		label := labelLines[index]
+		if item.GetItem2() > g.Player.GetGold() {
+			label = fmt.Sprintf("%s%s[-]", textiles.RGBAToFgColorCode(g.palette.Get("dark_gray_3")), label)
+		}
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: label,
+			Action: func() {
+				if item.GetItem2() > g.Player.GetGold() {
+					g.msg(foundation.Msg("You cannot afford that"))
+					g.openCyberwareMenu(vendor, onClose)
+				} else {
+					g.Player.RemoveGold(item.GetItem2())
+					g.playerAddCyberware(item.GetItem1())
+				}
+			},
+		})
+	}
+
+	title := fmt.Sprintf("Installed by %s", vendor.Name())
+	g.ui.OpenMenuWithTitleAndClose(title, menuItems, onClose)
+}
+
+func (g *GameState) openVendorMenu(vendor *Actor, onClose func()) {
+	itemsForSale := vendor.GetVendorInventory().Items()
+	if len(itemsForSale) == 0 {
+		g.msg(foundation.Msg("Nothing for sale"))
+		return
+	}
+	title := fmt.Sprintf("Buy from %s", vendor.Name())
+	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendor(vendor, onClose), g.inspectItem, onClose)
+}
+
+func (g *GameState) buyItemFromVendor(vendor *Actor, onClose func()) func(item foundation.Item, amount int, price int) {
+	return func(item foundation.Item, amount int, price int) {
 		player := g.Player
 		if !player.HasGold(price) {
 			g.msg(foundation.Msg("You cannot afford that"))
@@ -356,11 +419,15 @@ func (g *GameState) buyItemFromVendor(vendor *Actor, onClose func()) func(item f
 			g.openVendorMenu(vendor, onClose)
 			return
 		}
-		vendor.GetVendorInventory().RemoveItem(item)
 
-		vendor.GetInventory().AddItems(player.RemoveGold(price))
+		if amount == 0 {
+			g.openVendorMenu(vendor, onClose)
+			return
+		}
 
-		player.GetInventory().AddItem(item)
+		stackTransfer(vendor.GetVendorInventory(), player.GetInventory(), item, amount)
+
+		vendor.GetInventory().AddItem(player.RemoveGold(price))
 
 		g.msg(foundation.HiLite("You bought %s for $%s", item.Name(), fmt.Sprint(price)))
 
@@ -370,6 +437,47 @@ func (g *GameState) buyItemFromVendor(vendor *Actor, onClose func()) func(item f
 	}
 }
 
+func (g *GameState) openVendingMachineMenu(machine *Container) {
+	itemsForSale := machine.ItemsFiltered(func(item foundation.Item) bool {
+		return !item.IsGold()
+	})
+	if len(itemsForSale) == 0 {
+		g.msg(foundation.Msg("Nothing for sale"))
+		return
+	}
+	title := fmt.Sprintf("Buy from %s", machine.Name())
+	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendingMachine(machine), g.inspectItem, nil)
+}
+
+func (g *GameState) buyItemFromVendingMachine(machine *Container) func(item foundation.Item, amount int, price int) {
+	return func(item foundation.Item, amount int, price int) {
+		player := g.Player
+		if !player.HasGold(price) {
+			g.msg(foundation.Msg("You cannot afford that"))
+			g.openVendingMachineMenu(machine)
+			return
+		}
+		if player.GetInventory().IsFull() {
+			g.msg(foundation.Msg("You cannot carry more items"))
+			g.openVendingMachineMenu(machine)
+			return
+		}
+		if amount == 0 {
+			g.openVendingMachineMenu(machine)
+			return
+		}
+
+		stackTransfer(machine, player.GetInventory(), item, amount)
+
+		machine.AddItem(player.RemoveGold(price))
+
+		g.msg(foundation.HiLite("You bought %s for $%s", item.Name(), fmt.Sprint(price)))
+
+		g.ui.PlayCue("world/pickup")
+
+		g.openVendingMachineMenu(machine)
+	}
+}
 func (g *GameState) dropInventory(victim *Actor) {
 	goldAmount := victim.GetGold()
 	if goldAmount > 0 {
@@ -379,7 +487,19 @@ func (g *GameState) dropInventory(victim *Actor) {
 		g.addItemToMap(item, victim.Position())
 	}
 }
-
+func (g *GameState) fillTemplatedTextCustom(text string, vars map[string]string) string {
+	parsedTemplate, err := template.New("text").Parse(text)
+	if err != nil {
+		panic(err)
+	}
+	vars["pcname"] = g.Player.Name()
+	var filledText strings.Builder
+	err = parsedTemplate.Execute(&filledText, vars)
+	if err != nil {
+		panic(err)
+	}
+	return filledText.String()
+}
 func (g *GameState) fillTemplatedText(text string) string {
 	parsedTemplate, err := template.New("text").Parse(text)
 	if err != nil {
@@ -428,14 +548,12 @@ func (g *GameState) getWeaponAttackAnim(attacker *Actor, targetPos geometry.Poin
 }
 
 func (g *GameState) GetFlightPath(sourcePos geometry.Point, targetPos geometry.Point) []geometry.Point {
-
 	isValid := func(los []geometry.Point) bool {
 		if len(los) < 2 {
 			return false
 		}
 		startAtOrigin := los[0] == sourcePos
-		endAtTarget := los[len(los)-1] == targetPos
-		return startAtOrigin && endAtTarget
+		return startAtOrigin
 	}
 	var paths [][]geometry.Point
 	var conflicts []int
@@ -453,7 +571,7 @@ func (g *GameState) GetFlightPath(sourcePos geometry.Point, targetPos geometry.P
 	flightPath := g.originalLine(sourcePos, targetPos)
 	fovConflicts := conflictCount(flightPath)
 	if isValid(flightPath) {
-		if fovConflicts == 0 {
+		if fovConflicts == 0 && flightPath[len(flightPath)-1] == targetPos {
 			return flightPath
 		}
 		paths = append(paths, flightPath)
@@ -463,7 +581,7 @@ func (g *GameState) GetFlightPath(sourcePos geometry.Point, targetPos geometry.P
 	flightPath = g.reversedLine(sourcePos, targetPos)
 	fovConflicts = conflictCount(flightPath)
 	if isValid(flightPath) {
-		if fovConflicts == 0 {
+		if fovConflicts == 0 && flightPath[len(flightPath)-1] == targetPos {
 			return flightPath
 		}
 		paths = append(paths, flightPath)
@@ -473,8 +591,16 @@ func (g *GameState) GetFlightPath(sourcePos geometry.Point, targetPos geometry.P
 	if len(paths) == 0 {
 		return []geometry.Point{}
 	}
+	if len(paths) == 1 {
+		return paths[0]
+	}
 	minIndex := slices.Index(conflicts, slices.Min(conflicts))
-	return paths[minIndex]
+	otherIndex := 1 - minIndex
+	if len(paths[minIndex]) < len(paths[otherIndex]) {
+		return paths[otherIndex]
+	} else {
+		return paths[minIndex]
+	}
 }
 
 func (g *GameState) originalLine(sourcePos geometry.Point, targetPos geometry.Point) []geometry.Point {

@@ -50,3 +50,17 @@ Name: NamedLocation
 Icon: ⌂
 Foreground: yellow_2
 
+Name: PushBox
+Icon: Θ
+Foreground: red_8
+Background: magenta_5
+
+Name: ExplodingPushBox
+Icon: Θ
+Foreground: red_8
+Background: magenta_5
+
+Name: Taxi
+Icon: ⌂
+Foreground: dark_gray_7
+Background: yellow_3

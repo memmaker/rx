@@ -129,6 +129,7 @@ const (
 
 	RngModTargetVelocityStationary
 	RngModPerTargetVelocityDelta
+	RngModTargetCamouflaged
 
 	RngModPerObstacle
 	RngModPerAimTurn
@@ -140,6 +141,7 @@ const (
 	RngModAmbush
 	RngModCalledShot
 	RngModFiringWhileRunning
+	RngModSurprised
 	RngModLaserSight
 	RngModTelescopicSight
 	RngModTargetingScope
@@ -171,12 +173,16 @@ func (m RangedAttackModifier) String() string {
 		return "Stationary Target"
 	case RngModPerTargetVelocityDelta:
 		return "Very Fast Target"
+	case RngModTargetCamouflaged:
+		return "Camouflaged Target"
 	case RngModPerObstacle:
 		return "Obstacles"
 	case RngModPerAimTurn:
 		return "Aiming"
 	case RngModFastDraw:
 		return "Fast Draw"
+	case RngModSurprised:
+		return "Surprised Target"
 	case RngModAmbush:
 		return "Ambush"
 	case RngModCalledShot:
@@ -219,6 +225,9 @@ var definedRangedModifiers = map[RangedAttackModifier]int{
 	RngModLightDarkness: -40,
 
 	RngModTargetVelocityStationary: 0,
+	RngModSurprised:                5,
+
+	RngModTargetCamouflaged: -60,
 
 	RngModPerTargetVelocityDelta: -4,
 	RngModPerObstacle:            -10,

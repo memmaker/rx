@@ -13,17 +13,17 @@ Fallout Core Features
    - Openable - DONE
  - Skill applications
    - Sneaking (toggle button) - missing
-   - First Aid / Doctor (apply manually) - missing
+   - BioChemistry (Doctor) (apply manually) - missing
    - Steal / Plant (context action on actors) - missing
-   - Lockpick (context action on doors) - Skill not applied
-   - Science (context action on terminals) - Skill not applied
+   - Mechnaics (context action on doors) - Skill not applied
+   - Technology (context action on terminals) - Skill not applied
      - Hacking is possible on all keypads
      - Can be used on all robots
    - Repair (context action on items/objects) - missing
      - Machinery with states (broken, working, improved)
      - Armor & Weapons have degradation and need repair
-   - Speech (apply at dialogue) - missing
-   - Traps (context action on traps)
+   - Social/Intimidate (apply at dialogue) - missing
+   - Mechanics (traps / lockpicking)
  - Dialogue
    - Reactions?
    - Terminals - DONE
@@ -46,10 +46,8 @@ Fallout Core Features
     - Weapon Strength Requirements
 
   - Animations
-    - Lasers
     - Electricity
     - EMP
-    - Burst?
 
 DX Items:
   - Thermoptic Camo

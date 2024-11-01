@@ -34,3 +34,11 @@ func NewEnemySightedEvent(threat *Actor) fsmai.TransitionEvent {
 func NewCalmedEvent(threat *Actor) fsmai.TransitionEvent {
 	return ActorEvent{Event: fsmai.EventCalmed, Actor: threat}
 }
+
+func NewMinorCrimeWitnessedEvent(criminal *Actor) fsmai.TransitionEvent {
+	return ActorEvent{Event: fsmai.EventMinorCrimeWitnessed, Actor: criminal}
+}
+
+func NewMajorCrimeWitnessedEvent(criminal *Actor) fsmai.TransitionEvent {
+	return ActorEvent{Event: fsmai.EventMajorCrimeWitnessed, Actor: criminal}
+}

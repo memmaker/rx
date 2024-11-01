@@ -16,7 +16,7 @@ type ClothingDescription struct {
 	CanBeHeavy   bool
 }
 
-func newFashionInventory(style FashionStyle) []foundation.Item {
+func newFashionInventory(style foundation.FashionStyle) []foundation.Item {
 	// Types and base prices
 	var armorTypes = []ClothingDescription{
 		{
@@ -118,25 +118,25 @@ func newFashionInventory(style FashionStyle) []foundation.Item {
 	return fashionInventory
 }
 
-func generateNewFashionItem(desc ClothingDescription, forceStyle FashionStyle) *Armor {
-	brandsForStyles := map[FashionStyle][]string{
-		FashionStyleGenericChic: {
+func generateNewFashionItem(desc ClothingDescription, forceStyle foundation.FashionStyle) *Armor {
+	brandsForStyles := map[foundation.FashionStyle][]string{
+		foundation.FashionStyleGenericChic: {
 			"Levi",
 			"Nu-Tek",
 			"Uniwear",
 			"Gibson Battlegear",
 			"Jordash/Boy",
 		},
-		FashionStyleEdgerunner: {
+		foundation.FashionStyleEdgerunner: {
 			"Image Fashionware",
 			"Icon America",
 			"Cryo-Max",
 		},
-		FashionStyleHighFashion: {
+		foundation.FashionStyleHighFashion: {
 			"Image Fashionware",
 			"Cryo-Max",
 		},
-		FashionStyleBusiness: {
+		foundation.FashionStyleBusiness: {
 			"Takanaka",
 		},
 	}
@@ -170,8 +170,8 @@ func generateNewFashionItem(desc ClothingDescription, forceStyle FashionStyle) *
 	}
 
 	chosenStyle := forceStyle
-	if chosenStyle < 0 || chosenStyle >= FashionStyleCount {
-		chosenStyle = FashionStyle(rand.Intn(int(FashionStyleCount)))
+	if chosenStyle < 0 || chosenStyle >= foundation.FashionStyleCount {
+		chosenStyle = foundation.FashionStyle(rand.Intn(int(foundation.FashionStyleCount)))
 	}
 
 	brands := brandsForStyles[chosenStyle]

@@ -1,0 +1,39 @@
+s: being_around_player
+#
+c: HasWeaponEquippedWithName('flamer')
+#
+t: Not the clothes!
+t: Spare the fashion!
+
+s: being_around_player
+#
+c: !HasArmorEquipped()
+#
+t: Oh, dear. I can see you need some fashion advice.
+t: You definitely need some help with your wardrobe.
+t: Sweetie, you are in desperate need of a makeover.
+t: Why on earth are you naked? Come on, let's get you dressed.
+
+s: being_around_player
+#
+t: I love fashion!
+t: I'm a fashion expert. I can help you with that.
+t: I'm here to help you with your fashion needs.
+
+s: being_damaged
+#
+t: My new shoes!
+t: You ruined my outfit!
+t: You're going to pay for that!
+t: You're going to regret that!
+
+s: kill_one_liner
+#
+t: Bye-bye, fashion disaster!
+t: You better dress for the occasion next time!
+t: You're going to need a new wardrobe!
+
+s: way_to_kill
+#
+t: Just gonna change into something more comfortable.
+t: I'm going to need a new outfit after this.

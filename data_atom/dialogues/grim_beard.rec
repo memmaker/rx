@@ -1,24 +1,39 @@
 %rec: OpeningBranch
 
+cond: IsScriptRunning('tutorial')
+goto: DuringTutorial
+
 cond: true
-goto: Start
+goto: SmallTalk
 
 %rec: Nodes
 
-name: Start
+name: DuringTutorial
 npc: I am trying to teach you something here. Pay attention.
 #
 o_text: Cut the crap, Grim. Just give me the keys.
 o_cond: !HasFlag('grimKeysGiven')
 o_goto: GiveKeys
 #
-o_text: Never mind.
-o_goto: Goodbye
-#
+o_text: Fine, let's get back to it.
+o_goto: GoodbyeGoOn
+
+name: SmallTalk
+npc: What do you want, youngster?
 # Starter Mission
 o_text: I got this message from a guy named Jacob. What's the deal?
 o_cond: HasFlag('JobRead(starter)')
 o_goto: TellAboutJacob
+#
+o_text: So what can you tell me about the neighborhood?
+o_goto: AreaKnowledge
+#
+o_text: What did you say we were doing last night?
+o_goto: LastNight
+#
+o_text: Never mind.
+o_goto: Goodbye
+#
 
 name: GiveKeys
 npc: In a rush? Fine, here you go.
@@ -28,10 +43,13 @@ effect: StopScript('tutorial')
 effect: GiveItemToPlayer('home_keys')
 effect: EndConversation
 
+name: GoodbyeGoOn
+npc: Right, let's get back to business.
+effect: EndConversation
+
 name: Goodbye
 npc: Good luck out there.
 effect: EndConversation
-
 
 ### Starter Mission BEGIN ###
 
@@ -43,6 +61,9 @@ o_goto: Goodbye
 #
 o_text: Do you know where I can find him?
 o_goto: TellJacobLocation
+#
+o_text: I wanted to ask something else.
+o_goto: SmallTalk
 
 
 name: TellJacobLocation
@@ -53,6 +74,112 @@ effect: SetFlag('LocationKnown(jacobs_home)')
 #
 o_text: Thanks.
 o_goto: Goodbye
+#
+o_text: I wanted to ask something else.
+o_goto: SmallTalk
 
 ### Starter Mission END ###
 
+### General Knowledge BEGIN ###
+
+name: AreaKnowledge
+npc: Well, all of Edge Haven is a bit of a dump. It's like the wild west out here.
++ But you can also make a fortune. If you know how to play the game.
++ The two major corps, Eschaton Biotech and Bushido-ArmaTech, are always at each other's throats.
++ They have their fingers in everything around here. And then there's the gangs.
+#
+o_text: What's the deal with the Edge Haven?
+o_goto: EdgeHaven
+#
+o_text: Tell me about Eschaton Biotech.
+o_goto: EschatonBiotech
+#
+o_text: Tell me about Bushido-ArmaTech.
+o_goto: BushidoArmaTech
+#
+o_text: Tell me about the gangs.
+o_goto: Gangs
+#
+o_text: I wanted to ask something else.
+o_goto: SmallTalk
+
+name: EdgeHaven
+npc: The mega-city of the poor. The last stop before the wasteland.
++ All the rich guys are already up in space. We are the leftovers.
++ They are using the sky-hook to export everything that's still valuable.
+#
+effect: ReturnToPreviousNode
+
+name: EschatonBiotech
+npc: One-half religious cult, one-half biotech company. They have a kind of anti-tech agenda.
++ Hypocrites, if you ask me. They are big into bio-engineering and gene manipulation.
++ As you can guess, they are not very popular with the other corps.
+#
+effect: ReturnToPreviousNode
+
+name: BushidoArmaTech
+npc: The other big player in town. They are all about the tech.
++ They are the ones who built the sky-hook. And they are the ones who keep it running.
++ Military-industrial complex, if you ask me. They are always looking for new ways to make a buck.
+#
+effect: ReturnToPreviousNode
+
+name: Gangs
+npc: Mostly dumb kids who beat each other up for a few breadcrumbs.
++ But there are a few who are more organized. They are the ones you should watch out for.
++ Flesh & Bone and the Cognetic Bastards are worth mentioning.
+#
+o_text: Tell me more about Flesh & Bone.
+o_goto: FleshAndBone
+#
+o_text: Tell me more about the Cognetic Bastards.
+o_goto: CogneticBastards
+#
+o_text: I wanted to ask something else.
+o_goto: SmallTalk
+
+name: FleshAndBone
+npc: They really, really dislike the augmented. They are all about the purity of the flesh.
++ What they do like is beating up people who are different.
+#
+effect: ReturnToPreviousNode
+
+name: CogneticBastards
+npc: I don't know much about them. They are a secretive bunch.
++ Rumor has it they are following some kind of Artificial Intelligence.
++ Did not run into them myself. And I am not planning to.
+#
+effect: ReturnToPreviousNode
+
+### General Knowledge END ###
+
+### Last Night BEGIN ###
+
+name: LastNight
+npc: Why do you ask? You don't remember? We were drinking. A lot.
+#
+o_text: I see. Thanks.
+o_goto: Goodbye
+#
+o_text: It is a bit odd that I don't remember anything. Where did we go?
+o_goto: WhereDidWeGo
+#
+o_text: I wanted to ask something else.
+o_goto: SmallTalk
+
+name: WhereDidWeGo
+npc: We went to the "La Boom". Maybe you should stop drinking so much.
++ Stop asking these questions and get back to work.
+#
+o_text: Right. I am leaving.
+o_goto: Goodbye
+#
+o_text: I wanted to ask something else.
+o_goto: SmallTalk
+
+name: Leaving
+npc: Alright, youngster. I think you should be fine on your own now.
++ And don't forget: Attitude is everything.
+effect: RunScriptLeave('grim')
+effect: StopScript('tutorial')
+effect: EndConversation

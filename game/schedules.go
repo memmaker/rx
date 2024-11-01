@@ -54,8 +54,8 @@ type TimeSlot struct {
 	ObservationFlag    string
 }
 
-func (s TimeSlot) Description(actorName string) string {
-	return fmt.Sprintf(s.ActionFormatString, actorName)
+func (s TimeSlot) Description() string {
+	return s.ActionFormatString
 }
 
 type SlotID struct {
@@ -121,6 +121,10 @@ func (s *Schedule) CurrentTimeSlot() TimeSlot {
 		return TimeSlot{}
 	}
 	return allSlots[s.LastSlotID.Index]
+}
+
+func (s *Schedule) String() string {
+	return fmt.Sprintf("%s (%d)", s.MapName, len(s.Slots))
 }
 
 func NewScheduleFromFile(filename string) *Schedule {

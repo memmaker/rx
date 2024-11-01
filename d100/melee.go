@@ -13,7 +13,7 @@ func ModsToString(modifiers []Modifier) string {
 }
 
 func appendIfNonZero(mods []Modifier, mod Modifier) []Modifier {
-	if mod.IsZero() {
+	if mod.IsNonModifying() {
 		return mods
 	}
 	return append(mods, mod)

@@ -6,6 +6,9 @@ func NewDefaultTransitionTable(defaultState StateName) *TransitionTable {
 	// leaving neutral
 	t.AddTransition(defaultState, EventHeavilyInjured, StatePanic)
 	t.AddTransition(defaultState, EventProvoked, StateKill)
+	t.AddTransition(defaultState, EventMajorCrimeWitnessed, StateKill)
+
+	// aggressive only
 	t.AddTransition(StateAggressive, EventEnemySighted, StateKill)
 
 	// killing

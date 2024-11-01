@@ -71,6 +71,10 @@ func (s ActionScript) CanRunFrame(frame ScriptFrame) bool {
 	return frame.Condition(s.Variables)
 }
 
+func (s ActionScript) IsEmpty() bool {
+	return len(s.Frames) == 0
+}
+
 func mergeMaps(maps ...map[string]govaluate.ExpressionFunction) map[string]govaluate.ExpressionFunction {
 	result := make(map[string]govaluate.ExpressionFunction)
 	for _, m := range maps {
@@ -111,6 +115,21 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			removedItem := g.Player.GetInventory().RemoveItemsByNameAndCount(itemName, count)
 			if len(removedItem) > 0 {
+				g.msg(foundation.HiLite("%s removed.", removedItem[0].Name()))
+			}
+			return nil, nil
+		},
+		// eg. StackTransForTo(NPC, 'gold', 500)
+		"StackTransferTo": func(args ...interface{}) (interface{}, error) {
+			count := 1
+			targetActor := args[0].(*Actor)
+			itemName := args[1].(string)
+			if len(args) > 2 {
+				count = int(args[2].(float64))
+			}
+			removedItem := g.Player.GetInventory().RemoveItemsByNameAndCount(itemName, count)
+			if len(removedItem) > 0 {
+				targetActor.GetInventory().AddItems(removedItem)
 				g.msg(foundation.HiLite("%s removed.", removedItem[0].Name()))
 			}
 			return nil, nil
@@ -161,7 +180,11 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			mapName := args[0].(string)
 			return g.currentMap().GetName() == mapName, nil
 		},
-
+		"RandomNumberCode": func(args ...interface{}) (interface{}, error) {
+			nameOfDoor := args[0].(string)
+			code := g.getRandomNumberCode(nameOfDoor)
+			return string(code), nil
+		},
 		// Time / Turns
 		"Turns": func(args ...interface{}) (interface{}, error) {
 			return (float64)(g.TurnsTaken()), nil
@@ -188,6 +211,10 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 		},
 
 		// Scripts
+		"IsScriptRunning": func(args ...interface{}) (interface{}, error) {
+			scriptName := args[0].(string)
+			return g.scriptRunner.IsScriptRunning(scriptName), nil
+		},
 		"RunScript": func(args ...interface{}) (interface{}, error) {
 			scriptName := args[0].(string)
 			g.RunScriptByName(scriptName)
@@ -209,7 +236,19 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			victimName := args[1].(string)
 			killer := g.actorWithName(killerName)
 			victim := g.actorWithName(victimName)
+			g.msg(foundation.HiLite("%s kills %s.", killerName, victimName))
 			killScript := g.NewScriptKill(killer, victim)
+			g.RunScript(killScript)
+			return nil, nil
+		},
+		"RunScriptLeave": func(args ...interface{}) (interface{}, error) {
+			leaverName := args[0].(string)
+			isRunning := false
+			if len(args) > 1 {
+				isRunning = args[1].(bool)
+			}
+			leaver := g.actorWithName(leaverName)
+			killScript := g.NewScriptLeaveMap(leaver, isRunning)
 			g.RunScript(killScript)
 			return nil, nil
 		},
@@ -304,7 +343,11 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			return nil, nil
 		},
-
+		"PlayerAddCyberware": func(args ...interface{}) (interface{}, error) {
+			cyberwareName := args[0].(string)
+			g.playerAddCyberware(NewCyberWareFromString(cyberwareName))
+			return nil, nil
+		},
 		// Global Actions
 		"SaveTimeNow": func(args ...interface{}) (interface{}, error) {
 			nameForTime := args[0].(string)
@@ -333,7 +376,7 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			actor := args[0].(*Actor)
 			locName := args[1].(string)
 			loc := g.currentMap().GetNamedLocation(locName)
-			actor.SetGoal(GoalMoveToLocation(loc))
+			actor.SetGoal(GoalWalkToLocation(loc))
 			return nil, nil
 		},
 		"SetGoalMoveToSpawn": func(args ...interface{}) (interface{}, error) {
@@ -404,6 +447,18 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 	}
 }
 
+func (g *GameState) playerAddCyberware(cyberware CyberWare) {
+	g.ui.FadeToBlack()
+	g.advanceTime(time.Hour * 24)
+	if g.Player.HasWatch() {
+		g.printTime()
+	}
+	g.ui.FadeFromBlack()
+
+	g.Player.AddCyberWare(cyberware)
+	g.msg(foundation.HiLite("%s installed.", cyberware.String()))
+}
+
 func moveAwayFromActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int) {
 	nextMovePos := a.getMoveAwayFromActor(g, target)
 	if nextMovePos == a.Position() {
@@ -432,7 +487,7 @@ func moveTowardsActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEv
 
 	return fsmai.NoEvent, a.TimeNeededForMovement()
 }
-func moveTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
+func walkTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
 	nextMovePos := a.getMoveTowards(g, targetPos)
 	if nextMovePos == a.Position() {
 		return fsmai.NoEvent, a.TimeNeededForMovement()
@@ -446,10 +501,25 @@ func moveTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.Transi
 
 	return fsmai.NoEvent, a.TimeNeededForMovement()
 }
+func strideTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
+	nextMovePos := a.getMoveTowards(g, targetPos)
+	timeForMove := max(a.TimeNeededForMovement(), 10)
+	if nextMovePos == a.Position() {
+		return fsmai.NoEvent, timeForMove
+	}
+
+	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
+		return fsmai.NoEvent, timeForMove
+	}
+
+	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
+
+	return fsmai.NoEvent, timeForMove
+}
 
 func LoadScript(dataDir string, name string, condFuncs map[string]govaluate.ExpressionFunction) ActionScript {
 	filePath := path.Join(dataDir, "scripts", name+".rec")
-	records := recfile.ReadMulti(fxtools.MustOpen(filePath))
+	records := recfile.ReadMultiAndClose(fxtools.MustOpen(filePath))
 	return NewActionScript(name, records, condFuncs)
 }
 

@@ -88,3 +88,35 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
+Name: stairs up
+Char: <
+Foreground: light_gray_7
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: shooting target
+Char: Φ
+Foreground: red_8
+Background: white
+IsWalkable: false
+IsTransparent: true
+Flags: 32
+
+Name: table
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 8
+
+Name: stairs up
+Char: <
+Foreground: light_gray_7
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+

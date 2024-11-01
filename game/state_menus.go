@@ -9,6 +9,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,7 +19,7 @@ func (g *GameState) OpenInventory() {
 		return !item.IsAmmo()
 	})
 	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying anything."))
+		g.ui.OpenTextWindow("You are not carrying anything.")
 		return
 	}
 	g.ui.OpenInventoryForManagement(inventory)
@@ -28,7 +29,7 @@ func (g *GameState) ChooseItemForThrow() {
 		return item.IsThrowable()
 	})
 	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying anything throwable."))
+		g.ui.OpenTextWindow("You are not carrying anything throwable.")
 		return
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Throw what?", func(itemStack foundation.Item) {
@@ -110,13 +111,22 @@ func (g *GameState) OpenHitLocationMenu() {
 	g.ui.OpenMenu(menuItems)
 }
 
-func (g *GameState) PlayerRest(duration time.Duration) {
+func (g *GameState) PlayerRest(isHealing bool, duration time.Duration) {
 	g.ui.FadeToBlack()
 	g.advanceTime(duration)
-	if g.Player.GetInventory().HasWatch() {
+	if g.Player.HasWatch() {
 		g.printTime()
 	}
 	g.ui.FadeFromBlack()
+
+	if isHealing {
+		hours := int(duration.Hours())
+		healingRate := g.Player.GetCharSheet().GetDerivedStat(d100.HealingRate)
+		healedPoints := hours * healingRate
+		g.Player.Heal(healedPoints)
+		g.ui.UpdateStats()
+		g.msg(foundation.HiLite("You have recovered %s hit points.", strconv.Itoa(healedPoints)))
+	}
 }
 
 func (g *GameState) SaveGame(toDirectory string) {
@@ -142,117 +152,117 @@ func (g *GameState) LoadGame(fromDirectory string) {
 		g.msg(foundation.Msg("Game loaded."))
 	}
 }
-func (g *GameState) OpenRestMenu() {
+func (g *GameState) OpenWaitMenu() {
+	g.openRestMenu(false)
+}
+func (g *GameState) openRestMenu(isHealing bool) {
+	waitWord := "Wait"
+	if isHealing {
+		waitWord = "Rest"
+	}
 	g.ui.OpenMenu([]foundation.MenuItem{
 		{
-			Name: "Rest for ten minutes",
+			Name: fmt.Sprintf("%s for ten minutes", waitWord),
 			Action: func() {
-				g.PlayerRest(10 * time.Minute)
+				g.PlayerRest(isHealing, 10*time.Minute)
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest for thirty minutes",
+			Name: fmt.Sprintf("%s for thirty minutes", waitWord),
 			Action: func() {
-				g.PlayerRest(30 * time.Minute)
+				g.PlayerRest(isHealing, 30*time.Minute)
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest for an hour",
+			Name: fmt.Sprintf("%s for one hour", waitWord),
 			Action: func() {
-				g.PlayerRest(time.Hour)
+				g.PlayerRest(isHealing, time.Hour)
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest for two hours",
+			Name: fmt.Sprintf("%s for two hours", waitWord),
 			Action: func() {
-				g.PlayerRest(2 * time.Hour)
+				g.PlayerRest(isHealing, 2*time.Hour)
 			},
 
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest for three hours",
+			Name: fmt.Sprintf("%s for three hours", waitWord),
 			Action: func() {
-				g.PlayerRest(3 * time.Hour)
+				g.PlayerRest(isHealing, 3*time.Hour)
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest for four hours",
+			Name: fmt.Sprintf("%s for four hours", waitWord),
 			Action: func() {
-				g.PlayerRest(4 * time.Hour)
+				g.PlayerRest(isHealing, 4*time.Hour)
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest for five hours",
+			Name: fmt.Sprintf("%s for five hours", waitWord),
 			Action: func() {
-				g.PlayerRest(5 * time.Hour)
+				g.PlayerRest(isHealing, 5*time.Hour)
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest for six hours",
+			Name: fmt.Sprintf("%s for six hours", waitWord),
 			Action: func() {
-				g.PlayerRest(6 * time.Hour)
+				g.PlayerRest(isHealing, 6*time.Hour)
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest until morning (0600)",
+			Name: fmt.Sprintf("%s until morning (0600)", waitWord),
 			Action: func() {
 				now := g.gameTime.Time
 				morning := time.Date(now.Year(), now.Month(), now.Day(), 6, 0, 0, 0, now.Location())
-				if now.After(morning) {
+				if !morning.After(now) {
 					morning = morning.AddDate(0, 0, 1)
 				}
-				g.PlayerRest(morning.Sub(now))
+				g.PlayerRest(isHealing, morning.Sub(now))
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest until noon (1200)",
+			Name: fmt.Sprintf("%s until noon (1200)", waitWord),
 			Action: func() {
 				now := g.gameTime.Time
 				noon := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, now.Location())
-				if now.After(noon) {
+				if !noon.After(now) {
 					noon = noon.AddDate(0, 0, 1)
 				}
-				g.PlayerRest(noon.Sub(now))
+				g.PlayerRest(isHealing, noon.Sub(now))
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest until evening (1800)",
+			Name: fmt.Sprintf("%s until evening (1800)", waitWord),
 			Action: func() {
 				now := g.gameTime.Time
 				evening := time.Date(now.Year(), now.Month(), now.Day(), 18, 0, 0, 0, now.Location())
-				if now.After(evening) {
+				if !evening.After(now) {
 					evening = evening.AddDate(0, 0, 1)
 				}
-				g.PlayerRest(evening.Sub(now))
+				g.PlayerRest(isHealing, evening.Sub(now))
 			},
 			CloseMenus: true,
 		},
 		{
-			Name: "Rest until midnight (0000)",
+			Name: fmt.Sprintf("%s until midnight (0000)", waitWord),
 			Action: func() {
 				now := g.gameTime.Time
 				midnight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-				if now.After(midnight) {
+				if !midnight.After(now) {
 					midnight = midnight.AddDate(0, 0, 1)
 				}
-				g.PlayerRest(midnight.Sub(now))
-			},
-			CloseMenus: true,
-		},
-		{
-			Name: "Rest until healed",
-			Action: func() {
-				g.PlayerRest(time.Hour * 48) // TODO: change this?
+				g.PlayerRest(isHealing, midnight.Sub(now))
 			},
 			CloseMenus: true,
 		},
@@ -278,9 +288,33 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
+			Name: "All the lockpicks",
+			Action: func() {
+				for i := 0; i < 200; i++ {
+					g.Player.GetInventory().AddItem(g.newItemFromName("mechanical_lockpick"))
+					g.Player.GetInventory().AddItem(g.newItemFromName("electronic_lockpick"))
+				}
+			},
+		},
+		{
 			Name: "Filthy Rich",
 			Action: func() {
 				g.Player.GetInventory().AddItem(g.NewGold(1000000))
+			},
+		},
+		{
+			Name: "God Like",
+			Action: func() {
+				for p := CyberWare(1); p < CyberWareCount; p++ {
+					g.Player.AddCyberWare(p)
+				}
+				g.Player.GetCharSheet().AddPerkPoints(int(d100.PerkCount))
+				for p := d100.Perk(0); p < d100.PerkCount; p++ {
+					g.Player.GetCharSheet().AddPerk(p)
+				}
+				g.Player.GetCharSheet().SetGodLike()
+				g.Player.GetCharSheet().HealAPAndHPCompletely()
+				g.ui.UpdateStats()
 			},
 		},
 		{
@@ -295,6 +329,14 @@ func (g *GameState) OpenWizardMenu() {
 				g.Player.GetCharSheet().AddPerkPoints(int(d100.PerkCount))
 				for p := d100.Perk(0); p < d100.PerkCount; p++ {
 					g.Player.GetCharSheet().AddPerk(p)
+				}
+			},
+		},
+		{
+			Name: "Add all cyberware",
+			Action: func() {
+				for p := CyberWare(1); p < CyberWareCount; p++ {
+					g.Player.AddCyberWare(p)
 				}
 			},
 		},
@@ -532,6 +574,12 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 							case "StartTrading":
 								followUp := func() { g.ui.SetConversationState(nodeText, nodeOptions, conversationPartner, isTerminal) }
 								g.openVendorMenu(conversationPartner.(*Actor), followUp)
+							case "StartRepair":
+								followUp := func() { g.ui.SetConversationState(nodeText, nodeOptions, conversationPartner, isTerminal) }
+								g.openNPCRepairMenu(conversationPartner.(*Actor), followUp)
+							case "StartCyberware":
+								followUp := func() { g.ui.SetConversationState(nodeText, nodeOptions, conversationPartner, isTerminal) }
+								g.openCyberwareMenu(conversationPartner.(*Actor), followUp)
 
 							}
 						}

@@ -48,9 +48,16 @@ const (
 	InGame
 )
 
+type UILifeCycler interface {
+	StartGameLoop(application *cview.Application, afterScreenReady func())
+	QuitGame(application *cview.Application)
+}
+
 type UI struct {
 	settings *foundation.Configuration
 	game     foundation.GameForUI
+
+	lifeCycle UILifeCycler
 
 	audioPlayer *audio.Player
 
@@ -76,7 +83,6 @@ type UI struct {
 
 	listTable map[string]*cview.List
 
-	sentUIReady     bool
 	gameIsOver      bool
 	autoRun         bool
 	onTargetUpdated func(targetPos geometry.Point)
@@ -90,16 +96,17 @@ type UI struct {
 	lastFrameIcons     map[geometry.Point]rune
 	lastFrameStyle     map[geometry.Point]tcell.Style
 	isAnimationFrame   bool
-	lastHudStats       map[foundation.HudValue]int
+	lastHudStats       foundation.HudValueMap
 	dialogueText       *cview.TextView
 	dialogueOptions    *cview.List
 	dialogueIsTerminal bool
-	sentUIRunning      bool
 	shouldPlayIntro    bool
 
 	stateOfIntro IntroState
 	focusStack   []FocusInfo
 	tileColors   map[geometry.Point]fxtools.HDRColor
+	lastTarget   [2]geometry.Point
+	graphicsMode bool
 }
 
 func (u *UI) SetSneakOverlay(overlay map[geometry.Point]fxtools.HDRColor) {
@@ -170,10 +177,6 @@ func chooseSubDirMenuItems(savegameBaseDirectory string, onSubDirConfirmed func(
 		}
 	}
 	return menuItems
-}
-
-func (u *UI) QuitGame() {
-	u.application.Stop()
 }
 
 func (u *UI) GetKeybindingsAsString(command string) string {
@@ -514,7 +517,7 @@ func (u *UI) PlayCue(cueName string) {
 	u.audioPlayer.PlayCue(cueName)
 }
 
-func (u *UI) OpenVendorMenu(title string, itemsForSale []foundation.Item, buyItem func(ui foundation.Item, price int), onClose func()) {
+func (u *UI) OpenVendorMenu(title string, itemsForSale []foundation.Item, buyItem func(ui foundation.Item, amount int, price int), inspect func(item foundation.Item), onClose func()) {
 	var menuItems []foundation.MenuItem
 	var tableRows []fxtools.TableRow
 	for _, i := range itemsForSale {
@@ -526,16 +529,46 @@ func (u *UI) OpenVendorMenu(title string, itemsForSale []foundation.Item, buyIte
 	rendered := fxtools.TableLayoutLastRight(tableRows)
 	for index, line := range rendered {
 		item := itemsForSale[index]
+		tooExpensive := item.Price() > u.game.PlayerGold()
+		if tooExpensive {
+			line = fmt.Sprintf("%s%s[-]", textiles.RGBAToFgColorCode(u.uiTheme.palette.Get("dark_gray_3")), string(cview.StripTags([]byte(line), true, true)))
+		}
 		menuItems = append(menuItems, foundation.MenuItem{
 			Name: line,
 			Action: func() {
-				buyItem(item, item.Price())
+				if tooExpensive {
+					u.Print(foundation.Msg("You can't afford that."))
+					return
+				}
+				if item.IsMultipleStacks() {
+					u.openAmountWidget(item.Name(), item.StackSize(), func(amount int) {
+						buyItem(item, amount, item.Price()*amount)
+					})
+				} else {
+					buyItem(item, 1, item.Price())
+				}
 			},
-			CloseMenus: true,
+			CloseMenus: !tooExpensive,
 		})
 	}
 	menu := u.openSimpleMenu(menuItems, onClose)
 	menu.SetTitle(title)
+	origCapture := menu.GetInputCapture()
+	menu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		uiKey := toUIKey(event)
+		command := u.getCommandForKey(uiKey)
+		if command == "run_direction" {
+			index := menu.GetCurrentItemIndex()
+			if index >= 0 && index < len(itemsForSale) {
+				inspect(itemsForSale[index])
+				return nil
+			}
+		}
+		if origCapture != nil {
+			return origCapture(event)
+		}
+		return event
+	})
 }
 
 func (u *UI) GetAnimLaser(path []geometry.Point, lightColor fxtools.HDRColor, done func()) foundation.Animation {
@@ -555,7 +588,7 @@ func (u *UI) GetAnimBackgroundColor(position geometry.Point, colorName string, f
 }
 
 func (u *UI) ShowGameOver(scoreInfo foundation.ScoreInfo, highScores []foundation.ScoreInfo) {
-	time.Sleep(3 * time.Second)
+	u.blockInput(3 * time.Second)
 	u.animator.CancelAll()
 	u.gameIsOver = true
 	cview.FadeToBlack(u.application, u.settings.AnimationDelay, 10, false)
@@ -581,7 +614,7 @@ func (u *UI) showWinScreen(scoreInfo foundation.ScoreInfo, highScores []foundati
 		"",
 		"",
 		fmt.Sprintf("%s", scoreInfo.PlayerName),
-		fmt.Sprintf("Gold: %d", scoreInfo.Gold),
+		fmt.Sprintf("Cash: %d", scoreInfo.Gold),
 		fmt.Sprintf("%s", scoreInfo.DescriptiveMessage),
 		"",
 		"",
@@ -622,7 +655,7 @@ func (u *UI) showDeathScreen(scoreInfo foundation.ScoreInfo, highScores []founda
 	gameOverMessage := []string{
 		"",
 		fmt.Sprintf("%s", scoreInfo.PlayerName),
-		fmt.Sprintf("Gold: %d", scoreInfo.Gold),
+		fmt.Sprintf("Cash: %d", scoreInfo.Gold),
 		fmt.Sprintf("Cause of Death: %s", scoreInfo.DescriptiveMessage),
 	}
 	restartText := []string{
@@ -677,6 +710,14 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 	u.pages.ShowPanel(panelName)
 	u.application.SetFocus(textView)
 	textView.SetInputCapture(u.yesNoReceiver(u.reset, u.QuitGame))
+}
+
+func (u *UI) StartGameLoop() {
+	u.lifeCycle.StartGameLoop(u.application, u.afterScreenReady)
+}
+
+func (u *UI) QuitGame() {
+	u.lifeCycle.QuitGame(u.application)
 }
 
 func toLinesOfText(highScores []foundation.ScoreInfo) []string {
@@ -801,6 +842,21 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
 	if !actor.IsAlive() {
 		return actor.TextIcon(backGroundColor).WithRune('%')
 	}
+
+	if actor.HasFlag(foundation.FlagActiveCamouflage) {
+		var fgColor color.RGBA
+		if u.game.TurnCount()%2 == 0 {
+			fgColor = fxtools.LerpColorRGBA(mapIconHere.Bg, mapIconHere.Fg, 0.6)
+		} else {
+			fgColor = fxtools.LerpColorRGBA(mapIconHere.Bg, u.uiTheme.GetColorByName("White"), 0.1)
+		}
+		return textiles.TextIcon{
+			Char: actor.Icon().Char,
+			Fg:   fgColor,
+			Bg:   backGroundColor,
+		}
+	}
+
 	return actor.TextIcon(backGroundColor)
 }
 
@@ -1441,6 +1497,7 @@ func (u *UI) UpdateLogWindow() {
 	}
 
 	u.setColoredText(u.messageLabel, strings.Join(asColoredStrings, "\n"))
+	u.messageLabel.ScrollToEnd()
 }
 
 func (u *UI) ToColoredText(h foundation.HiLiteString, intensity float64) string {
@@ -1483,14 +1540,13 @@ func (u *UI) Print(message foundation.HiLiteString) {
 		u.setColoredText(u.messageLabel, u.ToColoredText(message, 1))
 	})
 }
-func (u *UI) StartGameLoop() {
-	u.application.QueueUpdate(func() {
-		w, h := u.application.GetScreen().Size()
-		resize := tcell.NewEventResize(w, h)
-		u.application.QueueEvent(resize)
-	})
-	if err := u.application.Run(); err != nil {
-		panic(err)
+
+func (u *UI) afterScreenReady() {
+	u.application.GetScreen().HideCursor()
+	u.application.GetScreen().SetCursorStyle(tcell.CursorStyleSteadyBlock)
+
+	if u.shouldPlayIntro && u.stateOfIntro == NoIntro {
+		u.startIntro()
 	}
 }
 
@@ -1499,29 +1555,19 @@ func (u *UI) initCoreUI() {
 	cview.ColorUnset = tcell.ColorBlack
 
 	u.application = cview.NewApplication()
-	u.application.SetAfterDrawFunc(func(screen tcell.Screen) {
-		if u.mainGrid != nil && u.sentUIRunning && !u.sentUIReady && u.GetMapWindowGridSize().X >= 80 && u.GetMapWindowGridSize().Y >= 23 {
-
-			u.sentUIReady = true
-
-			u.application.SetAfterDrawFunc(nil)
-
-			u.application.QueueUpdateDraw(func() {
-				u.game.UIReady()
-			})
-
-			//u.application.QueueEvent(tcell.NewEventKey(tcell.KeyRune, ' ', 0)) // WTF DOESNT THIS WORK?
-		}
-	})
 	u.application.SetUnknownEventCapture(u.handleUnknownEvent)
 	u.application.SetAfterResizeFunc(u.onTerminalResized)
 	u.application.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if u.stateOfIntro == Fading || u.stateOfIntro == MainMenu {
+		if u.stateOfIntro == Fading {
+			return nil
+		}
+		if u.stateOfIntro == MainMenu {
 			return event
 		}
 		if u.stateOfIntro == TitleScreen {
 			//u.endIntro()
 			u.endIntro()
+			return nil
 		}
 		u.animator.CancelAll()
 		if event.Key() == tcell.KeyCtrlC {
@@ -1529,6 +1575,9 @@ func (u *UI) initCoreUI() {
 			if inventory, isInventory := frontPanel.(*TextInventory); isInventory {
 				inventory.handleInput(event)
 				return nil // don't forward, or else we will quit
+			} else {
+				u.QuitGame()
+				return nil
 			}
 		}
 		return event
@@ -1537,6 +1586,7 @@ func (u *UI) initCoreUI() {
 	u.pages = cview.NewPanels()
 
 	u.application.SetRoot(u.pages, true)
+
 }
 func (u *UI) InitDungeonUI(palette textiles.ColorPalette, invColors map[foundation.ItemCategory]color.RGBA) {
 	if u.mainGrid != nil {
@@ -1545,8 +1595,6 @@ func (u *UI) InitDungeonUI(palette textiles.ColorPalette, invColors map[foundati
 
 	u.setupCommandTable()
 	u.loadKeyMap(path.Join(u.settings.DataRootDir, "keymaps", u.settings.KeyMap+".txt"))
-
-	u.application.GetScreen().SetCursorStyle(tcell.CursorStyleSteadyBlock)
 
 	u.application.EnableMouse(true)
 
@@ -1569,10 +1617,13 @@ func (u *UI) InitDungeonUI(palette textiles.ColorPalette, invColors map[foundati
 	u.rightPanel.SetScrollBarVisibility(cview.ScrollBarNever)
 	u.rightPanel.SetDynamicColors(true)
 	u.rightPanel.SetWrap(false)
+	u.rightPanel.SetWordWrap(false)
+
 	u.lowerRightPanel = cview.NewTextView()
 	u.lowerRightPanel.SetScrollable(false)
 	u.lowerRightPanel.SetDynamicColors(true)
-	u.lowerRightPanel.SetWordWrap(true)
+	u.lowerRightPanel.SetWrap(false)
+	u.lowerRightPanel.SetWordWrap(false)
 
 	grid := cview.NewGrid()
 
@@ -1602,12 +1653,9 @@ func (u *UI) InitDungeonUI(palette textiles.ColorPalette, invColors map[foundati
 	u.mapOverlay = NewOverlay(u.settings.MapWidth, u.settings.MapHeight)
 
 	u.SetColors(palette, invColors)
-
-	if u.shouldPlayIntro && u.stateOfIntro == NoIntro {
-		u.startIntro()
-	}
 }
 func (u *UI) handleMainInput(ev *tcell.EventKey) *tcell.EventKey {
+
 	mod, _, ch := ev.Modifiers(), ev.Key(), ev.Rune()
 	if ev.Key() == tcell.KeyCtrlC {
 		return ev
@@ -1774,11 +1822,12 @@ func (u *UI) renderMapPosition(mapPos geometry.Point, isAnimationFrame bool, sty
 
 	if targetChar, ok := u.targetingTiles[mapPos]; (u.state.IsTargeting()) && ok {
 		if mapPos == u.targetPos {
-			ch = 'X'
+			style = style.Background(tcell.ColorGreen)
 		} else {
 			ch = targetChar
+			style = style.Foreground(tcell.ColorGreen)
 		}
-		style = style.Foreground(tcell.ColorGreen)
+
 	}
 	return ch, style
 }
@@ -1846,6 +1895,7 @@ func (u *UI) UpdateInventory() {
 		appendString := getItemName(item, isEquipped)
 		asString = append(asString, appendString)
 	}
+	u.rightPanel.SetTextAlign(cview.AlignRight)
 	u.rightPanel.SetText("\n" + strings.Join(asString, "\n"))
 }
 
@@ -1951,26 +2001,26 @@ func (u *UI) UpdateStats() {
 
 	equippedItem, isEquipped := u.game.GetItemInMainHand()
 
-	itemName := "| none |"
+	itemName := "| bare hands |"
 	if isEquipped {
 		itemName = "| " + equippedItem.LongNameWithColors(textiles.RGBAToFgColorCode(u.uiTheme.GetInventoryItemColor(equippedItem.Category()))) + " |"
 	}
 
-	turns := statusValues[foundation.HudTurnsTaken]
+	turns := statusValues.GetInt(foundation.HudTurnsTaken)
 
 	multiLine := u.isStatusBarMultiLine()
 
 	statusStr := u.getSingleLineStatus(statusValues, flags, multiLine, itemName)
 
 	if multiLine {
-		hp := statusValues[foundation.HudHitPoints]
-		hpMax := statusValues[foundation.HudHitPointsMax]
+		hp := statusValues.GetInt(foundation.HudHitPoints)
+		hpMax := statusValues.GetInt(foundation.HudHitPointsMax)
 
 		playerBar := u.FullColorBarFromPercent(hp, hpMax, 11)
 		hpBarStr := fmt.Sprintf("HP [%s]", playerBar)
 
-		apCurrent := statusValues[foundation.HudActionPoints]
-		apMax := statusValues[foundation.HudActionPointsMax]
+		apCurrent := statusValues.GetInt(foundation.HudActionPoints)
+		apMax := statusValues.GetInt(foundation.HudActionPointsMax)
 
 		// display as bar
 		actionBarContent := u.RuneBarWithColor('!', "light_blue_1", "light_blue_5", apCurrent, apMax)
@@ -2048,7 +2098,7 @@ func mapStrings(listOfStrings []string, mapper func(arg string) string) []string
 	}
 	return mapped
 }
-func (u *UI) colorIfDiff(statStr string, stat foundation.HudValue, currentValue int) string {
+func (u *UI) colorIfDiff(statStr string, stat foundation.HudValue, currentValue interface{}) string {
 	lastValue, ok := u.lastHudStats[stat]
 	if !ok {
 		return statStr
@@ -2056,34 +2106,32 @@ func (u *UI) colorIfDiff(statStr string, stat foundation.HudValue, currentValue 
 	if lastValue == currentValue {
 		return statStr
 	}
-	hiCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Yellow"))
+	hiCode := textiles.RGBAToFgColorCode(u.uiTheme.GetColorByName("Yellow_3"))
 	return fmt.Sprintf("%s%s[-]", hiCode, statStr)
 }
-func (u *UI) getSingleLineStatus(statusValues map[foundation.HudValue]int, flags map[foundation.ActorFlag]int, multiLine bool, equippedItem string) string {
-
-	damageResistance := statusValues[foundation.HudDamageResistance]
-	armorStr := fmt.Sprintf("DR: %-3d", damageResistance)
-	armorStr = u.colorIfDiff(armorStr, foundation.HudDamageResistance, damageResistance)
+func (u *UI) getSingleLineStatus(statusValues foundation.HudValueMap, flags map[foundation.ActorFlag]int, multiLine bool, equippedItem string) string {
+	armorStr := statusValues.GetString(foundation.HudArmorString)
+	armorStr = u.colorIfDiff(armorStr, foundation.HudArmorString, armorStr)
 
 	var statusStr string
 	if !multiLine {
-		hp := statusValues[foundation.HudHitPoints]
-		hpMax := statusValues[foundation.HudHitPointsMax]
+		hp := statusValues.GetInt(foundation.HudHitPoints)
+		hpMax := statusValues.GetInt(foundation.HudHitPointsMax)
 		hpValString := fmt.Sprintf("%d/%d", hp, hpMax)
 		hpStr := fmt.Sprintf("HP: %-7s", hpValString)
 		hpStr = u.colorIfDiff(hpStr, foundation.HudHitPoints, hp)
 
-		fatigueCurrent := statusValues[foundation.HudActionPoints]
-		fatigueMax := statusValues[foundation.HudActionPointsMax]
+		fatigueCurrent := statusValues.GetInt(foundation.HudActionPoints)
+		fatigueMax := statusValues.GetInt(foundation.HudActionPointsMax)
 		fpValString := fmt.Sprintf("%d/%d", fatigueCurrent, fatigueMax)
 		fpStr := fmt.Sprintf("FP: %-7s", fpValString)
 		fpStr = u.colorIfDiff(fpStr, foundation.HudActionPoints, fatigueCurrent)
 
 		flagString := PlayerFlagStringShort(flags)
 
-		statusStr = fmt.Sprintf("%s %s %s %s %s", hpStr, fpStr, equippedItem, armorStr, flagString)
+		statusStr = fmt.Sprintf("%s %s %s %s %s", hpStr, fpStr, armorStr, equippedItem, flagString)
 	} else {
-		statusStr = fmt.Sprintf("%s %s", equippedItem, armorStr)
+		statusStr = fmt.Sprintf("%s %s", armorStr, equippedItem)
 	}
 
 	width, _ := u.application.GetScreenSize()
@@ -2160,6 +2208,19 @@ func (u *UI) OpenInventoryForSelection(itemStacks []foundation.Item, prompt stri
 	inv.SetCloseOnSelection(true)
 	inv.SetAfterClose(func() {
 		u.UpdateInventory()
+	})
+}
+
+func (u *UI) OpenInventoryForSelectionWithClose(itemStacks []foundation.Item, prompt string, onSelected func(item foundation.Item), afterClose func()) {
+	u.rightPanel.Clear()
+	inv := u.openInventory(itemStacks)
+	inv.SetSelectionMode()
+	inv.SetTitle(prompt)
+	inv.SetDefaultSelection(onSelected)
+	inv.SetCloseOnSelection(true)
+	inv.SetAfterClose(func() {
+		u.UpdateInventory()
+		afterClose()
 	})
 }
 
@@ -2370,6 +2431,11 @@ func (u *UI) OpenMenuWithTitle(title string, actions []foundation.MenuItem) {
 	menu.SetTitle(title)
 }
 
+func (u *UI) OpenMenuWithTitleAndClose(title string, actions []foundation.MenuItem, onClose func()) {
+	menu := u.openSimpleMenu(actions, onClose)
+	menu.SetTitle(title)
+}
+
 func (u *UI) OpenMenu(actions []foundation.MenuItem) {
 	u.openSimpleMenu(actions, nil)
 }
@@ -2507,7 +2573,7 @@ func (u *UI) ScreenToMap(point geometry.Point) geometry.Point {
 
 func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) (*tcell.EventMouse, cview.MouseAction) {
 
-	if u.isModalOpen() || !u.sentUIReady || !u.sentUIRunning {
+	if u.isModalOpen() {
 		return event, action
 	}
 
@@ -2531,7 +2597,7 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 	}
 	mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})
 	isModified := event.Modifiers() != 0
-	if action == cview.MouseLeftDown {
+	if action == cview.MouseLeftClick {
 		u.autoRun = false
 		if u.currentMouseX >= u.settings.MapWidth {
 			// clicked on right panel
@@ -2545,7 +2611,7 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 
 			//u.game.OpenContextMenuFor(mapPos)
 		}
-		return nil, action
+		return nil, -1
 	} else if action == cview.MouseRightClick {
 		u.autoRun = false
 		if u.currentMouseX >= u.settings.MapWidth {
@@ -2678,7 +2744,7 @@ func (u *UI) ShowVisibleActors() {
 		"Name",
 		"HP",
 		"Dmg",
-		"DR",
+		"Armor",
 	)
 	tableRows[0] = header
 	for i, enemy := range listOfEnemies {
@@ -2687,7 +2753,7 @@ func (u *UI) ShowVisibleActors() {
 			enemy.Name(),
 			strconv.Itoa(enemy.GetHitPoints()),
 			enemy.GetMainHandDamageAsString(),
-			strconv.Itoa(enemy.GetDamageResistance()),
+			enemy.GetArmorProtectionString(),
 		)
 		tableRows[i+1] = row
 	}
@@ -2700,32 +2766,30 @@ func (u *UI) ShowVisibleItems() {
 	if len(listOfItems) == 0 {
 		u.Print(foundation.Msg("No items in sight"))
 		return
-
 	}
 	var infoTexts strings.Builder
+	infoTexts.WriteString("Items in sight:\n")
+	longestLine := 0
 	for i, item := range listOfItems {
-		info := item.LongNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.Category()))
-		info = fmt.Sprintf("%c - %s", item.GetIcon().Char, info)
+		info := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.Category()))
+		icon := item.GetIcon()
+		char := icon.Char
+		info = fmt.Sprintf(" %s%c[-:-] - %s", textiles.RGBAToColorCodes(icon.Fg, icon.Bg), char, info)
+		longestLine = max(longestLine, cview.TaggedStringWidth(info))
 		infoTexts.WriteString(info)
 		if i < len(listOfItems)-1 {
 			infoTexts.WriteString("\n")
 		}
 	}
-	u.OpenTextWindow(infoTexts.String())
+	if u.isRightPanelWidthAtLeast(longestLine) {
+		u.rightPanel.SetTextAlign(cview.AlignLeft)
+		u.rightPanel.SetText(infoTexts.String())
+	} else {
+		u.OpenTextWindow(infoTexts.String())
+	}
 }
 
 func (u *UI) onTerminalResized(width int, height int) {
-	if !u.sentUIRunning {
-		tty, isTerm := u.application.GetScreen().Tty()
-		if isTerm {
-			tty.Write([]byte{0x1B, 0x3E})
-		}
-
-		u.game.UIRunning()
-		u.sentUIRunning = true
-		return
-	}
-
 	if u.mainGrid == nil {
 		return
 	}
@@ -2756,20 +2820,18 @@ func (u *UI) onTerminalResized(width int, height int) {
 		u.pages.HidePanel("tooSmall")
 		u.tooSmall = false
 	}
-	if u.sentUIReady {
-		u.application.QueueUpdateDraw(func() {
-			u.UpdateLogWindow()
-			u.UpdateInventory()
-			u.UpdateStats()
-		})
-	}
+	u.application.QueueUpdateDraw(func() {
+		u.UpdateLogWindow()
+		u.UpdateInventory()
+		u.UpdateStats()
+	})
 }
 
 func toTcellColor(rgba color.RGBA) tcell.Color {
 	return tcell.NewRGBColor(int32(rgba.R), int32(rgba.G), int32(rgba.B))
 }
 
-func NewTextUI(settings *foundation.Configuration) *UI {
+func NewTextUI(uiImpl UILifeCycler, settings *foundation.Configuration) *UI {
 	u := &UI{
 		targetingTiles: make(map[geometry.Point]rune),
 		animator:       NewAnimator(),
@@ -2777,6 +2839,7 @@ func NewTextUI(settings *foundation.Configuration) *UI {
 		listTable:      make(map[string]*cview.List),
 		cursorStyle:    tcell.CursorStyleSteadyBlock,
 		gamma:          1.0,
+		lifeCycle:      uiImpl,
 		settings:       settings,
 		keyTable:       make(map[KeyLayer]map[UIKey]string),
 		lastFrameIcons: make(map[geometry.Point]rune),
@@ -2892,10 +2955,9 @@ func (u *UI) exploredLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 	}
 	var icon textiles.TextIcon
 	objectAtLoc := u.game.ObjectAt(loc)
-	switch objectAtLoc != nil {
-	case true:
+	if objectAtLoc != nil {
 		icon = conditionalBackgroundWrapper(objectAtLoc.Icon())
-	default:
+	} else {
 		icon = u.getIconForMap(loc)
 	}
 	fgWithLight, bgWithLight := u.ApplyLighting(loc, icon.Fg, icon.Bg)
@@ -2991,7 +3053,7 @@ func (u *UI) onRightPanelClicked(clickPos geometry.Point, isRightClick bool, mod
 					u.game.PlayerDropItem(splitItem)
 				})
 			} else {
-
+				u.game.PlayerDropItem(item)
 			}
 		} else {
 			if item.IsEquippable() {
@@ -3300,7 +3362,9 @@ func (u *UI) waitForAnyKey(screen tcell.Screen) {
 		}
 	}
 }
+
 func (u *UI) StartWithIntro() {
+	u.pages.HidePanel("main")
 	u.shouldPlayIntro = true
 	u.StartGameLoop()
 }
@@ -3352,9 +3416,8 @@ func (u *UI) showMainMenu() {
 	}
 
 	newGame := foundation.MenuItem{
-		Name:       "New Game",
-		Action:     u.newGame,
-		CloseMenus: true,
+		Name:   "New Game",
+		Action: u.newGame,
 	}
 	items = append(items, newGame)
 
@@ -3384,6 +3447,7 @@ func (u *UI) newGame() {
 			}
 			u.moveInGame()
 		} else {
+			u.pages.SendToFront("mainMenu")
 			_, frontPanel := u.pages.GetFrontPanel()
 			u.lockFocusToPrimitive(frontPanel)
 		}
@@ -3424,11 +3488,11 @@ func (u *UI) OpenSystemMenu() {
 	u.OpenMenu([]foundation.MenuItem{
 		{
 			Name:   "Save Game",
-			Action: u.SaveGame,
+			Action: u.SelectSaveName,
 		},
 		{
 			Name:   "Load Game",
-			Action: u.LoadGame,
+			Action: u.SelectLoadName,
 		},
 		{
 			Name: "Quit Game",
@@ -3452,6 +3516,7 @@ func (u *UI) moveInGame() {
 	u.stateOfIntro = InGame
 	u.pages.RemovePanel("mainMenu")
 	u.pages.RemovePanel("fullscreen")
+	u.pages.ShowPanel("main")
 	u.resetFocusToMain()
 }
 func (u *UI) addFullScreenTextOverlay() *cview.TextView {
@@ -3469,18 +3534,17 @@ func (u *UI) addFullScreenTextOverlay() *cview.TextView {
 	textView.SetBackgroundColor(tcell.ColorDefault)
 	textView.SetTextColor(tcell.ColorDefault)
 	u.pages.AddPanel("fullscreen", textView, true, true)
-	u.lockFocusToPrimitive(textView)
 	return textView
 }
 
-func (u *UI) LoadGame() {
+func (u *UI) SelectLoadName() {
 	u.ChooseLoadDir(u.settings.SaveGameDir, func(savegameSubdir string) {
 		u.mapOverlay.ClearAll()
 		u.game.LoadGame(savegameSubdir)
 	})
 }
 
-func (u *UI) SaveGame() {
+func (u *UI) SelectSaveName() {
 	u.ChooseSaveDir(u.settings.SaveGameDir, u.game.SaveGame)
 }
 
@@ -3516,6 +3580,12 @@ func (u *UI) popFocus() {
 	u.application.SetBeforeFocusFunc(nil)
 	u.application.SetFocus(popped.Primitive)
 	u.application.SetBeforeFocusFunc(popped.BeforeFocus)
+}
+
+func (u *UI) Init(state foundation.GameForUI) {
+	// missing: g.ui.InitDungeonUI(g.palette, g.inventoryColors)
+	u.game = state
+	u.InitDungeonUI(state.Palette(), state.InventoryColors())
 }
 
 func FadeToWhite(app *cview.Application, animDelay time.Duration, stepSize int) {
@@ -3567,4 +3637,50 @@ func lightenScreenLocation(screen tcell.Screen, x int, y int, amount int32) bool
 	newBG := tcell.NewRGBColor(min(255, bR+amount), min(255, bG+amount), min(255, bB+amount))
 	screen.SetContent(x, y, icon, nil, style.Background(newBG).Foreground(newFG))
 	return hadWorkLeft
+}
+
+func (u *UI) blockInput(blockDuration time.Duration) {
+	duration := 2 * time.Millisecond
+
+	screen := u.application.GetScreen()
+
+	u.application.Lock()
+	defer u.application.Unlock()
+
+	u.isAnimationFrame = true
+
+	startTime := time.Now()
+
+	for len(u.animator.runningAnimations) > 0 {
+		u.mapWindow.Draw(screen)
+		screen.Show()
+
+		var waited time.Duration
+		for waited < u.settings.AnimationDelay {
+			if screen.HasPendingEvent() {
+				screen.PollEvent()
+			}
+			time.Sleep(duration)
+			waited += duration
+		}
+
+		shouldMapFrameBeUpdated := u.animator.Tick()
+		if shouldMapFrameBeUpdated {
+			u.updateLastFrame()
+		}
+	}
+
+	u.isAnimationFrame = false
+
+	for time.Since(startTime) < blockDuration {
+		if screen.HasPendingEvent() {
+			screen.PollEvent()
+		}
+		u.mapWindow.Draw(screen)
+		screen.Show()
+		time.Sleep(duration * 10)
+	}
+
+	u.mapWindow.Draw(screen)
+	screen.Show()
 }

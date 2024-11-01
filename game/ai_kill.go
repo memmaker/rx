@@ -2,7 +2,9 @@ package game
 
 import (
 	"RogueUI/d100"
+	"RogueUI/foundation"
 	"RogueUI/fsmai"
+	"fmt"
 )
 
 func BehaviourKillInit(g *GameState, actor *Actor, event fsmai.TransitionEvent) {
@@ -32,13 +34,14 @@ func tryKill(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int)
 		}
 	}
 
+	if !a.GetEquipment().HasRangedWeaponInMainHand() {
+		a.tryEquipRangedWeapon()
+	}
+
 	if !g.IsInShootingRange(a, target) { // ensure shooting range
 		return moveTowardsActor(g, a, target)
 	}
 
-	if !a.GetEquipment().HasRangedWeaponInMainHand() {
-		a.tryEquipRangedWeapon()
-	}
 	mainHandItem, hasMainHandItem := a.GetEquipment().GetMainHandWeapon()
 
 	if hasMainHandItem && mainHandItem.IsRangedWeapon() {
@@ -49,6 +52,13 @@ func tryKill(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int)
 			g.actorReloadMainHandWeapon(a)
 			return fsmai.NoEvent, a.TimeNeededForActions()
 		}
+
+		if mainHandItem.IsJammed() {
+			mainHandItem.Unjam()
+			g.msg(foundation.Msg(fmt.Sprintf("%s unjams %s", a.Name(), mainHandItem.Name())))
+			return fsmai.NoEvent, a.TimeNeededForActions()
+		}
+
 		if isLoaded || doesntNeedAmmo { // ranged attack
 			g.ui.AddAnimations(g.actorRangedAttack(a, mainHandItem, mainHandItem.GetCurrentAttackMode(), target, d100.Body, d100.NoCombatModifier))
 			event := fsmai.TransitionEvent(fsmai.NoEvent)

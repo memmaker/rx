@@ -17,13 +17,18 @@ func (g *GameState) animatedActionFromMenu(action func()) func() {
 func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, actor *Actor) []foundation.MenuItem {
 	distance := g.currentMap().MoveDistance(g.Player.Position(), actor.Position())
 
-	if actor.HasDialogue() && !actor.IsSleeping() && distance <= 4 {
+	if actor.HasDialogue() && !actor.IsSleeping() && distance <= 6 {
 		buffer = append(buffer, foundation.MenuItem{
 			Name:       "[white]Talk To[-]",
 			Action:     func() { g.StartDialogue(actor.GetDialogueFile(), actor, false) },
 			CloseMenus: true,
 		})
 	}
+	buffer = append(buffer, foundation.MenuItem{
+		Name:       "Look at",
+		Action:     func() { g.ui.OpenTextWindow(actor.GetDetailInfo()) },
+		CloseMenus: true,
+	})
 
 	if g.Player.HasPerk(d100.PerkDisarm) && actor.GetEquipment().HasWeaponEquipped() && distance == 1 {
 		chances := formatContestSkSk(g.Player, actor, d100.SkillForUnarmed, d100.SkillForUnarmed)

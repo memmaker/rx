@@ -70,7 +70,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 15
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 79
 Position: (53,0)
 
@@ -96,7 +95,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 15
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 80
 Position: (53,1)
 

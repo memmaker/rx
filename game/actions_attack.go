@@ -19,46 +19,32 @@ import (
 // OFFENSIVE ACTIONS
 
 func (g *GameState) PlayerRangedAttack() {
-	mainHandItem, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
-	if hasWeapon && mainHandItem.GetCurrentAttackMode().IsThrow() {
-		g.startThrowItem(mainHandItem)
+	rangedWeapon, canAttack, quickDraw := g.CanPlayerAttackAtRange()
+	if !canAttack {
 		return
 	}
-	if hasWeapon && mainHandItem.IsMeleeWeapon() && !mainHandItem.IsRangedWeapon() {
-		g.ui.SelectDirection(func(direction geometry.CompassDirection) {
-			targetPos := g.Player.Position().Add(direction.ToPoint())
-			g.playerMeleeAttackLocation(targetPos)
-		})
-		return
+	combatMods := d100.NoCombatModifier
+	if quickDraw {
+		combatMods = d100.CombatModifiers{DamageMods: []d100.Modifier{d100.QuickDrawModifier}}
 	}
-	if !hasWeapon || !mainHandItem.IsRangedWeapon() {
-		g.msg(foundation.Msg("You have no suitable weapon equipped"))
-		return
-	}
-	weapon := mainHandItem
-	if !weapon.HasAmmo() {
-		g.ui.PlayCue(weapon.GetOutOfAmmoAudioCue())
-		g.msg(foundation.Msg("You have no ammo"))
-		return
-	}
-	attackMode := mainHandItem.GetCurrentAttackMode()
+	attackMode := rangedWeapon.GetCurrentAttackMode()
 	if attackMode.IsAimed {
 		g.ui.SelectBodyPart(g.playerLastAimedAt, func(victim foundation.ActorForUI, bodyPart d100.BodyPart) {
 			g.playerLastAimedAt = bodyPart
 			target := victim.(*Actor)
-			shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, bodyPart, d100.NoCombatModifier)
+			shotAnim := g.actorRangedAttack(g.Player, rangedWeapon, attackMode, target, bodyPart, combatMods)
 			g.ui.AddAnimations(shotAnim)
 			g.endPlayerTurn(attackMode.TUCost)
 		})
 	} else {
-		g.ui.SelectTarget(g.getRangedChanceToHitForUI, func(targetPos geometry.Point) {
+		g.ui.SelectTarget(g.getRangedChanceToHitForUI(combatMods), func(targetPos geometry.Point) {
 			if g.currentMap().IsActorAt(targetPos) {
 				target := g.currentMap().ActorAt(targetPos)
-				shotAnim := g.actorRangedAttack(g.Player, mainHandItem, attackMode, target, d100.Body, d100.NoCombatModifier)
+				shotAnim := g.actorRangedAttack(g.Player, rangedWeapon, attackMode, target, d100.Body, combatMods)
 				g.ui.AddAnimations(shotAnim)
 				g.endPlayerTurn(attackMode.TUCost)
 			} else {
-				shotAnim := g.actorRangedAttackLocation(g.Player, mainHandItem, attackMode, targetPos)
+				shotAnim := g.actorRangedAttackLocation(g.Player, rangedWeapon, attackMode, targetPos)
 				g.ui.AddAnimations(shotAnim)
 				g.endPlayerTurn(attackMode.TUCost)
 			}
@@ -67,28 +53,79 @@ func (g *GameState) PlayerRangedAttack() {
 
 }
 
-func (g *GameState) PlayerQuickRangedAttack() {
-	enemies := g.playerVisibleActorsByDistance()
-	equipment := g.Player.GetEquipment()
-	mainHandItem, hasWeapon := equipment.GetMainHandWeapon()
+func (g *GameState) CanPlayerAttackAtRange() (*Weapon, bool, bool) {
+	mainHandItem, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
 
+	if !hasWeapon && g.Player.HasPerk(d100.PerkQuickDraw) && g.Player.GetInventory().HasExactlyOneRangedWeapon() {
+		if !g.Player.HasActionPoints() {
+			g.msg(foundation.Msg("Not enough action points for quick draw"))
+			return nil, false, false
+		}
+		mainHandItem = g.Player.GetInventory().GetBestWeapon()
+		g.Player.GetEquipment().Equip(mainHandItem)
+		g.Player.GetCharSheet().LooseActionPoints(1)
+		g.ui.UpdateStats()
+		g.msg(foundation.HiLite("You quickly equip your %s", mainHandItem.Name()))
+		return mainHandItem, true, true
+	}
+
+	if hasWeapon && mainHandItem.GetCurrentAttackMode().IsThrow() {
+		g.startThrowItem(mainHandItem)
+		return nil, false, false
+	}
+	if hasWeapon && mainHandItem.IsMeleeWeapon() && !mainHandItem.IsRangedWeapon() {
+		g.ui.SelectDirection(func(direction geometry.CompassDirection) {
+			targetPos := g.Player.Position().Add(direction.ToPoint())
+			g.playerMeleeAttackLocation(targetPos)
+		})
+		return nil, false, false
+	}
 	if !hasWeapon || !mainHandItem.IsRangedWeapon() {
 		g.msg(foundation.Msg("You have no suitable weapon equipped"))
-		return
+		return nil, false, false
 	}
 	weapon := mainHandItem
 	if !weapon.HasAmmo() {
-		g.msg(foundation.Msg("You have no ammo"))
 		g.ui.PlayCue(weapon.GetOutOfAmmoAudioCue())
-		return
+		g.msg(foundation.Msg("You have no ammo"))
+		return nil, false, false
 	}
+	if weapon.IsBroken() {
+		g.msg(foundation.Msg("Your weapon is broken"))
+		return nil, false, false
+	}
+
+	if weapon.IsJammed() {
+		g.ui.AskForConfirmation(weapon.Name(), "Your weapon is jammed. Do you want to unjam it?", func(confirmed bool) {
+			if confirmed {
+				weapon.Unjam()
+				g.msg(foundation.Msg("You unjam your weapon"))
+				g.endPlayerTurn(g.Player.TimeNeededForActions())
+			}
+		})
+		return nil, false, false
+	}
+	return mainHandItem, true, false
+}
+
+func (g *GameState) PlayerQuickRangedAttack() {
+	enemies := g.playerVisibleActorsByDistance()
+
 	if len(enemies) == 0 {
 		g.msg(foundation.Msg("No enemies in sight"))
 		return
 	}
 
-	mode := mainHandItem.GetCurrentAttackMode()
-	shotAnim := g.actorRangedAttack(g.Player, mainHandItem, mode, enemies[0], d100.Body, d100.NoCombatModifier)
+	rangedWeapon, canAttack, quickDraw := g.CanPlayerAttackAtRange()
+	if !canAttack {
+		return
+	}
+	combatMods := d100.NoCombatModifier
+	if quickDraw {
+		combatMods = d100.CombatModifiers{DamageMods: []d100.Modifier{d100.QuickDrawModifier}}
+	}
+	mode := rangedWeapon.GetCurrentAttackMode()
+	shotAnim := g.actorRangedAttack(g.Player, rangedWeapon, mode, enemies[0], d100.Body, combatMods)
 	g.ui.AddAnimations(shotAnim)
 	g.endPlayerTurn(mode.TUCost)
 }
@@ -233,7 +270,7 @@ func (g *GameState) playerMeleeAttackLocation(targetPos geometry.Point) {
 		g.playerMeleeAttack(defender)
 	} else if g.currentMap().IsObjectAt(targetPos) {
 		objectAt := g.currentMap().ObjectAt(targetPos)
-		damageWithSource := g.getMeleeDamage(g.Player, 100, d100.Body, nil)
+		damageWithSource := g.getMeleeDamage(g.Player, 100, nil, d100.Body, nil)
 		var attackAudioCue string
 		if weapon, hasMeleeWeapon := g.Player.GetEquipment().GetMeleeWeapon(); hasMeleeWeapon {
 			weapon.Degrade(1)
@@ -259,6 +296,11 @@ func (g *GameState) playerMeleeAttack(defender *Actor) {
 	}
 
 	mainhandItem, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
+	if hasWeapon && !mainhandItem.HasAmmo() && mainhandItem.IsMeleeWeapon() {
+		g.ui.PlayCue(mainhandItem.GetOutOfAmmoAudioCue())
+		g.msg(foundation.Msg("You have no ammo"))
+		return
+	}
 	if hasWeapon && mainhandItem.IsMeleeWeapon() && mainhandItem.GetCurrentAttackMode().IsAimed {
 		g.ui.OpenAimedShotPicker(defender, g.playerLastAimedAt, func(victim foundation.ActorForUI, bodyPart d100.BodyPart) {
 			doMeleeAttack(bodyPart)
@@ -279,7 +321,7 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100
 	chanceToHit, _ := g.getMeleeChanceToHit(attacker, mainHandItem, defender, mods.ChanceToHitMods)
 	chanceToHit += part.AimPenalty() / 2 // melee attacks are more precise
 
-	damageWithSource := g.getMeleeDamage(attacker, chanceToHit, part, mods.DamageMods)
+	damageWithSource := g.getMeleeDamage(attacker, chanceToHit, defender, part, mods.DamageMods)
 
 	var attackAudioCue string
 	if hasMeleeWeapon {
@@ -307,6 +349,20 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attac
 	if !defender.IsAlive() {
 		return nil
 	}
+
+	// Jamming?
+	isJammed := weaponItem.DoesJam()
+	if isJammed {
+		attacker.GetFlags().Unset(foundation.FlagConcentratedAiming)
+		g.ui.PlayCue(weaponItem.GetOutOfAmmoAudioCue())
+		if attacker == g.Player {
+			g.msg(foundation.Msg("Your weapon jams"))
+		} else {
+			g.msg(foundation.Msg(fmt.Sprintf("%s's weapon jams", attacker.Name())))
+		}
+		return nil
+	}
+
 	// Bookkeeping
 	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
 
@@ -318,27 +374,31 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attac
 	chanceToHit := baseChanceToHit + bodyPart.AimPenalty()
 
 	// Pass the weapon damage to the effect
-	weaponEffectParams := foundation.Params{
-		"damage_interval": weaponItem.GetWeaponDamage(),
-	}
+	weaponEffectParams := weaponItem.GetEffectParameters()
+
 	var hitAnimations []foundation.Animation
-	if weapon.GetDamageType() == DamageTypeExplosive {
+	//var rollResult d100.CheckResult
+	if weapon.GetDamageType() == DamageTypeExplosive { // this is a bit wacky. these will always hit all the time..
+		//rollResult = d100.SuccessRoll(d100.Percentage(chanceToHit), d100.Percentage(attacker.GetCharSheet().GetDerivedStat(d100.CriticalChance)))
 		hitAnimations = explosion(g, attacker, defender.Position(), weaponEffectParams)
 	} else if weapon.GetDamageType() == DamageTypeFire && attackMode.Mode == TargetingModeFlame {
+		//rollResult = d100.SuccessRoll(d100.Percentage(chanceToHit), d100.Percentage(attacker.GetCharSheet().GetDerivedStat(d100.CriticalChance)))
 		hitAnimations = fireBreath(g, attacker, defender.Position(), weaponEffectParams)
 	} else {
 		// Calculate the default bullet damage
-		damageWithSource, rollResult := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, defender, bodyPart, situationalMods.DamageMods)
-		if rollResult.IsCriticalFailure() {
+		damageWithSource, normalRollResult := g.calculateRangedDamage(attacker, weaponItem, attackMode, bulletsSpent, chanceToHit, defender, bodyPart, situationalMods.DamageMods)
+		if normalRollResult.IsCriticalFailure() {
 			// TODO: Apply critical fail effect..
-		} else if rollResult.IsCriticalSuccess() {
-			damageWithSource = damageWithSource.WithCritical()
 		}
 		hitAnimations = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender)
 	}
 
 	// Reset aiming flag
 	attacker.GetFlags().Unset(foundation.FlagConcentratedAiming)
+
+	// apply weapon degradation by shooting
+	baseDegrade := 0.1 * float64(min(5, bulletsSpent.StackSize()))
+	weaponItem.Degrade(baseDegrade)
 
 	// Return animations based on whether there is a projectile or not
 	if isProjectileAnimation {
@@ -350,6 +410,18 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attac
 }
 
 func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Weapon, attackMode AttackMode, targetPos geometry.Point) []foundation.Animation {
+
+	// Jamming?
+	isJammed := weaponItem.DoesJam()
+	if isJammed {
+		g.ui.PlayCue(weaponItem.GetOutOfAmmoAudioCue())
+		if attacker == g.Player {
+			g.msg(foundation.Msg("Your weapon jams"))
+		} else {
+			g.msg(foundation.Msg(fmt.Sprintf("%s's weapon jams", attacker.Name())))
+		}
+		return nil
+	}
 
 	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
 
@@ -373,6 +445,10 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Weapo
 		}
 	}
 
+	// apply weapon degradation by shooting
+	baseDegrade := 0.1 * float64(min(5, bulletsSpent.StackSize()))
+	weaponItem.Degrade(baseDegrade)
+
 	if isProjectileAnimation {
 		onAttackAnims.SetFollowUp(consequenceOfHit)
 		return []foundation.Animation{onAttackAnims}
@@ -392,28 +468,11 @@ func (g *GameState) removeBulletsFromWeapon(weaponItem *Weapon, attackMode Attac
 
 	bulletsRemoved := weapon.RemoveBullets(bulletsSpent)
 
-	// apply weapon degradation by shooting
-	baseDegradePerBullet := 0.1
-
-	factorFromWeaponAndAmmo := weaponItem.GetDegradationFactorOfAttack()
-
-	totalDegrade := baseDegradePerBullet * float64(min(5, bulletsSpent)) * factorFromWeaponAndAmmo
-
-	weaponItem.Degrade(totalDegrade)
-
 	return bulletsRemoved, weapon
 }
 
 func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weapon, damageWithSource SourcedDamage, defender *Actor) []foundation.Animation {
 	var damageAnims []foundation.Animation
-
-	dtMod := 0
-	if weaponItem != nil {
-		weapon := weaponItem
-		dtMod = weapon.GetTargetDTModifier()
-	}
-
-	damageWithSource = defender.ModifyDamageByArmor(damageWithSource, dtMod)
 
 	attackedFlag := fmt.Sprintf("WasAttacked(%s)", defender.GetInternalName())
 	g.gameFlags.Increment(attackedFlag)
@@ -426,7 +485,11 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weap
 	if damageWithSource.DamageAmount > 0 {
 		if weaponItem != nil && weaponItem.IsZappable() {
 			weaponZapEffect := ZapEffectFromName(weaponItem.ZapEffect())
-			damageAnims = weaponZapEffect(g, attacker, defender.Position(), weaponItem.GetEffectParameters())
+			parameters := weaponItem.GetEffectParameters()
+			if damageWithSource.IsCritical {
+				parameters = parameters.WithCritical()
+			}
+			damageAnims = weaponZapEffect(g, attacker, defender.Position(), parameters)
 		} else {
 			damageAnims = g.damageActor(damageWithSource, defender)
 		}

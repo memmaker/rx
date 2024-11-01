@@ -8,13 +8,17 @@ func SuccessRoll(chanceOfSuccess, successCritChange Percentage) CheckResult {
 	var result CheckResult
 	dieRoll := rand.Intn(100) + 1
 	result.DieRoll = dieRoll
-	result.Success = dieRoll < int(chanceOfSuccess)
+
+	critSucc := dieRoll <= int(successCritChange)
+	critFail := dieRoll > (100 - ChanceForCriticalFailure)
+
+	result.Success = dieRoll < int(chanceOfSuccess) || critSucc
 
 	if result.Success {
-		result.Crit = dieRoll <= int(successCritChange)
+		result.Crit = critSucc
 		result.Degrees = int(chanceOfSuccess) - dieRoll
 	} else {
-		result.Crit = dieRoll > (100 - ChanceForCriticalFailure)
+		result.Crit = critFail
 		result.Degrees = dieRoll - int(chanceOfSuccess)
 	}
 

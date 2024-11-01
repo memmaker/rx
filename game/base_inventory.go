@@ -96,6 +96,10 @@ func StackedFilteredAndSortedItems(items []foundation.Item, filter func(foundati
 
 func (i *Inventory) RemoveItem(item foundation.Item) {
 	defer i.changed()
+	i.removeItemInternal(item)
+}
+
+func (i *Inventory) removeItemInternal(item foundation.Item) {
 	for idx, invItem := range i.items {
 		if invItem == item {
 			i.beforeRemove(item)
@@ -252,13 +256,13 @@ func (i *Inventory) RemoveLockpicks(lock LockType, count int) {
 		if invItem.IsLockpick() && invItem.InternalName() == pickName {
 			if invItem.StackSize() > count {
 				invItem.RemoveStacks(count)
-				i.changed()
 			} else {
-				i.RemoveItem(invItem)
+				i.removeItemInternal(invItem)
 			}
 			break
 		}
 	}
+	i.changed()
 }
 
 func lockpickName(lock LockType) string {
@@ -480,6 +484,8 @@ func (i *Inventory) HasWatch() bool {
 }
 
 func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []foundation.Item {
+	defer i.changed()
+
 	itemsToRemove := make([]foundation.Item, 0)
 	splitItems := make([]foundation.Item, 0)
 	for _, invItem := range i.items {
@@ -496,8 +502,9 @@ func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []foundati
 			}
 		}
 	}
+
 	for _, item := range itemsToRemove {
-		i.RemoveItem(item)
+		i.removeItemInternal(item)
 	}
 	return append(itemsToRemove, splitItems...)
 }
@@ -530,6 +537,16 @@ func (i *Inventory) HasAmmoWithCaliber(caliber int) bool {
 		}
 	}
 	return false
+}
+
+func (i *Inventory) HasExactlyOneRangedWeapon() bool {
+	weaponCount := 0
+	for _, invItem := range i.items {
+		if invItem.IsRangedWeapon() {
+			weaponCount++
+		}
+	}
+	return weaponCount == 1
 }
 
 func SortInventory(stacks []foundation.Item) {

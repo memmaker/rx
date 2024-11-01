@@ -10,29 +10,30 @@ import (
 	"slices"
 )
 
-func (g *GameState) getRangedChanceToHitForUI(target foundation.ActorForUI) foundation.AttackInfo {
-	defender := target.(*Actor)
-	attacker := g.Player
-	weapon, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
-	if !hasWeapon || !weapon.IsLoaded() {
-		return foundation.RangedAttackInfo{}
-	}
+func (g *GameState) getRangedChanceToHitForUI(mods d100.CombatModifiers) func(target foundation.ActorForUI) foundation.AttackInfo {
+	return func(target foundation.ActorForUI) foundation.AttackInfo {
+		defender := target.(*Actor)
+		attacker := g.Player
+		weapon, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
+		if !hasWeapon || !weapon.IsLoaded() {
+			return foundation.RangedAttackInfo{}
+		}
 
-	weaponSkill := weapon.GetSkillUsed()
-	baseSkill := attacker.GetCharSheet().GetSkill(weaponSkill)
+		weaponSkill := weapon.GetSkillUsed()
+		baseSkill := attacker.GetCharSheet().GetSkill(weaponSkill)
 
-	cth, modifiers := g.getRangedChanceToHit(attacker, weapon, defender, g.NewAmmo(weapon.GetLoadedAmmo().InternalName(), weapon.BulletCountForCurrentAttackMode()), d100.NoModifierList)
+		cth, modifiers := g.getRangedChanceToHit(attacker, weapon, defender, g.NewAmmo(weapon.GetLoadedAmmo().InternalName(), weapon.BulletCountForCurrentAttackMode()), d100.NoModifierList)
 
-	return foundation.RangedAttackInfo{
-		SkillUsed:      weaponSkill,
-		SkillBaseValue: baseSkill,
-		Mods: d100.CombatModifiers{
-			ChanceToHitMods: modifiers,
-			DamageMods:      nil,
-		},
-		CtH:             cth,
-		DamageBaseValue: weapon.GetWeaponDamageForCurrentAttackMode(),
-		Victim:          defender,
+		newMods := mods.WithChanceToHit(modifiers)
+
+		return foundation.RangedAttackInfo{
+			SkillUsed:       weaponSkill,
+			SkillBaseValue:  baseSkill,
+			Mods:            newMods,
+			CtH:             cth,
+			DamageBaseValue: weapon.GetWeaponDamageForCurrentAttackMode(),
+			Victim:          defender,
+		}
 	}
 }
 
@@ -244,11 +245,14 @@ func (g *GameState) GetHudFlags() map[foundation.ActorFlag]int {
 	for flag, _ := range equipFlags {
 		flagSet[flag] = 1
 	}
+	if g.Player.IsOpenCarryWeapon() {
+		flagSet[foundation.FlagOpenCarry] = 1
+	}
 	return flagSet
 }
 
-func (g *GameState) GetHudStats() map[foundation.HudValue]int {
-	uiStats := make(map[foundation.HudValue]int)
+func (g *GameState) GetHudStats() foundation.HudValueMap {
+	uiStats := make(foundation.HudValueMap)
 	if g.Player == nil {
 		return uiStats
 	}
@@ -263,7 +267,7 @@ func (g *GameState) GetHudStats() map[foundation.HudValue]int {
 	uiStats[foundation.HudActionPoints] = g.Player.GetCharSheet().GetActionPoints()
 	uiStats[foundation.HudActionPointsMax] = g.Player.GetCharSheet().GetActionPointsMax()
 
-	uiStats[foundation.HudDamageResistance] = g.Player.GetDamageResistance()
+	uiStats[foundation.HudArmorString] = g.Player.OutfitStyle().String()
 
 	return uiStats
 }
@@ -284,7 +288,7 @@ func (g *GameState) QueryMap(pos geometry.Point, isMovement bool) foundation.HiL
 	if !g.currentMap().Contains(pos) {
 		return foundation.NoMsg()
 	}
-	if g.currentMap().IsActorAt(pos) && g.Player.Position() != pos {
+	if g.currentMap().IsActorAt(pos) && !isMovement {
 		actor := g.currentMap().ActorAt(pos)
 		return foundation.HiLite(actor.LookInfo())
 	}
@@ -332,7 +336,7 @@ func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
 
 	if mapCell.Actor != nil {
 		actor := *mapCell.Actor
-		if actor.IsVisible(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
+		if actor == g.Player || actor.IsVisible(g.Player.HasFlag(foundation.FlagSeeInvisible)) {
 			return foundation.EntityTypeActor
 		}
 	}
@@ -408,7 +412,6 @@ func (g *GameState) canPlayerSee(pos geometry.Point) bool {
 func (g *GameState) GetFilteredInventory(filter func(item foundation.Item) bool) []foundation.Item {
 	items := g.Player.GetInventory().StackedItemsWithFilter(filter)
 	return items
-
 }
 
 func (g *GameState) IsFoodAt(loc geometry.Point) bool {

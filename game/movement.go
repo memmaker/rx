@@ -242,7 +242,7 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 		if amount > 0 {
 			itemStack := itemUI
 
-			g.stackTransfer(inventory, g.Player.GetInventory(), itemStack, amount)
+			stackTransfer(inventory, g.Player.GetInventory(), itemStack, amount)
 
 			g.ui.PlayCue("world/pickup")
 		}
@@ -260,7 +260,7 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 	leftToRight := func(itemUI foundation.Item, amount int) {
 		if amount > 0 {
 			itemStack := itemUI
-			g.stackTransfer(g.Player.GetInventory(), inventory, itemStack, amount)
+			stackTransfer(g.Player.GetInventory(), inventory, itemStack, amount)
 			g.ui.PlayCue("world/drop")
 		}
 
@@ -271,7 +271,7 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 			return !item.HasTag(foundation.TagNoLoot)
 		})
 		for _, item := range loot {
-			g.stackTransfer(actor.GetInventory(), g.Player.GetInventory(), item, item.StackSize())
+			stackTransfer(actor.GetInventory(), g.Player.GetInventory(), item, item.StackSize())
 		}
 		g.openInventoryOf(actor)
 	}
@@ -290,7 +290,7 @@ func (g *GameState) getObservers(mapPos geometry.Point) []*Actor {
 }
 
 func (g *GameState) updateFoVAndDijkstraMap(actor *Actor) {
-	actor.DijkstraMap = g.currentMap().GetDijkstraMapWithActorsNotBlocking(actor.Position(), 1000)
+	actor.DijkstraMap = g.currentMap().GetDijkstraMapWithActorsNotBlocking(actor.Position(), 2000)
 
 	fovRange := g.visionRange
 

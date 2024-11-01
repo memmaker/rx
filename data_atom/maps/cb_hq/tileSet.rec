@@ -1,0 +1,154 @@
+%rec: default
+
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: some trash
+Char: ;
+Foreground: gray_blue_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: dirty street
+Char: ,
+Foreground: brown_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: shower
+Char: ⌠
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: shower
+Char: ≈
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: stairs up
+Char: <
+Foreground: light_gray_7
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: chair
+Char: •
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: table
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 8
+
+Name: stove
+Char: ■
+Foreground: light_gray_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: sink
+Char: ▬
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: toilet
+Char: σ
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: trash can
+Char: í
+Foreground: olive_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 0
+
+Name: bench
+Char: π
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: filthy synthetic tree
+Char: ♣
+Foreground: tan_7
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 8
+
+Name: street
+Char:  
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+

@@ -158,10 +158,8 @@ type GridMap[ActorType interface {
 	mapWidth  int
 	mapHeight int
 
-	pathfinder  *geometry.PathRange
-	listOfZones []*ZoneInfo
-	zoneMap     []*ZoneInfo
-	player      ActorType
+	pathfinder *geometry.PathRange
+	player     ActorType
 
 	namedLocations map[string]geometry.Point
 	noClip         bool
@@ -181,18 +179,12 @@ type GridMap[ActorType interface {
 	MaxLightIntensity    float64
 	dynamicallyLitCells  map[geometry.Point]fxtools.HDRColor
 	DynamicLightsChanged bool
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsDarknessAt(timeOfDay time.Time, p geometry.Point) bool {
-	brightness := m.LightAt(p, timeOfDay).Brightness()
-	return brightness < 0.28
+	zones                map[string]map[geometry.Point]bool
+	zoneMetadata         map[string]ZoneMetadata
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetCardinalMovementOnly(cardinalMovementOnly bool) {
 	m.cardinalMovementOnly = cardinalMovementOnly
-}
-func (m *GridMap[ActorType, ItemType, ObjectType]) AddZone(zone *ZoneInfo) {
-	m.listOfZones = append(m.listOfZones, zone)
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetTile(position geometry.Point, mapTile Tile) {
@@ -201,13 +193,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetTile(position geometry.Poi
 	}
 	index := position.Y*m.mapWidth + position.X
 	m.cells[index].TileType = mapTile
-}
-
-func (m *GridMap[ActorType, ItemType, ObjectType]) SetZone(position geometry.Point, zone *ZoneInfo) {
-	if !m.Contains(position) {
-		return
-	}
-	m.zoneMap[position.Y*m.mapWidth+position.X] = zone
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) RemoveItemAt(position geometry.Point) {
@@ -560,7 +545,6 @@ func NewEmptyMap[ActorType interface {
 	MapObjectWithProperties[ActorType]
 }](width, height int) *GridMap[ActorType, ItemType, ObjectType] {
 	pathRange := geometry.NewPathRange(geometry.NewRect(0, 0, width, height))
-	publicSpaceZone := NewPublicZone(PublicZoneName)
 	m := &GridMap[ActorType, ItemType, ObjectType]{
 		cells:               make([]MapCell[ActorType, ItemType, ObjectType], width*height),
 		allActors:           make([]ActorType, 0),
@@ -568,8 +552,7 @@ func NewEmptyMap[ActorType interface {
 		allItems:            make([]ItemType, 0),
 		allObjects:          make([]ObjectType, 0),
 		namedLocations:      map[string]geometry.Point{},
-		listOfZones:         []*ZoneInfo{publicSpaceZone},
-		zoneMap:             NewZoneMap(publicSpaceZone, width, height),
+		zones:               map[string]map[geometry.Point]bool{},
 		mapWidth:            width,
 		mapHeight:           height,
 		pathfinder:          pathRange,
@@ -705,10 +688,20 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsObjectAt(location geometry.
 func (m *GridMap[ActorType, ItemType, ObjectType]) ObjectAt(location geometry.Point) ObjectType {
 	return *m.cells[location.X+location.Y*m.mapWidth].Object
 }
-func (m *GridMap[ActorType, ItemType, ObjectType]) ZoneAt(p geometry.Point) *ZoneInfo {
-	return m.zoneMap[m.mapWidth*p.Y+p.X]
+func (m *GridMap[ActorType, ItemType, ObjectType]) FirstZoneAt(p geometry.Point) string {
+	for zone, points := range m.zones {
+		if _, ok := points[p]; ok {
+			return zone
+		}
+	}
+	return ""
 }
-
+func (m *GridMap[ActorType, ItemType, ObjectType]) IsZoneAt(p geometry.Point, zone string) bool {
+	if _, ok := m.zones[zone][p]; ok {
+		return true
+	}
+	return false
+}
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredCardinalNeighbors(pos geometry.Point, filter func(geometry.Point) bool) []geometry.Point {
 	neighbors := geometry.Neighbors{}
 	filtered := neighbors.Cardinal(pos, filter)
@@ -909,15 +902,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsWalkableFor(p geometry.Poin
 	return cellAt.TileType.IsWalkable
 
 }
-func (m *GridMap[ActorType, ItemType, ObjectType]) IsInHostileZone(person ActorType) bool {
-	ourPos := person.Position()
-	zoneAt := m.ZoneAt(ourPos)
-	if zoneAt == nil || zoneAt.IsPublic() {
-		return false
-	}
-	return zoneAt.IsHighSecurity()
-}
-
 func (m *GridMap[ActorType, ItemType, ObjectType]) CurrentlyPassableForActor(person ActorType) func(p geometry.Point) bool {
 	return func(p geometry.Point) bool {
 		if !m.Contains(p) ||
@@ -1064,24 +1048,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Apply(f func(cell MapCell[Act
 	}
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) GetNearestDropOffPosition(pos geometry.Point) geometry.Point {
-	nearestLocation := geometry.Point{X: 1, Y: 1}
-	shortestDistance := math.MaxInt
-	for index, c := range m.zoneMap {
-		xPos := index % m.mapWidth
-		yPos := index / m.mapWidth
-		curPos := geometry.Point{X: xPos, Y: yPos}
-		curDist := geometry.DistanceManhattan(curPos, pos)
-		isItemHere := m.IsItemAt(curPos)
-		isValidZone := c.IsDropOff()
-		if !isItemHere && isValidZone && curDist < shortestDistance {
-			nearestLocation = curPos
-			shortestDistance = curDist
-		}
-	}
-	return nearestLocation
-}
-
 func (m *GridMap[ActorType, ItemType, ObjectType]) FindNearestItem(pos geometry.Point, predicate func(item ItemType) bool) ItemType {
 	var nearestItem ItemType
 	nearestDistance := math.MaxInt
@@ -1117,8 +1083,8 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsNamedLocationAt(positionInW
 }
 func (m *GridMap[ActorType, ItemType, ObjectType]) ZoneNames() []string {
 	result := make([]string, 0)
-	for _, zone := range m.listOfZones {
-		result = append(result, zone.Name)
+	for zone, _ := range m.zones {
+		result = append(result, zone)
 	}
 	return result
 }
@@ -1128,10 +1094,6 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Resize(width int, height int,
 	oldHeight := m.mapHeight
 
 	newCells := make([]MapCell[ActorType, ItemType, ObjectType], width*height)
-	newZoneMap := make([]*ZoneInfo, width*height)
-	for i := 0; i < width*height; i++ {
-		newZoneMap[i] = m.listOfZones[0]
-	}
 	for i := 0; i < width*height; i++ {
 		newCells[i] = MapCell[ActorType, ItemType, ObjectType]{
 			TileType:   emptyTile,
@@ -1151,12 +1113,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Resize(width int, height int,
 			destIndex := y*width + x
 			srcIndex := y*oldWidth + x
 			newCells[destIndex] = m.cells[srcIndex]
-			newZoneMap[destIndex] = m.zoneMap[srcIndex]
 		}
 	}
 
 	m.cells = newCells
-	m.zoneMap = newZoneMap
 	m.mapWidth = width
 	m.mapHeight = height
 }
@@ -1948,7 +1908,20 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) IsTransitionAt(position geome
 	return exists
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) LightAt(p geometry.Point, timeOfDay time.Time) fxtools.HDRColor {
+func (m *GridMap[ActorType, ItemType, ObjectType]) LightAt(p geometry.Point, observerPosition geometry.Point, visible bool, timeOfDay time.Time) fxtools.HDRColor {
+	zoneAtPos := m.FirstZoneAt(p)
+	if zoneAtPos != "" && visible {
+		oberserverZone := m.FirstZoneAt(observerPosition)
+		zoneMeta := m.ZoneMetadata(zoneAtPos)
+		oberserverZoneMeta := m.ZoneMetadata(oberserverZone)
+		if !zoneMeta.IsIndoor || oberserverZoneMeta.IsIndoor {
+			return m.ZoneLightAt(p, timeOfDay, visible, zoneMeta)
+		}
+	}
+	return m.defaultLightAt(p, timeOfDay)
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) defaultLightAt(p geometry.Point, timeOfDay time.Time) fxtools.HDRColor {
 	if m.meta.IsOutdoor {
 		return m.OutdoorLightAt(p, timeOfDay)
 	}
@@ -2059,6 +2032,31 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) TryGetTileAt(pos geometry.Poi
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) IsEmptyTile(pos geometry.Point) bool {
 	return !m.IsActorAt(pos) && !m.IsObjectAt(pos) && !m.IsItemAt(pos)
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) SetZones(zones map[string]map[geometry.Point]bool) {
+	m.zones = zones
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) SetLastVisited(t time.Time) {
+	m.meta = m.meta.WithLastVisited(t)
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) LastVisited() time.Time {
+	return m.meta.LastVisited
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) SetZoneMetadata(meta map[string]ZoneMetadata) {
+	m.zoneMetadata = meta
+}
+func (m *GridMap[ActorType, ItemType, ObjectType]) ZoneMetadata(zoneName string) ZoneMetadata {
+	if meta, ok := m.zoneMetadata[zoneName]; ok {
+		return meta
+	}
+
+	return ZoneMetadata{
+		Lighting: fxtools.HDRColor{R: 1, G: 1, B: 1, A: 1},
+	}
 }
 
 type JumpOverInfo struct {

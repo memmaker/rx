@@ -1,8 +1,24 @@
 %rec: default
 
+Name: some trash
+Char: ;
+Foreground: gray_blue_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
 Name: sidewalk
 Char: ·
 Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: dirty street
+Char: ,
+Foreground: brown_5
 Background: dark_gray_5
 IsWalkable: true
 IsTransparent: true
@@ -15,6 +31,22 @@ Background: dark_gray_5
 IsWalkable: false
 IsTransparent: false
 Flags: 0
+
+Name: cracked wall
+Char: ,
+Foreground: gray
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 32
+
+Name: cracked wall
+Char: `
+Foreground: gray
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 32
 
 Name: street
 Char:  
@@ -56,14 +88,6 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
-Name: bed
-Char: ▓
-Foreground: rust_3
-Background: orange_7
-IsWalkable: true
-IsTransparent: true
-Flags: 0
-
 Name: shower
 Char: ≈
 Foreground: light_blue
@@ -79,6 +103,14 @@ Background: dark_gray_5
 IsWalkable: false
 IsTransparent: true
 Flags: 8
+
+Name: medical services
+Char: +
+Foreground: bright_red
+Background: white
+IsWalkable: false
+IsTransparent: false
+Flags: 0
 
 Name: sink
 Char: ▬
@@ -112,12 +144,60 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
+Name: trash can
+Char: í
+Foreground: olive_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 0
+
 Name: man-hole
 Char: Θ
 Foreground: light_gray_6
 Background: dark_gray_5
 IsWalkable: true
 IsTransparent: true
+Flags: 0
+
+Name: S
+Char: S
+Foreground: teal_1
+Background: neon_blue_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: t
+Char: t
+Foreground: teal_1
+Background: neon_blue_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: y
+Char: y
+Foreground: teal_1
+Background: neon_blue_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: l
+Char: l
+Foreground: teal_1
+Background: neon_blue_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: e
+Char: e
+Foreground: teal_1
+Background: neon_blue_2
+IsWalkable: false
+IsTransparent: false
 Flags: 0
 
 Name: synthetic tree
@@ -135,6 +215,86 @@ Background: steel_blue_9
 IsWalkable: true
 IsTransparent: true
 Flags: 2
+
+Name: stairs down
+Char: >
+Foreground: light_gray_7
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: S
+Char: S
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: u
+Char: u
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: b
+Char: b
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: s
+Char: s
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: t
+Char: t
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: a
+Char: a
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: n
+Char: n
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: c
+Char: c
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: e
+Char: e
+Foreground: neon_red_2
+Background: neon_red_6
+IsWalkable: false
+IsTransparent: false
+Flags: 0
 
 Name: street
 Char: ─

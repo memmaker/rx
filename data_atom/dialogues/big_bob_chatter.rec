@@ -1,0 +1,39 @@
+s: being_around_player
+#
+c: HasWeaponEquippedWithName('flamer')
+#
+t: Nice toy you have there.
+t: Wow, that's a big gun.
+
+s: being_around_player
+#
+c: !HasArmorEquipped()
+#
+t: Come on, put some clothes on.
+t: Get dressed, will you?
+t: You don't want to catch a cold, do you?
+t: You don't look like you can handle a weapon.
+
+s: being_around_player
+#
+t: The Glock was always overrated.
+t: Big guns are better.
+t: I miss my good old 10mm.
+
+s: being_damaged
+#
+t: That all you got?
+t: Let me show you how it's done.
+t: You'll go boom!
+t: You're going down!
+
+s: kill_one_liner
+#
+t: Bye-bye, fashion disaster!
+t: You better dress for the occasion next time!
+t: You're going to need a new wardrobe!
+
+s: way_to_kill
+#
+t: Just gonna change into something more comfortable.
+t: I'm going to need a new outfit after this.

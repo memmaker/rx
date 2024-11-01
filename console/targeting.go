@@ -36,6 +36,7 @@ func (u *UI) SelectBodyPart(previousAim d100.BodyPart, onSelected func(victim fo
 	}
 	u.state = StateTargetingBodyPart
 	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {
+		u.lastTarget = [2]geometry.Point{u.game.GetPlayerPosition(), targetPos}
 		actorAt := u.game.ActorAt(targetPos)
 		u.OpenAimedShotPicker(actorAt, previousAim, onSelected)
 	})
@@ -98,6 +99,7 @@ func (u *UI) SelectTarget(getAttackInfo func(target foundation.ActorForUI) found
 		}
 	}
 	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {
+		u.lastTarget = [2]geometry.Point{u.game.GetPlayerPosition(), targetPos}
 		onSelected(targetPos)
 	})
 }
@@ -105,7 +107,9 @@ func (u *UI) SelectTarget(getAttackInfo func(target foundation.ActorForUI) found
 func (u *UI) beginTargeting(onSelected func(targetPos geometry.Point, hitZone int)) {
 	listOfVisibleEnemies := u.game.GetVisibleActors()
 	preselected := u.game.GetPlayerPosition()
-	if len(listOfVisibleEnemies) > 0 {
+	if u.lastTarget != [2]geometry.Point{} && u.game.GetPlayerPosition() == u.lastTarget[0] {
+		preselected = u.lastTarget[1]
+	} else if len(listOfVisibleEnemies) > 0 {
 		preselected = listOfVisibleEnemies[0].Position()
 	}
 	u.updateTarget(preselected)
@@ -144,10 +148,8 @@ func (u *UI) LookTargeting() {
 	}
 
 	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {
-		actorAt := u.game.ActorAt(targetPos)
-		if actorAt != nil {
-			u.ShowMonsterInfo(actorAt)
-		}
+		u.lastTarget = [2]geometry.Point{u.game.GetPlayerPosition(), targetPos}
+		u.game.PlayerInteractAtPosition(targetPos)
 	})
 }
 func (u *UI) handleDirectionalTargetingInput(onSelected func(targetDir geometry.CompassDirection)) func(ev *tcell.EventKey) *tcell.EventKey {
@@ -158,7 +160,7 @@ func (u *UI) handleDirectionalTargetingInput(onSelected func(targetDir geometry.
 		}
 		command := u.getDirectionalTargetingCommandForKey(toUIKey(ev))
 
-		if command == "target_cancel" {
+		if command == "target_cancel" || command == "wait" {
 			u.cancelTargeting()
 			u.UpdateLogWindow()
 			return nil
@@ -241,6 +243,7 @@ func (u *UI) updateTarget(targetPos geometry.Point) {
 	clear(u.targetingTiles)
 
 	if origin == targetPos {
+		u.targetingTiles[targetPos] = 'X'
 		u.targetPos = targetPos
 		return
 	}

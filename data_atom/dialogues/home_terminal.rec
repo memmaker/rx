@@ -11,7 +11,7 @@ npc: ** Contractor Client Interface **
 effect: None
 #
 # Starter Mission
-o_text: (Job offer) Extract money, reward: leather armor.
+o_text: (Job offer) Extract money, reward: 50% cut.
 o_cond: !HasFlag('JobAccepted(starter)') && !HasFlag('JobDeclined(starter)')
 o_goto: starter_mission
 #
@@ -42,9 +42,8 @@ npc: ** Contractor Client Interface **
 + > I just hope I made a good choice with my heir.
 + > Ok, let's cut this crap. I am dead.
 + > Now listen up or you will join me early.
-+ > Some high and mighty assholes are planning the literal end of the world.
-+ > All I could find out is the name of one of the companies involved.
-+ > They call themselves "Vault-Tec".
++ > Some high and mighty assholes are planning to make this world even worse.
++ > You should talk to Miguel, he knows more.
 + > If I were still young, or you know, alive, I would look into it.
 + > I'm out.
 + >
@@ -62,7 +61,8 @@ o_goto: End
 
 name: starter_mission
 npc: ** Contractor Client Interface **
-+ > Extract $500 from the Ripperdoc in the northside residential area.
++ > Extract $500 from Daniel Harker.
++ > He is a Ripperdoc in the Northern Rim of Edge Haven.
 + > He owes Jacob.
 effect: SetFlag('JobRead(starter)')
 #
@@ -77,8 +77,8 @@ o_goto: DefaultIntroduction
 
 name: starter_accept
 npc: ** Contractor Client Interface **
-+ > Deposit the money in the dead drop, as usual.
-+ > You will be rewarded with a leather armor after 6 hours.
++ > Deposit half of the money ($250) in the dead drop, as usual.
++ > You can keep the other half.
 #
 effect: SetFlag('JobAccepted(starter)')
 #

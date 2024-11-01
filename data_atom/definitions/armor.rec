@@ -1,13 +1,128 @@
 ## Very generic clothing
 
-Description: street wear
+Description: Street wear
 Name: street_wear
 Category: Armor
-chance: 20
+armor_encumbrance: 0
+armor_style: low_life
+weight: 1
+cost: 20
+armor_conceal_slot: hand
 
-Description: worn brown jacket
+Description: Worn brown jacket
 Name: worn_jacket
 Category: Armor
+armor_style: low_life
+weight: 1
+cost: 15
+armor_conceal_slot: hand
+
+## High Fashion
+
+Name: cellardoor_jumpsuit
+Description: Cellar Door Jumpsuit
+Category: Armor
+armor_physical_threshold: 0
+armor_style: high_fashion
+weight: 1
+cost: 3000
+LongDescription: An expensive jumpsuit from Cellar Door. The fabric is looking its best when the wearer is looking their worst.
+armor_conceal_slot: hand
+armor_conceal_slot: hand
+
+## Cyberpunk Style Armor
+
+Name: padded_shirt
+Description: Padded Shirt and Pants
+Category: Armor
+armor_physical_threshold: 1
+armor_style: low_life
+weight: 1
+cost: 30
+LongDescription: A padded shirt and pants, it's covered in advertisements and logos. It's not very protective, but it's better than nothing.
+armor_conceal_slot: hand
+
+Name: light_leather_jacket
+Description: Light Leather Jacket
+Category: Armor
+armor_physical_threshold: 1
+armor_style: low_life
+weight: 1
+cost: 40
+LongDescription: A cheap faux leather jacket. Mass produced by Blunt Ware.
+armor_conceal_slot: hand
+
+Name: light_armor_jacket
+Description: Light Armor Jacket
+Category: Armor
+armor_physical_threshold: 2
+armor_style: low_life
+weight: 2
+cost: 60
+LongDescription: This budget armor is from Blunt Ware's T.H.U.G. line of clothing. It's made from recycled materials of questionable quality and origin.
+armor_conceal_slot: hand
+
+Name: kevlar_t_shirt
+Description: Kevlar T-Shirt
+Category: Armor
+armor_physical_threshold: 2
+armor_style: low_life
+weight: 1
+cost: 75
+LongDescription: A t-shirt made from what Blunt Ware promises is genuine kevlar. It's probably not, but it's better than nothing.
+
+Name: rugged_trenchcoat
+Description: Rugged Trenchcoat
+Category: Armor
+armor_physical_threshold: 2
+armor_style: low_life
+weight: 3
+cost: 100
+LongDescription: A long coat made from a semi-durable material. It's not very stylish, but it's practical. There's a big Blunt Ware logo on the back.
+armor_conceal_slot: long
+armor_conceal_slot: long
+
+Name: leather_trenchcoat
+Description: Leather Trenchcoat
+Category: Armor
+armor_physical_threshold: 4
+armor_style: edgerunner
+weight: 5
+cost: 2500
+LongDescription: A black trenchcoat made from genuine leather. It's stylish and protective, but it's not cheap.
+armor_conceal_slot: long
+armor_conceal_slot: long
+
+Description: lab coat
+Name: lab_coat
+armor_style: business
+Category: Armor
+weight: 1
+cost: 100
+armor_conceal_slot: long
+armor_conceal_slot: long
+LongDescription: A once white lab coat, now stained with unidentifiable substances.
+
+Description: EBI lab coat
+Name: lab_coat_ebi
+armor_style: business
+Category: Armor
+weight: 1
+cost: 250
+armor_conceal_slot: long
+armor_conceal_slot: long
+LongDescription: A standard issue lab coat from Eschaton Biotech International. It's made from a special material that resists staining and is easy to clean.
+
+Description: BAT lab coat
+Name: lab_coat_bat
+armor_style: business
+Category: Armor
+weight: 1
+cost: 250
+armor_conceal_slot: long
+armor_conceal_slot: long
+LongDescription: A lab coat from Bushido-ArmaTech. It's made from a special material that resists staining and is easy to clean.
+
 
 ## Fallout Style Armor
 
@@ -15,25 +130,25 @@ Description: vault suit
 Name: vault_suit
 Category: Armor
 armor_physical_threshold: 5
-chance: 20
+armor_style: combat_gear
 
 Description: leather armor
 Name: leather_armor
 Category: Armor
 armor_physical_threshold: 5
-chance: 75
+armor_style: combat_gear
 
 Description: metal armor
 Name: metal_armor
 Category: Armor
 armor_physical_threshold: 5
-chance: 63
+armor_style: combat_gear
 
 Description: combat armor
 Name: combat_armor
 Category: Armor
 armor_physical_threshold: 5
-chance: 95
+armor_style: combat_gear
 
 Description: combat armor mk2
 Name: combat_armor_mk2
@@ -44,7 +159,7 @@ armor_energy_threshold: 3
 armor_energy_reduction: 10
 armor_radiation_reduction: 0
 armor_encumbrance: 3
-chance: 100
+armor_style: combat_gear
 
 Description: tesla armor
 Name: tesla_armor
@@ -57,7 +172,7 @@ armor_energy_threshold: 3
 armor_energy_reduction: 10
 armor_radiation_reduction: 0
 armor_encumbrance: 4
-chance: 100
+armor_style: combat_gear
 
 Description: Chitin Armor
 Name: ant_chitin_armor
@@ -70,53 +185,9 @@ armor_encumbrance: 3
 chance: 100
 tags: no_loot
 
-## Cyberpunk Fashion
-#
-# **Popular Clothesmakers and Their Quality Ratings**
-#
-# **Levi**
-# - Generic and leisurewear.
-# - Quality: Average to Good.
-#
-# **Nu-Tek**
-# - Generic, Urban Flash.
-# - Quality: Average to Very Good.
-#
-# **Uniwear**
-# - Generic.
-# - Quality: Good.
-#
-# **Image Fashionware**
-# - Urban Flash, Edgerunner, and High Fashion.
-# - Quality: Very Good to Superchic.
-#
-# **Icon America**
-# - Urban Flash and Edgerunner.
-# - Quality: Good to Very Good; limited Designer.
-#
-# **Gibson Battlegear**
-# - Generic, sometimes Urban Flash.
-# - Quality: Good; limited Designer.
-#
-# **Takanaka**
-# - Businesswear.
-# - Quality: Very Good to Superchic.
-#
-# **Eji of Japan**
-# - Leisurewear, Urban Flash.
-# - Quality: Good to Designer.
-#
-# **Cryo-Max**
-# - Urban Flash, Edgerunner, sometimes High Fashion.
-# - Quality: Very Good; limited Superchic.
-#
-# **Jordashe/Boy**
-# - Generic, Leisurewear, Urban Flash.
-# - Quality: Good to Designer.
-
 # Example for head piece
 
-Description: Takanaka Business Hat (Superchic)
+Description: Takanaka Business Hat
 Name: takanaka_business_hat_superchic
 Category: Headgear
 armor_physical_threshold: 0
@@ -124,7 +195,7 @@ armor_physical_reduction: 0
 armor_energy_threshold: 0
 armor_energy_reduction: 0
 armor_encumbrance: 0
-quality: 95
+armor_style: business
 cost: 350
 
 # Example for body piece
@@ -138,4 +209,4 @@ armor_energy_threshold: 0
 armor_energy_reduction: 0
 armor_encumbrance: 0
 quality: 85
-cost: 450
+armor_style: generic_chic

@@ -6,10 +6,13 @@ goto: DefaultIntroduction
 %rec: Nodes
 
 name: DefaultIntroduction
-npc: What do you want?
+npc: Who are you and what do you want?
 #
 o_text: I am new in the neighborhood. And like to introduce myself. I am {{ .pcname }}.
 o_goto: Introduction
+#
+o_text: Who are you?
+o_goto: AskForName
 #
 o_text: What can you tell me about this neighborhood?
 o_goto: Neighborhood
@@ -33,6 +36,9 @@ npc: What's it to you?
 o_text: Nothing. I guess it's good to stay safe around here.
 o_goto: DefaultIntroduction
 #
+o_text: I am looking for someone who can repair and maintain weapons.
+o_goto: AskingForRepairs
+#
 o_text: Let's say someone would drop some money in front of you in exchange for using these beauties..
 o_goto: AskingForGunForHire
 #
@@ -40,7 +46,7 @@ o_text: I thought I'd mention how unprofessional it is to not keep them on you w
 o_goto: Attack
 
 name: Introduction
-npc: Nice to meet you, {{ .pcname }}. This neighborhood has its quirks, but you'll get used to it.
+npc: {{ .pcname }}, huh? This neighborhood has its quirks, but you'll get used to it.
 #
 o_text: Thanks for the information.
 o_goto: DefaultIntroduction
@@ -74,10 +80,12 @@ effect: SetFlag('NotImpressed(quinn_rix)')
 effect: EndConversation
 
 name: OfferHelp
-npc: I am fine.
+npc: (He looks at you with a raised eyebrow.)
++ I guess I will have to explain the rules of the game to you.
++ This is my territory.
++ Don't mess with me and you'll live a long life.
 #
-o_text: Alright.
-o_goto: DefaultIntroduction
+effect: ReturnToPreviousNode
 
 name: AskingForGunForHire
 npc: Go on.
@@ -90,6 +98,20 @@ o_goto: ExplainJob
 #
 o_text: I need a hitman.
 o_goto: ExplainJob
+
+name: AskingForRepairs
+npc: I can do that. For a price.
+#
+o_text: Cool, let's talk about the details.
+o_effect: StartRepair
+#
+o_text: Let's talk about something else.
+o_goto: DefaultIntroduction
+
+name: RepairOffer
+npc: What do you need?
+#
+effect: OpenRepairMenu
 
 name: ExplainJob
 npc: You came to the right place. For the right price, I can make it happen.
@@ -122,11 +144,16 @@ o_text: I will think about it.
 o_goto: DefaultIntroduction
 #
 o_text: We have a deal.
+o_cond: HasItem('gold', 500)
 o_goto: AcceptJacobJob
+#
+o_text: I cannot afford that.
+o_cond: !HasItem('gold', 500)
+o_goto: DefaultIntroduction
 
 name: AcceptJacobJob
 npc: Consider it done.
-effect: GiveMoneyToNPC(500)
+effect: StackTransferTo(NPC, 'gold', 500)
 effect: RunScriptKill('quinn_rix', 'jacob_thorne')
 effect: EndConversation
 
@@ -139,11 +166,16 @@ o_text: I will think about it.
 o_goto: DefaultIntroduction
 #
 o_text: We have a deal.
+o_cond: HasItem('gold', 500)
 o_goto: AcceptDanielJob
+#
+o_text: I cannot afford that.
+o_cond: !HasItem('gold', 500)
+o_goto: DefaultIntroduction
 
 name: AcceptDanielJob
 npc: Will do.
-effect: GiveMoneyToNPC(500)
+effect: StackTransferTo(NPC, 'gold', 500)
 effect: RunScriptKill('quinn_rix','daniel_harker')
 effect: EndConversation
 

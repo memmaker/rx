@@ -63,6 +63,22 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		return 0 // not enough time energy for any action, spend 0 to accumulate
 	}
 
+	if enemy.HasFlag(foundation.FlagKnockedDown) {
+		enemy.GetFlags().Decrement(foundation.FlagKnockedDown)
+		if !enemy.HasFlag(foundation.FlagKnockedDown) {
+			g.msg(foundation.HiLite("%s is standing up", enemy.Name()))
+			standupTime := enemy.TimeNeededForActions() // get this before resetting knocked down flag
+			return standupTime
+		} else {
+			return enemy.timeEnergy
+		}
+	}
+
+	if bed, isBedNear := g.isBedNear(enemy.Position()); isBedNear && g.isAtScheduledLocation(enemy) && enemy.IsIdle() {
+		enemy.SetGoal(GoalSleepAt(bed.Position()))
+		return enemy.timeEnergy
+	}
+
 	return enemy.FSM.ExecuteBehavior()
 
 	// Status Effects
@@ -133,7 +149,7 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		if slot, move := enemy.MoveToNextTimeSlot(g.gameTime.Time); move {
 			loc := g.currentMap().GetNamedLocation(slot.Location)
 			g.msg(foundation.HiLite("%s moves to %s", enemy.Name(), slot.Location))
-			enemy.SetGoal(GoalMoveToLocation(loc))
+			enemy.SetGoal(GoalWalkToLocation(loc))
 		}
 
 		return enemy.timeEnergy // just wait and spend all time energy

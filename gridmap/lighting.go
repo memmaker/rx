@@ -4,6 +4,7 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -112,6 +113,36 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) OutdoorLightAt(p geometry.Poi
 	return bakedLighting
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) ZoneLightAt(p geometry.Point, timeOfDay time.Time, visible bool, zone ZoneMetadata) fxtools.HDRColor {
+	var bakedLighting fxtools.HDRColor
+	if m.meta.IsOutdoor {
+		ambientLight := GetAmbientLightFromDayTime(timeOfDay)
+		bakedLighting = m.cells[p.X+p.Y*m.mapWidth].BakedLighting
+		if ambientLight.Brightness() > bakedLighting.Brightness() {
+			bakedLighting = ambientLight
+		}
+	} else {
+		ambientLight := m.meta.IndoorAmbientLight
+		bakedLighting = m.cells[p.X+p.Y*m.mapWidth].BakedLighting
+		if ambientLight.Brightness() > bakedLighting.Brightness() {
+			bakedLighting = ambientLight
+		}
+	}
+
+	if dynamicLightAt, ok := m.dynamicallyLitCells[p]; ok {
+		if dynamicLightAt.Brightness() > bakedLighting.Brightness() {
+			bakedLighting = dynamicLightAt
+		}
+	}
+
+	zoneLighting := zone.Lighting
+
+	if zoneLighting.Brightness() > bakedLighting.Brightness() {
+		return zoneLighting
+	}
+	return bakedLighting
+}
+
 func GetAmbientLightFromDayTime(timeOfDay time.Time) fxtools.HDRColor {
 	morning := fxtools.HDRColor{R: 0.4, G: 0.368, B: 0.3466666666666667, A: 1.0}
 	noon := fxtools.HDRColor{R: 1.8, G: 1.7966666666666666, B: 1.7666666666666666, A: 1.0}
@@ -199,24 +230,50 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) updateLightMap(lightSources m
 			if dist < 0 {
 				dist = 0
 			}
-			if _, hasValue := lightAt[pos]; !hasValue {
-				lightAt[pos] = fxtools.HDRColor{R: 0, G: 0, B: 0, A: 1}
-			}
-			colorOfLight := lightAt[pos]
-
-			//intensityWithFalloff := fxtools.Clamp(0, lightSource.MaxIntensity, (float64(lightSource.Radius)-dist)/dist)
-			// flat intensity in radius > lightSource.MaxIntensity
-			flatIntensity := lightSource.MaxIntensity
 			if dist > float64(lightSource.Radius) {
-				flatIntensity = 0
+				continue
 			}
-			sourceLightColor := lightSource.Color.MultiplyWithScalar(flatIntensity)
-			lightAt[pos] = colorOfLight.Add(sourceLightColor)
+			if _, hasValue := lightAt[pos]; !hasValue {
+				lightAt[pos] = lightSource.Color.MultiplyWithScalar(lightSource.MaxIntensity)
+				continue
+			}
+
+			existingLight := lightAt[pos]
+
+			existingIsBrighter := existingLight.Brightness() > lightSource.Color.Brightness()
+
+			existingHue := hasHue(existingLight)
+			sourceHue := hasHue(lightSource.Color)
+
+			sameHues := existingHue == sourceHue
+
+			if sameHues {
+				if existingIsBrighter {
+					continue
+				} else {
+					lightAt[pos] = lightSource.Color.MultiplyWithScalar(lightSource.MaxIntensity)
+					continue
+				}
+			}
+
+			if existingHue { // existing light has hue, source has no hue
+				continue
+			}
+
+			lightAt[pos] = lightSource.Color.MultiplyWithScalar(lightSource.MaxIntensity)
 		}
 	}
 	for pos, light := range lightAt {
 		setLightAt(pos, light)
 	}
+}
+
+func hasHue(light fxtools.HDRColor) bool {
+	return !floatEquals(light.R, light.G, 0.1) || !floatEquals(light.G, light.B, 0.1)
+}
+
+func floatEquals(a, b, err float64) bool {
+	return math.Abs(a-b) < err
 }
 
 type MapLighter[ActorType interface {

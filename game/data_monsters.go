@@ -3,21 +3,22 @@ package game
 import (
 	"RogueUI/d100"
 	"RogueUI/foundation"
+	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
-	"path"
 	"strings"
 )
 
-func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, scheduleDir string, newItemFromString func(string) foundation.Item) *Actor {
+func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, newItemFromString func(string) foundation.Item) *Actor {
 	actor := NewActor()
 	var icon textiles.TextIcon
 	var zapEffects []string
 	var useEffects []string
 	var equipment []string
 	var vendorInv []string
-	fashionVendorStyle := FashionStyle(-2)
+	var cyberWareInstalls []string
+	fashionVendorStyle := foundation.FashionStyle(-2)
 
 	flags := foundation.NewActorFlags()
 
@@ -29,7 +30,8 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, sc
 	speed := -1
 
 	for _, field := range record {
-		switch strings.ToLower(field.Name) {
+		lowerName := strings.ToLower(field.Name)
+		switch lowerName {
 		case "name":
 			actor.SetInternalName(field.Value)
 		case "description":
@@ -68,19 +70,21 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, sc
 			actor.SetSizeModifier(field.AsInt())
 		case "equipment":
 			equipment = append(equipment, field.Value)
+		case "cyberwareinstall":
+			cyberWareInstalls = append(cyberWareInstalls, field.Value)
 		case "selling":
 			vendorInv = append(vendorInv, field.Value)
 		case "fashion_vendor_style":
-			fashionVendorStyle = FashionStyleFromString(field.Value)
+			fashionVendorStyle = foundation.FashionStyleFromString(field.Value)
 		case "aggressive":
 			actor.isAggressive = field.AsBool()
+		case "guarding_zone":
+			actor.GuardingZone = field.Value
 		case "position":
 			pos, _ := geometry.NewPointFromEncodedString(field.Value)
 			actor.SetPosition(pos)
 		case "audio":
 			actor.audioBaseName = field.Value
-		case "schedule":
-			actor.schedule = NewScheduleFromFile(path.Join(scheduleDir, field.Value+".rec"))
 		case "dialogue":
 			actor.SetDialogueFile(field.Value)
 		case "chatter":
@@ -93,8 +97,8 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, sc
 			}
 		default:
 			//println("WARNING: Unknown field: " + field.Name)
-			if strings.HasPrefix(field.Name, "skillbonus") {
-				skill := d100.SkillFromString(strings.TrimPrefix(field.Name, "skillbonus"))
+			if strings.HasPrefix(lowerName, "skillbonus") {
+				skill := d100.SkillFromString(strings.TrimPrefix(lowerName, "skillbonus"))
 				if skill != -1 {
 					charSheet.SetSkillAdjustment(skill, field.AsInt())
 				}
@@ -132,7 +136,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, sc
 		item := newItemFromString(itemName)
 		if item != nil {
 			actor.GetInventory().AddItem(item)
-			if item.IsEquippable() {
+			if item.IsArmor() {
 				actor.GetEquipment().Equip(item)
 			}
 		}
@@ -148,10 +152,30 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, sc
 		}
 	}
 
+	if len(cyberWareInstalls) > 0 {
+		offers := make([]fxtools.Tuple[CyberWare, int], len(cyberWareInstalls))
+		for i, cyberWareName := range cyberWareInstalls {
+			var cyberWare CyberWare
+			var price int
+			if fxtools.LooksLikeAFunction(cyberWareName) {
+				name, args := fxtools.GetNameAndArgs(cyberWareName)
+				cyberWare = NewCyberWareFromString(name)
+				price = args.GetInt(0)
+			} else {
+				cyberWare = NewCyberWareFromString(cyberWareName)
+				price = cyberWare.DefaultPrice()
+			}
+			offers[i] = fxtools.Tuple[CyberWare, int]{Item1: cyberWare, Item2: price}
+		}
+		actor.OffersCyberWare = offers
+	}
+
 	if fashionVendorStyle != -2 {
 		actor.vendorInv = NewInventory(40, actor.Position)
 		actor.GetVendorInventory().AddItems(newFashionInventory(fashionVendorStyle))
 	}
+
+	actor.attachHooksToActor()
 
 	return actor
 }

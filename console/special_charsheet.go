@@ -321,14 +321,14 @@ func (c *CharsheetViewer) setupUI() {
 	//buttonBar.AddItem(cancelButton, 0, 1, 1, 1, 0, 0, false)
 
 	c.Grid.SetRows(1, 9, 5, 9, 1)
-	c.Grid.SetColumns(18, 28, 34)
+	c.Grid.SetColumns(18, 32, 30)
 
 	c.Grid.AddItem(nameAgeSexBar, 0, 0, 1, 2, 0, 0, false)
 	c.Grid.AddItem(statList, 1, 0, 1, 1, 0, 0, false)
 	c.Grid.AddItem(charPointsDisplay, 2, 0, 1, 1, 0, 0, false)
 	c.Grid.AddItem(traitsList, 3, 0, 2, 1, 0, 0, false)
-	c.Grid.AddItem(derivedStatsWindow, 1, 1, 2, 1, 0, 0, false)
-	c.Grid.AddItem(skillList, 1, 2, 3, 1, 0, 0, false)
+	c.Grid.AddItem(skillList, 1, 1, 2, 1, 0, 0, false)
+	c.Grid.AddItem(derivedStatsWindow, 1, 2, 3, 1, 0, 0, false)
 	c.Grid.AddItem(descriptionWindow, 3, 1, 2, 1, 0, 0, false)
 	c.Grid.AddItem(buttonBar, 4, 2, 1, 1, 0, 0, false)
 

@@ -15,6 +15,7 @@ On Hacking:
  - Vampire: The Masquerade (Hacking is like using a real shell)
  - Start out using cables, then upgrade to wireless hacking
  - There must be a risk involved in hacking (trace, alert, etc.)
+ - Allow hackers to jack into robots and remote control them
 
 Weapons:
  - Min should be about half of the max damage
@@ -23,6 +24,11 @@ Weapons:
  - Reliability
  - Concealability
 
+https://vocal.media/futurism/the-coolest-futuristic-guns-that-actually-exist
+
+Believable Reactions:
+ - Entering a Police Department with a weapon and covered in blood should cause an immediate reaction
+ - Doing the same thing in a gang hideout should not
 
 Cool Ideas to add:
  - Zombie Shooting Area - Headshots kill, limb shots slow down, body shots do nothing
@@ -30,6 +36,7 @@ Cool Ideas to add:
  - Stealth Mission - Avoid detection
  - Manipulated Senses - Make the player kill innocents
  - Doom Style Traps / Triggers / Secrets
+ - Spider Jerusalem Style Journalism Mission
 
 Clothing & Disguise System
 

@@ -5,13 +5,11 @@ import (
 	"RogueUI/gridmap"
 	"bufio"
 	"fmt"
-	"github.com/memmaker/go/geometry"
 	"os"
 	"path"
 )
 
 func (g *GameState) GotoNamedLevel(levelName string, location string) {
-
 	if g.metronome.LeavingMapEvents() {
 		g.ui.AnimatePending()
 	}
@@ -49,27 +47,22 @@ func (g *GameState) GotoNamedLevel(levelName string, location string) {
 	if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
 		g.currentMap().RemoveActor(g.Player)
 		g.Player.RemoveLevelStatusEffects()
+		g.currentMap().SetLastVisited(g.gameTime.Time)
 	}
 
 	namedLocation := loadedMap.GetNamedLocation(location)
-	loadedMap.AddActor(g.Player, namedLocation)
+	g.Player.SetPosition(namedLocation)
 
 	mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
 	g.gameFlags.Increment(mapVisited)
 
 	g.setCurrentMap(loadedMap)
 
-	g.afterPlayerMoved(geometry.Point{}, true)
-
-	g.updateAllFoVsAndDijkstras()
-
 	if firstTimeInit != nil {
 		firstTimeInit()
 	}
 
-	g.updateUIStatus()
-
-	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", loadedMap.GetMeta().MusicFile+".ogg"))
+	g.afterMapLoad()
 }
 
 /*

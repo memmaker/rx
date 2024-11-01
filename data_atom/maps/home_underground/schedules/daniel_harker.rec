@@ -1,0 +1,21 @@
+# idea:
+# define when a NPC should be where
+# and optionally what he does there
+
+%rec: meta
+
+map: home_underground
+
+%rec: slots
+
+# we come from above at 22:30
+day: every_day
+time: 22:30
+location: next_to_the_cage
+description: walking slowly
+
+# transition back to above, should be back before 08:00
+day: every_day
+time: 23:00
+location: secret_ladder
+description: walking slowly, with a grin on his face

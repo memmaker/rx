@@ -38,6 +38,10 @@ o_text: Jacob Thorne's home
 o_cond: HasFlag('LocationKnown(jacobs_home)') && !IsMap('jacobs_home')
 o_goto: JacobsHome
 #
+o_text: The eastern rim district (Cognetic Bastards & La Boom).
+#o_cond: HasFlag('LocationKnown(eastern_district)') && !IsMap('eastern_district')
+o_goto: EasternRim
+#
 o_text: Cryo Facility
 o_cond: HasFlag('LocationKnown(cryolab)') && !IsMap('cryolab')
 o_goto: CryoFacility
@@ -68,6 +72,11 @@ effect: EndConversation
 name: HeadQuarters
 npc: Alright, let's go.
 effect: Transition('home_area', 'taxi_stand')
+effect: AdvanceTimeByMinutes(15)
+
+name: EasternRim
+npc: You got it.
+effect: Transition('cb_hq', 'taxi_stand')
 effect: AdvanceTimeByMinutes(15)
 
 name: Kelso

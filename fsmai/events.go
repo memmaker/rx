@@ -15,6 +15,8 @@ const (
 	EventTargetDied
 	EventTargetLost
 	EventThreatNeutralized
+	EventMinorCrimeWitnessed
+	EventMajorCrimeWitnessed
 )
 
 func (e TransitionEventName) ToString() string {

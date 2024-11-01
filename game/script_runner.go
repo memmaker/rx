@@ -80,6 +80,9 @@ func (s *ScriptRunner) RunScriptByName(mapDir string, mapName string, scriptName
 }
 
 func (s *ScriptRunner) RunScript(currentMapName string, script ActionScript) {
+	if script.IsEmpty() {
+		return
+	}
 	runningScript := &ScriptInstance{
 		script:       script,
 		currentFrame: 0,
@@ -130,4 +133,15 @@ func (s *ScriptRunner) String() string {
 	}
 
 	return "Running scripts:\n" + strings.Join(out, "\n")
+}
+
+func (s *ScriptRunner) IsScriptRunning(name string) bool {
+	for _, runningScripts := range s.runningScripts {
+		for _, instance := range runningScripts {
+			if instance.script.Name == name {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -15,36 +15,76 @@ import (
 	"path"
 	"strings"
 )
+var graphicsModes = make(map[string]console.UILifeCycler)
 
 func main() {
+
 	devStart := false
 
 	config := foundation.NewConfigurationFromFile("config.rec")
 
+	var graphicsMode console.UILifeCycler
 	if len(os.Args) > 1 {
 		if os.Args[1] == "dev" {
 			devStart = true
 		} else if os.Args[1] == "val_dialogue" {
-			validation.ValidateDialogue(path.Join(config.DataRootDir, "dialogues"))
+			validation.ValidateDialogue(path.Join(config.DataRootDir))
 			return
+		} else if os.Args[1] == "val_ammo" {
+			validation.ValidateWeaponAndAmmoPairings(path.Join(config.DataRootDir))
+			return
+		} else {
+			mode := os.Args[1]
+			if lifeCyle, ok := graphicsModes[mode]; ok {
+				graphicsMode = lifeCyle
+				devStart = true
+			}
 		}
+	}
+	if graphicsMode == nil {
+		graphicsMode = chooseGraphicsMode()
 	}
 
 	fxtools.SetKeypadToNumericMode()
-
 
 	if config.PlayerName == "" {
 		config.PlayerName = askForName()
 		config.WriteToFile("config.rec")
 	}
-	gameUI := console.NewTextUI(config)
-	game.NewGameState(gameUI, config)
+	// create an ui independent game state
+	gameState := game.NewGameState(config)
+
+	// create the game UI and link it to the game state
+	gameUI := console.NewTextUI(graphicsMode, config)
+	gameUI.Init(gameState)
+
+	gameState.UIReady(gameUI)
 
 	if devStart {
 		gameUI.StartGameLoop()
 	} else {
 		gameUI.StartWithIntro()
 	}
+}
+
+func chooseGraphicsMode() console.UILifeCycler {
+	if len(graphicsModes) == 1 {
+		for _, mode := range graphicsModes {
+			return mode
+		}
+	}
+	if len(graphicsModes) == 0 {
+		panic("No graphics modes available")
+	}
+	fallbackModes := []string{"ebiten","terminal"}
+
+	for _, mode := range fallbackModes {
+		if lifeCyle, ok := graphicsModes[mode]; ok {
+			return lifeCyle
+		}
+	}
+	panic("No fallback graphics mode available")
+	return nil
 }
 func showBanner(filename string, width int) {
 	bannerLines := fxtools.ReadFileAsLines(filename)

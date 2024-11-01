@@ -1,0 +1,30 @@
+name: public_fashionista
+lighting: (1.1, 1.1, 5.0)
+IsIndoor: true
+
+name: trespass_fashionista
+lighting: (1.1, 1.1, 5.0)
+IsIndoor: true
+
+name: public_bob
+lighting: (3.0, 1.0, 1.0)
+IsIndoor: true
+
+name: trespass_bob
+lighting: (3.0, 1.0, 1.0)
+IsIndoor: true
+
+name: public_hospital
+lighting: (1.0, 1.0, 1.0)
+IsIndoor: true
+
+name: trespass_hospital
+lighting: (1.0, 1.0, 1.0)
+IsIndoor: true
+
+name: trespass_quinn
+IsIndoor: true
+
+name: contractor_home
+lighting: (1.0, 1.0, 1.0)
+IsIndoor: true

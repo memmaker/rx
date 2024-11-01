@@ -85,27 +85,37 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 	objTypes := LoadIconsForObjects(mapDir, t.palette)
 	t.setIconsResolverForObjects(objTypes)
 
-	tileSet := textiles.ReadTilesFile(fxtools.MustOpen(path.Join(mapDir, "tileSet.rec")), t.palette)
+	tileSet := textiles.ReadTilesFileAndClose(fxtools.MustOpen(path.Join(mapDir, "tileSet.rec")), t.palette)
 	mapSize, tileMap := textiles.ReadTileMap16(path.Join(mapDir, "tiles.bin"))
 
-	metaData, scriptsToRun := NewMapMetaData(recfile.Read(fxtools.MustOpen(path.Join(mapDir, "meta.rec")))[0])
+	metaData, scriptsToRun := NewMapMetaData(recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "meta.rec")))[0])
 
-	var actorRecords, objectRecords, itemRecords []recfile.Record
+	var zones map[string]map[geometry.Point]bool
+	if fxtools.FileExists(path.Join(mapDir, "zones.bin")) {
+		zones = textiles.ReadZones(path.Join(mapDir, "zones.bin"))
+	}
+	var zoneRecords, actorRecords, objectRecords, itemRecords []recfile.Record
+	var zoneMeta map[string]ZoneMetadata
+	if fxtools.FileExists(path.Join(mapDir, "zones.rec")) {
+		zoneRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "zones.rec")))
+		zoneMeta = NewZoneMetadata(zoneRecords)
+	}
+
 	if fxtools.FileExists(path.Join(mapDir, "actors.rec")) {
-		actorRecords = recfile.Read(fxtools.MustOpen(path.Join(mapDir, "actors.rec")))
+		actorRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "actors.rec")))
 	}
 	if fxtools.FileExists(path.Join(mapDir, "objects.rec")) {
-		objectRecords = recfile.Read(fxtools.MustOpen(path.Join(mapDir, "objects.rec")))
+		objectRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "objects.rec")))
 	}
 	if fxtools.FileExists(path.Join(mapDir, "items.rec")) {
-		itemRecords = recfile.Read(fxtools.MustOpen(path.Join(mapDir, "items.rec")))
+		itemRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "items.rec")))
 	}
 
 	// Optional: Read init flags, if they exist and haven't been loaded before
 	flagsFile := path.Join(mapDir, "initFlags.rec")
 	flagsOfMap := make(map[string]int)
 	if fxtools.FileExists(flagsFile) {
-		flags := recfile.Read(fxtools.MustOpen(flagsFile))[0]
+		flags := recfile.ReadAndClose(fxtools.MustOpen(flagsFile))[0]
 		for _, flag := range flags {
 			flagsOfMap[flag.Name] = flag.AsInt()
 		}
@@ -115,6 +125,8 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 	newMap.SetCardinalMovementOnly(!t.diagonalMove)
 	newMap.SetName(mapName)
 	newMap.SetMeta(metaData)
+	newMap.SetZones(zones)
+	newMap.SetZoneMetadata(zoneMeta)
 
 	// Set Tiles
 	for y := 0; y < mapSize.Y; y++ {
@@ -158,10 +170,16 @@ type MapMeta struct {
 	IsOutdoor          bool
 	MusicFile          string
 	IndoorAmbientLight fxtools.HDRColor
+	LastVisited        time.Time
 }
 
 func (m MapMeta) WithAmbientLight(color fxtools.HDRColor) MapMeta {
 	m.IndoorAmbientLight = color
+	return m
+}
+
+func (m MapMeta) WithLastVisited(t time.Time) MapMeta {
+	m.LastVisited = t
 	return m
 }
 
@@ -247,4 +265,35 @@ func toGridMapTile(tile textiles.TextTile) Tile {
 		IsTransparent:      tile.IsTransparent,
 		Flags:              TileFlags(tile.Flags),
 	}
+}
+
+type ZoneMetadata struct {
+	Lighting  fxtools.HDRColor
+	Music     string
+	IsPrivate bool
+	IsIndoor  bool
+}
+
+func NewZoneMetadata(records []recfile.Record) map[string]ZoneMetadata {
+	result := make(map[string]ZoneMetadata)
+	for _, record := range records {
+		meta := ZoneMetadata{}
+		var zoneName string
+		for _, field := range record {
+			switch strings.ToLower(field.Name) {
+			case "name":
+				zoneName = field.Value
+			case "lighting":
+				meta.Lighting = fxtools.NewColorFromString(field.Value)
+			case "music":
+				meta.Music = field.Value
+			case "isprivate":
+				meta.IsPrivate = field.AsBool()
+			case "isindoor":
+				meta.IsIndoor = field.AsBool()
+			}
+		}
+		result[zoneName] = meta
+	}
+	return result
 }

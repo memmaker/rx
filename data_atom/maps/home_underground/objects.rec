@@ -6,73 +6,7 @@ Description: a frag-mine
 ZapEffect: explode
 IsHidden: false
 TriggerOnProximity: true
-Position: (55,3)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (76,9)
-
-Category: LockedDoor
-Description: a door
-istransparent: true
-LockFlag: ripper_cell_door
-Position: (42,3)
-
-Category: BakedLight
-Radius: 5
-Color: (1.0, 1.0, 1.0)
-Max_Intensity: 1.0
-Position: (10,9)
-
-Category: Trap
-Name: frag_mine
-Description: a frag-mine
-ZapEffect: explode
-IsHidden: false
-TriggerOnProximity: true
 Position: (71,3)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (53,18)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (18,20)
-
-Category: BakedLight
-Radius: 5
-Color: (1.0, 1.0, 1.0)
-Max_Intensity: 1.0
-Position: (41,5)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (21,18)
-
-Category: Transition
-Description: a ladder up
-Location: secret_ladder
-TargetMap: home_area
-TargetLocation: ripperdoc_toilet
-Position: (19,6)
-
-Category: ExplodingPushBox
-Description: a box
-Position: (54,20)
-
-Category: Transition
-Description: a ladder up
-Location: man_hole_west
-TargetMap: home_area
-TargetLocation: man_hole_west
-Position: (9,9)
-
-Category: BakedLight
-Radius: 5
-Color: (1.0, 1.0, 1.0)
-Max_Intensity: 1.0
-Position: (21,5)
 
 Category: Trap
 Name: frag_mine
@@ -82,15 +16,62 @@ IsHidden: false
 TriggerOnProximity: true
 Position: (76,20)
 
+Category: Transition
+Description: stairs up
+Location: shooting_range_stairs
+TargetMap: home_area
+TargetLocation: gun_store_stairs
+Position: (26,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (33,14)
+
+Category: NamedLocation
+Identifier: shooting_ranger_owner
+Position: (27,16)
+
+Category: LockedDoor
+Description: a door
+istransparent: true
+LockFlag: ripper_cell_door
+ispassableforprojectile: true
+Position: (42,3)
+
 Category: ExplodingPushBox
 Description: a box
-Position: (56,18)
+Position: (76,9)
 
-Category: BakedLight
-Radius: 5
-Color: (1.0, 1.0, 1.0)
-Max_Intensity: 1.0
-Position: (47,11)
+Category: NamedLocation
+Identifier: shooting_range_visitor
+Position: (29,16)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (21,18)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (53,18)
+
+Category: Transition
+Description: a ladder up
+Location: secret_ladder
+TargetMap: home_area
+TargetLocation: ripperdoc_toilet
+Position: (19,6)
+
+Category: Trap
+Name: frag_mine
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+Position: (55,3)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (54,20)
 
 Category: Transition
 Description: a ladder up
@@ -98,4 +79,30 @@ Location: man_hole_east
 TargetMap: home_area
 TargetLocation: man_hole_east
 Position: (47,12)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (56,18)
+
+Category: Transition
+Description: a ladder up
+Location: man_hole_west
+TargetMap: home_area
+TargetLocation: man_hole_west
+Position: (9,9)
+
+Category: NamedLocation
+Identifier: next_to_the_cage
+Position: (37,5)
+
+Category: Transition
+Description: upwards stairwell
+Location: home_clone_cellar
+TargetMap: home_area
+TargetLocation: home_secret_stairs
+Position: (71,8)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (18,20)
 

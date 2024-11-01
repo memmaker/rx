@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) foundation.Item {
+func NewItemFromRecord(record recfile.Record, itemFromString func(name string) foundation.Item, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) foundation.Item {
 	NoQualityDefined := d100.Percentage(-1)
 	item := &GenericItem{
 		qualityInPercent: NoQualityDefined,
@@ -32,10 +32,12 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	}
 	itemWeapon := &Weapon{
 		loadedInMagazine: nil,
+		PelletCount:      1,
 	}
 	var targetModes [2]TargetingMode
 	var tuCosts [2]int
 	var maxRanges [2]int
+	var preLoadedAmmoName string
 
 	itemArmor := &Armor{}
 	for _, field := range record {
@@ -48,11 +50,11 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			item.position = spawnPos
 		case "description":
 			item.name = field.Value
+		case "longdescription":
+			item.text = field.Value
 		case "category":
 			item.category = foundation.ItemCategoryFromString(field.Value)
 			item.icon = icon(item.category)
-		case "size":
-			item.size = field.AsInt()
 		case "cost":
 			item.cost = field.AsInt()
 		case "weight":
@@ -123,6 +125,10 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			item.textFile = field.Value
 		case "text":
 			item.text = field.Value
+		case "textvar":
+			item.textVar = field.Value
+		case "textvalue":
+			item.textValue = field.Value
 		case "lockflag":
 			item.lockFlag = field.Value
 		case "pickupflag":
@@ -150,6 +156,8 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			itemAmmo.RoundsInMagazine = field.AsInt()
 		case "ammo_caliber_index":
 			itemAmmo.CaliberIndex = field.AsInt()
+		case "ammo_short":
+			itemAmmo.ShortIdentifier = field.Value
 
 		// WEAPON FIELDS
 		case "weapon_type":
@@ -158,6 +166,8 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			itemWeapon.damageType = DamageTypeFromString(field.Value)
 		case "weapon_caliber_index":
 			itemWeapon.caliberIndex = field.AsInt()
+		case "weapon_uses_ammo":
+			itemWeapon.caliberName = field.Value
 		case "weapon_sound_id":
 			itemWeapon.soundID = field.AsInt32()
 		case "weapon_skill_used":
@@ -168,6 +178,8 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 			itemWeapon.magazineSize = field.AsInt()
 		case "weapon_burst_rounds":
 			itemWeapon.burstRounds = field.AsInt()
+		case "weapon_pellet_count":
+			itemWeapon.PelletCount = field.AsInt()
 		case "weapon_attack_mode_one":
 			targetModes[0] = TargetingModeFromString(field.Value)
 		case "weapon_attack_mode_two":
@@ -185,35 +197,58 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 		case "weapon_reliability":
 			itemWeapon.reliability = d100.Percentage(field.AsInt())
 		case "weapon_concealability":
-			itemWeapon.concealability = ConcealabilityFromString(field.Value)
+			itemWeapon.relativeSize = WeaponSizeFromString(field.Value)
 		case "weapon_accuracy":
 			itemWeapon.accuracyMod = d100.Percentage(field.AsInt())
-
+		case "weapon_degrade_factor":
+			itemWeapon.degradeFactor = field.AsFloat()
+		case "weapon_always_load":
+			preLoadedAmmoName = field.Value
 		// ARMOR FIELDS
 		case "armor_encumbrance":
 			itemArmor.encumbrance = field.AsInt()
+		case "armor_style":
+			itemArmor.fashionStyle = foundation.FashionStyleFromString(field.Value)
+		case "armor_conceal_slot":
+			itemArmor.concealSlots = append(itemArmor.concealSlots, WeaponSizeFromString(field.Value))
 		case "armor_radiation_reduction":
 			itemArmor.radiationReduction = field.AsInt()
 		case "armor_physical_reduction":
+			protectionValue := field.AsInt()
+			if protectionValue == 0 {
+				continue
+			}
 			if itemArmor.protection == nil {
 				itemArmor.protection = make(map[DamageType]Protection)
 			}
-			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithReduction(field.AsInt())
+			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithReduction(protectionValue)
 		case "armor_physical_threshold":
+			protectionValue := field.AsInt()
 			if itemArmor.protection == nil {
 				itemArmor.protection = make(map[DamageType]Protection)
 			}
-			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithThreshold(field.AsInt())
+			if protectionValue == 0 {
+				continue
+			}
+			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithThreshold(protectionValue)
 		case "armor_energy_reduction":
+			protectionValue := field.AsInt()
 			if itemArmor.protection == nil {
 				itemArmor.protection = make(map[DamageType]Protection)
 			}
-			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithReduction(field.AsInt())
+			if protectionValue == 0 {
+				continue
+			}
+			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithReduction(protectionValue)
 		case "armor_energy_threshold":
+			protectionValue := field.AsInt()
 			if itemArmor.protection == nil {
 				itemArmor.protection = make(map[DamageType]Protection)
 			}
-			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithThreshold(field.AsInt())
+			if protectionValue == 0 {
+				continue
+			}
+			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithThreshold(protectionValue)
 		}
 	}
 
@@ -230,9 +265,17 @@ func NewItemFromRecord(record recfile.Record, icon func(itemCategory foundation.
 	}
 
 	if itemWeapon.IsValid() {
+
 		noAim := item.tags.Contains(foundation.TagNoAim)
 		itemWeapon.attackModes = GetAttackModes(targetModes, tuCosts, maxRanges, noAim)
 		itemWeapon.GenericItem = item
+
+		noReload := item.tags.Contains(foundation.TagNoReload)
+		if noReload && preLoadedAmmoName != "" {
+			preLoadAmmo := itemFromString(preLoadedAmmoName)
+			preLoadAmmo.SetStackSize(itemWeapon.magazineSize)
+			itemWeapon.LoadAmmo(preLoadAmmo.(*Ammo))
+		}
 		return itemWeapon
 	}
 

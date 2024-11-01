@@ -60,6 +60,7 @@ type Actor struct {
 	enemyTeams  map[string]bool
 
 	isAggressive bool
+	GuardingZone string
 
 	audioBaseName string
 
@@ -70,11 +71,26 @@ type Actor struct {
 	currentPath             []geometry.Point
 	currentPathIndex        int
 	bodyAugmentations       map[CyberWare]bool
+	augmentToggled          func(CyberWare, bool)
 	temporaryStatChanges    []*TemporaryStatChange
 
 	DijkstraMap map[geometry.Point]int
 	FoV         map[geometry.Point]bool
 	FSM         *ActorFSM
+
+	OffersCyberWare []fxtools.Tuple[CyberWare, int]
+}
+
+func (a *Actor) SetAugmentToggledHandler(f func(CyberWare, bool)) {
+	a.augmentToggled = f
+}
+
+func (a *Actor) GetArmorProtectionString() string {
+	if !a.GetEquipment().HasArmorEquipped() {
+		return ""
+	}
+	armor := a.GetEquipment().GetArmor()
+	return armor.GetArmorProtectionValueAsString()
 }
 
 func (a *Actor) TimeNeededForAttack() int {
@@ -110,6 +126,9 @@ func (a *Actor) IsCyberWareActive(ware CyberWare) bool {
 
 func (a *Actor) SetCyberWareActive(ware CyberWare, active bool) {
 	a.bodyAugmentations[ware] = active
+	if a.augmentToggled != nil {
+		a.augmentToggled(ware, active)
+	}
 }
 
 func (a *Actor) GetState() fsmai.StateName {
@@ -477,6 +496,34 @@ func ModHalveWhen(reason string, isInjured func() bool) PercentageModifier {
 	}
 }
 
+func (a *Actor) IsOpenCarryWeapon() bool {
+	if a.GetEquipment().HasWeaponEquipped() {
+		return true
+	}
+
+	allNonHiddenWeaponsInInventory := a.GetInventory().StackedItemsWithFilter(func(item foundation.Item) bool {
+		if !item.IsWeapon() {
+			return false
+		}
+		weapon := item.(*Weapon)
+		return weapon.relativeSize != SizeHidden
+	})
+	if len(allNonHiddenWeaponsInInventory) == 0 {
+		return false
+	}
+	if !a.GetEquipment().HasArmorEquipped() {
+		return true
+	}
+	armor := a.GetEquipment().GetArmor()
+
+	asWeapons := fxtools.MapSlice(allNonHiddenWeaponsInInventory, func(item foundation.Item) *Weapon {
+		return item.(*Weapon)
+	})
+
+	canConceal := armor.CanConceal(asWeapons)
+	return !canConceal
+}
+
 func (a *Actor) Icon() textiles.TextIcon {
 	if a.IsSleeping() || a.IsKnockedDown() {
 		originalRune := a.icon.Char
@@ -489,7 +536,7 @@ func (a *Actor) GetListInfo() string {
 	hp := a.charSheet.GetHitPoints()
 	hpMax := a.charSheet.GetHitPointsMax()
 	damage := a.GetMainHandDamageAsString()
-	return fmt.Sprintf("%s HP: %d/%d Dmg: %s DR: %d", a.name, hp, hpMax, damage, a.GetDamageResistance())
+	return fmt.Sprintf("%s HP: %d/%d Dmg: %s Armor: %s", a.name, hp, hpMax, damage, a.GetArmorProtectionString())
 }
 
 func (a *Actor) GetMainHandDamageAsString() string {
@@ -513,14 +560,14 @@ func (a *Actor) SetPosition(pos geometry.Point) {
 }
 
 func (a *Actor) Name() string {
-	if a.HasFlag(foundation.FlagInvisible) {
+	if a.HasFlag(foundation.FlagActiveCamouflage) {
 		return "something"
 	}
 	return a.name
 }
 
 func (a *Actor) IsVisible(playerCanSeeInvisible bool) bool {
-	return !a.HasFlag(foundation.FlagInvisible) || playerCanSeeInvisible
+	return !a.HasFlag(foundation.FlagActiveCamouflage) || playerCanSeeInvisible
 }
 
 func (a *Actor) GetInventory() *Inventory {
@@ -529,10 +576,6 @@ func (a *Actor) GetInventory() *Inventory {
 
 func (a *Actor) GetEquipment() *Equipment {
 	return a.equipment
-}
-
-func (a *Actor) GetDamageResistance() int {
-	return 0
 }
 
 func (a *Actor) GetFlags() *foundation.ActorFlags {
@@ -561,10 +604,19 @@ func (a *Actor) TakeDamage(dmg SourcedDamage) (didCripple bool) {
 		}
 		return
 	}
+
 	a.charSheet.TakeRawDamage(dmg.DamageAmount)
+
+	if dmg.IsKillingBlow {
+		a.charSheet.Kill()
+	}
 
 	if !wasHeavilyInjured && a.IsHeavilyInjured() && dmg.Attacker != nil && a.FSM != nil {
 		a.FSM.SendEvent(NewHeavilyInjuredEvent(dmg.Attacker))
+	}
+
+	for _, statusFlag := range dmg.ApplyStatus {
+		a.GetFlags().Increment(statusFlag)
 	}
 
 	return a.addDamageToBodyPart(dmg)
@@ -572,8 +624,18 @@ func (a *Actor) TakeDamage(dmg SourcedDamage) (didCripple bool) {
 
 func (a *Actor) addDamageToBodyPart(dmg SourcedDamage) (didCripple bool) {
 	wasCrippled := a.IsCrippled(dmg.BodyPart)
-	a.bodyDamage[dmg.BodyPart] += dmg.DamageAmount
+
+	if dmg.IsCrippling {
+		a.Cripple(dmg.BodyPart)
+	} else {
+		a.bodyDamage[dmg.BodyPart] += dmg.DamageAmount
+	}
+
 	return !wasCrippled && a.IsCrippled(dmg.BodyPart)
+}
+
+func (a *Actor) Cripple(part d100.BodyPart) {
+	a.bodyDamage[part] = part.DamageForCrippled(a.GetHitPointsMax()) + 1
 }
 
 func (a *Actor) IsCrippled(part d100.BodyPart) bool {
@@ -667,6 +729,7 @@ func (a *Actor) GetDetailInfo() string {
 		{Columns: []string{"Dodge:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.Dodge))}},
 		{Columns: []string{"Crit. Chance:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.CriticalChance))}},
 		{Columns: []string{"Carry Weight:", fmt.Sprintf("%d", a.charSheet.GetDerivedStat(d100.CarryWeight))}},
+		{Columns: []string{"Max Repair:", fmt.Sprintf("%d%%", int(a.GetMaxRepairQuality()))}},
 	}
 
 	resistanceRows := []fxtools.TableRow{
@@ -714,8 +777,12 @@ func (a *Actor) HasGold(price int) bool {
 	return a.GetInventory().HasItemWithNameAndCount("gold", price)
 }
 
-func (a *Actor) RemoveGold(price int) []foundation.Item {
-	return a.GetInventory().RemoveItemsByNameAndCount("gold", price)
+func (a *Actor) RemoveGold(price int) foundation.Item {
+	count := a.GetInventory().RemoveItemsByNameAndCount("gold", price)
+	if len(count) == 0 {
+		return nil
+	}
+	return count[0]
 }
 
 func (a *Actor) GetGold() int {
@@ -728,19 +795,6 @@ func (a *Actor) GetGold() int {
 
 func (a *Actor) IsWounded() bool {
 	return a.GetHitPoints() < a.GetHitPointsMax()
-}
-
-func (a *Actor) IsHungry() bool {
-	return a.statusFlags.Get(foundation.FlagHunger) > 0
-}
-
-func (a *Actor) IsStarving() bool {
-	return a.statusFlags.Get(foundation.FlagHunger) > 1
-}
-
-func (a *Actor) Satiate() {
-	a.statusFlags.Unset(foundation.FlagHunger)
-	a.statusFlags.Unset(foundation.FlagTurnsSinceEating)
 }
 
 func (a *Actor) SetSleeping() {
@@ -803,6 +857,9 @@ func (a *Actor) TimeNeededForActions() int {
 	if a.IsCrippled(d100.Eyes) {
 		speed = max(1, speed-1)
 	}
+	if a.HasFlag(foundation.FlagKnockedDown) {
+		return speed / 2
+	}
 	speed = max(1, speed-a.GetEncumbrance())
 	timeNeeded := 100 / speed
 	return timeNeeded
@@ -812,16 +869,30 @@ func (a *Actor) SpendTimeEnergy(amount int) {
 	a.timeEnergy -= amount
 }
 
-func (a *Actor) AfterTurn() []string {
+func (a *Actor) AfterTurn() []foundation.HiLiteString {
 	a.GetEquipment().AfterTurn()
 	a.decrementStatusEffectCounters()
+
 	wornOff := a.decrementTemporaryStatChanges()
+
 	if a.HasFlag(foundation.FlagRunning) {
 		sheet := a.GetCharSheet()
 		if sheet.GetActionPoints() > 0 {
 			sheet.LooseActionPoints(1)
 		} else {
 			a.UnsetFlag(foundation.FlagRunning)
+			wornOff = append(wornOff, foundation.HiLite("You are no longer running."))
+		}
+	}
+
+	if a.IsCyberWareActive(CyberWareThermopticCamouflage) {
+		sheet := a.GetCharSheet()
+		if sheet.GetActionPoints() > 0 {
+			sheet.LooseActionPoints(1)
+		} else {
+			a.SetCyberWareActive(CyberWareThermopticCamouflage, false)
+			a.GetFlags().Unset(foundation.FlagActiveCamouflage)
+			wornOff = append(wornOff, foundation.HiLite("Your thermoptic camouflage has been disabled."))
 		}
 	}
 	return wornOff
@@ -837,13 +908,13 @@ func (a *Actor) decrementStatusEffectCounters() {
 	flags.Decrement(foundation.FlagHallucinating)
 }
 
-func (a *Actor) decrementTemporaryStatChanges() []string {
-	var wornOffEffects []string
+func (a *Actor) decrementTemporaryStatChanges() []foundation.HiLiteString {
+	var wornOffEffects []foundation.HiLiteString
 	for i := len(a.temporaryStatChanges) - 1; i >= 0; i-- {
 		statChange := a.temporaryStatChanges[i]
 		statChange.TurnsLeft--
-		if statChange.TurnsLeft <= 0 {
-			wornOffEffects = append(wornOffEffects, statChange.Name)
+		if statChange.TurnsLeft < 0 {
+			wornOffEffects = append(wornOffEffects, foundation.HiLite("%s has worn off.", statChange.Name))
 			a.temporaryStatChanges = append(a.temporaryStatChanges[:i], a.temporaryStatChanges[i+1:]...)
 		}
 	}
@@ -1027,45 +1098,58 @@ func (a *Actor) LookInfo() string {
 		displayName = fmt.Sprintf("%s (%s)", a.Name(), a.injuredString())
 	}
 
-	return a.ActionDescription(displayName) + "\n" + a.OutfitDescription()
+	return displayName + "\n" + a.ActionDescription() + "\n" + a.OutfitDescription()
 }
 
-func (a *Actor) ActionDescription(displayName string) string {
+func (a *Actor) ActionDescription() string {
+	action := "just standing there"
 	if a.HasActiveGoal() {
-		return a.activeGoal.Description(displayName)
+		action = a.activeGoal.Description()
 	}
 	if a.schedule != nil && a.schedule.LastSlotID.Index != -1 {
-		return a.schedule.CurrentTimeSlot().Description(displayName)
+		action = a.schedule.CurrentTimeSlot().Description()
 	}
-	return fmt.Sprintf("%s is standing there", displayName)
+	// Activity
+	// Clothing
+	// Equipped
+	return fmt.Sprintf("Activity: [white]%s[-]", action)
 }
 
 func (a *Actor) OutfitDescription() string {
 	armor := a.GetEquipment().GetArmor()
 	helmet := a.GetEquipment().GetHelmet()
 	clothes := ""
+	hasClothes := true
 	if armor == nil && helmet == nil {
-		clothes = fmt.Sprintf("%s is not wearing anything", a.Name())
+		clothes = fmt.Sprintf("nothing")
+		hasClothes = false
+	} else if armor != nil && helmet != nil {
+		clothes = fmt.Sprintf("%s and %s", armor.Name(), helmet.Name())
+	} else if armor != nil && helmet == nil {
+		clothes = fmt.Sprintf("%s", armor.Name())
+	} else if helmet != nil && armor == nil {
+		clothes = fmt.Sprintf("%s", helmet.Name())
 	}
-	if armor != nil && helmet != nil {
-		clothes = fmt.Sprintf("%s is wearing %s and %s", a.Name(), armor.Name(), helmet.Name())
+	outFitStyle := foundation.FashionStyleLowLife
+	if hasClothes {
+		outFitStyle = a.OutfitStyle()
 	}
-	if armor != nil {
-		clothes = fmt.Sprintf("%s is wearing %s", a.Name(), armor.Name())
-	}
-	if helmet != nil {
-		clothes = fmt.Sprintf("%s is wearing %s", a.Name(), helmet.Name())
-	}
+
+	clothes = fmt.Sprintf("%s (%s)", clothes, outFitStyle.String())
 
 	hands := ""
 	item, hasItem := a.GetEquipment().GetMainHandItem()
+
 	if hasItem {
-		hands = fmt.Sprintf("%s is holding %s", a.Name(), item.Name())
+		hands = fmt.Sprintf("%s", item.Name())
 	} else {
-		hands = fmt.Sprintf("%s is not holding anything", a.Name())
+		if a.IsOpenCarryWeapon() {
+			return fmt.Sprintf("Clothing: [white]%s[-]\nCarrying: [white]weapons[-]", clothes)
+		}
+		return fmt.Sprintf("Clothing: [white]%s[-]", clothes)
 	}
 
-	return fmt.Sprintf("%s\n%s", clothes, hands)
+	return fmt.Sprintf("Clothing: [white]%s[-]\nEquipped: [white]%s[-]", clothes, hands)
 }
 
 func (a *Actor) HasDialogue() bool {
@@ -1224,7 +1308,6 @@ func (a *Actor) getMoveTowardsActor(g *GameState, other *Actor) geometry.Point {
 		}
 	}
 	a.currentPathBlockedCount = 0
-	a.currentPathIndex++
 	return nextStep
 }
 
@@ -1329,9 +1412,59 @@ func (a *Actor) GetTemporarySkillModifiers(skill d100.Skill) []d100.Modifier {
 			})
 		}
 	}
+
+	if skill == d100.SkillForSneak && a.HasFlag(foundation.FlagActiveCamouflage) {
+		result = append(result, d100.DefaultModifier{
+			Source:    "Active Camouflage",
+			Modifier:  75,
+			Order:     1,
+			IsPercent: true,
+		})
+	}
+
+	if skill == d100.SkillForSmoothTalking {
+		debuff := 0
+		if a.HasFlag(foundation.FlagHunger) {
+			debuff = -10
+		} else if a.HasFlag(foundation.FlagStarving) {
+			debuff = -20
+		}
+		if debuff != 0 {
+			result = append(result, d100.DefaultModifier{
+				Source:    "Hunger",
+				Modifier:  debuff,
+				Order:     1,
+				IsPercent: true,
+			})
+		}
+	}
+
 	return result
 }
+func (a *Actor) attachHooksToActor() {
+	equipment := a.GetEquipment()
 
+	a.GetCharSheet().SetSkillModifierHandler(func(skill d100.Skill) []d100.Modifier {
+		modsFromItems := a.GetInventory().GetSkillModifiersFromItems(skill)
+		modsFromEquipment := equipment.GetSkillModifiersFromEquippedItems(skill)
+		modsFromActiveEffects := a.GetTemporarySkillModifiers(skill)
+		return append(append(modsFromItems, modsFromEquipment...), modsFromActiveEffects...)
+	})
+
+	a.GetCharSheet().SetStatModifierHandler(func(stat d100.Stat) []d100.Modifier {
+		modsFromItems := a.GetInventory().GetStatModifiersFromItems(stat)
+		modsFromEquipment := equipment.GetStatModifiersFromEquippedItems(stat)
+		modsFromActiveEffects := a.GetTemporaryStatModifiers(stat)
+		return append(append(modsFromItems, modsFromEquipment...), modsFromActiveEffects...)
+	})
+
+	a.GetCharSheet().SetDerivedStatModifierHandler(func(stat d100.DerivedStat) []d100.Modifier {
+		modsFromItems := a.GetInventory().GetDerivedStatModifiersFromItems(stat)
+		modsFromEquipment := equipment.GetDerivedStatModifiersFromEquippedItems(stat)
+		modsFromActiveEffects := a.GetTemporaryDerivedStatModifiers(stat)
+		return append(append(modsFromItems, modsFromEquipment...), modsFromActiveEffects...)
+	})
+}
 func (a *Actor) GetTemporaryStatModifiers(stat d100.Stat) []d100.Modifier {
 	var result []d100.Modifier
 	for _, statChange := range a.temporaryStatChanges {
@@ -1341,6 +1474,23 @@ func (a *Actor) GetTemporaryStatModifiers(stat d100.Stat) []d100.Modifier {
 				Modifier: value,
 				Order:    1,
 				Suffix:   fmt.Sprintf("(%d turns left)", statChange.TurnsLeft),
+			})
+		}
+	}
+
+	if stat == d100.Strength {
+		debuff := 0
+		if a.HasFlag(foundation.FlagHunger) {
+			debuff = -1
+		} else if a.HasFlag(foundation.FlagStarving) {
+			debuff = -2
+		}
+		if debuff != 0 {
+			result = append(result, d100.DefaultModifier{
+				Source:    "Hunger",
+				Modifier:  debuff,
+				Order:     1,
+				IsPercent: false,
 			})
 		}
 	}
@@ -1437,7 +1587,12 @@ func (a *Actor) MoveToNextTimeSlot(time time.Time) (TimeSlot, bool) {
 
 func (a *Actor) appendStateInfo(result []string) []string {
 	fsmState := a.FSM.currentBehavior.AssociatedState().ToString()
-	goal := a.activeGoal.Description(a.name)
+	goal := a.activeGoal.Description()
+	schedule := "none"
+	if a.schedule != nil {
+		schedule = a.schedule.String()
+	}
+	result = append(result, fmt.Sprintf("Schedule: %s", schedule))
 	result = append(result, fmt.Sprintf("State: %s", fsmState))
 	result = append(result, fmt.Sprintf("Goal: %s", goal))
 	return result
@@ -1467,6 +1622,59 @@ func (a *Actor) GetPerkLevel(perk d100.Perk) int {
 	return a.charSheet.GetPerkLevel(perk)
 }
 
+func (a *Actor) IsGuarding(zone string) bool {
+	if a.GuardingZone == "" || zone == "" {
+		return false
+	}
+	return a.GuardingZone == zone
+}
+
+func (a *Actor) CanDetect(pos geometry.Point) bool {
+	return geometry.Distance(a.Position(), pos) <= float64(a.DetectionRange())
+}
+
+func (a *Actor) OutfitStyle() foundation.FashionStyle {
+	armor := a.GetEquipment().GetArmor()
+	helmet := a.GetEquipment().GetHelmet()
+	if armor == nil { // naked == low life
+		return foundation.FashionStyleLowLife
+	}
+	if helmet == nil {
+		return armor.fashionStyle
+	}
+
+	if armor.fashionStyle == helmet.fashionStyle {
+		return armor.fashionStyle
+	}
+
+	return min(armor.fashionStyle, helmet.fashionStyle)
+}
+
+func (a *Actor) GetArmorString() string {
+	if !a.GetEquipment().HasArmorEquipped() {
+		return fmt.Sprintf("no clothes (low-life)")
+	}
+	armor := a.GetEquipment().GetArmor()
+	return fmt.Sprintf("%s (%s)", armor.InventoryName(), a.OutfitStyle().String())
+}
+
+func (a *Actor) HasActionPoints() bool {
+	return a.GetCharSheet().GetActionPoints() > 0
+}
+
+func (a *Actor) IsIdle() bool {
+	idleState := a.FSM.State() == fsmai.StateNeutral || a.FSM.State() == fsmai.StateAggressive
+	noGoal := !a.HasActiveGoal()
+	return idleState && noGoal
+}
+
+func (a *Actor) HasWatch() bool {
+	if a.HasCyberWare(CyberWareClock) {
+		return true
+	}
+	return a.GetInventory().HasWatch()
+}
+
 type StatChange struct {
 	StatChanges        map[d100.Stat]int
 	SkillChanges       map[d100.Skill]int
@@ -1480,22 +1688,22 @@ type TemporaryStatChange struct {
 }
 
 type ActorGoal struct {
-	Action             func(g *GameState, a *Actor) (fsmai.TransitionEvent, int)
-	Achieved           func(g *GameState, a *Actor) bool
-	ActionFormatString string
-	IsCombat           bool
-	IsCombatTarget     func(attacker *Actor) bool
+	Action            func(g *GameState, a *Actor) (fsmai.TransitionEvent, int)
+	Achieved          func(g *GameState, a *Actor) bool
+	ActionDescription string
+	IsCombat          bool
+	IsCombatTarget    func(attacker *Actor) bool
 }
 
 func (g ActorGoal) IsEmpty() bool {
 	return g.Action == nil && g.Achieved == nil
 }
 
-func (g ActorGoal) Description(actorName string) string {
+func (g ActorGoal) Description() string {
 	if g.IsEmpty() {
 		return "no goal"
 	}
-	return fmt.Sprintf(g.ActionFormatString, actorName)
+	return g.ActionDescription
 }
 
 func (g ActorGoal) IsCombatGoal() bool {
@@ -1513,12 +1721,12 @@ func GoalMoveToSpawn() ActorGoal {
 	return ActorGoal{
 		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
 			targetPos := a.SpawnPosition
-			return moveTowards(g, a, targetPos)
+			return walkTowards(g, a, targetPos)
 		},
 		Achieved: func(g *GameState, a *Actor) bool {
 			return a.Position() == a.SpawnPosition
 		},
-		ActionFormatString: "%s is moving",
+		ActionDescription: "moving",
 	}
 }
 
@@ -1530,9 +1738,9 @@ func GoalMoveIntoShootingRange(target *Actor) ActorGoal {
 		Achieved: func(g *GameState, a *Actor) bool {
 			return g.IsInShootingRange(a, target)
 		},
-		ActionFormatString: "%s is moving aggressively",
-		IsCombat:           true,
-		IsCombatTarget:     IsActor(target),
+		ActionDescription: "moving aggressively",
+		IsCombat:          true,
+		IsCombatTarget:    IsActor(target),
 	}
 }
 
@@ -1548,7 +1756,7 @@ func GoalFleeFromActor(actor *Actor, threat *Actor) ActorGoal {
 		Achieved: func(g *GameState, a *Actor) bool {
 			return !threat.IsAlive() || !actor.IsAlive()
 		},
-		ActionFormatString: "%s is fleeing",
+		ActionDescription: "fleeing",
 	}
 }
 
@@ -1560,20 +1768,48 @@ func GoalKillActor(attacker *Actor, victim *Actor) ActorGoal {
 		Achieved: func(g *GameState, a *Actor) bool {
 			return !victim.IsAlive() || !attacker.IsAlive()
 		},
-		ActionFormatString: "%s is attacking",
-		IsCombat:           true,
-		IsCombatTarget:     IsActor(victim),
+		ActionDescription: "attacking",
+		IsCombat:          true,
+		IsCombatTarget:    IsActor(victim),
 	}
 }
 
-func GoalMoveToLocation(loc geometry.Point) ActorGoal {
+func GoalWalkToLocation(loc geometry.Point) ActorGoal {
 	return ActorGoal{
 		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
-			return moveTowards(g, a, loc)
+			return walkTowards(g, a, loc)
 		},
 		Achieved: func(g *GameState, a *Actor) bool {
 			return a.Position() == loc
 		},
-		ActionFormatString: "%s is moving",
+		ActionDescription: "walking",
+	}
+}
+
+func GoalStrideToLocation(loc geometry.Point) ActorGoal {
+	return ActorGoal{
+		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
+			return strideTowards(g, a, loc)
+		},
+		Achieved: func(g *GameState, a *Actor) bool {
+			return a.Position() == loc
+		},
+		ActionDescription: "striding",
+	}
+}
+
+func GoalSleepAt(loc geometry.Point) ActorGoal {
+	return ActorGoal{
+		Action: func(g *GameState, a *Actor) (fsmai.TransitionEvent, int) {
+			if a.Position() == loc {
+				a.SetSleeping()
+				return fsmai.NoEvent, 10
+			}
+			return strideTowards(g, a, loc)
+		},
+		Achieved: func(g *GameState, a *Actor) bool {
+			return a.Position() == loc && a.IsSleeping()
+		},
+		ActionDescription: "going to bed",
 	}
 }

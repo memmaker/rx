@@ -19,7 +19,7 @@ ActionPoints: 4
 aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 Position: (24,18)
 
 Name: dr_winters
@@ -40,10 +40,10 @@ HitPoints: 20
 dodge: 5
 ActionPoints: 4
 aggressive: false
-SkillBonusSmallGuns: 20
+SkillBonusRangedCombat: 20
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 equipment: key('doc_offices','Dr. Winters keys')
 Position: (45,5)
 
@@ -64,11 +64,11 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-SkillBonusSmallGuns: 30
+SkillBonusRangedCombat: 30
 aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 Position: (33,14)
 
 Name: town_son_santiago
@@ -87,11 +87,11 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-SkillBonusSmallGuns: 20
+SkillBonusRangedCombat: 20
 aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 Position: (9,17)
 
 Name: mother_metal
@@ -110,11 +110,11 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-SkillBonusSmallGuns: 30
+SkillBonusRangedCombat: 30
 aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 Position: (72,16)
 
 Name: town_sunshine
@@ -133,11 +133,11 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-SkillBonusSmallGuns: 25
+SkillBonusRangedCombat: 25
 aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 Position: (73,14)
 
 Name: town_jeff
@@ -156,11 +156,11 @@ luck: 5
 HitPoints: 20
 dodge: 5
 ActionPoints: 4
-SkillBonusSmallGuns: 25
+SkillBonusRangedCombat: 25
 aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 Position: (48,17)
 
 Name: town_lucy
@@ -182,6 +182,6 @@ ActionPoints: 4
 aggressive: false
 equipment: 10mm_pistol
 equipment: 10mm_jhp
-equipment: stimpak
+equipment: binge
 Position: (51,5)
 

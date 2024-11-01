@@ -2,6 +2,7 @@ package foundation
 
 import (
 	"RogueUI/d100"
+	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
@@ -15,6 +16,7 @@ type Readable interface {
 	GetSkillBookValues() (d100.Skill, int)
 	GetTextFile() string
 	GetText() string
+	TextVariables(funcs map[string]govaluate.ExpressionFunction) map[string]string
 }
 
 type Usable interface {
@@ -139,6 +141,7 @@ type Item interface {
 	GetSkillBookValues() (d100.Skill, int)
 	GetTextFile() string
 	GetText() string
+	TextVariables(funcs map[string]govaluate.ExpressionFunction) map[string]string
 	SetAlive(isAlive bool)
 	GetStatMod(stat d100.Stat) (int, bool)
 	GetSkillMod(skill d100.Skill) (int, bool)
@@ -152,6 +155,7 @@ type Item interface {
 	SetStackSize(count int)
 	Price() int
 	RemoveStacks(amount int)
+	IsGold() bool
 }
 
 type ItemCategory int
@@ -159,25 +163,25 @@ type ItemCategory int
 func (c ItemCategory) String() string {
 	switch c {
 	case ItemCategoryGold:
-		return "Gold"
+		return "Cash"
 	case ItemCategoryFood:
 		return "Food"
 	case ItemCategoryWeapons:
-		return "Weapons"
+		return "Weapon"
 	case ItemCategoryArmor:
 		return "Armor"
 	case ItemCategoryAmmo:
 		return "Ammo"
 	case ItemCategoryReadables:
-		return "Books"
+		return "Book"
 	case ItemCategoryLockpicks:
-		return "Lockpicks"
+		return "Lockpick"
 	case ItemCategoryConsumables:
-		return "Consumables"
+		return "Consumable"
 	case ItemCategoryHeadgear:
 		return "Headgear"
 	case ItemCategoryKeys:
-		return "Keys"
+		return "Key"
 	case ItemCategoryOther:
 		return "Other"
 	}

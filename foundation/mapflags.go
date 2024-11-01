@@ -22,29 +22,36 @@ const (
 	FlagRunning
 	FlagSneaking
 	FlagHeld
+	FlagOpenCarry
 
 	FlagCancel
 
 	FlagBlind
 	FlagConfused
-	FlagInvisible
+	FlagActiveCamouflage
 	FlagCurseStuck
 	FlagHallucinating
 	FlagKnockedDown
+	FlagUnconscious
+	FlagIgnoresCrime
+	FlagDistracted
 
 	// Bookkeeping Flags
 	FlagHunger
+	FlagStarving
 	FlagTurnsSinceEating
 	FlagConcentratedAiming
 	FlagTurnsSinceLastIdleChatter
+	FlagMinorCrimeWarningsGiven
+	FlagWantsToTransition
 
 	// Permanent Status Flags
 	FlagZombie
 	FlagAnimal
+	FlagRobot
 	FlagChase
 
 	// Perks
-
 	FlagSlowDigestion
 	FlagSeeFood
 	FlagSeeMonsters
@@ -62,6 +69,8 @@ func (f ActorFlag) String() string { // Nice strings for display
 		return "Sleep"
 	case FlagHunger:
 		return "Hunger"
+	case FlagStarving:
+		return "Starving"
 	case FlagStun:
 		return "Stun"
 	case FlagSlow:
@@ -82,8 +91,8 @@ func (f ActorFlag) String() string { // Nice strings for display
 		return "Blind"
 	case FlagConfused:
 		return "Confused"
-	case FlagInvisible:
-		return "Invisible"
+	case FlagActiveCamouflage:
+		return "Active Camouflage"
 	case FlagSeeFood:
 		return "See Food"
 	case FlagSeeMonsters:
@@ -122,7 +131,10 @@ func (f ActorFlag) String() string { // Nice strings for display
 		return "Count"
 	case FlagSneaking:
 		return "Sneaking"
-
+	case FlagIgnoresCrime:
+		return "Ignores Crime"
+	case FlagOpenCarry:
+		return "Open Carry"
 	}
 	return "Unknown"
 }
@@ -133,6 +145,8 @@ func (f ActorFlag) StringShort() string { // short abbreviated strings (2-3 lett
 		return "Slp"
 	case FlagHunger:
 		return "Hng"
+	case FlagStarving:
+		return "Sta"
 	case FlagStun:
 		return "Stn"
 	case FlagSlow:
@@ -155,8 +169,8 @@ func (f ActorFlag) StringShort() string { // short abbreviated strings (2-3 lett
 		return "Bld"
 	case FlagConfused:
 		return "Cnf"
-	case FlagInvisible:
-		return "Inv"
+	case FlagActiveCamouflage:
+		return "ACm"
 	case FlagSeeFood:
 		return "SFd"
 	case FlagSeeMonsters:
@@ -185,6 +199,12 @@ func (f ActorFlag) StringShort() string { // short abbreviated strings (2-3 lett
 		return "CAm"
 	case FlagSneaking:
 		return "Sne"
+	case FlagOpenCarry:
+		return "OCr"
+	case FlagIgnoresCrime:
+		return "IgC"
+	case FlagRobot:
+		return "Rbt"
 	}
 	return "Unk"
 
@@ -195,6 +215,8 @@ func (f ActorFlag) ShowInHud() bool {
 	case FlagSleep:
 		return true
 	case FlagHunger:
+		return true
+	case FlagStarving:
 		return true
 	case FlagStun:
 		return true
@@ -216,7 +238,7 @@ func (f ActorFlag) ShowInHud() bool {
 		return true
 	case FlagConfused:
 		return true
-	case FlagInvisible:
+	case FlagActiveCamouflage:
 		return true
 	case FlagSeeFood:
 		return true
@@ -246,6 +268,8 @@ func (f ActorFlag) ShowInHud() bool {
 		return true
 	case FlagConcentratedAiming:
 		return true
+	case FlagOpenCarry:
+		return true
 	}
 	return false
 }
@@ -257,6 +281,8 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagSleep
 	case "hunger":
 		return FlagHunger
+	case "starving":
+		return FlagStarving
 	case "stun":
 		return FlagStun
 	case "slow":
@@ -280,7 +306,7 @@ func ActorFlagFromString(flag string) ActorFlag {
 	case "confused":
 		return FlagConfused
 	case "invisible":
-		return FlagInvisible
+		return FlagActiveCamouflage
 	case "see_food":
 		return FlagSeeFood
 	case "see_monsters":
@@ -303,8 +329,12 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagKnockedDown
 	case "is_zombie":
 		return FlagZombie
+	case "ignores_crime":
+		return FlagIgnoresCrime
 	case "is_animal":
 		return FlagAnimal
+	case "is_robot":
+		return FlagRobot
 	case "concentrated_aiming":
 		return FlagConcentratedAiming
 	case "running":

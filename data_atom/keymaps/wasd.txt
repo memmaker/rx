@@ -29,7 +29,7 @@ c -> character
 l -> log
 j -> journal
 t -> tactics
-z -> rest
+z -> wait_menu
 
 ? -> open_pip_boy
 

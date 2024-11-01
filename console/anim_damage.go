@@ -117,8 +117,10 @@ func (d *DamageAnimation) NextFrame() {
 	if d.ticksLeft > 0 {
 		d.ticksLeft--
 	}
-	for i := 0; i < d.bloodPerTick; i++ {
-		d.makeBloody(d.pos)
+	if d.ticksLeft%2 == 0 {
+		for i := 0; i < d.bloodPerTick; i++ {
+			d.makeBloody(d.pos)
+		}
 	}
 	if d.ticksLeft == 0 {
 		d.onFinishedOrCancelled()

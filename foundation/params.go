@@ -75,3 +75,10 @@ func (p Params) GetDamageOrDefault(defaultDamage int) int {
 func (p Params) HasDamage() bool {
 	return p.Has("damage") || p.Has("damage_interval")
 }
+
+func (p Params) WithCritical() Params {
+	if !p.Has("critical") {
+		p["critical"] = true
+	}
+	return p
+}

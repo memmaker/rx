@@ -1,38 +1,44 @@
-Description: stimpak
-Name: stimpak
+Description: Binge
+Name: binge
 Category: food
 use_effect: satiate_fully
+cost: 250
 
-Description: heavy stimpak
-Name: heavy_stimpak
+Description: Super Binge
+Name: super_binge
 Category: food
 use_effect: satiate_fully
+cost: 450
 
-Description: Med-X
-Name: med_x
+Description: Butch
+Name: butch
 Category: consumables
 derived_stat_bonus: damage_resistance(25)
 charges: 10
+cost: 150
 
-Description: Mentats
-Name: mentats
+Description: Brainz
+Name: brainz
 Category: consumables
 stat_bonus: intelligence(2)
 stat_bonus: perception(2)
 stat_bonus: charisma(1)
 charges: 5
+cost: 200
 
-Description: Buffout
-Name: buffout
+Description: Buff
+Name: buff
 Category: consumables
 stat_bonus: strength(2)
 stat_bonus: endurance(2)
 derived_stat_bonus: hitpoints(25)
 charges: 5
+cost: 100
 
-Description: Jet
-Name: jet
+Description: Boost
+Name: boost
 Category: consumables
 derived_stat_bonus: speed(20)
 derived_stat_bonus: action_points(5)
 charges: 5
+cost: 700

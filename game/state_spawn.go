@@ -29,6 +29,8 @@ func (g *GameState) NewObjectFromRecord(record recfile.Record, palette textiles.
 		return g.NewTrap(record)
 	case "terminal":
 		return g.NewTerminal(record)
+	case "bed":
+		return g.NewBed(record)
 	case "readable":
 		return g.NewReadable(record)
 	case "lockeddoor":

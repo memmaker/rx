@@ -14,6 +14,7 @@ ammo_dt_modifier: -25
 ammo_rounds_in_magazine: 1
 ammo_caliber_index: 1
 ammo_caliber_name: Rocket
+ammo_short: Exp
 
 Name: 10mm_jhp
 Description: 10mm JHP
@@ -28,6 +29,7 @@ ammo_spread_factor: 1
 ammo_rounds_in_magazine: 24
 ammo_caliber_index: 8
 ammo_caliber_name: 10mm
+ammo_short: JHP
 
 Name: 10mm_ap
 Description: 10mm AP
@@ -43,6 +45,7 @@ ammo_dt_modifier: -25
 ammo_rounds_in_magazine: 24
 ammo_caliber_index: 8
 ammo_caliber_name: 10mm
+ammo_short: AP
 
 Name: 44_magnum_jhp
 Description: .44 Magnum JHP
@@ -57,6 +60,7 @@ ammo_spread_factor: 1
 ammo_rounds_in_magazine: 20
 ammo_caliber_index: 9
 ammo_caliber_name: .44 cal
+ammo_short: JHP
 
 Name: flamethrower_fuel
 Description: Flamethrower Fuel
@@ -367,3 +371,14 @@ ammo_caliber_index: 2
 ammo_caliber_name: Flamethrower Fuel
 ammo_bonus_radius: 0
 
+Name: medical_dart
+Description: Medical Dart
+LongDescription: A small dart filled with a medical compound. Used in dart guns.
+Category: Ammo
+Weight: 1
+Cost: 250
+ammo_dmg_factor: 1.0
+ammo_condition_factor: 1.0
+ammo_rounds_in_magazine: 10
+ammo_caliber_index: 19
+ammo_caliber_name: Dart

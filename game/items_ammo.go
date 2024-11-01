@@ -18,6 +18,7 @@ type Ammo struct {
 	BonusRadius                     int
 	RoundsInMagazine                int
 	CaliberIndex                    int
+	ShortIdentifier                 string
 }
 
 func (i *Ammo) IsAmmo() bool {
@@ -106,6 +107,9 @@ func (i *Ammo) FullDescription(colorCode string) string {
 
 	lines := fxtools.TableLayout(basicRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
 	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+
+	lines = i.appendText(lines)
+
 	return strings.Join(lines, "\n")
 }
 

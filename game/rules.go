@@ -25,7 +25,7 @@ func CanPerceive(observer *Actor, observed *Actor) bool {
 
 func loadD100Rules(definitionDirectory string) {
 	rulesFile := path.Join(definitionDirectory, "rules.rec")
-	rulesRecords := recfile.ReadMulti(fxtools.MustOpen(rulesFile))
+	rulesRecords := recfile.ReadMultiAndClose(fxtools.MustOpen(rulesFile))
 
 	// Skill Definitions are mandatory
 	skillDefs := rulesRecords["Skills"]
@@ -55,7 +55,7 @@ func loadD100Rules(definitionDirectory string) {
 		d100.SuccessChanceCap = globalRules.GetIntOrDefault("SuccessChanceCap", 95)
 		d100.LockStrengthReductionPerSkill = globalRules.GetFloatOrDefault("LockStrengthReductionPerSkill", 0.375)
 
-		maxArmorDR = globalRules.GetIntOrDefault("MaxArmorDR", 85)
+		maxArmorDR = globalRules.GetIntOrDefault("MaxArmorDR", 25)
 		maxArmorDT = globalRules.GetIntOrDefault("MaxArmorDT", 30)
 		ablationWithoutPenetration = globalRules.GetIntOrDefault("AblationWithoutPenetration", 1)
 		ablationWithPenetration = globalRules.GetIntOrDefault("AblationWithPenetration", 2)

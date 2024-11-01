@@ -6,12 +6,6 @@ Description: a door
 Category: ClosedDoor
 Description: a door
 
-Name: frag_mine
-Category: Trap
-Description: a frag-mine
-ZapEffect: explode
-IsHidden: false
-TriggerOnProximity: true
 
 Category: LockedDoor
 Description: a door
@@ -19,6 +13,17 @@ LockFlag: CHANGEME
 
 Category: BrokenDoor
 Description: a broken door
+
+Name: frag_mine
+Category: Trap
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
 
 Category: PushBox
 Description: a box
@@ -35,6 +40,7 @@ Description: a terminal
 Dialogue: CHANGEME
 
 Name: Taxi
+IconOverride: Taxi
 Category: Terminal
 Description: a taxi
 Dialogue: taxi
@@ -60,16 +66,28 @@ Identifier: CHANGEME
 Category: BakedLight
 Radius: 5
 Color: (1.0, 1.0, 1.0)
+Max_Intensity: 2.0
+
+Name: RedLight
+Category: BakedLight
+Radius: 2
+Color: (3.0, 0.0, 0.0)
 Max_Intensity: 1.0
 
-Name: MetalSign
+Name: BlueLight
+Category: BakedLight
+Radius: 2
+Color: (0.1, 0.1, 5.0)
+Max_Intensity: 1.0
+
 Category: Readable
+IconOverride: MetalSign
 Description: a sign
 Text: CHANGEME
 TextFile: CHANGEME
 
-Name: WoodenSign
 Category: Readable
+IconOverride: WoodenSign
 Description: a sign
 Text: CHANGEME
 TextFile: CHANGEME

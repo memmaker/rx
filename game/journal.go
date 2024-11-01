@@ -156,13 +156,12 @@ type Journal struct {
 // NewJournal Is used during initialization of the game state.
 func NewJournal(io io.ReadCloser, fMap map[string]govaluate.ExpressionFunction) *Journal {
 	j := &Journal{quests: make(map[string][]*Quest)}
-	j.AddEntriesFromSource("default", io, fMap)
-	io.Close()
+	records := recfile.ReadAndClose(io)
+	j.AddEntriesFromSource("default", records, fMap)
 	return j
 }
 
-func (j *Journal) AddEntriesFromSource(context string, reader io.Reader, fMap map[string]govaluate.ExpressionFunction) {
-	records := recfile.Read(reader)
+func (j *Journal) AddEntriesFromSource(context string, records []recfile.Record, fMap map[string]govaluate.ExpressionFunction) {
 	for _, record := range records {
 		entry := NewQuestFromRecord(record, fMap)
 		j.quests[context] = append(j.quests[context], entry)

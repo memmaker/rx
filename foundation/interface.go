@@ -12,8 +12,7 @@ import (
 // Actions that the User Interface can trigger on the game
 type GameForUI interface {
 	// init
-	UIRunning()
-	UIReady()
+	UIReady(ui GameUI)
 
 	SetIronMan()
 	IsIronMan() bool
@@ -53,8 +52,9 @@ type GameForUI interface {
 	OpenContextMenuForItem(item Item, done func())
 
 	OpenTacticsMenu()
+	OpenCyberWareMenu()
 	OpenJournal()
-	OpenRestMenu()
+	OpenWaitMenu()
 	OpenPerkSelection(done func())
 	ShowDateTime()
 
@@ -62,18 +62,23 @@ type GameForUI interface {
 	SaveGame(toDir string)
 
 	// State Queries
+	Palette() textiles.ColorPalette
+	InventoryColors() map[ItemCategory]color.RGBA
 	IsPlayerAndMapInitialized() bool
 	GetPlayerName() string
+	PlayerGold() int
 	GetPlayerCharSheet() *d100.CharSheet
 	GetPlayerPosition() geometry.Point
 	GetCharacterSheet() string
 	IsPlayerOverEncumbered() bool
 
+	TurnCount() int
+
 	CanActorAttackNextTurn(enemy ActorForUI) bool
 
 	GetBodyPartsAndHitChances(targeted ActorForUI) []fxtools.Tuple3[d100.BodyPart, bool, int]
 
-	GetHudStats() map[HudValue]int
+	GetHudStats() HudValueMap
 	GetHudFlags() map[ActorFlag]int
 	GetMapInfo(pos geometry.Point) HiLiteString
 	LightAt(p geometry.Point) fxtools.HDRColor
@@ -177,27 +182,25 @@ type GameUI interface {
 	// Menus / Modals / Windows
 	OpenInventoryForManagement(stack []Item)
 	OpenInventoryForSelection(stack []Item, prompt string, onSelected func(item Item))
+	OpenInventoryForSelectionWithClose(stack []Item, prompt string, onSelected func(item Item), done func())
 	OpenTextWindow(description string)
 	ShowTextFileFullscreen(filename string, onClose func())
 	OpenMenu(actions []MenuItem)
 	OpenMenuWithTitle(title string, actions []MenuItem)
+	OpenMenuWithTitleAndClose(title string, actions []MenuItem, onClose func())
 	OpenKeypad(specialAction string, correctSequence []rune, onSpecialAction func() bool, onCompletion func(success bool))
-	OpenVendorMenu(title string, itemsForSale []Item, buyItem func(ui Item, price int), onClose func())
+	OpenVendorMenu(title string, itemsForSale []Item, buyItem func(ui Item, amount int, price int), inspect func(item Item), onClose func())
 	ShowGameOver(score ScoreInfo, highScores []ScoreInfo)
 	ShowTakeOnlyContainer(name string, containedItems []Item, transfer func(ui Item))
 	ShowGiveAndTakeContainer(leftName string, leftItems []Item, rightName string, rightItems []Item, transferToLeft func(itemTaken Item, amount int), transferToRight func(itemTaken Item, amount int), takeAll func())
 	OpenAimedShotPicker(actorAt ActorForUI, previousAim d100.BodyPart, onSelected func(victim ActorForUI, hitZone d100.BodyPart))
 
-	SaveGame()
-	LoadGame()
+	SelectSaveName()
+	SelectLoadName()
 	// Auto Move Callback
 	AfterPlayerMoved(moveInfo MoveInfo)
 
 	// Animations
-
-	// AddAnimations takes a list of list of animations.
-	// Each list contains animations that should be played in parallel.
-	// The lists are played in order.
 	AddAnimations(animations []Animation)
 	AnimatePending() (cancelled bool)
 	SkipAnimations()
@@ -318,54 +321,6 @@ func (d Difficulty) String() string {
 		return "very complex"
 	}
 	return "Unknown"
-}
-
-func (d Difficulty) GetRollModifier() int {
-	switch d {
-	case VeryEasy:
-		return 10
-	case Easy:
-		return 5
-	case Medium:
-		return 0
-	case Hard:
-		return -20
-	case VeryHard:
-		return -40
-	}
-	return 0
-}
-
-func (d Difficulty) LockReductionFactor() float64 {
-	switch d {
-	case VeryEasy:
-		return 1.5
-	case Easy:
-		return 1
-	case Medium:
-		return 0.5
-	case Hard:
-		return 0.35
-	case VeryHard:
-		return 0.1
-	}
-	return 1
-}
-
-func (d Difficulty) EPicksNeeded() int {
-	switch d {
-	case VeryEasy:
-		return 10
-	case Easy:
-		return 20
-	case Medium:
-		return 30
-	case Hard:
-		return 40
-	case VeryHard:
-		return 50
-	}
-	return 1
 }
 
 const (

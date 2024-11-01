@@ -1,6 +1,7 @@
 package game
 
 import (
+	"RogueUI/d100"
 	"RogueUI/foundation"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
@@ -34,6 +35,12 @@ func (g *GameState) actorReloadMainHandWeapon(actor *Actor) bool {
 	if !hasItem {
 		if actor == g.Player {
 			g.msg(foundation.Msg("You have no weapon equipped"))
+		}
+		return false
+	}
+	if weaponPart.HasTag(foundation.TagNoReload) {
+		if actor == g.Player {
+			g.msg(foundation.Msg("This weapon cannot be reloaded"))
 		}
 		return false
 	}
@@ -87,7 +94,74 @@ func (g *GameState) PlayerApplySkill() {
 	//TODO implement me
 	panic("implement me")
 }
+func (g *GameState) OpenCyberWareMenu() {
+	var menuItems []foundation.MenuItem
+	for c := CyberWare(0); c < CyberWareCount; c++ {
+		if g.Player.HasCyberWare(c) {
 
+			if c == CyberWareClock { // clock handles its own activation
+				menuItems = append(menuItems, foundation.MenuItem{
+					Name:       fmt.Sprintf("Activate %s", c.String()),
+					Action:     g.printTime,
+					CloseMenus: true,
+				})
+				continue
+			}
+
+			activateCall := func() {
+				g.Player.SetCyberWareActive(c, true)
+				g.msg(foundation.HiLite("You activate %s", c.String()))
+			}
+			deactivateCall := func() {
+				g.Player.SetCyberWareActive(c, false)
+				g.msg(foundation.HiLite("You deactivate %s", c.String()))
+			}
+
+			if c == CyberWareThermopticCamouflage {
+				activateCall = func() {
+					if g.Player.GetCharSheet().GetActionPoints() > 0 {
+						g.Player.GetCharSheet().LooseActionPoints(1)
+						g.Player.SetCyberWareActive(c, true)
+						g.Player.GetFlags().Set(foundation.FlagActiveCamouflage)
+						g.msg(foundation.HiLite("You activate %s", c.String()))
+					} else {
+						g.msg(foundation.Msg("You do not have enough action points"))
+					}
+				}
+				deactivateCall = func() {
+					g.Player.SetCyberWareActive(c, false)
+					g.Player.GetFlags().Unset(foundation.FlagActiveCamouflage)
+					g.msg(foundation.HiLite("You deactivate %s", c.String()))
+				}
+			}
+
+			if g.Player.IsCyberWareActive(c) {
+				menuItems = append(menuItems, foundation.MenuItem{
+					Name: fmt.Sprintf("Deactivate %s", c.String()),
+					Action: func() {
+						deactivateCall()
+						g.OpenCyberWareMenu()
+					},
+					CloseMenus: true,
+				})
+			} else {
+				menuItems = append(menuItems, foundation.MenuItem{
+					Name: fmt.Sprintf("Activate %s", c.String()),
+					Action: func() {
+						activateCall()
+						g.OpenCyberWareMenu()
+					},
+					CloseMenus: true,
+				})
+			}
+		}
+	}
+	if len(menuItems) == 0 {
+		g.ui.OpenTextWindow("You have no cyberware")
+		return
+	}
+	g.ui.OpenMenu(menuItems)
+}
 func (g *GameState) OpenTacticsMenu() {
 	var menuItems []foundation.MenuItem
 	/*
@@ -195,7 +269,9 @@ func (g *GameState) PlayerExamineItem(uiItem foundation.Item) {
 	g.inspectItem(uiItem)
 }
 func (g *GameState) playerUseOrZapItem(item foundation.Item) {
-	if item.IsDrug() {
+	if item.IsLockpick() {
+		g.inspectItem(item)
+	} else if item.IsDrug() {
 		g.actorConsumeDrug(g.Player, item.(*GenericItem))
 	} else if item.IsReadable() {
 		g.playerReadItem(item)
@@ -215,12 +291,43 @@ func (g *GameState) OpenRepairMenu() {
 		return item.NeedsRepair() && item.Quality() < g.Player.GetMaxRepairQuality()
 	})
 	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You have nothing to repair"))
+		g.ui.OpenTextWindow("You have nothing to repair")
 		return
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Repair what?", func(itemStack foundation.Item) {
 		g.playerRepairItem(itemStack)
 	})
+}
+
+func (g *GameState) openNPCRepairMenu(npcVendor *Actor, whenDone func()) {
+	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
+		return item.NeedsRepair() && item.Quality() < npcVendor.GetMaxRepairQuality()
+	})
+	if len(inventory) == 0 {
+		g.ui.OpenTextWindow("You have nothing to repair")
+		return
+	}
+	g.ui.OpenInventoryForSelectionWithClose(inventory, "Repair what?", func(itemStack foundation.Item) {
+		g.actorRepairItem(npcVendor, itemStack)
+	}, whenDone)
+}
+
+func (g *GameState) actorRepairItem(npcVendor *Actor, item foundation.Repairable) {
+	if !item.NeedsRepair() {
+		g.msg(foundation.Msg("You do not need to repair this item"))
+		return
+	}
+
+	firstQuality := item.Quality()
+	secondQuality := d100.Percentage(50)
+
+	newQuality := npcVendor.GetRepairQuality(firstQuality, secondQuality)
+
+	item.SetQuality(newQuality)
+
+	g.msg(foundation.HiLite("%s was repaired to %s", item.Name(), fmt.Sprintf("%d%%", int(newQuality))))
+
+	g.ui.UpdateInventory()
 }
 
 func (g *GameState) playerRepairItem(item foundation.Repairable) {
@@ -273,6 +380,7 @@ func (g *GameState) playerReadItem(item foundation.Readable) {
 		g.advanceTime(2 * time.Duration(time.Hour))
 		g.Player.GetCharSheet().AddSkillPointsTo(skill, increase)
 		g.msg(foundation.HiLite("Your %s skill increased by %s", skill.String(), strconv.Itoa(increase)))
+		g.Player.GetInventory().RemoveItem(item.(foundation.Item))
 		return
 	}
 	var lines string
@@ -283,7 +391,7 @@ func (g *GameState) playerReadItem(item foundation.Readable) {
 		lines = item.GetText()
 	}
 	if len(lines) > 0 {
-		g.ui.OpenTextWindow(g.fillTemplatedText(lines))
+		g.ui.OpenTextWindow(g.fillTemplatedTextCustom(lines, item.TextVariables(g.getScriptFuncs())))
 		return
 	}
 }
@@ -506,7 +614,7 @@ func (g *GameState) OpenAmmoInventory() {
 		return item.IsAmmo()
 	})
 	if len(inventory) == 0 {
-		g.msg(foundation.Msg("You are not carrying anything."))
+		g.msg(foundation.Msg("You are not carrying any ammunition."))
 		return
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Drop what?", func(itemStack foundation.Item) {
@@ -685,7 +793,7 @@ func useEffectExists(effectName string) bool {
 }
 
 func (g *GameState) couldPlayerSeeActor(actor *Actor) bool {
-	if actor.HasFlag(foundation.FlagInvisible) && !g.Player.HasFlag(foundation.FlagSeeInvisible) {
+	if actor.HasFlag(foundation.FlagActiveCamouflage) && !g.Player.HasFlag(foundation.FlagSeeInvisible) {
 		return false
 	}
 

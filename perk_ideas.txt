@@ -1,0 +1,20 @@
+Quick Draw
+ - While you have only one weapon in your inventory, you can issue a quick draw attack that deals 50% more damage.
+ - Starts a combo
+
+Style with Substance
+ - While wearing fashion clothing without any DT, you gain +4 DT.
+ - Any quick draw attack with fashion clothing equipped will deal 100% more damage.
+
+Dodge Bullets
+ - You can activate this perk to dodge bullets while running quickly next to an enemy.
+ - Keeps combo running
+
+Gun Kata
+ - You can activate this perk to shoot at multiple enemies in a single turn, while also gaining 50% dodge chance.
+ - Requires Pistol, Rifle, SMG, or Shotgun equipped.
+ - Requires regular bullets, doesn't work for energy weapons.
+ - Keeps combo running if no heavy hit is sustained.
+
+Reflector
+ - You have a 50% chance to reflect laser beams back to the shooter while wearing metal armor.

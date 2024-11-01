@@ -17,7 +17,7 @@ func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geom
 		"plasma_explode": plasmaExplosion,
 		//"magic_missile":        magicMissile,
 		//"haste_target":         hasteTarget,
-		//"slow_target":          slowTarget,
+		"delayed_sleep_target": delayedSleepTarget,
 		//"teleport_target_away": teleportTargetAway,
 		//"teleport_target_to":   teleportTargetTo,
 		//"cancel_target":        cancelTarget,
@@ -60,7 +60,7 @@ func magicArrow(g *GameState, zapper *Actor, pos geometry.Point) []foundation.An
 }
 
 func uncloakAndCharge(g *GameState, zapper *Actor, pos geometry.Point) []foundation.Animation {
-	zapper.GetFlags().Unset(foundation.FlagInvisible)
+	zapper.GetFlags().Unset(foundation.FlagActiveCamouflage)
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(zapper, zapper.Position())
 	chargeAnim, _ := charge(g, zapper, pos, false, g.getLine)
 	//tileIcon := g.currentMap().GetTileIconAt(targetPos)
@@ -465,24 +465,47 @@ func holdTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundat
 
 	return animations
 }
-func slowTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
+func delayedSleepTarget(g *GameState, zapper *Actor, targetPos geometry.Point, params foundation.Params) []foundation.Animation {
+	turnsUntilActivation := params.GetIntOrDefault("turns_until_activation", 3)
+	sleepTurns := params.GetIntOrDefault("sleep_turns", 10)
+
 	var animations []foundation.Animation
-
-	origin := originFromZapperOrWall(g, zapper, targetPos)
-
-	pathOfFlight := g.getLineOfFire(origin, targetPos)
-
-	targetPos = pathOfFlight[len(pathOfFlight)-1]
-
-	projAnim, _ := g.ui.GetAnimProjectile('*', "light_gray_5", origin, targetPos, nil)
-	animations = append(animations, projAnim)
 
 	if g.currentMap().IsActorAt(targetPos) {
 		targetActor := g.currentMap().ActorAt(targetPos)
-		slow(g, targetActor)
+
+		g.metronome.AddTimed(NewDelayedEffect(turnsUntilActivation, "Sleep", func() {
+			targetActor.GetFlags().SetFlagTo(foundation.FlagSleep, sleepTurns)
+			g.msg(foundation.HiLite("%s falls asleep", targetActor.Name()))
+		}))
 	}
 
 	return animations
+}
+
+type DelayedEffect struct {
+	description          string
+	ticksUntilActivation int
+}
+
+func (d DelayedEffect) ShouldActivate(tickCount int) bool {
+	return tickCount == d.ticksUntilActivation
+}
+
+func (d DelayedEffect) IsTimerTicking(tickCount int) bool {
+	return tickCount <= d.ticksUntilActivation
+}
+
+func (d DelayedEffect) String() string {
+	return fmt.Sprintf("Delayed: %s", d.description)
+}
+
+func NewDelayedEffect(turnsUntilActivation int, description string, effectCall func()) (Timed, bool, func()) {
+	delayedEffect := &DelayedEffect{
+		ticksUntilActivation: turnsUntilActivation,
+		description:          description,
+	}
+	return delayedEffect, true, effectCall
 }
 
 func hasteTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
@@ -620,16 +643,21 @@ func (g *GameState) damageItem(damage SourcedDamage, item foundation.Item) {
 }
 
 type SourcedDamage struct {
-	NameOfThing     string
-	Attacker        *Actor
-	IsObviousAttack bool
-	TargetingMode   TargetingMode
-	DamageType      DamageType
-	DamageAmount    int
-	BodyPart        d100.BodyPart
-	DamagePerBullet []int
-	AppliedMods     []d100.Modifier
-	IsCriticalHit   bool
+	NameOfThing      string
+	Attacker         *Actor
+	IsObviousAttack  bool
+	TargetingMode    TargetingMode
+	DamageType       DamageType
+	DamageAmount     int
+	BodyPart         d100.BodyPart
+	DamagePerBullet  []int
+	AppliedMods      []d100.Modifier
+	TargetDTModifier int
+	ApplyStatus      []foundation.ActorFlag
+	IsKillingBlow    bool
+	IsCrippling      bool
+	IsOverkill       bool
+	IsCritical       bool
 }
 
 func (d SourcedDamage) IsActor() bool {
@@ -642,8 +670,305 @@ func (d SourcedDamage) String() string {
 	return d.NameOfThing
 }
 
+func (d SourcedDamage) WithDTModifier(mod int) SourcedDamage {
+	d.TargetDTModifier = mod
+	return d
+}
 func (d SourcedDamage) WithCritical() SourcedDamage {
-	d.IsCriticalHit = true
+	d.IsCritical = true
+	return d
+}
+func (d SourcedDamage) ModifyDamageByArmor(target *Actor) SourcedDamage {
+	if d.DamageAmount == 0 {
+		return d
+	}
+	reduction := target.GetCharSheet().GetDerivedStat(d100.DamageResistance)
+	threshold := 0
+	originalDamageAmount := d.DamageAmount
+
+	if target.GetEquipment().HasArmorEquipped() {
+		armor := target.GetEquipment().GetArmor()
+		protection := armor.GetArmorProtection(d.DamageType)
+		threshold = protection.DamageThreshold
+		reduction += protection.DamageReduction
+	}
+
+	reduction = max(0, min(maxArmorDR, reduction))
+	threshold = max(0, min(maxArmorDT, threshold+d.TargetDTModifier))
+
+	reductionFactor := (100 - float64(reduction)) / 100.0
+	var newDamageAmount int
+
+	if len(d.DamagePerBullet) > 0 {
+		for _, bulletDamage := range d.DamagePerBullet {
+			bulletDamage = int(max(1, float64(bulletDamage)*reductionFactor))
+			bulletDamage = max(0, bulletDamage-threshold)
+			newDamageAmount += bulletDamage
+		}
+	} else {
+		newDamageAmount = int(max(1, float64(originalDamageAmount)*reductionFactor))
+		newDamageAmount = max(0, originalDamageAmount-threshold)
+	}
+
+	// degrade armor
+	if target.GetEquipment().HasArmorEquipped() {
+		ablation := ablationWithoutPenetration
+		if newDamageAmount > 0 {
+			ablation = ablationWithPenetration
+		}
+		armor := target.GetEquipment().GetArmor()
+		armor.Degrade(float64(ablation))
+	}
+
+	d.DamageAmount = newDamageAmount
+	return d
+}
+
+func (d SourcedDamage) MakeItCritical(attackerCritMod int, victim *Actor) SourcedDamage {
+	d.IsCritical = true
+	dieRoll := d100.Die() + attackerCritMod
+	switch d.BodyPart {
+	case d100.Head:
+		return d.headCriticals(victim, dieRoll)
+	case d100.Arms:
+		return d.armCriticals(victim, dieRoll)
+	case d100.Legs:
+		return d.legCriticals(victim, dieRoll)
+	case d100.Body:
+		return d.bodyCriticals(victim, dieRoll)
+	case d100.Eyes:
+		return d.eyesCriticals(victim, dieRoll)
+	case d100.Groin:
+		return d.groinCriticals(victim, dieRoll)
+	}
+	return d.bodyCriticals(victim, dieRoll)
+}
+
+func (d SourcedDamage) headCriticals(victim *Actor, dieRoll int) SourcedDamage {
+	switch {
+	case dieRoll <= 20:
+		d.DamageAmount *= 2
+	case dieRoll <= 45:
+		d.DamageAmount *= 2
+		d.TargetDTModifier -= 2
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		}
+	case dieRoll <= 70:
+		d.DamageAmount = int(float64(d.DamageAmount) * 2.5)
+		d.TargetDTModifier -= 2
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		}
+	case dieRoll <= 90:
+		d.DamageAmount = int(float64(d.DamageAmount) * 2.5)
+		d.TargetDTModifier -= 2
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		}
+	case dieRoll <= 100:
+		d.DamageAmount *= 3
+		d.TargetDTModifier -= 4
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagBlind)
+		}
+	case dieRoll > 100:
+		d.IsKillingBlow = true
+	}
+	return d
+}
+
+func (d SourcedDamage) armCriticals(victim *Actor, dieRoll int) SourcedDamage {
+	switch {
+	case dieRoll <= 20:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+	case dieRoll <= 45:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagDistracted)
+	case dieRoll <= 70:
+		d.DamageAmount *= 2
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.IsCrippling = true
+		}
+	case dieRoll <= 100:
+		d.DamageAmount *= 2
+		d.IsCrippling = true
+		d.TargetDTModifier -= 2
+	case dieRoll > 100:
+		d.DamageAmount *= 2
+		d.IsCrippling = true
+		d.TargetDTModifier -= 4
+	}
+	return d
+}
+
+func (d SourcedDamage) legCriticals(victim *Actor, dieRoll int) SourcedDamage {
+	switch {
+	case dieRoll <= 20:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+	case dieRoll <= 45:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10), 0)
+		if !enduranceCheck.Success {
+			d.IsCrippling = true
+		}
+
+	case dieRoll <= 70:
+		d.DamageAmount *= 2
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.IsCrippling = true
+		}
+	case dieRoll <= 90:
+		d.DamageAmount *= 2
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		d.IsCrippling = true
+		d.TargetDTModifier -= 2
+	case dieRoll <= 100:
+		d.DamageAmount *= 2
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		d.IsCrippling = true
+		d.TargetDTModifier -= 4
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		}
+	case dieRoll > 100:
+		d.DamageAmount *= 2
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		d.IsCrippling = true
+		d.TargetDTModifier -= 4
+	}
+	return d
+}
+
+func (d SourcedDamage) bodyCriticals(victim *Actor, dieRoll int) SourcedDamage {
+	switch {
+	case dieRoll <= 20:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+	case dieRoll <= 45:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+		d.TargetDTModifier -= 2
+	case dieRoll <= 70:
+		d.DamageAmount *= 2
+		d.TargetDTModifier -= 2
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+	case dieRoll <= 90:
+		d.DamageAmount *= 2
+		d.TargetDTModifier -= 3
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+	case dieRoll <= 100:
+		d.DamageAmount *= 3
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		d.TargetDTModifier -= 4
+	case dieRoll > 100:
+		d.DamageAmount *= 3
+		d.IsKillingBlow = true
+	}
+	return d
+}
+
+func (d SourcedDamage) eyesCriticals(victim *Actor, dieRoll int) SourcedDamage {
+	switch {
+	case dieRoll <= 20:
+		d.DamageAmount *= 2
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10+40), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagBlind)
+		}
+	case dieRoll <= 45:
+		d.DamageAmount *= 2
+		d.TargetDTModifier -= 2
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10+30), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagBlind)
+		}
+	case dieRoll <= 70:
+		d.DamageAmount *= 3
+		d.TargetDTModifier -= 2
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10+20), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagBlind)
+		}
+	case dieRoll <= 90:
+		d.DamageAmount *= 2
+		d.TargetDTModifier -= 3
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagBlind)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagDistracted)
+	case dieRoll <= 100:
+		d.DamageAmount *= 4
+		d.TargetDTModifier -= 4
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagBlind)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+	case dieRoll > 100:
+		d.DamageAmount *= 4
+		d.IsKillingBlow = true
+	}
+	return d
+}
+
+func (d SourcedDamage) groinCriticals(victim *Actor, dieRoll int) SourcedDamage {
+	switch {
+	case dieRoll <= 20:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+	case dieRoll <= 45:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+		d.TargetDTModifier -= 2
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		}
+	case dieRoll <= 70:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10-30), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		}
+
+	case dieRoll <= 90:
+		d.DamageAmount = int(float64(d.DamageAmount) * 1.5)
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+	case dieRoll <= 100:
+		d.DamageAmount *= 2
+		d.TargetDTModifier -= 4
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagKnockedDown)
+		enduranceCheck := d100.SuccessRoll(d100.Percentage(victim.GetCharSheet().GetStat(d100.Endurance)*10), 0)
+		if !enduranceCheck.Success {
+			d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+		}
+	case dieRoll > 100:
+		d.DamageAmount *= 2
+		d.TargetDTModifier -= 5
+		d.IsKillingBlow = true
+		d.ApplyStatus = append(d.ApplyStatus, foundation.FlagUnconscious)
+	}
+	return d
+}
+
+func (d SourcedDamage) WithKillingBlow() SourcedDamage {
+	d.IsKillingBlow = true
+	return d
+}
+
+func (d SourcedDamage) WithCrippling() SourcedDamage {
+	d.IsCrippling = true
+	return d
+}
+
+func (d SourcedDamage) WithOverkill() SourcedDamage {
+	d.IsOverkill = true
 	return d
 }
 
@@ -656,11 +981,19 @@ func (g *GameState) damageActorWithFollowUp(
 
 	didCripple := victim.TakeDamage(damage)
 
+	if !victim.IsAlive() {
+		damage = damage.WithKillingBlow()
+	}
+	if didCripple {
+		damage = damage.WithCrippling()
+	}
 	if damage.IsObviousAttack {
 		g.trySetHostile(victim, damage.Attacker)
 	}
-	isKill := victim.GetHitPoints() <= 0
 	isOverKill := victim.GetHitPoints() <= (-victim.GetHitPointsMax() / 2)
+	if isOverKill {
+		damage = damage.WithOverkill()
+	}
 	var damageAnim foundation.Animation
 	var damageAudioCue string
 
@@ -672,11 +1005,11 @@ func (g *GameState) damageActorWithFollowUp(
 		g.gameFlags.SetFlag(hurtByPlayerFlag)
 	}
 
-	g.actorHitMessage(victim, damage, didCripple, isKill, isOverKill)
+	g.actorHitMessage(victim, damage)
 
-	if isKill {
+	if damage.IsKillingBlow {
 		g.actorKilled(damage, victim)
-		if isOverKill {
+		if damage.IsCritical {
 			damageAudioCue = victim.GetDeathCriticalAudioCue(damage.TargetingMode, damage.DamageType)
 		} else {
 			damageAudioCue = victim.GetDeathAudioCue()
@@ -684,6 +1017,7 @@ func (g *GameState) damageActorWithFollowUp(
 		// TODO: replace this with cool matching death animations
 		g.makeMapBloody(victim.Position())
 		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, 4, done)
+		//damageAnim.SetVictimSizeModifier(victim.GetSizeModifier())
 		damageAnim.SetFollowUp(followUps)
 	} else { // only a flesh wound
 		damageAudioCue = victim.GetHitAudioCue(damage.TargetingMode.IsMelee())
@@ -694,6 +1028,7 @@ func (g *GameState) damageActorWithFollowUp(
 			bullets = 3
 		}
 		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, bullets, done)
+		//damageAnim.SetVictimSizeModifier(victim.GetSizeModifier())
 		damageAnim.SetFollowUp(followUps)
 
 		if victim != g.Player && rand.Intn(5) == 0 {

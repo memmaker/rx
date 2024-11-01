@@ -22,9 +22,9 @@ cp ./config.rec ./builds/contractor-win/config.rec
 #mkdir -p builds/linux
 #mkdir -p builds/wasi
 
-GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags '-s -w' -o ./builds/contractor-mac/contractor .
+GOOS=darwin GOARCH=amd64 go build -tags ebitensinglethread,ebiten,terminal -trimpath -ldflags '-s -w' -o ./builds/contractor-mac/contractor .
 
-GOOS=windows GOARCH=amd64 go build -trimpath -ldflags '-s -w' -o ./builds/contractor-win/contractor.exe .
+GOOS=windows GOARCH=amd64 go build -tags ebitensinglethread,ebiten,terminal -trimpath -ldflags '-s -w' -o ./builds/contractor-win/contractor.exe .
 
 rsync -av ./data_atom ./builds/contractor-mac --exclude audio
 #cp -R ./data_atom ./builds/mac/data_atom

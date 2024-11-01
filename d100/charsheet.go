@@ -38,7 +38,7 @@ func (cs *CharSheet) getStatParameters() map[string]interface{} {
 	}
 }
 
-// CreateReports: If the task at hand is simply not possible for someone without a certain level of skill
+// PrintReport: If the task at hand is simply not possible for someone without a certain level of skill
 // Roll: If the task at hand is in general possible, even if it's difficult
 
 // tagging gives 20% bonus to skill
@@ -175,6 +175,38 @@ func (cs *CharSheet) GobDecode(data []byte) error {
 	return nil
 }
 
+type FactorModifier struct {
+	Source         string
+	ModifierFactor float64
+	Order          int
+	Suffix         string
+}
+
+func (f FactorModifier) Description() string {
+	var line string
+	line = fmt.Sprintf("%s: x%.2f", f.Source, f.ModifierFactor)
+	if f.Suffix != "" {
+		line += " " + f.Suffix
+	}
+	return line
+}
+
+func (f FactorModifier) Apply(i int) int {
+	return int(float64(i) * f.ModifierFactor)
+}
+
+func (f FactorModifier) SortOrder() int {
+	return f.Order
+}
+
+func (f FactorModifier) IsNonModifying() bool {
+	return f.ModifierFactor == 1.0
+}
+
+func (f FactorModifier) ApplyForInterval(value fxtools.Interval) fxtools.Interval {
+	return fxtools.Interval{Min: f.Apply(value.Min), Max: f.Apply(value.Max)}
+}
+
 type DefaultModifier struct {
 	Source    string
 	Modifier  int
@@ -206,8 +238,14 @@ func (d DefaultModifier) Apply(i int) int {
 func (d DefaultModifier) SortOrder() int {
 	return d.Order
 }
-func (d DefaultModifier) IsZero() bool {
+func (d DefaultModifier) IsNonModifying() bool {
 	return d.Modifier == 0
+}
+
+var QuickDrawModifier = FactorModifier{
+	Source:         "Quick Draw",
+	ModifierFactor: 1.5,
+	Order:          0,
 }
 
 var NoModifierList []Modifier
@@ -219,10 +257,15 @@ type CombatModifiers struct {
 	DamageMods      Modifiers
 }
 
+func (m CombatModifiers) WithChanceToHit(modifiers Modifiers) CombatModifiers {
+	m.ChanceToHitMods = append(m.ChanceToHitMods, modifiers...)
+	return m
+}
+
 type Modifiers []Modifier
 
 func (r Modifiers) appendIfNonZero(mod Modifier) Modifiers {
-	if mod.IsZero() {
+	if mod.IsNonModifying() {
 		return r
 	}
 	return append(r, mod)
@@ -243,7 +286,7 @@ type Modifier interface {
 	Description() string
 	Apply(int) int
 	SortOrder() int
-	IsZero() bool
+	IsNonModifying() bool
 	ApplyForInterval(value fxtools.Interval) fxtools.Interval
 }
 
@@ -827,6 +870,20 @@ func (cs *CharSheet) MeetsRequirements(requirements PerkRequirements) bool {
 	return true
 }
 
+func (cs *CharSheet) SetGodLike() {
+	for stat := range cs.stats {
+		cs.stats[stat] = 10
+	}
+	for skill := 0; skill < SkillCount(); skill++ {
+		cs.skillAdjustments[Skill(skill)] = SkillCap
+	}
+	cs.derivedStatAdjustments[HitPoints] = 999
+	cs.derivedStatAdjustments[ActionPoints] = 20
+	cs.level = 99
+	cs.availableSkillPoints = 0
+	cs.availableStatPoints = 0
+}
+
 func LoadLevelUpTable(table []int, afterTable string) {
 	levelTable = table
 	levelsAfterTable, err := govaluate.NewEvaluableExpressionWithFunctions(afterTable, standardFunctions())
@@ -872,6 +929,74 @@ const (
 	VeryHard
 	SuperHuman
 )
+
+func (d Difficulty) GetRollModifier() int {
+	switch d {
+	case VeryEasy:
+		return 10
+	case Easy:
+		return 5
+	case Medium:
+		return 0
+	case Hard:
+		return -20
+	case VeryHard:
+		return -40
+	}
+	return 0
+}
+
+func (d Difficulty) LockReductionFactor() float64 {
+	switch d {
+	case VeryEasy:
+		return 1.5
+	case Easy:
+		return 1
+	case Medium:
+		return 0.5
+	case Hard:
+		return 0.35
+	case VeryHard:
+		return 0.1
+	}
+	return 1
+}
+
+func (d Difficulty) EPicksNeeded() int {
+	switch d {
+	case VeryEasy:
+		return 10
+	case Easy:
+		return 20
+	case Medium:
+		return 30
+	case Hard:
+		return 40
+	case VeryHard:
+		return 50
+	}
+	return 1
+}
+
+func (d Difficulty) String() string {
+	switch d {
+	case Trivial:
+		return "Trivial"
+	case VeryEasy:
+		return "Very Easy"
+	case Easy:
+		return "Easy"
+	case Medium:
+		return "Medium"
+	case Hard:
+		return "Hard"
+	case VeryHard:
+		return "Very Hard"
+	case SuperHuman:
+		return "Super Human"
+	}
+	return "Unknown"
+}
 
 func DifficultyFromString(diff string) Difficulty {
 	switch strings.ToLower(diff) {

@@ -1,30 +1,33 @@
 mapName: home_area
 mapLocation: spawn
 #item: combat_knife
-#item: vault_suit
+item: rugged_trenchcoat
 item: 10mm_jhp
 item: 10mm_ap
 #item: food_ration
 item: 10mm_smg
 item: mechanical_lockpick(5)
+item: micro_fusion_cell(60)
 item: electronic_lockpick(5)
 item: aviator_sunglasses
+item: bowel_disruptor
 item: watch
+item: one_time_tranquilizer_pistol
 #
-item: med_x
-item: med_x
-item: med_x
-item: med_x
+item: binge
+item: binge
+item: binge
+item: binge
 #
-item: mentats
-item: mentats
-item: mentats
+item: brainz
+item: brainz
+item: brainz
 #
-item: buffout
-item: buffout
-item: buffout
+item: buff
+item: buff
+item: buff
 #
-item: jet
-item: jet
-item: jet
+item: boost
+item: boost
+item: boost
 #item: note('doctors_referral', 'referral to Dr. Winters')

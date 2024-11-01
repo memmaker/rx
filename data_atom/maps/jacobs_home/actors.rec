@@ -27,12 +27,9 @@ Charisma: 3
 Intelligence: 3
 Agility: 6
 Luck: 7
-SkillBonusSmallGuns: 34
-SkillBonusBigGuns: 29
-SkillBonusEnergyWeapons: 9
-SkillBonusUnarmed: 9
-SkillBonusMelee: 15
-SkillBonusThrowing: 29
+SkillBonusRangedCombat: 34
+SkillBonusMeleeCombat: 9
+SkillBonusMeleeCombat: 15
 DTNormal: 4
 DTLaser: 6
 DTFire: 4

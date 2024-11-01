@@ -1,6 +1,6 @@
 s: being_around_player
 #
-c: PlayerMainHandIs('flamer')
+c: HasWeaponEquippedWithName('flamer')
 #
 t: Holy Firestorm, Batman!
 t: You're not going to use that thing, are you?
@@ -9,7 +9,7 @@ t: I am sure you have a good reason to carry that around.
 
 s: being_around_player
 #
-c: !PlayerHasArmor()
+c: !HasArmorEquipped()
 #
 t: Put some clothes on, will you?
 t: No pants, no service.

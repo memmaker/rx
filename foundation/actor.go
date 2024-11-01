@@ -24,13 +24,13 @@ type ActorForUI interface {
 	IsAlive() bool
 	GetBodyPart(index int) d100.BodyPart
 	GetBodyPartIndex(aim d100.BodyPart) int
-	GetDamageResistance() int
 	GetMainHandDamageAsString() string
 	TimeEnergy() int
 	TimeNeededForMovement() int
 	TimeNeededForActions() int
 	TimeNeededForAttack() int
-	ActionDescription(name string) string
+	ActionDescription() string
+	GetArmorProtectionString() string
 }
 
 type ChatterType int
@@ -40,6 +40,9 @@ const (
 	ChatterKillOneLiner
 	ChatterBeingDamaged
 	ChatterBeingAroundPlayer
+	ChatterMinorCrimeNoticed
+	ChatterIWarnedYou
+	ChatterTrespassing
 )
 
 func NewChatterTypeFromString(str string) ChatterType {
@@ -53,6 +56,31 @@ func NewChatterTypeFromString(str string) ChatterType {
 		return ChatterBeingDamaged
 	case "being_around_player":
 		return ChatterBeingAroundPlayer
+	case "minor_crime_noticed":
+		return ChatterMinorCrimeNoticed
+	case "i_warned_you":
+		return ChatterIWarnedYou
+	case "trespassing":
+		return ChatterTrespassing
 	}
 	return ChatterOnTheWayToAKill
+}
+func (t ChatterType) DefaultChatter() string {
+	switch t {
+	case ChatterOnTheWayToAKill:
+		return "On my way.."
+	case ChatterKillOneLiner:
+		return "You're dead."
+	case ChatterBeingDamaged:
+		return "Ouch!"
+	case ChatterBeingAroundPlayer:
+		return ""
+	case ChatterMinorCrimeNoticed:
+		return "Stop that!"
+	case ChatterIWarnedYou:
+		return "I warned you!"
+	case ChatterTrespassing:
+		return "Get out of here!"
+	}
+	return ""
 }

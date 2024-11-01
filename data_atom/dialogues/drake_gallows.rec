@@ -18,9 +18,12 @@ npc: I don't have time for this.
 effect: EndWithChatter
 
 name: EndNoPayment
-npc: Thank you! I am out of here.
+npc: Thank you! For what it's worth, there is a stash of money in the operating room.
++ Maybe you can find a way to get it.
+#
 effect: SetFlag('drake_freed')
 effect: SetFlag('drake_freed_without_payment')
+effect: RunScriptLeave('drake_gallows', true)
 effect: EndWithChatter
 
 name: FoundInCellar
@@ -65,7 +68,9 @@ o_text: I just don't get why he didn't kill you. I will correct this mistake rig
 o_goto: KillDrake
 
 name: WhyDidHeDoThis
-npc: Look, I already told you what I know, you'd better ask him why he did what he did.
+npc: I sure do.
++ This corporate bastard is here to ensure the dominance of Eschaton Biotech.
++ He was sent to silence me because I provide independent medical support.
 #
 effect: ReturnToPreviousNode
 
@@ -83,13 +88,16 @@ npc: Deal. I am leaving now.
 #
 effect: SetFlag('drake_freed')
 effect: SetFlag('drake_owes_cash')
+effect: RunScriptLeave('drake_gallows', true)
 effect: EndWithChatter
+
 
 name: Favor
 npc: Guess I have no choice. I am leaving then.
 #
 effect: SetFlag('drake_freed')
 effect: SetFlag('drake_owes_favor')
+effect: RunScriptLeave('drake_gallows', true)
 effect: EndWithChatter
 
 name: KillDrake
@@ -98,9 +106,8 @@ npc: What? Why?
 effect: StartCombat
 
 name: LeaveDrake
-npc: (Drake sneers, his voice cold.)
-npc: So, you’re just going to leave me here to rot, huh? Typical.
-+ Guess the streets aren’t as dangerous as this cage.
+npc: (Drake sneers, his voice is cold.)
+npc: So, you’re just going to leave me here to rot, huh?
 #
 o_text: You deserve it. Enjoy the solitude.
 o_goto: JustLeaving
@@ -110,3 +117,58 @@ o_goto: JustLeaving
 #
 o_text: It’s nothing personal. You’re not my problem.
 o_goto: JustLeaving
+
+
+name: DrakeAfterKillingDaniel
+npc: (He looks at you with joy.)
++ Thank you for freeing me. What can I do for you?
+#
+o_text: I need some medical supplies.
+o_goto: DrakeMedicalSupplies
+#
+o_text: I need some cyberware.
+o_goto: DrakeCyberware
+#
+o_text: Do you know a guy named 'Jacob'?
+o_cond: HasFlag('JobRead(starter)')
+o_goto: DrakeJacobQuestion
+#
+o_text: Nothing.
+o_goto: End
+
+name: DrakeJacobQuestion
+npc: I have no idea who you are talking about.
+#
+o_text: Alright.
+o_goto: DrakeAfterKillingDaniel
+
+name: DrakeCyberware
+npc: (Drake scratches the back of his neck, looking uneasy.)
+npc: Look, I’d love to help you out, but... my tools are busted. Some scavengers hit the place while I was locked up.
++ Can’t do installs without the proper gear, you understand.
+#
+o_text: You’re telling me a Ripperdoc doesn’t have any tools?
+o_goto: DrakeCyberwareExcuse
+#
+o_text: Fine, I’ll come back later.
+o_goto: End
+
+name: DrakeCyberwareExcuse
+npc: Hey, this is no joke. I need time to restock and get things running again. Come back in a few days.
+#
+o_text: I don’t have time for excuses, Drake.
+o_goto: End
+#
+o_text: Alright. But don’t waste my time when I return.
+o_goto: End
+
+name: DrakeMedicalSupplies
+npc: (Drake gives a nervous chuckle.)
+npc: About that... I, uh, just had a little “inventory issue.” Someone else cleared me out before you showed up.
++ Nothing left but dust right now.
+#
+o_text: How convenient.
+o_goto: End
+#
+o_text: You’re full of it, Drake. This better not happen again.
+o_goto: End

@@ -8,6 +8,7 @@ import (
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"path"
+	"strings"
 )
 
 type TileDataOnDisk struct {
@@ -208,10 +209,10 @@ func Load[ActorType interface {
 		var name string
 		var location geometry.Point
 		for _, field := range record {
-			switch field.Name {
-			case "Name":
+			switch strings.ToLower(field.Name) {
+			case "name":
 				name = field.Value
-			case "Location":
+			case "location":
 				location, _ = geometry.NewPointFromEncodedString(field.Value)
 			}
 		}
@@ -222,12 +223,12 @@ func Load[ActorType interface {
 		var pos geometry.Point
 		var transition Transition
 		for _, field := range record {
-			switch field.Name {
-			case "Location":
+			switch strings.ToLower(field.Name) {
+			case "location":
 				pos, _ = geometry.NewPointFromEncodedString(field.Value)
-			case "TransitionToMap":
+			case "transitiontomap":
 				transition.TargetMap = field.Value
-			case "TransitionToLocation":
+			case "transitiontolocation":
 				transition.TargetLocation = field.Value
 			}
 		}

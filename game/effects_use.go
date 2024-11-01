@@ -46,7 +46,7 @@ func showTime(g *GameState, user *Actor) []foundation.Animation {
 }
 
 func uncloak(g *GameState, user *Actor) []foundation.Animation {
-	user.GetFlags().Unset(foundation.FlagInvisible)
+	user.GetFlags().Unset(foundation.FlagActiveCamouflage)
 	user.GetFlags().Unset(foundation.FlagSleep)
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(user, user.Position())
 	return []foundation.Animation{uncloakAnim}
@@ -67,13 +67,17 @@ func heal(g *GameState, actor *Actor) []foundation.Animation {
 func extraHeal(g *GameState, actor *Actor) []foundation.Animation {
 	amount := actor.GetHitPointsMax()
 	actor.Heal(amount)
-	g.msg(foundation.Msg("you begin to feel much better"))
+	g.msg(foundation.Msg("You begin to feel much better"))
 	return nil
 }
 
-func satiateFully(g *GameState, actor *Actor) []foundation.Animation {
-	actor.Satiate()
-	g.msg(foundation.Msg("you don't feel hungry anymore"))
+func satiateFully(g *GameState, user *Actor) []foundation.Animation {
+	if user == g.Player {
+		g.SaveTimeNow("PlayerLastAteAt")
+		g.msg(foundation.Msg("You don't feel hungry anymore"))
+	}
+	user.GetFlags().Unset(foundation.FlagHunger)
+	user.GetFlags().Unset(foundation.FlagStarving)
 	return nil
 }
 
@@ -176,7 +180,7 @@ func seeInvisible(g *GameState, user *Actor) {
 	g.Player.GetFlags().Increase(foundation.FlagSeeInvisible, tunsUntilUnsee)
 }
 func makeInvisible(g *GameState, user *Actor) {
-	user.GetFlags().Set(foundation.FlagInvisible)
+	user.GetFlags().Set(foundation.FlagActiveCamouflage)
 
 	if g.Player != user {
 		g.msg(foundation.HiLite("%s vanishes", user.Name()))
@@ -184,7 +188,7 @@ func makeInvisible(g *GameState, user *Actor) {
 	}
 	g.msg(foundation.Msg("You vanish"))
 	turnsUntilVisible := rand.Intn(8) + 8
-	g.Player.GetFlags().Increase(foundation.FlagInvisible, turnsUntilVisible)
+	g.Player.GetFlags().Increase(foundation.FlagActiveCamouflage, turnsUntilVisible)
 }
 func haste(g *GameState, user *Actor) {
 	if user.GetFlags().IsSet(foundation.FlagSlow) {
@@ -510,7 +514,7 @@ func (g *GameState) unhastePlayer() {
 func (g *GameState) makeVisiblePlayer() {
 	player := g.Player
 	flags := player.GetFlags()
-	flags.Unset(foundation.FlagInvisible)
+	flags.Unset(foundation.FlagActiveCamouflage)
 	g.msg(foundation.Msg("You can see your hands again"))
 }
 func (g *GameState) unslowPlayer() {

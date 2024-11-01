@@ -1,0 +1,72 @@
+%rec: default
+
+Category: ClosedDoor
+Description: a door
+Position: (66,19)
+
+Category: LockedDoor
+Description: a door
+LockFlag: cb_altar_room
+Position: (26,7)
+
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 2.0
+Position: (42,8)
+
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 2.0
+Position: (59,15)
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (3,21)
+
+Category: ClosedDoor
+Description: a door
+Position: (42,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (60,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (53,6)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (5,22)
+
+Category: Terminal
+Description: The Prophet
+Dialogue: cb_llm
+Position: (18,17)
+
+Category: ClosedDoor
+Description: a door
+Position: (24,4)
+
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 2.0
+Position: (30,15)
+
+Category: Terminal
+Name: Taxi
+IconOverride: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (3,22)
+
+Category: BakedLight
+Radius: 5
+Color: (1.0, 1.0, 1.0)
+Max_Intensity: 2.0
+Position: (66,20)
+

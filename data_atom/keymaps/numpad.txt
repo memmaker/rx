@@ -36,7 +36,8 @@ c -> character
 l -> log
 j -> journal
 t -> tactics
-z -> rest
+y -> cyberware
+z -> wait_menu
 
 ? -> open_pip_boy
 

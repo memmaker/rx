@@ -12,42 +12,54 @@ import (
 	"strings"
 )
 
-type WeaponConcealability uint8
+type WeaponSize uint8
 
-func (c WeaponConcealability) String() string {
+func (c WeaponSize) String() string {
 	switch c {
-	case ConcealabilityLongCoat:
-		return "Long Coat"
-	case ConcealabilityJacket:
-		return "Jacket"
-	case ConcealabilityPants:
-		return "Pants"
-	case ConcealabilityHidden:
+	case SizeHidden:
 		return "Hidden"
+	case SizeHandWeapon:
+		return "Hand Weapon"
+	case SizeShortWeapon:
+		return "Short Weapon"
+	case SizeLongWeapon:
+		return "Long Weapon"
+	case SizeBig:
+		return "Big Weapon"
 	}
-	return "None"
+	return "Big Weapon"
+}
+
+func (c WeaponSize) CanFit(weaponOfSize WeaponSize) bool {
+	if weaponOfSize == SizeHidden {
+		return true
+	}
+	return c >= weaponOfSize
 }
 
 const (
-	ConcealabilityNone WeaponConcealability = iota
-	ConcealabilityLongCoat
-	ConcealabilityJacket
-	ConcealabilityPants
-	ConcealabilityHidden
+	SizeHidden WeaponSize = iota
+	SizeHandWeapon
+	SizeShortWeapon
+	SizeLongWeapon
+	SizeBig
+	SizeCount
 )
 
-func ConcealabilityFromString(input string) WeaponConcealability {
+func WeaponSizeFromString(input string) WeaponSize {
 	switch strings.ToLower(input) {
-	case "longcoat":
-		return ConcealabilityLongCoat
-	case "jacket":
-		return ConcealabilityJacket
-	case "pants":
-		return ConcealabilityPants
+	case "big":
+		return SizeBig
+	case "long":
+		return SizeLongWeapon
+	case "short":
+		return SizeShortWeapon
+	case "hand":
+		return SizeHandWeapon
 	case "hidden":
-		return ConcealabilityHidden
+		return SizeHidden
 	}
-	return ConcealabilityNone
+	return SizeBig
 }
 
 type Weapon struct {
@@ -59,23 +71,37 @@ type Weapon struct {
 	magazineSize     int
 	loadedInMagazine *Ammo
 
+	PelletCount  int
 	burstRounds  int
 	caliberIndex int
+	caliberName  string
 
 	attackModes []AttackMode
 	soundID     int32
 	damageType  DamageType
 	MinSTR      int
 
-	reliability    d100.Percentage
-	concealability WeaponConcealability
-	accuracyMod    d100.Percentage
+	reliability  d100.Percentage
+	relativeSize WeaponSize
+	accuracyMod  d100.Percentage
+
+	degradeFactor float64
+	jammed        bool
+}
+
+func (i *Weapon) Degrade(degrade float64) {
+	ammoFactor := i.ammoDegradeFactor()
+	weaponFactor := i.degradeFactor
+	i.qualityInPercent = max(0, i.qualityInPercent-d100.Percentage(degrade*weaponFactor*ammoFactor))
 }
 
 func (i *Weapon) FullDescription(colorCode string) string {
 	basicRows := i.GenericItem.fullDescriptionRows()
 
+	basicRows = append(basicRows, fxtools.NewTableRow("Type", i.weaponType.String()))
+	basicRows = append(basicRows, fxtools.NewTableRow("Caliber", i.GetCaliberName()))
 	basicRows = append(basicRows, fxtools.NewTableRow("Quality", fmt.Sprintf("%d%%", int(i.qualityInPercent))))
+	basicRows = append(basicRows, fxtools.NewTableRow("Concealability", i.relativeSize.String()))
 
 	if i.damageType == DamageTypeNormal {
 		basicRows = append(basicRows, fxtools.NewTableRow("Damage", fmt.Sprintf("%s", i.damageDice.Scaled(i.qualityInPercent.Normalized()).ShortString())))
@@ -86,12 +112,11 @@ func (i *Weapon) FullDescription(colorCode string) string {
 	if i.accuracyMod != 0 {
 		basicRows = append(basicRows, fxtools.NewTableRow("Accuracy Modifier", fmt.Sprintf("%+d%%", int(i.accuracyMod))))
 	}
-
-	basicRows = append(basicRows, fxtools.NewTableRow("Min. Strength", fmt.Sprintf("%d", i.MinSTR)))
+	if i.MinSTR > 0 {
+		basicRows = append(basicRows, fxtools.NewTableRow("Min. Strength", fmt.Sprintf("%d", i.MinSTR)))
+	}
 
 	basicRows = append(basicRows, fxtools.NewTableRow("Reliability", fmt.Sprintf("%d%%", int(i.reliability))))
-
-	basicRows = append(basicRows, fxtools.NewTableRow("Concealability", fmt.Sprintf("%s", i.concealability.String())))
 
 	for _, attackMode := range i.attackModes {
 		modeVal := fmt.Sprintf("Range: %d, TU: %d", attackMode.MaxRange, attackMode.TUCost)
@@ -101,6 +126,9 @@ func (i *Weapon) FullDescription(colorCode string) string {
 
 	lines := fxtools.TableLayout(basicRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
 	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+
+	lines = i.appendText(lines)
+
 	return strings.Join(lines, "\n")
 }
 func (i *Weapon) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
@@ -120,18 +148,21 @@ func (i *Weapon) LongNameWithColors(colorCode string) string {
 	weapon := i
 	attackMode := weapon.GetAttackMode(i.currentAttackModeIndex)
 	targetMode := attackMode.String()
-	timeNeeded := attackMode.TUCost
+	if i.jammed {
+		targetMode = "*JAMMED*"
+	}
 	bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
-	line := cview.Escape(fmt.Sprintf("%s (%s: %d TU / %s Dmg.) - %s", i.Name(), targetMode, timeNeeded, i.GetWeaponDamage().ShortString(), bullets))
+	ammoShortString := weapon.GetAmmoTypeShortString()
+	line := cview.Escape(fmt.Sprintf("%s - %s - %s%s", i.Name(), targetMode, bullets, ammoShortString))
 	return colorCode + line + "[-]"
 }
 func (i *Weapon) DisplayLength() int {
 	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut("[red]"))
 }
-func (i *Weapon) GetDegradationFactorOfAttack() float64 {
+func (i *Weapon) ammoDegradeFactor() float64 {
 	factor := 1.0
 	weapon := i
-	if i.IsRangedWeapon() && weapon.NeedsAmmo() && weapon.HasAmmo() {
+	if weapon.NeedsAmmo() && weapon.HasAmmo() {
 		ammo := weapon.GetLoadedAmmo()
 		ammoInfo := ammo
 		factor = ammoInfo.ConditionFactor
@@ -158,13 +189,17 @@ func (i *Weapon) IsMeleeWeapon() bool {
 }
 
 func (i *Weapon) DoesJam() bool {
+	if i.jammed {
+		return true
+	}
 	if !i.IsAutomaticWeapon() {
 		return false
 	}
 
 	reliability := int(i.reliability)
 	isReliableOnThisShot := rand.Intn(100)+1 <= reliability
-	return !isReliableOnThisShot
+	i.jammed = !isReliableOnThisShot
+	return i.jammed
 }
 
 func (i *Weapon) GetEffectParameters() foundation.Params {
@@ -182,6 +217,8 @@ func (i *Weapon) GetEffectParameters() foundation.Params {
 			parameters["bonus_radius"] = ammoInfo.BonusRadius
 		}
 	}
+	// effect_delay
+	// effect_duration
 	return parameters
 }
 
@@ -477,6 +514,32 @@ func (i *Weapon) IsAutomaticWeapon() bool {
 	return i.GetBurstRounds() > 1
 }
 
+func (i *Weapon) IsBroken() bool {
+	return i.qualityInPercent <= 0
+}
+
+func (i *Weapon) IsJammed() bool {
+	return i.jammed
+}
+
+func (i *Weapon) Unjam() {
+	i.jammed = false
+}
+
+func (i *Weapon) GetAmmoTypeShortString() string {
+	if i.loadedInMagazine == nil {
+		return ""
+	}
+	if i.loadedInMagazine.ShortIdentifier == "" {
+		return ""
+	}
+	return fmt.Sprintf(" %s", i.loadedInMagazine.ShortIdentifier)
+}
+
+func (i *Weapon) GetCaliberName() string {
+	return i.caliberName
+}
+
 type WeaponType int
 
 func (t WeaponType) IsMissile() bool {
@@ -489,6 +552,61 @@ func (t WeaponType) IsRanged() bool {
 
 func (t WeaponType) IsMelee() bool {
 	return t == WeaponTypeSword || t == WeaponTypeClub || t == WeaponTypeAxe || t == WeaponTypeDagger || t == WeaponTypeSpear || t == WeaponTypeKnife || t == WeaponTypeMelee
+}
+
+func (t WeaponType) String() string {
+	switch t {
+	case WeaponTypeSword:
+		return "Sword"
+	case WeaponTypeClub:
+		return "Club"
+	case WeaponTypeAxe:
+		return "Axe"
+	case WeaponTypeDagger:
+		return "Dagger"
+	case WeaponTypeSpear:
+		return "Spear"
+	case WeaponTypeBow:
+		return "Bow"
+	case WeaponTypeArrow:
+		return "Arrow"
+	case WeaponTypeCrossbow:
+		return "Crossbow"
+	case WeaponTypeBolt:
+		return "Bolt"
+	case WeaponTypeDart:
+		return "Dart"
+	case WeaponTypePistol:
+		return "Pistol"
+	case WeaponTypeRifle:
+		return "Rifle"
+	case WeaponTypeShotgun:
+		return "Shotgun"
+	case WeaponTypeMissile:
+		return "Missile"
+	case WeaponTypeBullet:
+		return "Bullet"
+	case WeaponTypeSMG:
+		return "SMG"
+	case WeaponTypeSledgehammer:
+		return "Sledgehammer"
+	case WeaponTypeMinigun:
+		return "Minigun"
+	case WeaponTypeRocketLauncher:
+		return "Rocket Launcher"
+	case WeaponTypeBigGun:
+		return "Big Gun"
+	case WeaponTypeKnife:
+		return "Knife"
+	case WeaponTypeEnergy:
+		return "Energy"
+	case WeaponTypeThrown:
+		return "Thrown"
+	case WeaponTypeMelee:
+		return "Melee"
+	default:
+		return "Unknown Weapon Type"
+	}
 }
 
 const (

@@ -1,0 +1,76 @@
+%rec: OpeningBranch
+
+# Solara "Binary" Carter
+# Role: Tech Specialist and Hacker
+# - (techie, false prophet for a noble goal, dreamer for the stars)
+
+# She wants to believe in the good but people are continually disappointing her. Now she only trusts in logic and tech.
+
+# She is an actually funny kind of nerd, but she would also be willing to just leave earth behind any time. She doesn’t like it here. Always felt like she didn’t belong.
+
+# The idea with the moon colony came originally from her, but Dex blatantly stole it from her and made it his own.
+
+# She has a quirk of using tech terms in her everyday language.
+
+cond: true
+goto: DefaultIntroduction
+
+cond: HasFlag('IntroducedTo(solara_carter)')
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: Twenty-two hundred, Solara Carter.
++ Extended Simple Mail Transfer Service Ready.
+#
+o_text: Hi, Solara. Nice to meet you.
+o_goto: HiSolara
+#
+o_text: Uhm, what? Are you a computer?
+o_goto: What
+#
+o_text: HELO, {{ .pcname }}.
+o_cond: Skill('Technology') >= 15
+o_goto: Helo
+#
+o_text: EHLO, {{ .pcname }}.
+o_cond: Skill('Technology') >= 25
+o_goto: Ehlo
+#
+o_text: I better be going.
+o_goto: Bye
+
+## Default EXIT Begin
+
+name: End
+npc: Exit Code Zero. See ya :)
+effect: EndConversation
+
+## Default EXIT End
+
+## Default Character Questions Begin
+
+name: HiSolara
+npc: Aw, well. Hi there. What can I do for you?
+#
+o_text: I am a contractor, offering my services.
+o_goto: ContractorOffer
+#
+o_text: What is this place?
+o_goto: WhatIsThisPlace
+#
+o_text: What do you do here?
+o_goto: WhatDoYouDo
+#
+o_text: Tell me about yourself.
+o_goto: TellMeAboutYourself
+#
+o_text: What are your thoughts on EBI?
+o_goto: ThoughtsOnEBI
+#
+o_text: What do you think about BAT?
+o_goto: ThoughtsOnBAT
+#
+o_text: What can you tell me about Flesh & Bone?
+o_goto: FleshAndBone
+

@@ -1,5 +1,57 @@
 %rec: default
 
+Name: disposable_pistol
+Description: B9 Pistol
+LongDescription: This disposable pistol design is produced using additive manufacturing techniques. It is a single shot weapon, and is designed to be used once and then discarded. The latest in the Budget line of weapons by Blunt Ware. Min ST: 2.
+Category: Weapons
+Weight: 3
+Cost: 75
+weapon_type: Pistol
+weapon_concealability: hand
+weapon_damage: 6-8
+weapon_magazine_size: 1
+weapon_burst_rounds: 1
+weapon_damage_type: Normal
+weapon_min_str: 2
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 5
+weapon_ap_cost_two: 0
+weapon_max_range_one: 8
+weapon_max_range_two: 0
+weapon_uses_ammo: 9mm
+weapon_caliber_index: 12
+weapon_sound_id: 66
+weapon_skill_used: ranged_combat
+weapon_degrade_factor: 400
+weapon_reliability: 80
+
+Name: one_time_tranquilizer_pistol
+Description: TQ1 dart gun
+LongDescription: This miniaturized tranquilizer pistol comes with one loaded dart and cannot be reloaded.
+Category: Weapons
+Weight: 1
+Cost: 575
+weapon_type: Pistol
+weapon_concealability: hand
+quality: 100
+weapon_damage: 10
+weapon_magazine_size: 1
+weapon_burst_rounds: 1
+weapon_damage_type: Normal
+weapon_attack_mode_one: Fire_Single
+weapon_ap_cost_one: 9
+weapon_max_range_one: 6
+weapon_sound_id: 90
+weapon_skill_used: ranged_combat
+weapon_degrade_factor: 950
+weapon_reliability: 100
+weapon_uses_ammo: Darts
+weapon_caliber_index: 19
+zap_effect: delayed_sleep_target
+tags: no_reload
+weapon_always_load: medical_dart
+
 Name: 10mm_smg
 Description: 10mm SMG
 LongDescription: H&K MP9 Submachinegun (10mm variant). A medium-sized SMG, capable of single shot and burst mode. Min ST: 4.
@@ -8,6 +60,7 @@ Size: 3
 Weight: 5
 Cost: 1000
 weapon_type: SMG
+weapon_concealability: short
 weapon_damage: 5-12
 weapon_magazine_size: 30
 weapon_burst_rounds: 10
@@ -23,6 +76,7 @@ weapon_uses_ammo: 10mm
 weapon_caliber_index: 8
 weapon_sound_id: 68
 weapon_skill_used: ranged_combat
+weapon_reliability: 80
 
 Name: 10mm_pistol
 Description: 10mm Pistol
@@ -32,6 +86,7 @@ Size: 2
 Weight: 3
 Cost: 250
 weapon_type: Pistol
+weapon_concealability: hand
 weapon_damage: 5-12
 weapon_magazine_size: 12
 weapon_burst_rounds: 1
@@ -56,6 +111,7 @@ Size: 4
 Weight: 12
 Cost: 120
 weapon_type: Sledgehammer
+weapon_concealability: big
 weapon_damage: 4-9
 weapon_magazine_size: 0
 weapon_burst_rounds: 0
@@ -68,7 +124,6 @@ weapon_ap_cost_two: 5
 weapon_max_range_one: 2
 weapon_max_range_two: 2
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 55
 
 Name: minigun
@@ -79,6 +134,7 @@ Size: 6
 Weight: 28
 Cost: 3800
 weapon_type: Minigun
+weapon_concealability: big
 weapon_damage: 7-11
 weapon_magazine_size: 120
 weapon_burst_rounds: 40
@@ -104,6 +160,7 @@ Weight: 15
 Cost: 2300
 weapon_type: RocketLauncher
 weapon_damage: 35-100
+weapon_concealability: big
 weapon_magazine_size: 1
 weapon_burst_rounds: 0
 weapon_damage_type: Explosive
@@ -128,6 +185,7 @@ Size: 2
 Weight: 3
 Cost: 30
 weapon_type: Club
+weapon_concealability: short
 weapon_damage: 1-6
 weapon_magazine_size: 0
 weapon_burst_rounds: 0
@@ -140,7 +198,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 54
 
 Name: flamer
@@ -166,7 +223,6 @@ weapon_uses_ammo: flamethrower_fuel
 weapon_caliber_index: 2
 weapon_sound_id: 73
 weapon_skill_used: ranged_combat
-zap_effect: fire_breath
 
 Name: hunting_rifle
 Description: Hunting Rifle
@@ -212,7 +268,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 1
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 51
 
 Name: spear
@@ -235,7 +290,6 @@ weapon_ap_cost_two: 6
 weapon_max_range_one: 2
 weapon_max_range_two: 8
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 56
 
 Name: plasma_rifle
@@ -330,7 +384,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 7
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 50
 
 Name: crowbar
@@ -353,7 +406,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 53
 
 Name: brass_knuckles
@@ -376,7 +428,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 49
 
 Name: 14mm_pistol
@@ -405,7 +456,7 @@ weapon_skill_used: ranged_combat
 
 Name: assault_rifle
 Description: Assault Rifle
-LongDescription: An AK-112 5mm Assault Rifle. An old military model, out of use around the time of the war. Can Fire_Single-shot or burst, using the high velocity 5mm rounds. Min ST: 5.
+LongDescription: An AK-112 5mm Assault Rifle. An old military model, out of use around the time of the war. Can Fire Single-shot or burst, using the high velocity 5mm rounds. Min ST: 5.
 Category: Weapons
 Size: 5
 Weight: 7
@@ -426,6 +477,7 @@ weapon_uses_ammo: 5mm
 weapon_caliber_index: 6
 weapon_sound_id: 72
 weapon_skill_used: ranged_combat
+weapon_reliability: 75
 
 Name: plasma_pistol
 Description: Plasma Pistol
@@ -471,7 +523,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 79
 zap_effect: explode
 chance_to_break_on_throw: 100
@@ -496,7 +547,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 80
 zap_effect: plasma_explode
 chance_to_break_on_throw: 100
@@ -521,7 +571,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 81
 
 Name: gatling_laser
@@ -541,6 +590,7 @@ weapon_attack_mode_one: Fire_Burst
 weapon_attack_mode_two: None
 weapon_ap_cost_one: 6
 weapon_ap_cost_two: 0
+weapon_reliability: 90
 weapon_max_range_one: 25
 weapon_max_range_two: 0
 weapon_uses_ammo: d_energy_cell
@@ -568,7 +618,6 @@ weapon_ap_cost_two: 4
 weapon_max_range_one: 7
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 52
 
 Name: flare
@@ -591,7 +640,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 7
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 52
 
 Name: shotgun
@@ -601,10 +649,12 @@ Category: Weapons
 Size: 3
 Weight: 5
 Cost: 800
-weapon_type: Rifle
+weapon_type: Shotgun
 weapon_damage: 12-22
 weapon_magazine_size: 2
 weapon_burst_rounds: 2
+weapon_reliability: 98
+weapon_pellet_count: 10
 weapon_damage_type: Normal
 weapon_min_str: 4
 weapon_attack_mode_one: Fire_Single
@@ -638,7 +688,6 @@ weapon_ap_cost_two: 4
 weapon_max_range_one: 2
 weapon_max_range_two: 2
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 55
 
 Name: ripper
@@ -781,8 +830,8 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 7
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 79
+weapon_skill_used: ranged_combat
 
 Name: cattle_prod
 Description: Cattle Prod
@@ -806,7 +855,7 @@ weapon_max_range_two: 1
 weapon_uses_ammo: c_energy_cell
 weapon_caliber_index: 3
 weapon_sound_id: 57
-weapon_skill_used: ranged_combat
+weapon_skill_used: melee_combat
 
 Name: red_ryder_bb_gun
 Description: Red Ryder BB Gun
@@ -827,7 +876,7 @@ weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
 weapon_max_range_one: 8
 weapon_max_range_two: 0
-weapon_uses_ammo: none
+weapon_uses_ammo: BBs
 weapon_caliber_index: 0
 weapon_sound_id: 85
 
@@ -850,7 +899,7 @@ weapon_ap_cost_one: 4
 weapon_ap_cost_two: 0
 weapon_max_range_one: 32
 weapon_max_range_two: 0
-weapon_uses_ammo: none
+weapon_uses_ammo: BBs
 weapon_caliber_index: 0
 weapon_sound_id: 85
 
@@ -874,7 +923,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 7
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 52
 
 Name: turbo_plasma_rifle
@@ -921,7 +969,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 49
 
 Name: power_fist
@@ -948,6 +995,28 @@ weapon_caliber_index: 3
 weapon_sound_id: 49
 weapon_skill_used: ranged_combat
 
+Name: scalpel
+Description: a scalpel
+LongDescription: A scalpel, used for surgery. It is very sharp. Min ST: 1.
+Category: Weapons
+Size: 1
+Weight: 1
+Cost: 175
+weapon_type: Knife
+weapon_damage: 6-8
+weapon_magazine_size: 0
+weapon_burst_rounds: 0
+weapon_damage_type: Normal
+weapon_min_str: 1
+weapon_attack_mode_one: Swing
+weapon_attack_mode_two: Thrust
+weapon_ap_cost_one: 3
+weapon_ap_cost_two: 3
+weapon_max_range_one: 1
+weapon_max_range_two: 1
+weapon_uses_ammo: none
+weapon_sound_id: 51
+
 Name: combat_knife
 Description: Combat Knife
 LongDescription: A high-quality combat knife, the Stallona is from SharpWit, Inc. The edge of this blade is guaranteed sharp for over a decade of use! Min ST: 2.
@@ -968,7 +1037,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 1
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 51
 
 Name: 223_pistol
@@ -1002,10 +1070,12 @@ Category: Weapons
 Size: 5
 Weight: 10
 Cost: 2750
-weapon_type: Rifle
+weapon_type: Shotgun
 weapon_damage: 15-25
 weapon_magazine_size: 12
 weapon_burst_rounds: 3
+weapon_pellet_count: 10
+weapon_reliability: 97
 weapon_damage_type: Normal
 weapon_min_str: 5
 weapon_attack_mode_one: Fire_Single
@@ -1038,7 +1108,7 @@ weapon_ap_cost_one: 5
 weapon_ap_cost_two: 0
 weapon_max_range_one: 16
 weapon_max_range_two: 0
-weapon_uses_ammo: none
+weapon_uses_ammo: BBs
 weapon_caliber_index: 0
 weapon_sound_id: 85
 
@@ -1049,10 +1119,12 @@ Category: Weapons
 Size: 3
 Weight: 5
 Cost: 4750
-weapon_type: Rifle
+weapon_type: Shotgun
 weapon_damage: 15-25
 weapon_magazine_size: 10
 weapon_burst_rounds: 5
+weapon_pellet_count: 10
+weapon_reliability: 98
 weapon_damage_type: Normal
 weapon_min_str: 6
 weapon_attack_mode_one: Fire_Single
@@ -1110,7 +1182,6 @@ weapon_ap_cost_two: 6
 weapon_max_range_one: 2
 weapon_max_range_two: 8
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 56
 
 Name: tommy_gun
@@ -1124,6 +1195,7 @@ weapon_type: Rifle
 weapon_damage: 3-20
 weapon_magazine_size: 50
 weapon_burst_rounds: 10
+weapon_reliability: 65
 weapon_damage_type: Normal
 weapon_min_str: 6
 weapon_attack_mode_one: Fire_Single
@@ -1181,7 +1253,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 0
 
 Name: robo_melee_weapon_2
@@ -1204,7 +1275,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 0
 
 Name: boxing_gloves
@@ -1227,7 +1297,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 49
 
 Name: plated_boxing_gloves
@@ -1250,7 +1319,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 49
 
 Name: hk_p90c
@@ -1264,6 +1332,7 @@ weapon_type: SMG
 weapon_damage: 12-16
 weapon_magazine_size: 24
 weapon_burst_rounds: 12
+weapon_reliability: 85
 weapon_damage_type: Normal
 weapon_min_str: 4
 weapon_attack_mode_one: Fire_Single
@@ -1369,7 +1438,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 1
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 51
 
 Name: sharpened_pole
@@ -1392,7 +1460,6 @@ weapon_ap_cost_two: 6
 weapon_max_range_one: 2
 weapon_max_range_two: 8
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 56
 
 Name: m3a1_grease_gun_smg
@@ -1406,6 +1473,7 @@ weapon_type: SMG
 weapon_damage: 10-20
 weapon_magazine_size: 30
 weapon_burst_rounds: 8
+weapon_reliability: 75
 weapon_damage_type: Normal
 weapon_min_str: 4
 weapon_attack_mode_one: Fire_Single
@@ -1430,6 +1498,7 @@ weapon_type: BigGun
 weapon_damage: 25-35
 weapon_magazine_size: 30
 weapon_burst_rounds: 15
+weapon_reliability: 95
 weapon_damage_type: Normal
 weapon_min_str: 6
 weapon_attack_mode_one: Fire_Burst
@@ -1454,6 +1523,7 @@ weapon_type: Rifle
 weapon_damage: 9-18
 weapon_magazine_size: 20
 weapon_burst_rounds: 10
+weapon_reliability: 90
 weapon_damage_type: Normal
 weapon_min_str: 5
 weapon_attack_mode_one: Fire_Single
@@ -1478,6 +1548,7 @@ weapon_type: SMG
 weapon_damage: 10-20
 weapon_magazine_size: 50
 weapon_burst_rounds: 5
+weapon_reliability: 99
 weapon_damage_type: Normal
 weapon_min_str: 5
 weapon_attack_mode_one: Fire_Single
@@ -1502,6 +1573,7 @@ weapon_type: Rifle
 weapon_damage: 12-19
 weapon_magazine_size: 20
 weapon_burst_rounds: 8
+weapon_reliability: 95
 weapon_damage_type: Normal
 weapon_min_str: 5
 weapon_attack_mode_one: Fire_Single
@@ -1522,10 +1594,12 @@ Category: Weapons
 Size: 5
 Weight: 12
 Cost: 5500
-weapon_type: Rifle
+weapon_type: Shotgun
 weapon_damage: 18-29
 weapon_magazine_size: 10
 weapon_burst_rounds: 5
+weapon_reliability: 75
+weapon_pellet_count: 10
 weapon_damage_type: Normal
 weapon_min_str: 5
 weapon_attack_mode_one: Fire_Single
@@ -1550,6 +1624,7 @@ weapon_type: BigGun
 weapon_damage: 20-30
 weapon_magazine_size: 30
 weapon_burst_rounds: 10
+weapon_reliability: 80
 weapon_damage_type: Normal
 weapon_min_str: 6
 weapon_attack_mode_one: Fire_Burst
@@ -1583,7 +1658,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 8
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 50
 
 Name: claw
@@ -1606,7 +1680,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 48
 
 Name: claw
@@ -1629,7 +1702,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 48
 
 Name: shiv
@@ -1652,7 +1724,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 1
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 51
 
 Name: wrench
@@ -1675,7 +1746,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 1
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 53
 
 Name: sawed-off_shotgun
@@ -1685,10 +1755,11 @@ Category: Weapons
 Size: 3
 Weight: 4
 Cost: 800
-weapon_type: Rifle
+weapon_type: Shotgun
 weapon_damage: 12-24
 weapon_magazine_size: 2
 weapon_burst_rounds: 0
+weapon_pellet_count: 10
 weapon_damage_type: Normal
 weapon_min_str: 4
 weapon_attack_mode_one: Fire_Single
@@ -1722,7 +1793,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 54
 
 Name: m60
@@ -1736,6 +1806,7 @@ weapon_type: BigGun
 weapon_damage: 18-26
 weapon_magazine_size: 50
 weapon_burst_rounds: 10
+weapon_reliability: 95
 weapon_damage_type: Normal
 weapon_min_str: 7
 weapon_attack_mode_one: Fire_Burst
@@ -1784,6 +1855,7 @@ weapon_type: Minigun
 weapon_damage: 10-14
 weapon_magazine_size: 120
 weapon_burst_rounds: 40
+weapon_reliability: 95
 weapon_damage_type: Normal
 weapon_min_str: 7
 weapon_attack_mode_one: Fire_Burst
@@ -1817,7 +1889,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 20
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 67
 
 Name: h&k_g11e
@@ -1831,6 +1902,7 @@ weapon_type: SMG
 weapon_damage: 13-23
 weapon_magazine_size: 50
 weapon_burst_rounds: 7
+weapon_reliability: 100
 weapon_damage_type: Normal
 weapon_min_str: 6
 weapon_attack_mode_one: Fire_Single
@@ -1927,6 +1999,7 @@ weapon_type: Minigun
 weapon_damage: 14-19
 weapon_magazine_size: 100
 weapon_burst_rounds: 25
+weapon_reliability: 99
 weapon_damage_type: Normal
 weapon_min_str: 7
 weapon_attack_mode_one: Fire_Burst
@@ -2059,7 +2132,6 @@ weapon_uses_ammo: flamethrower_fuel
 weapon_caliber_index: 2
 weapon_sound_id: 73
 weapon_skill_used: ranged_combat
-zap_effect: fire_breath
 
 Name: laser_rifle_ext_cap
 Description: Laser Rifle (Ext. Cap.)
@@ -2095,6 +2167,7 @@ Cost: 1400
 weapon_type: Energy
 weapon_damage: 10-22
 weapon_magazine_size: 12
+weapon_reliability: 100
 weapon_burst_rounds: 0
 weapon_damage_type: Laser
 weapon_min_str: 3
@@ -2120,6 +2193,7 @@ weapon_type: Rifle
 weapon_damage: 9-18
 weapon_magazine_size: 20
 weapon_burst_rounds: 10
+weapon_reliability: 90
 weapon_damage_type: Normal
 weapon_min_str: 5
 weapon_attack_mode_one: Fire_Single
@@ -2168,6 +2242,7 @@ weapon_type: Rifle
 weapon_damage: 8-16
 weapon_magazine_size: 100
 weapon_burst_rounds: 8
+weapon_reliability: 80
 weapon_damage_type: Normal
 weapon_min_str: 5
 weapon_attack_mode_one: Fire_Single
@@ -2249,7 +2324,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 20
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 80
 
 Name: gold_nugget
@@ -2272,7 +2346,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 10
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 50
 
 Name: uranium_ore
@@ -2295,7 +2368,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 10
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 50
 
 Name: flame_breath
@@ -2317,7 +2389,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 5
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 73
 
 Name: refined_uranium_ore
@@ -2340,7 +2411,6 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 10
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 50
 
 Name: special_boxer_weapon
@@ -2362,7 +2432,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 49
 
 Name: boxing_gloves
@@ -2385,7 +2454,6 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 49
 
 Name: plated_boxing_gloves
@@ -2408,31 +2476,7 @@ weapon_ap_cost_two: 0
 weapon_max_range_one: 1
 weapon_max_range_two: 0
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 49
-
-Name: dual_plasma_cannon
-Description: Dual Plasma Cannon
-LongDescription: Only use for Gun Turret critter.
-Category: Weapons
-Size: 1
-Weight: 10
-Cost: 0
-weapon_type: Energy
-weapon_damage: 45-90
-weapon_magazine_size: 200
-weapon_burst_rounds: 0
-weapon_damage_type: Plasma
-weapon_min_str: 1
-weapon_attack_mode_one: Fire_Single
-weapon_attack_mode_two: None
-weapon_ap_cost_one: 5
-weapon_ap_cost_two: 0
-weapon_max_range_one: 25
-weapon_max_range_two: 0
-weapon_uses_ammo: none
-weapon_caliber_index: 0
-weapon_sound_id: 75
 
 Name: fn_fal_hpfa
 Description: FN FAL HPFA
@@ -2457,77 +2501,6 @@ weapon_caliber_index: 18
 weapon_sound_id: 72
 weapon_skill_used: ranged_combat
 
-Name: little_jesus
-Description: "Little Jesus"
-LongDescription: This wicked looking blade once belonged to Lil' Jesus Mordino. It has numerous nicks and cuts along its surface, but its edge is razor sharp. On its handle is carved "Little Jesus."
-Category: Weapons
-Size: 1
-Weight: 2
-Cost: 200
-weapon_type: Knife
-weapon_damage: 5-14
-weapon_magazine_size: 0
-weapon_burst_rounds: 0
-weapon_damage_type: Normal
-weapon_min_str: 2
-weapon_attack_mode_one: Swing
-weapon_attack_mode_two: Thrust
-weapon_ap_cost_one: 3
-weapon_ap_cost_two: 3
-weapon_max_range_one: 1
-weapon_max_range_two: 1
-weapon_uses_ammo: none
-weapon_caliber_index: 0
-weapon_sound_id: 51
-
-Name: dual_minigun
-Description: Dual Minigun
-LongDescription: Only use for Auto-Cannon critter.
-Category: Weapons
-Size: 1
-Weight: 10
-Cost: 0
-weapon_type: Minigun
-weapon_damage: 10-14
-weapon_magazine_size: 800
-weapon_burst_rounds: 40
-weapon_damage_type: Normal
-weapon_min_str: 1
-weapon_attack_mode_one: Fire_Burst
-weapon_attack_mode_two: None
-weapon_ap_cost_one: 6
-weapon_ap_cost_two: 0
-weapon_max_range_one: 40
-weapon_max_range_two: 0
-weapon_uses_ammo: 5mm
-weapon_caliber_index: 6
-weapon_sound_id: 76
-weapon_skill_used: ranged_combat
-
-Name: heavy_dual_minigun
-Description: Heavy Dual Minigun
-LongDescription: Only use for Auto-Cannon Critter.
-Category: Weapons
-Size: 1
-Weight: 10
-Cost: 0
-weapon_type: Minigun
-weapon_damage: 16-24
-weapon_magazine_size: 800
-weapon_burst_rounds: 40
-weapon_damage_type: Normal
-weapon_min_str: 1
-weapon_attack_mode_one: Fire_Burst
-weapon_attack_mode_two: None
-weapon_ap_cost_one: 6
-weapon_ap_cost_two: 0
-weapon_max_range_one: 40
-weapon_max_range_two: 0
-weapon_uses_ammo: 223
-weapon_caliber_index: 5
-weapon_sound_id: 76
-weapon_skill_used: ranged_combat
-
 Name: wakizashi_blade
 Description: Wakizashi Blade
 LongDescription: A short finely crafted knife. The tip seems to be designed to pierce armor.
@@ -2548,51 +2521,4 @@ weapon_ap_cost_two: 3
 weapon_max_range_one: 1
 weapon_max_range_two: 1
 weapon_uses_ammo: none
-weapon_caliber_index: 0
 weapon_sound_id: 51
-
-Name: end_boss_knife
-Description: End Boss Knife
-Category: Weapons
-Size: 1
-Weight: 1
-Cost: 0
-weapon_type: Knife
-weapon_damage: 15-30
-weapon_magazine_size: 0
-weapon_burst_rounds: 0
-weapon_damage_type: Normal
-weapon_min_str: 2
-weapon_attack_mode_one: Swing
-weapon_attack_mode_two: Thrust
-weapon_ap_cost_one: 3
-weapon_ap_cost_two: 3
-weapon_max_range_one: 1
-weapon_max_range_two: 1
-weapon_uses_ammo: none
-weapon_caliber_index: 0
-weapon_sound_id: 36
-
-Name: end_boss_plasma_gun
-Description: End Boss Plasma Gun
-Category: Weapons
-Size: 1
-Weight: 1
-Cost: 0
-weapon_type: Energy
-weapon_damage: 30-70
-weapon_magazine_size: 50
-weapon_burst_rounds: 3
-weapon_damage_type: Plasma
-weapon_min_str: 0
-weapon_attack_mode_one: Fire_Single
-weapon_attack_mode_two: Fire_Burst
-weapon_ap_cost_one: 5
-weapon_ap_cost_two: 6
-weapon_max_range_one: 35
-weapon_max_range_two: 30
-weapon_uses_ammo: d_energy_cell
-weapon_caliber_index: 4
-weapon_sound_id: 64
-weapon_skill_used: ranged_combat
-

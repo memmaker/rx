@@ -3,9 +3,11 @@ package game
 import (
 	"RogueUI/d100"
 	"RogueUI/foundation"
+	"RogueUI/util"
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -37,14 +39,17 @@ type GenericItem struct {
 	tags         foundation.ItemTags
 	textFile     string
 	text         string
-	lockFlag     string
+
+	textValue string
+	textVar   string
+
+	lockFlag string
 
 	icon                   textiles.TextIcon
 	chanceToBreakOnThrow   int
 	currentAttackModeIndex int
 	setFlagOnPickup        string
 	setFlagOnDrop          string
-	size                   int
 	weight                 int
 	cost                   int
 	posHandler             func() geometry.Point
@@ -174,9 +179,6 @@ func (i *GenericItem) GobEncode() ([]byte, error) {
 	if err := encoder.Encode(i.setFlagOnPickup); err != nil {
 		return nil, err
 	}
-	if err := encoder.Encode(i.size); err != nil {
-		return nil, err
-	}
 	if err := encoder.Encode(i.weight); err != nil {
 		return nil, err
 	}
@@ -258,9 +260,6 @@ func (i *GenericItem) GobDecode(data []byte) error {
 	if err := decoder.Decode(&i.setFlagOnPickup); err != nil {
 		return err
 	}
-	if err := decoder.Decode(&i.size); err != nil {
-		return err
-	}
 	if err := decoder.Decode(&i.weight); err != nil {
 		return err
 	}
@@ -313,13 +312,17 @@ func (g *GameState) newItemFromName(itemName string) foundation.Item {
 		return g.NewGold(1)
 	}
 
+	if itemName == "bowel_disruptor" {
+		return g.NewBowelDisruptor()
+	}
+
 	itemDef := g.getItemTemplateByName(itemName)
 
 	if len(itemDef) == 0 {
 		panic(fmt.Sprintf("Item not found: %s", itemName))
 	}
 
-	newItem := NewItemFromRecord(itemDef, g.iconForItem)
+	newItem := NewItemFromRecord(itemDef, g.NewItemFromString, g.iconForItem)
 
 	if newItem == nil {
 		panic(fmt.Sprintf("Item not found: %s", itemName))
@@ -362,6 +365,9 @@ func (i *GenericItem) FullDescription(colorCode string) string {
 	rows := i.fullDescriptionRows()
 	lines := fxtools.TableLayout(rows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
 	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+
+	lines = i.appendText(lines)
+
 	return strings.Join(lines, "\n")
 }
 
@@ -529,6 +535,18 @@ func (i *GenericItem) IsReadable() bool {
 	isRealText := i.IsBook()
 	isSkillBook := i.IsSkillBook()
 	return isRealText || isSkillBook
+}
+
+func (i *GenericItem) TextVariables(scriptFuncs map[string]govaluate.ExpressionFunction) map[string]string {
+	//TextValue && TextVar
+	if i.textValue == "" || i.textVar == "" {
+		return make(map[string]string)
+	}
+	valueExpr, _ := govaluate.NewEvaluableExpressionWithFunctions(i.textValue, scriptFuncs)
+	value, _ := valueExpr.Evaluate(nil)
+	return map[string]string{
+		i.textVar: value.(string),
+	}
 }
 
 func (i *GenericItem) IsBook() bool {
@@ -760,17 +778,14 @@ func (i *GenericItem) SetAlive(value bool) {
 }
 
 func (i *GenericItem) GetEffectParameters() foundation.Params {
-	parameters := i.effectParameters
-	return parameters
+	if i.effectParameters == nil {
+		return make(foundation.Params)
+	}
+	return i.effectParameters
 }
 
 func (i *GenericItem) SetQuality(quality d100.Percentage) {
 	i.qualityInPercent = d100.Percentage(quality)
-}
-
-func (i *GenericItem) GetDegradationFactorOfAttack() float64 {
-	factor := 1.0
-	return factor
 }
 
 func (i *GenericItem) Degrade(degrade float64) {
@@ -797,4 +812,23 @@ func (i *GenericItem) GetSkillBookValues() (d100.Skill, int) {
 		return skill, value
 	}
 	return d100.Skill(-1), 0
+}
+
+func (i *GenericItem) appendText(lines []string) []string {
+	width := max(longestLine(lines), 26)
+	if i.text != "" {
+		lines = append(lines, "")
+		lines = append(lines, util.WrapString(i.text, uint(width)))
+	}
+	return lines
+}
+
+func longestLine(lines []string) int {
+	longest := 0
+	for _, line := range lines {
+		if cview.TaggedStringWidth(line) > longest {
+			longest = cview.TaggedStringWidth(line)
+		}
+	}
+	return longest
 }

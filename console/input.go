@@ -67,12 +67,13 @@ func (u *UI) setupCommandTable() {
 
 	u.commandTable["inventory"] = u.game.OpenInventory
 	u.commandTable["tactics"] = u.game.OpenTacticsMenu
+	u.commandTable["cyberware"] = u.game.OpenCyberWareMenu
 	u.commandTable["quip"] = u.game.PlayerQuip
 	//u.commandTable["character"] = u.ShowCharacterSheet // OLD
 	u.commandTable["character"] = u.openCharSheet
 	u.commandTable["wizard"] = u.game.OpenWizardMenu
 	u.commandTable["system_menu"] = u.OpenSystemMenu
-	u.commandTable["rest"] = u.game.OpenRestMenu
+	u.commandTable["wait_menu"] = u.game.OpenWaitMenu
 	u.commandTable["repair"] = u.game.OpenRepairMenu
 	u.commandTable["journal"] = u.game.OpenJournal
 
@@ -164,8 +165,9 @@ func (u *UI) showKeyBindings() {
 		"inventory":         "Inventory",
 		"show_ammo":         "Ammo Inventory",
 		"tactics":           "Tactics Menu",
+		"cyberware":         "Cyberware Menu",
 		"repair":            "Repair Menu",
-		"rest":              "Rest Menu",
+		"wait_menu":         "Wait Menu",
 		"character":         "Character",
 		"wizard":            "Wizard",
 		"themes":            "Themes",
@@ -259,9 +261,10 @@ func (u *UI) showKeyBindings() {
 		"show_ammo",
 		"character",
 		"tactics",
+		"cyberware",
 		"repair",
 		"log",
-		"rest",
+		"wait_menu",
 		"monsters",
 		"overlay_monsters",
 		"items",

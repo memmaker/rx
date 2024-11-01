@@ -1,30 +1,42 @@
 module RogueUI
 
-go 1.22.5
+go 1.23.1
+
+toolchain go1.23.2
 
 require (
-	code.rocketnine.space/tslocum/cbind v0.1.5
 	github.com/0xcafed00d/joystick v1.0.1
 	github.com/Knetic/govaluate v3.0.0+incompatible
+	github.com/ezrec/tcell_ebiten v0.2.1
 	github.com/gdamore/tcell/v2 v2.7.4
-	github.com/gopxl/beep v1.4.1
-	github.com/lucasb-eyer/go-colorful v1.2.0
-	github.com/mattn/go-runewidth v0.0.16
-	github.com/memmaker/go v0.0.0-20241011095436-a57d450ce5a3
-	github.com/rivo/uniseg v0.4.7
-	golang.org/x/term v0.25.0
+	github.com/hajimehoshi/bitmapfont/v3 v3.2.0
+	github.com/hajimehoshi/ebiten/v2 v2.8.3
+	github.com/memmaker/go v0.0.0-20241028183720-0616fed9b065
 )
 
 require (
-	github.com/ebitengine/oto/v3 v3.2.0 // indirect
-	github.com/ebitengine/purego v0.7.1 // indirect
+	github.com/ebitengine/oto/v3 v3.3.1 // indirect
+	github.com/ebitengine/purego v0.8.1 // indirect
 )
 
 require (
+	code.rocketnine.space/tslocum/cbind v0.1.5 // indirect
+	github.com/ebitengine/gomobile v0.0.0-20241016134836-cc2e38a7c0ee // indirect
+	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
+	github.com/go-text/typesetting v0.2.0 // indirect
+	github.com/gopxl/beep v1.4.1 // indirect
+	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
 	github.com/jfreymuth/vorbis v1.0.2 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
+	golang.org/x/image v0.21.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 )

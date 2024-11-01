@@ -312,3 +312,127 @@ Char: ·
 Fg: olive_5
 Bg: olive_6
 
+Char: S
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: u
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: b
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: s
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: a
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: t
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: n
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: c
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: e
+Fg: neon_red_2
+Bg: neon_red_6
+
+Char: S
+Fg: teal_1
+Bg: neon_blue_2
+
+Char: t
+Fg: teal_1
+Bg: neon_blue_2
+
+Char: y
+Fg: teal_1
+Bg: neon_blue_2
+
+Char: l
+Fg: teal_1
+Bg: neon_blue_2
+
+Char: e
+Fg: teal_1
+Bg: neon_blue_2
+
+Char: ,
+Fg: brown_5
+Bg: dark_gray_5
+
+Char: ;
+Fg: gray_blue_4
+Bg: dark_gray_5
+
+Char: <
+Fg: light_gray_7
+Bg: dark_gray_5
+
+Char: >
+Fg: light_gray_7
+Bg: dark_gray_5
+
+Char: ♣
+Fg: tan_7
+Bg: dark_gray_5
+
+Char: █
+Fg: beige_2
+Bg: beige_2
+
+Char: ·
+Fg: light_blue_13
+Bg: forest_green_16
+
+Char: █
+Fg: green_1
+Bg: beige_2
+
+Char: ·
+Fg: forest_green_12
+Bg: forest_green_16
+
+Char: █
+Fg: neon_pink_2
+Bg: neon_pink_2
+
+Char: ·
+Fg: neon_purple_4
+Bg: neon_purple_6
+
+Char: █
+Fg: light_blue
+Bg: light_blue
+
+Char: ·
+Fg: steel_blue_9
+Bg: light_blue_16
+
+Char: ░
+Fg: brown_10
+Bg: brown_12
+
+Char: ░
+Fg: forest_green_12
+Bg: forest_green_15
+
+Char: ░
+Fg: neon_purple_5
+Bg: neon_purple_6
+
+Char: ░
+Fg: steel_blue_10
+Bg: light_blue_16
+
