@@ -39,6 +39,4 @@ We don’t want huge empty spaces or vast procedurally generated landscapes. Ins
 
 Can be found in [this google doc](https://docs.google.com/document/d/1F56HilM4u4XSN1FoN92_GTqBSwPH6B87xoqfwrTCzqE/edit?usp=sharing).
 
-Sure! Here’s the information formatted for easy copying and pasting:
-
 ---
