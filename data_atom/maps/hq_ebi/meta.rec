@@ -1,0 +1,7 @@
+%rec: default
+
+Name: Eschaton Biotech International Campus
+MusicFile: 
+IsOutdoor: true
+IndoorAmbientLight: (0.2, 0.2, 0.2)
+

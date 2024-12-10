@@ -1,6 +1,6 @@
 package game
 
-import "RogueUI/fsmai"
+import "contractor/fsmai"
 
 type ActorEvent struct {
 	Event fsmai.TransitionEventName

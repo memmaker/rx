@@ -1,65 +1,111 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
 	"bytes"
 	"cmp"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"encoding/gob"
 	"fmt"
 	"github.com/memmaker/go/geometry"
+	"maps"
 	"slices"
 )
 
 type Inventory struct {
-	items          []foundation.Item
+	items          map[gridmap.ItemID]foundation.Item
 	maxItemStacks  int
+	displayName    string
 	onChanged      func()
 	onBeforeRemove func(equippableItem foundation.Equippable)
 	getCarrierPos  func() geometry.Point
+
+	equipSlots map[foundation.EquipSlot]gridmap.ItemID
 }
 
 func (i *Inventory) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
+	buffer := &bytes.Buffer{}
+	gobber := gob.NewEncoder(buffer)
 
-	// Encode each field of the struct in order
-	if err := encoder.Encode(i.items); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.maxItemStacks); err != nil {
+	if err := gobber.Encode(i.items); err != nil {
 		return nil, err
 	}
 
-	return buf.Bytes(), nil
+	if err := gobber.Encode(i.maxItemStacks); err != nil {
+		return nil, err
+	}
+
+	if err := gobber.Encode(i.displayName); err != nil {
+		return nil, err
+	}
+
+	if err := gobber.Encode(i.equipSlots); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
 }
 
 func (i *Inventory) GobDecode(data []byte) error {
-	decoder := gob.NewDecoder(bytes.NewReader(data))
+	buffer := bytes.NewBuffer(data)
+	gobber := gob.NewDecoder(buffer)
 
-	// Decode each field of the struct in order
-	if err := decoder.Decode(&i.items); err != nil {
+	if err := gobber.Decode(&i.items); err != nil {
 		return err
 	}
-	if err := decoder.Decode(&i.maxItemStacks); err != nil {
+
+	if err := gobber.Decode(&i.maxItemStacks); err != nil {
+		return err
+	}
+
+	if err := gobber.Decode(&i.displayName); err != nil {
+		return err
+	}
+
+	if err := gobber.Decode(&i.equipSlots); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func NewInventory(maxItemStacks int, position func() geometry.Point) *Inventory {
+func (i *Inventory) Name() string {
+	return i.displayName
+}
+
+func NewInventory(maxItemStacks int) *Inventory {
 	return &Inventory{
-		items:         make([]foundation.Item, 0),
+		items:         make(map[gridmap.ItemID]foundation.Item),
 		maxItemStacks: maxItemStacks,
-		getCarrierPos: position,
+		equipSlots:    make(map[foundation.EquipSlot]gridmap.ItemID),
 	}
+}
+
+func (i *Inventory) SetCarrierPosition(position func() geometry.Point) {
+	i.getCarrierPos = position
+}
+
+func (i *Inventory) EnsurePositionHandlers() {
+	for _, item := range i.items {
+		item.SetPositionHandler(i.getCarrierPos)
+	}
+}
+
+func (i *Inventory) SetName(name string) {
+	i.displayName = name
 }
 func (i *Inventory) SetOnBeforeRemove(onBeforeRemove func(equippable foundation.Equippable)) {
 	i.onBeforeRemove = onBeforeRemove
 }
-func (i *Inventory) Items() []foundation.Item {
-	return i.items
+func (i *Inventory) GetItems() []foundation.Item {
+	var items []foundation.Item
+	for v := range maps.Values(i.items) {
+		items = append(items, v.(foundation.Item))
+	}
+	return StackedFilteredAndSortedItems(items, func(item foundation.Item) bool {
+		return true
+	})
 }
 
 func StackedFilteredAndSortedItems(items []foundation.Item, filter func(foundation.Item) bool) []foundation.Item {
@@ -100,13 +146,8 @@ func (i *Inventory) RemoveItem(item foundation.Item) {
 }
 
 func (i *Inventory) removeItemInternal(item foundation.Item) {
-	for idx, invItem := range i.items {
-		if invItem == item {
-			i.beforeRemove(item)
-			i.items = append(i.items[:idx], i.items[idx+1:]...)
-			return
-		}
-	}
+	i.beforeRemove(item)
+	delete(i.items, item.ID())
 }
 
 func (i *Inventory) Has(item foundation.Item) bool {
@@ -132,7 +173,7 @@ func (i *Inventory) addItemInternally(item foundation.Item) {
 	}
 
 	item.SetPositionHandler(i.getCarrierPos)
-	i.items = append(i.items, item)
+	i.items[item.ID()] = item
 }
 
 func (i *Inventory) IsEmpty() bool {
@@ -172,7 +213,7 @@ func (i *Inventory) RemoveAndGetNextInStack(item *GenericItem) foundation.Item {
 
 func (i *Inventory) HasItemWithName(internalName string) bool {
 	for _, invItem := range i.items {
-		if invItem.InternalName() == internalName {
+		if invItem.GetInternalName() == internalName {
 			return true
 		}
 	}
@@ -186,7 +227,7 @@ func (i *Inventory) RemoveAmmoByCaliber(caliberIndex int, neededBullets int) *Am
 			continue
 		}
 		if ammo.IsAmmoOfCaliber(caliberIndex) {
-			availableBullets := invItem.StackSize()
+			availableBullets := invItem.GetStackSize()
 			if availableBullets > neededBullets {
 				splitBullets := ammo.Split(neededBullets)
 				return splitBullets.(*Ammo)
@@ -206,8 +247,8 @@ func (i *Inventory) RemoveAmmoByName(name string, amount int) *Ammo {
 		if !isAmmo {
 			continue
 		}
-		if ammo.InternalName() == name {
-			availableBullets := ammo.StackSize()
+		if ammo.GetInternalName() == name {
+			availableBullets := ammo.GetStackSize()
 			if availableBullets > amount {
 				splitBullets := ammo.Split(amount)
 				i.changed()
@@ -229,7 +270,7 @@ func (i *Inventory) HasAmmo(caliber int, name string) bool {
 		if !isAmmo {
 			continue
 		}
-		if ammo.IsAmmoOfCaliber(caliber) && ammo.InternalName() == name {
+		if ammo.IsAmmoOfCaliber(caliber) && ammo.GetInternalName() == name {
 			return true
 		}
 	}
@@ -253,8 +294,8 @@ func (l LockType) String() string {
 func (i *Inventory) RemoveLockpicks(lock LockType, count int) {
 	pickName := lockpickName(lock)
 	for _, invItem := range i.items {
-		if invItem.IsLockpick() && invItem.InternalName() == pickName {
-			if invItem.StackSize() > count {
+		if invItem.IsLockpick() && invItem.GetInternalName() == pickName {
+			if invItem.GetStackSize() > count {
 				invItem.RemoveStacks(count)
 			} else {
 				i.removeItemInternal(invItem)
@@ -274,8 +315,8 @@ func (i *Inventory) GetLockpickCount(lock LockType) int {
 	count := 0
 	pickName := lockpickName(lock)
 	for _, invItem := range i.items {
-		if invItem.IsLockpick() && invItem.InternalName() == pickName {
-			count += invItem.StackSize()
+		if invItem.IsLockpick() && invItem.GetInternalName() == pickName {
+			count += invItem.GetStackSize()
 		}
 	}
 	return count
@@ -291,7 +332,7 @@ func (i *Inventory) HasKey(identifier string) bool {
 
 func (i *Inventory) RemoveItemByName(itemName string) foundation.Item {
 	for _, invItem := range i.items {
-		if invItem.InternalName() == itemName {
+		if invItem.GetInternalName() == itemName {
 			i.RemoveItem(invItem)
 			return invItem
 		}
@@ -395,7 +436,7 @@ func (i *Inventory) GetNonAmmoWeight() int {
 
 func (i *Inventory) GetItemByName(name string) foundation.Item {
 	for _, invItem := range i.items {
-		if invItem.InternalName() == name {
+		if invItem.GetInternalName() == name {
 			return invItem
 		}
 	}
@@ -462,7 +503,11 @@ func (i *Inventory) HasSkillModifier(skill d100.Skill) bool {
 }
 
 func (i *Inventory) StackedItemsWithFilter(filter func(item foundation.Item) bool) []foundation.Item {
-	return StackedFilteredAndSortedItems(i.items, filter)
+	var items []foundation.Item
+	for v := range maps.Values(i.items) {
+		items = append(items, v.(foundation.Item))
+	}
+	return StackedFilteredAndSortedItems(items, filter)
 }
 
 func (i *Inventory) HasWeapon() bool {
@@ -489,13 +534,13 @@ func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []foundati
 	itemsToRemove := make([]foundation.Item, 0)
 	splitItems := make([]foundation.Item, 0)
 	for _, invItem := range i.items {
-		if invItem.InternalName() == name {
-			if invItem.IsMultipleStacks() && invItem.StackSize() > count {
+		if invItem.GetInternalName() == name {
+			if invItem.IsMultipleStacks() && invItem.GetStackSize() > count {
 				splitItems = append(splitItems, invItem.Split(count))
 				count = 0
 			} else {
 				itemsToRemove = append(itemsToRemove, invItem)
-				count -= invItem.StackSize()
+				count -= invItem.GetStackSize()
 			}
 			if count <= 0 {
 				break
@@ -511,8 +556,8 @@ func (i *Inventory) RemoveItemsByNameAndCount(name string, count int) []foundati
 
 func (i *Inventory) HasItemWithNameAndCount(name string, count int) bool {
 	for _, invItem := range i.items {
-		if invItem.InternalName() == name {
-			count -= invItem.StackSize()
+		if invItem.GetInternalName() == name {
+			count -= invItem.GetStackSize()
 			if count <= 0 {
 				return true
 			}
@@ -549,12 +594,266 @@ func (i *Inventory) HasExactlyOneRangedWeapon() bool {
 	return weaponCount == 1
 }
 
+func (i *Inventory) HasArmorEquipped() bool {
+	armorID, hasArmor := i.equipSlots[foundation.SlotNameArmorTorso]
+	_, hasInInventory := i.items[armorID]
+
+	if !hasArmor || !hasInInventory {
+		return false
+	}
+	return true
+}
+
+func (i *Inventory) GetArmor() *Armor {
+	armorIndex, hasArmor := i.equipSlots[foundation.SlotNameArmorTorso]
+	armor, exists := i.items[armorIndex]
+	if !hasArmor || !exists {
+		return nil
+	}
+	asArmor, canCast := armor.(*Armor)
+	if !canCast {
+		return nil
+	}
+	return asArmor
+}
+
+func (i *Inventory) GetEquippedWeapon() (*Weapon, bool) {
+	weaponID, hasWeapon := i.equipSlots[foundation.SlotNameMainHand]
+	wep, exists := i.items[weaponID]
+	if !hasWeapon || !exists {
+		return nil, false
+	}
+	asWeapon, canCast := wep.(*Weapon)
+	if !canCast {
+		return nil, false
+	}
+	return asWeapon, true
+}
+
+func (i *Inventory) IsEquipped(item foundation.Equippable) bool {
+	slot := slotFromItem(item)
+	itemID, exists := i.equipSlots[slot]
+	foundItem, inInv := i.items[itemID]
+
+	if !exists || !inInv {
+		return false
+	}
+	return foundItem == item
+}
+
+func (i *Inventory) CanUnequip(item foundation.Item) bool {
+	return true
+}
+
+func (i *Inventory) CanEquip(item foundation.Item) bool {
+	targetSlot := slotFromItem(item.(foundation.Equippable))
+	itemInSlot, exists := i.equipSlots[targetSlot]
+	if exists && !i.CanUnequip(i.items[itemInSlot]) {
+		return false
+	}
+	return true
+}
+
+func (i *Inventory) Equip(item foundation.Item) {
+	if item == nil {
+		return
+	}
+	defer i.changed()
+	slot := slotFromItem(item.(foundation.Equippable))
+	i.equipSlots[slot] = item.ID()
+}
+
+func (i *Inventory) UnEquip(item foundation.Equippable) {
+	if item == nil {
+		return
+	}
+
+	slotName := slotFromItem(item)
+
+	if i.equipSlots[slotName] == item.ID() {
+		i.unEquipBySlot(slotName)
+		i.changed()
+	}
+}
+func (i *Inventory) unEquipBySlot(hand foundation.EquipSlot) {
+	delete(i.equipSlots, hand)
+}
+
+func (i *Inventory) GetMainHandItem() (foundation.Item, bool) {
+	itemID, exists := i.equipSlots[foundation.SlotNameMainHand]
+	item, inInv := i.items[itemID]
+	if !exists || !inInv {
+		return nil, false
+	}
+	return item, true
+}
+
+func (i *Inventory) GetMeleeWeapon() (*Weapon, bool) {
+	weaponID, hasWeapon := i.equipSlots[foundation.SlotNameMainHand]
+	wep, exists := i.items[weaponID]
+	if !hasWeapon || !exists {
+		return nil, false
+	}
+	asWeapon, canCast := wep.(*Weapon)
+	if !canCast || !asWeapon.IsMeleeWeapon() {
+		return nil, false
+	}
+	return asWeapon, true
+}
+
+func (i *Inventory) HasWeaponEquipped() bool {
+	_, hasWeapon := i.GetEquippedWeapon()
+	return hasWeapon
+}
+
+func (i *Inventory) HasRangedWeaponEquipped() bool {
+	weapon, hasWeapon := i.GetEquippedWeapon()
+	return hasWeapon && weapon.IsRangedWeapon()
+}
+
+func (i *Inventory) GetRangedWeapon() (*Weapon, bool) {
+	weapon, hasWeapon := i.GetEquippedWeapon()
+	if !hasWeapon || !weapon.IsRangedWeapon() {
+		return nil, false
+	}
+	return weapon, true
+}
+
+func (i *Inventory) HasMeleeWeaponEquipped() bool {
+	weapon, hasWeapon := i.GetEquippedWeapon()
+	return hasWeapon && weapon.IsMeleeWeapon()
+}
+
+func (i *Inventory) GetHelmet() *Armor {
+	armorID, hasArmor := i.equipSlots[foundation.SlotNameArmorHead]
+	armor, exists := i.items[armorID]
+	if !hasArmor || !exists {
+		return nil
+	}
+	asArmor, canCast := armor.(*Armor)
+	if !canCast {
+		return nil
+	}
+	return asArmor
+}
+
+func (i *Inventory) IsNotEquipped(item foundation.Equippable) bool {
+	return !i.IsEquipped(item)
+}
+
+func (i *Inventory) AfterTurn() {
+	for _, id := range i.equipSlots {
+		item := i.items[id]
+		item.AfterEquippedTurn()
+	}
+}
+
+func (i *Inventory) GetStatModifiersFromEquippedItems(stat d100.Stat) []d100.Modifier {
+	var modifiers []d100.Modifier
+	for _, itemID := range i.equipSlots {
+		item := i.items[itemID]
+		if modValue, hasValue := item.GetStatMod(stat); hasValue {
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    item.Name(),
+				Modifier:  modValue,
+				Order:     0,
+				IsPercent: true,
+			})
+		}
+	}
+	slices.SortStableFunc(modifiers, func(i, j d100.Modifier) int {
+		return cmp.Compare(i.Description(), j.Description())
+	})
+	return modifiers
+
+}
+
+func (i *Inventory) GetSkillModifiersFromEquippedItems(skill d100.Skill) []d100.Modifier {
+	var modifiers []d100.Modifier
+	for _, itemID := range i.equipSlots {
+		item := i.items[itemID]
+		if modValue, hasValue := item.GetSkillMod(skill); hasValue {
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    item.Name(),
+				Modifier:  modValue,
+				Order:     0,
+				IsPercent: true,
+			})
+		}
+	}
+	slices.SortStableFunc(modifiers, func(i, j d100.Modifier) int {
+		return cmp.Compare(i.Description(), j.Description())
+	})
+	return modifiers
+
+}
+
+func (i *Inventory) GetDerivedStatModifiersFromEquippedItems(stat d100.DerivedStat) []d100.Modifier {
+	var modifiers []d100.Modifier
+	for _, itemID := range i.equipSlots {
+		item := i.items[itemID]
+		if modValue, hasValue := item.GetDerivedStatMod(stat); hasValue {
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    item.Name(),
+				Modifier:  modValue,
+				Order:     0,
+				IsPercent: true,
+			})
+		}
+	}
+	slices.SortStableFunc(modifiers, func(i, j d100.Modifier) int {
+		return cmp.Compare(i.Description(), j.Description())
+	})
+	return modifiers
+
+}
+
+func (i *Inventory) HasArmorWithNameEquipped(name string) bool {
+	armor := i.GetArmor()
+	if armor == nil {
+		return false
+	}
+	return armor.GetInternalName() == name
+}
+
+func (i *Inventory) GetAllEquipmentFlags() map[foundation.ActorFlag]int {
+	flags := make(map[foundation.ActorFlag]int)
+	for _, id := range i.equipSlots {
+		item := i.items[id]
+		itemFlags := item.GetEquipFlag()
+		if itemFlags == foundation.FlagNone {
+			continue
+		}
+		flags[itemFlags] = 1
+	}
+	return flags
+}
+
+func (i *Inventory) EquipmentContainsFlag(flag foundation.ActorFlag) bool {
+	for _, id := range i.equipSlots {
+		item := i.items[id]
+		itemFlags := item.GetEquipFlag()
+		if itemFlags == flag {
+			return true
+		}
+	}
+	return false
+}
+func (i *Inventory) GetEncumbranceFromArmor() int {
+	armor := i.GetArmor()
+	encumbrance := 0
+	if armor != nil {
+		encumbrance = armor.GetEncumbrance()
+	}
+	return encumbrance
+}
+
 func SortInventory(stacks []foundation.Item) {
 	slices.SortStableFunc(stacks, func(i, j foundation.Item) int {
 		itemI := i
 		itemJ := j
-		if itemI.Category() != itemJ.Category() {
-			return cmp.Compare(itemI.Category(), itemJ.Category())
+		if itemI.GetCategory() != itemJ.GetCategory() {
+			return cmp.Compare(itemI.GetCategory(), itemJ.GetCategory())
 		}
 		if itemI.IsWeapon() && itemJ.IsWeapon() {
 			weapI := itemI.(*Weapon)
@@ -564,13 +863,32 @@ func SortInventory(stacks []foundation.Item) {
 			}
 			expectedDamageI := weapI.GetWeaponDamage().ExpectedValue()
 			expectedDamageJ := weapJ.GetWeaponDamage().ExpectedValue()
-			return cmp.Compare(expectedDamageJ, expectedDamageI)
+			if expectedDamageI != expectedDamageJ {
+				return cmp.Compare(expectedDamageJ, expectedDamageI)
+			}
 		}
 		if itemI.IsArmor() && itemJ.IsArmor() {
 			armorI := itemI.(*Armor)
 			armorJ := itemJ.(*Armor)
-			return cmp.Compare(armorI.GetProtectionRating(), armorJ.GetProtectionRating())
+			if armorI.GetProtectionRating() != armorJ.GetProtectionRating() {
+				return cmp.Compare(armorI.GetProtectionRating(), armorJ.GetProtectionRating())
+			}
 		}
-		return cmp.Compare(itemI.Name(), itemJ.Name())
+		if itemI.Name() != itemJ.Name() {
+			return cmp.Compare(itemI.Name(), itemJ.Name())
+		}
+		return cmp.Compare(itemI.GetQuality(), itemJ.GetQuality())
 	})
+}
+func slotFromItem(item foundation.Equippable) foundation.EquipSlot {
+	if item.IsHeadGear() {
+		return foundation.SlotNameArmorHead
+	} else if item.IsArmor() {
+		return foundation.SlotNameArmorTorso
+	} else if item.IsLightSource() {
+		return foundation.SlotNameLightSource
+	} else if item.IsWeapon() {
+		return foundation.SlotNameMainHand
+	}
+	return foundation.SlotNameNotEquippable
 }

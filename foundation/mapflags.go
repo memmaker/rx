@@ -1,8 +1,6 @@
 package foundation
 
 import (
-	"bytes"
-	"encoding/gob"
 	"maps"
 	"strings"
 )
@@ -50,6 +48,7 @@ const (
 	FlagAnimal
 	FlagRobot
 	FlagChase
+	FlagSpawnDead
 
 	// Perks
 	FlagSlowDigestion
@@ -339,6 +338,10 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagConcentratedAiming
 	case "running":
 		return FlagRunning
+	case "wants_to_transition":
+		return FlagWantsToTransition
+	case "spawn_dead":
+		return FlagSpawnDead
 	}
 	panic("Invalid actor flag: " + flag)
 	return 0
@@ -346,56 +349,44 @@ func ActorFlagFromString(flag string) ActorFlag {
 }
 
 type ActorFlags struct {
-	values  map[ActorFlag]int
+	Values  map[ActorFlag]int
 	changed func(flag ActorFlag, value int)
 }
 
 func NewActorFlags() *ActorFlags {
-	return &ActorFlags{values: make(map[ActorFlag]int)}
-}
-
-func (m *ActorFlags) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(m.values)
-	return buf.Bytes(), err
-}
-
-func (m *ActorFlags) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-	return dec.Decode(&m.values)
+	return &ActorFlags{Values: make(map[ActorFlag]int)}
 }
 
 func (m *ActorFlags) Set(flag ActorFlag) {
-	m.values[flag] = 1
-	m.onChange(flag, m.values[flag])
+	m.Values[flag] = 1
+	m.onChange(flag, m.Values[flag])
 }
 
 func (m *ActorFlags) Unset(flag ActorFlag) {
-	delete(m.values, flag)
+	delete(m.Values, flag)
 	m.onChange(flag, 0)
 }
 
 func (m *ActorFlags) IsSet(flag ActorFlag) bool {
-	_, ok := m.values[flag]
+	_, ok := m.Values[flag]
 	return ok
 }
 
 func (m *ActorFlags) Increment(flag ActorFlag) {
-	m.values[flag]++
-	m.onChange(flag, m.values[flag])
+	m.Values[flag]++
+	m.onChange(flag, m.Values[flag])
 }
 
 func (m *ActorFlags) Decrement(flag ActorFlag) {
 	if !m.IsSet(flag) {
 		return
 	}
-	m.values[flag]--
-	if m.values[flag] <= 0 {
-		delete(m.values, flag)
+	m.Values[flag]--
+	if m.Values[flag] <= 0 {
+		delete(m.Values, flag)
 		m.onChange(flag, 0)
 	} else {
-		m.onChange(flag, m.values[flag])
+		m.onChange(flag, m.Values[flag])
 	}
 }
 
@@ -410,7 +401,7 @@ func (m *ActorFlags) onChange(flag ActorFlag, value int) {
 }
 
 func (m *ActorFlags) Get(flag ActorFlag) int {
-	val, ok := m.values[flag]
+	val, ok := m.Values[flag]
 	if !ok {
 		return 0
 	}
@@ -418,29 +409,29 @@ func (m *ActorFlags) Get(flag ActorFlag) int {
 }
 
 func (m *ActorFlags) Decrease(flag ActorFlag, amount int) {
-	m.values[flag] = m.Get(flag) - amount
-	if m.values[flag] <= 0 {
-		delete(m.values, flag)
+	m.Values[flag] = m.Get(flag) - amount
+	if m.Values[flag] <= 0 {
+		delete(m.Values, flag)
 		m.onChange(flag, 0)
 	} else {
-		m.onChange(flag, m.values[flag])
+		m.onChange(flag, m.Values[flag])
 	}
 }
 
 func (m *ActorFlags) Increase(flag ActorFlag, amount int) {
-	m.values[flag] = m.Get(flag) + amount
-	m.onChange(flag, m.values[flag])
+	m.Values[flag] = m.Get(flag) + amount
+	m.onChange(flag, m.Values[flag])
 }
 
 func (m *ActorFlags) UnderlyingCopy() map[ActorFlag]int {
-	return maps.Clone[map[ActorFlag]int](m.values)
+	return maps.Clone[map[ActorFlag]int](m.Values)
 }
 
 func (m *ActorFlags) Init(underlying map[ActorFlag]int) {
-	m.values = underlying
+	m.Values = underlying
 }
 
 func (m *ActorFlags) SetFlagTo(flag ActorFlag, value int) {
-	m.values[flag] = value
+	m.Values[flag] = value
 	m.onChange(flag, value)
 }

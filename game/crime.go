@@ -1,15 +1,16 @@
 package game
 
-import "RogueUI/foundation"
+import "contractor/foundation"
 
 func (g *GameState) playerMinorCrimeIsDenied() bool {
 	location := g.Player.Position()
 	observers := g.getObservers(location)
 	for _, observer := range observers {
-		if observer.teamName == g.Player.teamName {
+		if observer.TeamName == g.Player.TeamName {
 			continue
 		}
-		if observer.HasFlag(foundation.FlagIgnoresCrime) {
+
+		if observer.HasFlag(foundation.FlagIgnoresCrime) || observer.HasFlag(foundation.FlagAnimal) || observer.HasFlag(foundation.FlagZombie) {
 			continue
 		}
 

@@ -1,0 +1,40 @@
+%rec: default
+
+Name: rat
+Icon: R
+Foreground: light_gray_1
+Description: Rat
+LongDescription: A typical large rat.
+Flags: Is_Animal
+faction: rats
+aggressive: true
+audio: rat
+Age: 25
+Gender: 1
+BodyType: 1
+XP: 25
+KillType: 7
+DamageType: 0
+TeamNum: 1
+HitPoints: 6
+ActionPoints: 5
+ArmorClass: 4
+MeleeDamage: 2
+CarryWeight: 50
+Sequence: 12
+HealingRate: 1
+CriticalChance: 1
+Strength: 1
+Perception: 1
+Endurance: 1
+Cool: 1
+Intelligence: 1
+Agility: 4
+Luck: 1
+SkillBonusMeleeCombat: 27
+DREMP: 500
+DRRadiation: 2
+DRPoison: 5
+SourceFile: 00000011.pro
+Position: (16,22)
+

@@ -1,0 +1,160 @@
+%rec: default
+
+Category: Other
+Name: junk
+Description: medical waste
+Weight: 1
+Cost: 1
+Position: (10,2)
+
+Category: Notes
+Name: note_access_to_random_code
+Description: access to clone cellar
+TextVar: code
+TextValue: RandomNumberCode('home_secret_door')
+Text: The code for the clone cellar is {{ .code }}.
+Position: (68,8)
+
+Category: Books
+Name: adult_magazine
+Description: Adult Entertainment Weekly
+hidden: true
+Text: Some light pornography for the connoisseur of naked bodies.
+Position: (5,13)
+
+Category: Books
+Name: skillbook_ranged
+Description: Killing: from a distance
+skill_bonus: ranged_combat(5)
+Position: (10,12)
+
+Category: Weapons
+Name: 10mm_pistol
+Description: 10mm Pistol
+LongDescription: A Colt 6520 10mm autoloading pistol. Each pull of the trigger will automatically reload the firearm until the magazine is empty. Single shot only, using the powerful 10mm round. Min ST: 3.
+Size: 2
+Weight: 3
+Hidden: true
+Cost: 250
+Quality: 80
+weapon_type: Pistol
+weapon_damage: 5-12
+weapon_magazine_size: 12
+weapon_burst_rounds: 1
+weapon_damage_type: Normal
+weapon_min_str: 3
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 5
+weapon_ap_cost_two: 0
+weapon_max_range_one: 25
+weapon_max_range_two: 0
+weapon_uses_ammo: 10mm
+weapon_caliber_index: 8
+weapon_sound_id: 65
+Position: (49,3)
+
+Category: Other
+Name: junk
+Description: PolyClean
+Weight: 1
+Cost: 1
+LongDescription: Polymer-based soap. It's a bar of plastic that you can rub against your body.
+Position: (16,12)
+
+Category: Ammo
+Name: 9mm
+Description: 9mm
+LongDescription: Ammunition. Caliber: 9mm.
+Size: 0
+Weight: 1
+Cost: 100
+ammo_dmg_factor: 0.5
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_rounds_in_magazine: 20
+ammo_caliber_index: 12
+ammo_caliber_name: 9mm
+ammo_bonus_radius: 0
+Position: (18,14)
+
+Category: Weapons
+Name: disposable_pistol
+Description: B9 Pistol
+LongDescription: This disposable pistol design is produced using additive manufacturing techniques. It is a single shot weapon, and is designed to be used once and then discarded. The latest in the Budget line of weapons by Blunt Ware. Min ST: 2.
+Size: 2
+Weight: 3
+Cost: 75
+hidden: true
+weapon_type: Pistol
+weapon_damage: 6-8
+weapon_magazine_size: 1
+weapon_burst_rounds: 1
+weapon_damage_type: Normal
+weapon_min_str: 2
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 5
+weapon_ap_cost_two: 0
+weapon_max_range_one: 8
+weapon_max_range_two: 0
+weapon_uses_ammo: 9mm
+weapon_caliber_index: 12
+weapon_sound_id: 66
+weapon_skill_used: ranged_combat
+weapon_degrade_factor: 400
+Position: (3,18)
+
+Category: Ammo
+Name: 9mm
+Description: 9mm
+LongDescription: Ammunition. Caliber: 9mm.
+Size: 0
+Weight: 1
+Cost: 100
+ammo_dmg_factor: 0.5
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_rounds_in_magazine: 20
+ammo_caliber_index: 12
+ammo_caliber_name: 9mm
+ammo_bonus_radius: 0
+Position: (25,15)
+
+Category: Other
+Name: junk
+Description: bread crumbs
+Weight: 1
+Cost: 1
+Position: (60,18)
+
+Category: Books
+Name: skillbook_melee
+Hidden: true
+Description: Killing: up close
+skill_bonus: melee_combat(5)
+Position: (76,7)
+
+Category: Other
+Name: junk
+Description: bullet casings
+Weight: 1
+Cost: 1
+Position: (18,16)
+
+Category: Ammo
+Name: 9mm
+Description: 9mm
+LongDescription: Ammunition. Caliber: 9mm.
+Size: 0
+Weight: 1
+Cost: 100
+ammo_dmg_factor: 0.5
+ammo_condition_factor: 1.0
+ammo_spread_factor: 1
+ammo_rounds_in_magazine: 20
+ammo_caliber_index: 12
+ammo_caliber_name: 9mm
+ammo_bonus_radius: 0
+Position: (1,2)
+

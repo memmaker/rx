@@ -1,0 +1,99 @@
+%rec: default
+
+Name: jana_miller
+Icon: J
+Foreground: teal_1
+Description: Jana 'Jax' Miller
+LongDescription: Jana 'Jax' Miller, Chief Technology Officer (CTO) of Bushido-ArmaTech (BAT), is a brilliant but deeply misanthropic engineer. Her harsh upbringing and disdain for humanity have fueled her relentless drive to advance military technology, believing it to be humanity’s only hope for survival. Jax is known for her cutting-edge innovations and unyielding commitment to pushing the boundaries of what’s possible.
+Dialogue: jana_miller
+Chatter: jana_miller_chatter
+Age: 37
+BodyType: 1
+XP: 105
+KillType: 0
+DamageType: 0
+TeamNum: 2
+HitPoints: 35
+ActionPoints: 7
+MeleeDamage: 1
+CarryWeight: 120
+Sequence: 12
+HealingRate: 1
+CriticalChance: 5
+Strength: 4
+Perception: 7
+Endurance: 5
+Cool: 6
+Intelligence: 9
+Agility: 5
+SkillBonusTechnology: 85
+SkillBonusMechanics: 75
+equipment: tech_ops_jumpsuit
+Position: (73,15)
+
+Name: haruki_tanaka
+Icon: H
+Foreground: teal_1
+Description: Haruki Tanaka
+LongDescription: Haruki Tanaka, CEO of Bushido-ArmaTech (BAT), is a charismatic and ambitious leader who preaches peace through strength. Beneath his composed exterior lies a deeply insecure individual driven by his father’s shadow and a desire to secure his legacy. Tanaka’s leadership has steered BAT into becoming a dominant force in military technology, blending innovation with ruthless pragmatism.
+Dialogue: haruki_tanaka
+Chatter: haruki_tanaka_chatter
+Age: 48
+BodyType: 0
+XP: 120
+KillType: 0
+DamageType: 0
+TeamNum: 2
+HitPoints: 40
+ActionPoints: 6
+MeleeDamage: 2
+CarryWeight: 125
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 5
+Perception: 7
+Endurance: 6
+Cool: 6
+Intelligence: 8
+Agility: 4
+SkillBonusIntimidate: 75
+SkillBonusSocial: 65
+equipment: armatech_executive_suit
+Position: (75,5)
+
+Name: bat_receptionist
+Icon: R
+Foreground: light_gray_2
+Description: BAT Receptionist
+LongDescription: 
+Age: 25
+BodyType: 0
+XP: 100
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 65
+ActionPoints: 8
+ArmorClass: 6
+MeleeDamage: 1
+CarryWeight: 125
+Sequence: 10
+HealingRate: 1
+CriticalChance: 6
+Strength: 4
+Perception: 5
+Endurance: 4
+Cool: 5
+Intelligence: 5
+Agility: 6
+Luck: 6
+SkillBonusRangedCombat: 41
+SkillBonusMeleeCombat: 25
+SkillBonusSocial: 87
+DREMP: 500
+DRRadiation: 8
+DRPoison: 20
+SourceFile: 00000150.pro
+Position: (28,10)
+

@@ -1,20 +1,122 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"cmp"
+	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"slices"
 )
 
-func (g *GameState) getRangedChanceToHitForUI(mods d100.CombatModifiers) func(target foundation.ActorForUI) foundation.AttackInfo {
+func (g *GameState) addOneWarPointAgainst(victim *Actor) {
+	g.gameFlags.Increment("WarPoints")
+	g.gameFlags.Increment(fmt.Sprintf("WarPoints(%s)", victim.GetTeam()))
+	g.gameFlags.Increment(fmt.Sprintf("WarPoints(%s)", victim.GetInternalName()))
+}
+
+func (g *GameState) addOneSupportPointFor(supported *Actor) {
+	g.gameFlags.Increment("SupportPoints")
+	g.gameFlags.Increment(fmt.Sprintf("SupportPoints(%s)", supported.GetTeam()))
+	g.gameFlags.Increment(fmt.Sprintf("SupportPoints(%s)", supported.GetInternalName()))
+}
+
+func (g *GameState) getIntimidateModifiers(actor *Actor, opponent *Actor, situationalMods d100.ModList) d100.ModList {
+	modifiers := situationalMods
+
+	if actor == g.Player { // these mods are only for the player
+		globalWarPoints := g.gameFlags.Get("WarPoints")
+		factionWarPoints := g.gameFlags.Get(fmt.Sprintf("WarPoints(%s)", actor.GetTeam()))
+		charWarPoints := g.gameFlags.Get(fmt.Sprintf("WarPoints(%s)", opponent.GetInternalName()))
+		if charWarPoints > 0 {
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    "Personal Notoriety",
+				Modifier:  +20,
+				IsPercent: true,
+			})
+		} else if factionWarPoints > 1 {
+			bonus := min(10, factionWarPoints)
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    "Faction Notoriety",
+				Modifier:  +bonus,
+				IsPercent: true,
+			})
+		} else if globalWarPoints > 2 {
+			bonus := min(5, globalWarPoints)
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    "Global Notoriety",
+				Modifier:  +bonus,
+				IsPercent: true,
+			})
+		}
+	}
+
+	pCool := actor.GetCharSheet().GetStat(d100.Cool)
+	pStr := actor.GetCharSheet().GetStat(d100.Strength)
+	pSpd := actor.GetBasicSpeed()
+
+	oCool := opponent.GetCharSheet().GetStat(d100.Cool)
+	oStr := opponent.GetCharSheet().GetStat(d100.Strength)
+	oSpd := opponent.GetBasicSpeed()
+
+	if pCool > oCool {
+		bonus := (pCool - oCool) * 2
+		modifiers = append(modifiers, d100.DefaultModifier{
+			Source:    "Cooler",
+			Modifier:  +bonus,
+			IsPercent: true,
+		})
+	} else if pCool < oCool {
+		malus := (oCool - pCool) * 2
+		modifiers = append(modifiers, d100.DefaultModifier{
+			Source:    "Less cool",
+			Modifier:  -malus,
+			IsPercent: true,
+		})
+	} else {
+		if pStr > oStr {
+			bonus := (pStr - oStr) * 2
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    "Stronger",
+				Modifier:  +bonus,
+				IsPercent: true,
+			})
+		} else if pStr < oStr {
+			malus := (oStr - pStr) * 2
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    "Weaker",
+				Modifier:  -malus,
+				IsPercent: true,
+			})
+		}
+
+		if pSpd > oSpd {
+			bonus := (pSpd - oSpd) * 2
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    "Faster",
+				Modifier:  +bonus,
+				IsPercent: true,
+			})
+		} else if pSpd < oSpd {
+			malus := (oSpd - pSpd) * 2
+			modifiers = append(modifiers, d100.DefaultModifier{
+				Source:    "Slower",
+				Modifier:  -malus,
+				IsPercent: true,
+			})
+		}
+	}
+
+	return modifiers
+}
+
+func (g *GameState) getPlayerRangedChanceToHitForUI(mods d100.CombatModifiers) func(target foundation.ActorForUI) foundation.AttackInfo {
 	return func(target foundation.ActorForUI) foundation.AttackInfo {
 		defender := target.(*Actor)
 		attacker := g.Player
-		weapon, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
+		weapon, hasWeapon := g.Player.GetInventory().GetEquippedWeapon()
 		if !hasWeapon || !weapon.IsLoaded() {
 			return foundation.RangedAttackInfo{}
 		}
@@ -22,7 +124,7 @@ func (g *GameState) getRangedChanceToHitForUI(mods d100.CombatModifiers) func(ta
 		weaponSkill := weapon.GetSkillUsed()
 		baseSkill := attacker.GetCharSheet().GetSkill(weaponSkill)
 
-		cth, modifiers := g.getRangedChanceToHit(attacker, weapon, defender, g.NewAmmo(weapon.GetLoadedAmmo().InternalName(), weapon.BulletCountForCurrentAttackMode()), d100.NoModifierList)
+		cth, modifiers := g.getRangedChanceToHit(attacker, weapon, defender, g.NewAmmo(weapon.GetLoadedAmmo().GetInternalName(), weapon.BulletCountForCurrentAttackMode()), d100.NoModifierList)
 
 		newMods := mods.WithChanceToHit(modifiers)
 
@@ -87,7 +189,7 @@ func (g *GameState) getThrownChanceToHitForUI(target foundation.ActorForUI) foun
 }
 
 func (g *GameState) GetItemInMainHand() (foundation.Item, bool) {
-	item, b := g.Player.GetEquipment().GetMainHandItem()
+	item, b := g.Player.GetInventory().GetMainHandItem()
 	if !b {
 		return nil, false
 	}
@@ -96,7 +198,7 @@ func (g *GameState) GetItemInMainHand() (foundation.Item, bool) {
 
 func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []fxtools.Tuple3[d100.BodyPart, bool, int] {
 	victim := targeted.(*Actor)
-	mainHandItem, hasMainHandItem := g.Player.GetEquipment().GetMainHandWeapon()
+	mainHandItem, hasMainHandItem := g.Player.GetInventory().GetEquippedWeapon()
 	if !hasMainHandItem {
 		return victim.GetBodyPartsAndHitChances(g.Player.GetCharSheet().GetSkill(d100.SkillForUnarmed), true)
 	}
@@ -104,7 +206,7 @@ func (g *GameState) GetBodyPartsAndHitChances(targeted foundation.ActorForUI) []
 	isMelee := true
 	if mainHandItem.IsRangedWeapon() && mainHandItem.IsLoaded() {
 		isMelee = false
-		baseChance, _ = g.getRangedChanceToHit(g.Player, mainHandItem, victim, g.NewAmmo(mainHandItem.GetLoadedAmmo().InternalName(), mainHandItem.BulletCountForCurrentAttackMode()), d100.NoModifierList)
+		baseChance, _ = g.getRangedChanceToHit(g.Player, mainHandItem, victim, g.NewAmmo(mainHandItem.GetLoadedAmmo().GetInternalName(), mainHandItem.BulletCountForCurrentAttackMode()), d100.NoModifierList)
 	} else if mainHandItem.IsMeleeWeapon() {
 		baseChance, _ = g.getMeleeChanceToHit(g.Player, mainHandItem, victim, d100.NoModifierList)
 	}
@@ -226,7 +328,7 @@ func (g *GameState) IsSomethingInterestingAtLoc(loc geometry.Point) bool {
 }
 
 func (g *GameState) IsEquipped(items foundation.Item) bool {
-	return g.Player.GetEquipment().IsEquipped(items)
+	return g.Player.GetInventory().IsEquipped(items)
 }
 
 func (g *GameState) GetVisibleActors() []foundation.ActorForUI {
@@ -241,7 +343,7 @@ func (g *GameState) GetVisibleEnemies() []*Actor {
 
 func (g *GameState) GetHudFlags() map[foundation.ActorFlag]int {
 	flagSet := g.Player.GetFlags().UnderlyingCopy()
-	equipFlags := g.Player.GetEquipment().GetAllFlags()
+	equipFlags := g.Player.GetInventory().GetAllEquipmentFlags()
 	for flag, _ := range equipFlags {
 		flagSet[flag] = 1
 	}

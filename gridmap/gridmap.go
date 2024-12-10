@@ -37,19 +37,24 @@ func MustDecodeTransition(str string) Transition {
 	return t
 }
 
-type MapObject interface {
+type MapItem interface {
+	ID() ItemID
 	Position() geometry.Point
 	SetPosition(geometry.Point)
 }
 
 type MapActor interface {
-	MapObject
+	ID() ActorID
+	Position() geometry.Point
+	SetPosition(geometry.Point)
+	IsAlive() bool
 }
 type MapObjectWithProperties[ActorType interface {
 	comparable
 	MapActor
 }] interface {
-	MapObject
+	Position() geometry.Point
+	SetPosition(geometry.Point)
 	IsWalkable(person ActorType) bool
 	IsTransparent() bool
 	IsPassableForProjectile() bool
@@ -136,7 +141,7 @@ type GridMap[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
@@ -145,10 +150,10 @@ type GridMap[ActorType interface {
 	meta MapMeta
 
 	cells           []MapCell[ActorType, ItemType, ObjectType]
-	allActors       []ActorType
+	allActors       map[ActorID]ActorType
 	allDownedActors []ActorType
 	removedActors   []ActorType
-	allItems        []ItemType
+	allItems        map[ItemID]ItemType
 	allObjects      []ObjectType
 
 	decals map[geometry.Point]int32
@@ -272,7 +277,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetActorToRemoved(person Acto
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetActorToNormal(person ActorType) {
 	m.RemoveDownedActor(person)
-	m.allActors = append(m.allActors, person)
+	m.allActors[person.ID()] = person
 	if m.IsActorAt(person.Position()) && m.ActorAt(person.Position()) != person {
 		m.displaceActor(person, person.Position())
 		return
@@ -382,12 +387,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetFreeCellsForDistribution(p
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) RemoveItem(item ItemType) {
 	m.cells[item.Position().Y*m.mapWidth+item.Position().X] = m.cells[item.Position().Y*m.mapWidth+item.Position().X].WithItemHereRemoved(item)
-	for i := len(m.allItems) - 1; i >= 0; i-- {
-		if m.allItems[i] == item {
-			m.allItems = append(m.allItems[:i], m.allItems[i+1:]...)
-			return
-		}
-	}
+	delete(m.allItems, item.ID())
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetAllCardinalNeighbors(pos geometry.Point) []geometry.Point {
@@ -511,7 +511,7 @@ func NewMapFromString[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
@@ -539,7 +539,7 @@ func NewEmptyMap[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
@@ -547,9 +547,9 @@ func NewEmptyMap[ActorType interface {
 	pathRange := geometry.NewPathRange(geometry.NewRect(0, 0, width, height))
 	m := &GridMap[ActorType, ItemType, ObjectType]{
 		cells:               make([]MapCell[ActorType, ItemType, ObjectType], width*height),
-		allActors:           make([]ActorType, 0),
+		allActors:           make(map[ActorID]ActorType),
 		allDownedActors:     make([]ActorType, 0),
-		allItems:            make([]ItemType, 0),
+		allItems:            make(map[ItemID]ItemType),
 		allObjects:          make([]ObjectType, 0),
 		namedLocations:      map[string]geometry.Point{},
 		zones:               map[string]map[geometry.Point]bool{},
@@ -593,11 +593,9 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetActor(p geometry.Point) Ac
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) RemoveActor(actor ActorType) bool {
 	m.cells[actor.Position().X+actor.Position().Y*m.mapWidth] = m.cells[actor.Position().X+actor.Position().Y*m.mapWidth].WithActorHereRemoved(actor)
-	for i := len(m.allActors) - 1; i >= 0; i-- {
-		if m.allActors[i] == actor {
-			m.allActors = append(m.allActors[:i], m.allActors[i+1:]...)
-			return true
-		}
+	if _, ok := m.allActors[actor.ID()]; ok {
+		delete(m.allActors, actor.ID())
+		return true
 	}
 	return false
 }
@@ -709,7 +707,14 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetFilteredCardinalNeighbors(
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) Actors() []ActorType {
-	return m.allActors
+	actors := make([]ActorType, len(m.allActors))
+	i := 0
+	for _, actor := range m.allActors {
+		actors[i] = actor
+		i++
+	}
+
+	return actors
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) DownedActors() []ActorType {
@@ -717,7 +722,13 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) DownedActors() []ActorType {
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) Items() []ItemType {
-	return m.allItems
+	items := make([]ItemType, len(m.allItems))
+	i := 0
+	for _, item := range m.allItems {
+		items[i] = item
+		i++
+	}
+	return items
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) Objects() []ObjectType {
@@ -1290,7 +1301,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddActor(actor ActorType, spa
 	if m.IsActorAt(spawnPos) {
 		return
 	}
-	m.allActors = append(m.allActors, actor)
+	m.allActors[actor.ID()] = actor
 	m.MoveActor(actor, spawnPos)
 }
 
@@ -1326,7 +1337,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddItem(item ItemType, spawnP
 	if m.IsItemAt(spawnPos) {
 		return
 	}
-	m.allItems = append(m.allItems, item)
+	m.allItems[item.ID()] = item
 	m.MoveItem(item, spawnPos)
 }
 
@@ -1879,13 +1890,13 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) AddActorWithDisplacement(acto
 	if m.CanPlaceActorHere(position) {
 		m.AddActor(actor, position)
 	} else {
-		m.allActors = append(m.allActors, actor)
+		m.allActors[actor.ID()] = actor
 		m.displaceActor(actor, position)
 	}
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) ForceSpawnActorInWall(actor ActorType, to geometry.Point) {
-	m.allActors = append(m.allActors, actor)
+	m.allActors[actor.ID()] = actor
 	actor.SetPosition(to)
 	m.cells[to.X+to.Y*m.mapWidth] = m.cells[to.X+to.Y*m.mapWidth].WithActor(actor)
 }
@@ -1959,19 +1970,21 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) generateTileSetAndMap() ([]Ti
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) SetCells(cells []MapCell[ActorType, ItemType, ObjectType]) {
-	var allItems []ItemType
+	allItems := make(map[ItemID]ItemType)
 	var allObjects []ObjectType
-	var allActors []ActorType
+	allActors := make(map[ActorID]ActorType)
 	var allDownedActors []ActorType
 	for _, cell := range cells {
 		if cell.Actor != nil {
-			allActors = append(allActors, *cell.Actor)
+			actorInCell := *cell.Actor
+			allActors[actorInCell.ID()] = actorInCell
 		}
 		if cell.DownedActor != nil {
 			allDownedActors = append(allDownedActors, *cell.DownedActor)
 		}
 		if cell.Item != nil {
-			allItems = append(allItems, *cell.Item)
+			itemInCell := *cell.Item
+			allItems[itemInCell.ID()] = itemInCell
 		}
 		if cell.Object != nil {
 			allObjects = append(allObjects, *cell.Object)
@@ -2057,6 +2070,10 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) ZoneMetadata(zoneName string)
 	return ZoneMetadata{
 		Lighting: fxtools.HDRColor{R: 1, G: 1, B: 1, A: 1},
 	}
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetActorByID(id ActorID) ActorType {
+	return m.allActors[id]
 }
 
 type JumpOverInfo struct {

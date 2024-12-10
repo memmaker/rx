@@ -1,4 +1,5 @@
-%rec: default
+%rec: objectIcon
+%key: Name
 
 Name: OpenDoor
 Icon: ─
@@ -64,3 +65,18 @@ Name: Taxi
 Icon: ⌂
 Foreground: dark_gray_7
 Background: yellow_3
+
+Name: PosterRed
+Icon: ≡
+Foreground: neon_red_1
+Background: white
+
+Name: PosterBlue
+Icon: ≡
+Foreground: neon_blue_1
+Background: white
+
+Name: PosterGreen
+Icon: ≡
+Foreground: neon_green_1
+Background: white

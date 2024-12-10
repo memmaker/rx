@@ -1,0 +1,122 @@
+The starter/example quest that will set the tone for the game
+
+Delivered to your home_terminal is a job offer from a new client:
+
+"Extract $500 from the Ripperdoc in the northside residential area. He owes Jacob."
+
+The offer is signed with a simple "Jacob".
+
+The money has to be deposited in the dead_drop you always use.
+
+If done correctly, the client will retrieve the money and leave a reward for the player.
+
+Now the player should have these options:
+
+- Get the money from the Ripperdoc
+  - by stealing from his secret stash - POSSIBLE
+  - by force - POSSIBLE
+    - non-lethal - POSSIBLE
+    - lethal - POSSIBLE
+  - by persuasion - POSSIBLE
+- Negotiate with the Ripperdoc
+  - to pay you double - POSSIBLE
+    - requires notoriety or physical threat
+  - to reward you for going after the client - POSSIBLE
+- Find the ex-partner, locked away in the cellar of the hospital
+  - to kill him - POSSIBLE
+  - to free him - POSSIBLE
+  - to get information from him about the secret stash - POSSIBLE
+- Pay out of his own pocket, or with money stolen from someone else - POSSIBLE
+- Ignore the job - POSSIBLE
+- Find out more about the client and go after him (from either the doc or grim)
+  - to kill him - POSSIBLE
+  - to get more payment
+     - requires notoriety or physical threat
+  - to intimidate him into leaving the Doc alone
+     - requires notoriety or physical threat
+  - to steal money from him
+
+So how does the world react to the player's actions?
+
+Resolving the situation in any of these ways will be rewarded with XP.
+- If the player kills the Ripperdoc, the hospital will be closed for a few days and finally a new Ripperdoc will take over.
+  - Requires freeing the old Ripperdoc
+- If the player makes the Ripperdoc pay, the Ripperdoc will be angry but compliant.
+- If the player goes after the client, the client will
+  - be dead and not appear in the game anymore
+  - be scared and pay the player more
+  - be angry and call goons on the player (only if player is combative, so the client expected to need support)
+  - be impressed and offer the player a better job
+  - be intimidated and leave the Doc and Player alone
+- If the player pays out of his own pocket, the job will be done.
+
+The only way to get no XP is to ignore the job completely.
+- If the player ignores the job, the client will hire someone else and the player will not get any reward. The ripperdoc will be attacked in a scripted event.
+
+These options offer a solution at least for the basic three player types:
+ - Fighter
+ - Diplomat
+ - Thief
+
+You can be the good guy, the bad guy, or the guy who doesn't care.
+
+There is one clever and cool way to solve the quest, and that is to steal the money from the client
+and give it right back to him.
+
+What game elements are needed?
+
+ - Journal Entries
+ - XP Rewards
+ - Actors:
+   - Ripperdoc (Daniel Harker)
+   - Replacement Doc (Drake Gallows)
+     - Is locked in the cellar of the hospital
+   - Replacement Killer (Quinn Rix)
+     - Lives near the hospital
+   - Client (Jacob Thorne)
+   - Grim (as informant)
+ - Items: Money, Reward Item
+ - Objects: Dead Drop, Home Terminal, Doc's secret stash of money
+ - Locations: Hospital, Home of Player, Home of Client
+ - Scripts: other_assassin_gets_job
+ - Dialogues: Ripperdoc, Client
+ - Flags
+   - Job Details known: JobRead(starter)
+   - Job Accepted: JobAccepted(starter)
+   - Client Location Known: LocationKnown(judas_home)
+   - Client Angered: ActorAngered(judas)
+   - Client Killed: Killed(judas)
+   - Replacement Doc Killed: Killed(julian_nox)
+   - Replacement Killer Killed: Killed(quinn_rix)
+   - Ripperdoc Angered: ActorAngered(ripperdoc)
+   - Ripperdoc Killed: Killed(daniel_harker)
+   - Money Collected from Ripperdoc: starter(money_collected)
+   - Money Deposited in Dead Drop: starter(money_deposited)
+   - Money Stolen from Client: starter(money_stolen_from_client)
+
+NOTE: This is a very elaborate example, and we will only dedicate these resources to the main quest line.
+	  Side quests don't have to include that many options.
+
+
+Missing Engine Features:
+ - Locked Containers (The secret stash of the doc)
+ - Nice to have: Weight display + Overencumbered on the GiveAndTake Screen
+
+
+Use all Stats/Skills in Dialogue.
+Don't force the player to pick a choice bound to a skill.
+
+Skill Applications in this quest:
+Melee Combat  - Obvious
+Ranged Combat - Obvious
+Social        - Talking
+Intimidate    - Talking
+Stealth       - Stealing / Sneaking
+Mechanics     - Lockpicking/Traps
+BioChemistry  - Talking to Dr. / Investigating
+Technology    - Gain access / Collecting evidence
+
+
+The Debt
+
+Daniel Harker

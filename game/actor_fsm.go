@@ -1,23 +1,26 @@
 package game
 
-import "RogueUI/fsmai"
+import (
+	"contractor/fsmai"
+	"github.com/kelindar/binary"
+)
 
 type ActorBehavior interface {
 	AssociatedState() fsmai.StateName
-	Init(state *GameState, actor *Actor, event fsmai.TransitionEvent)
+	WithInitEvent(event fsmai.TransitionEvent) ActorBehavior
+	Init(state *GameState, actor *Actor)
 	Execute(state *GameState, actor *Actor) (fsmai.TransitionEvent, int)
 }
 
 type BehaviorFactory func(state fsmai.StateName) ActorBehavior
 
 type ActorFSM struct {
-	eventListener   func(event fsmai.TransitionEvent)
-	currentBehavior ActorBehavior
 	transition      *fsmai.TransitionTable
 	behaviorFactory BehaviorFactory
 	gameState       *GameState
 	actor           *Actor
 	defaultState    fsmai.StateName
+	currentBehavior ActorBehavior
 }
 
 func NewActorFSM(state *GameState, actor *Actor, defaultState fsmai.StateName, behaviorFactory BehaviorFactory) *ActorFSM {
@@ -30,9 +33,28 @@ func NewActorFSM(state *GameState, actor *Actor, defaultState fsmai.StateName, b
 		defaultState:    defaultState,
 	}
 }
+func (p *ActorFSM) GobEncode() ([]byte, error) {
+	state := p.currentBehavior.AssociatedState()
+	return binary.Marshal(state)
+}
 
-func (p *ActorFSM) SetEventListener(listener func(event fsmai.TransitionEvent)) {
-	p.eventListener = listener
+func (p *ActorFSM) GobDecode(data []byte) error {
+	var state fsmai.StateName
+	if err := binary.Unmarshal(data, &state); err != nil {
+		return err
+	}
+	p.defaultState = state
+	return nil
+}
+
+func (p *ActorFSM) RestoreState(state *GameState, actor *Actor, defaultState fsmai.StateName, behaviorFactory BehaviorFactory) {
+	currentState := p.defaultState
+	p.transition = fsmai.NewDefaultTransitionTable(defaultState)
+	p.behaviorFactory = behaviorFactory
+	p.gameState = state
+	p.actor = actor
+	p.defaultState = defaultState
+	p.currentBehavior = p.behaviorFactory(currentState)
 }
 
 func (p *ActorFSM) ExecuteBehavior() int {
@@ -50,8 +72,8 @@ func (p *ActorFSM) SendEvent(eventFromCurrentState fsmai.TransitionEvent) {
 }
 
 func (p *ActorFSM) SetState(nextState fsmai.StateName, event fsmai.TransitionEvent) {
-	p.currentBehavior = p.behaviorFactory(nextState)
-	p.currentBehavior.Init(p.gameState, p.actor, event)
+	p.currentBehavior = p.behaviorFactory(nextState).WithInitEvent(event)
+	p.currentBehavior.Init(p.gameState, p.actor)
 }
 
 func (p *ActorFSM) State() fsmai.StateName {

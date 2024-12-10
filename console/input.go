@@ -1,8 +1,8 @@
 package console
 
 import (
-	"RogueUI/foundation"
 	"bufio"
+	"contractor/foundation"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/fxtools"
@@ -197,7 +197,7 @@ func (u *UI) showKeyBindings() {
 		"run_southeast":     "Run Southeast",
 		"look":              "Look",
 		"overlay_monsters":  "Overlay Monsters",
-		"overlay_items":     "Overlay Items",
+		"overlay_items":     "Overlay GetItems",
 		"gamma_up":          "Gamma Up",
 		"gamma_down":        "Gamma Down",
 		"system_menu":       "System Menu",
@@ -458,7 +458,7 @@ func Letter(letter rune) UIKey {
 	if letter == '\n' {
 		keyName = "Enter"
 		key = tcell.KeyEnter
-		letter = 13
+		letter = 0
 	} else if letter == '\t' {
 		keyName = "Tab"
 		key = tcell.KeyTAB
@@ -473,7 +473,7 @@ func LetterCombo(letter rune, mod tcell.ModMask) UIKey {
 	if letter == '\n' {
 		keyName = "Enter"
 		key = tcell.KeyEnter
-		letter = 13
+		letter = 0
 	} else if letter == '\t' {
 		keyName = "Tab"
 		key = tcell.KeyTAB

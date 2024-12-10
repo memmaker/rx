@@ -1,0 +1,7 @@
+%rec: default
+
+Name: Project 21's Server Room
+MusicFile: 
+IsOutdoor: false
+IndoorAmbientLight: (0.2, 0.2, 0.2)
+

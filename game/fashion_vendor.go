@@ -1,8 +1,9 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+    "contractor/d100"
+    "contractor/foundation"
+    "contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/textiles"
 	"math/rand"
@@ -129,7 +130,7 @@ func generateNewFashionItem(desc ClothingDescription, forceStyle foundation.Fash
 		},
 		foundation.FashionStyleEdgerunner: {
 			"Image Fashionware",
-			"Icon America",
+			"GetIcon America",
 			"Cryo-Max",
 		},
 		foundation.FashionStyleHighFashion: {
@@ -184,19 +185,20 @@ func generateNewFashionItem(desc ClothingDescription, forceStyle foundation.Fash
 
 	return &Armor{
 		GenericItem: &GenericItem{
-			name:             pieceName,
-			internalName:     "fashion_piece",
-			category:         foundation.ItemCategoryArmor,
-			qualityInPercent: d100.Percentage(100),
-			stackSize:        1,
-			statChanges:      StatChange{},
-			icon:             textiles.TextIcon{},
-			weight:           0,
-			cost:             basePrice,
+			UID:              gridmap.NextItemID(),
+			DisplayName:      pieceName,
+			InternalName:     "fashion_piece",
+			Category:         foundation.ItemCategoryArmor,
+			QualityInPercent: d100.Percentage(100),
+			StackSize:        1,
+			StatChanges:      StatChange{},
+			Icon:             textiles.TextIcon{},
+			Weight:           0,
+			Cost:             basePrice,
 		},
-		fashionStyle: chosenStyle,
+		FashionStyle: chosenStyle,
 
-		protection: map[DamageType]Protection{
+		Protection: map[DamageType]Protection{
 			DamageTypeNormal: Protection{
 				DamageReduction: 0,
 				DamageThreshold: baseNormalDT,
@@ -207,6 +209,6 @@ func generateNewFashionItem(desc ClothingDescription, forceStyle foundation.Fash
 			},
 		},
 
-		encumbrance: 0,
+		Encumbrance: 0,
 	}
 }

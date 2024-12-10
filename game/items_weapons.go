@@ -1,10 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"bytes"
-	"encoding/gob"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -64,68 +62,70 @@ func WeaponSizeFromString(input string) WeaponSize {
 
 type Weapon struct {
 	*GenericItem
-	damageDice fxtools.Interval
-	weaponType WeaponType
+	DamageDice fxtools.Interval
+	WeaponType WeaponType
 
-	skillUsed        d100.Skill
-	magazineSize     int
-	loadedInMagazine *Ammo
+	SkillUsed        d100.Skill
+	MagazineSize     int
+	LoadedInMagazine *Ammo
 
 	PelletCount  int
-	burstRounds  int
-	caliberIndex int
-	caliberName  string
+	BurstRounds  int
+	CaliberIndex int
+	CaliberName  string
 
-	attackModes []AttackMode
-	soundID     int32
-	damageType  DamageType
+	AttackModes []AttackMode
+	SoundID     int32
+	DamageType  DamageType
 	MinSTR      int
 
-	reliability  d100.Percentage
-	relativeSize WeaponSize
-	accuracyMod  d100.Percentage
+	Reliability  d100.Percentage
+	RelativeSize WeaponSize
+	AccuracyMod  d100.Percentage
 
-	degradeFactor float64
-	jammed        bool
+	DegradeFactor float64
+	Jammed        bool
+
+	CurrentAttackModeIndex int
 }
 
 func (i *Weapon) Degrade(degrade float64) {
 	ammoFactor := i.ammoDegradeFactor()
-	weaponFactor := i.degradeFactor
-	i.qualityInPercent = max(0, i.qualityInPercent-d100.Percentage(degrade*weaponFactor*ammoFactor))
+	weaponFactor := i.DegradeFactor
+	i.QualityInPercent = max(0, i.QualityInPercent-d100.Percentage(degrade*weaponFactor*ammoFactor))
 }
 
 func (i *Weapon) FullDescription(colorCode string) string {
 	basicRows := i.GenericItem.fullDescriptionRows()
 
-	basicRows = append(basicRows, fxtools.NewTableRow("Type", i.weaponType.String()))
+	basicRows = append(basicRows, fxtools.NewTableRow("Type", i.WeaponType.String()))
 	basicRows = append(basicRows, fxtools.NewTableRow("Caliber", i.GetCaliberName()))
-	basicRows = append(basicRows, fxtools.NewTableRow("Quality", fmt.Sprintf("%d%%", int(i.qualityInPercent))))
-	basicRows = append(basicRows, fxtools.NewTableRow("Concealability", i.relativeSize.String()))
+	basicRows = append(basicRows, fxtools.NewTableRow("GetQuality", fmt.Sprintf("%d%%", int(i.QualityInPercent))))
+	basicRows = append(basicRows, fxtools.NewTableRow("Concealability", i.RelativeSize.String()))
 
-	if i.damageType == DamageTypeNormal {
-		basicRows = append(basicRows, fxtools.NewTableRow("Damage", fmt.Sprintf("%s", i.damageDice.Scaled(i.qualityInPercent.Normalized()).ShortString())))
+	if i.DamageType == DamageTypeNormal {
+		basicRows = append(basicRows, fxtools.NewTableRow("Damage", fmt.Sprintf("%s", i.DamageDice.Scaled(i.QualityInPercent.Normalized()).ShortString())))
 	} else {
-		basicRows = append(basicRows, fxtools.NewTableRow("Damage", fmt.Sprintf("%s (%s)", i.damageDice.Scaled(i.qualityInPercent.Normalized()).ShortString(), i.damageType.String())))
+		basicRows = append(basicRows, fxtools.NewTableRow("Damage", fmt.Sprintf("%s (%s)", i.DamageDice.Scaled(i.QualityInPercent.Normalized()).ShortString(), i.DamageType.String())))
 	}
 
-	if i.accuracyMod != 0 {
-		basicRows = append(basicRows, fxtools.NewTableRow("Accuracy Modifier", fmt.Sprintf("%+d%%", int(i.accuracyMod))))
+	if i.AccuracyMod != 0 {
+		basicRows = append(basicRows, fxtools.NewTableRow("Accuracy Modifier", fmt.Sprintf("%+d%%", int(i.AccuracyMod))))
 	}
 	if i.MinSTR > 0 {
 		basicRows = append(basicRows, fxtools.NewTableRow("Min. Strength", fmt.Sprintf("%d", i.MinSTR)))
 	}
 
-	basicRows = append(basicRows, fxtools.NewTableRow("Reliability", fmt.Sprintf("%d%%", int(i.reliability))))
+	basicRows = append(basicRows, fxtools.NewTableRow("Reliability", fmt.Sprintf("%d%%", int(i.Reliability))))
 
-	for _, attackMode := range i.attackModes {
+	for _, attackMode := range i.AttackModes {
 		modeVal := fmt.Sprintf("Range: %d, TU: %d", attackMode.MaxRange, attackMode.TUCost)
 		modeLabel := attackMode.String()
 		basicRows = append(basicRows, fxtools.NewTableRow(modeLabel, modeVal))
 	}
 
 	lines := fxtools.TableLayout(basicRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
-	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+	lines = append([]string{i.InventoryNameWithColors(colorCode), i.Category.String()}, lines...)
 
 	lines = i.appendText(lines)
 
@@ -139,16 +139,16 @@ func (i *Weapon) InventoryNameWithColors(colorCode string) string {
 
 	lineWithColor := colorCode + line + "[-]"
 
-	qIcon := getQualityIcon(i.qualityInPercent)
+	qIcon := getQualityIcon(i.QualityInPercent)
 	lineWithColor = fmt.Sprintf("%s %s", qIcon, lineWithColor)
 
 	return lineWithColor
 }
 func (i *Weapon) LongNameWithColors(colorCode string) string {
 	weapon := i
-	attackMode := weapon.GetAttackMode(i.currentAttackModeIndex)
+	attackMode := weapon.GetAttackMode(i.CurrentAttackModeIndex)
 	targetMode := attackMode.String()
-	if i.jammed {
+	if i.Jammed {
 		targetMode = "*JAMMED*"
 	}
 	bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
@@ -181,25 +181,25 @@ func (i *Weapon) IsWeapon() bool {
 }
 
 func (i *Weapon) IsRangedWeapon() bool {
-	return i.weaponType.IsRanged()
+	return i.WeaponType.IsRanged()
 }
 
 func (i *Weapon) IsMeleeWeapon() bool {
-	return i.weaponType.IsMelee()
+	return i.WeaponType.IsMelee()
 }
 
 func (i *Weapon) DoesJam() bool {
-	if i.jammed {
+	if i.Jammed {
 		return true
 	}
 	if !i.IsAutomaticWeapon() {
 		return false
 	}
 
-	reliability := int(i.reliability)
+	reliability := int(i.Reliability)
 	isReliableOnThisShot := rand.Intn(100)+1 <= reliability
-	i.jammed = !isReliableOnThisShot
-	return i.jammed
+	i.Jammed = !isReliableOnThisShot
+	return i.Jammed
 }
 
 func (i *Weapon) GetEffectParameters() foundation.Params {
@@ -223,13 +223,13 @@ func (i *Weapon) GetEffectParameters() foundation.Params {
 }
 
 func (i *Weapon) GetCurrentAttackMode() AttackMode {
-	return i.GetAttackMode(i.currentAttackModeIndex)
+	return i.GetAttackMode(i.CurrentAttackModeIndex)
 }
 
 func (i *Weapon) CycleTargetMode() {
-	i.currentAttackModeIndex++
-	if i.currentAttackModeIndex >= len(i.attackModes) {
-		i.currentAttackModeIndex = 0
+	i.CurrentAttackModeIndex++
+	if i.CurrentAttackModeIndex >= len(i.AttackModes) {
+		i.CurrentAttackModeIndex = 0
 	}
 }
 
@@ -238,168 +238,61 @@ func (i *Weapon) IsLoadedWeapon() bool {
 }
 
 func (i *Weapon) GetWeaponDamage() fxtools.Interval {
-	return i.getRawDamage().Scaled(i.qualityInPercent.Normalized())
+	return i.getRawDamage().Scaled(i.QualityInPercent.Normalized())
 }
 
 func (i *Weapon) GetWeaponDamageForCurrentAttackMode() fxtools.Interval {
-	perBullet := i.getRawDamage().Scaled(i.qualityInPercent.Normalized())
+	perBullet := i.getRawDamage().Scaled(i.QualityInPercent.Normalized())
 	return perBullet.Scaled(float64(i.BulletCountForCurrentAttackMode()))
 }
 
-func (i *Weapon) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-
-	// Encode each field of the struct in order
-	if err := encoder.Encode(i.damageDice); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.weaponType); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.skillUsed); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.magazineSize); err != nil {
-		return nil, err
-	}
-	if i.loadedInMagazine == nil {
-		encoder.Encode(false)
-	} else {
-		encoder.Encode(true)
-		if err := encoder.Encode(i.loadedInMagazine); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := encoder.Encode(i.burstRounds); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.caliberIndex); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.attackModes); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.soundID); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.damageType); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (i *Weapon) GobDecode(data []byte) error {
-	decoder := gob.NewDecoder(bytes.NewReader(data))
-
-	// Decode each field of the struct in order
-	if err := decoder.Decode(&i.damageDice); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.weaponType); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.skillUsed); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.magazineSize); err != nil {
-		return err
-	}
-
-	var hasAmmo bool
-	if err := decoder.Decode(&hasAmmo); err != nil {
-		return err
-	}
-
-	if hasAmmo {
-		i.loadedInMagazine = &Ammo{}
-		if err := decoder.Decode(i.loadedInMagazine); err != nil {
-			return err
-		}
-	}
-
-	if err := decoder.Decode(&i.burstRounds); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.caliberIndex); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.attackModes); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.soundID); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.damageType); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (i *Weapon) getRawDamage() fxtools.Interval {
-	return i.damageDice
+	return i.DamageDice
 }
 
 func (i *Weapon) GetWeaponType() WeaponType {
-	return i.weaponType
+	return i.WeaponType
 }
 
 func (i *Weapon) GetSkillUsed() d100.Skill {
-	return i.skillUsed
+	return i.SkillUsed
 }
 
 func (i *Weapon) GetCaliber() int {
-	return i.caliberIndex
+	return i.CaliberIndex
 }
 
 func (i *Weapon) BulletsNeededForFullClip() (int, string) {
-	if i.loadedInMagazine == nil {
-		return i.magazineSize, ""
+	if i.LoadedInMagazine == nil {
+		return i.MagazineSize, ""
 	}
-	ammoKind := i.loadedInMagazine
-	return i.magazineSize - i.GetLoadedBullets(), ammoKind.InternalName()
+	ammoKind := i.LoadedInMagazine
+	return i.MagazineSize - i.GetLoadedBullets(), ammoKind.GetInternalName()
 }
 
 func (i *Weapon) LoadAmmo(ammo *Ammo) *Ammo {
-	if i.loadedInMagazine == nil {
-		i.loadedInMagazine = ammo
+	if i.LoadedInMagazine == nil {
+		i.LoadedInMagazine = ammo
 		return nil
 	}
-	if i.loadedInMagazine.CanStackWith(ammo) {
-		i.loadedInMagazine.AddStacks(ammo)
+	if i.LoadedInMagazine.CanStackWith(ammo) {
+		i.LoadedInMagazine.AddStacks(ammo)
 		return nil
 	}
-	oldAmmo := i.loadedInMagazine
-	i.loadedInMagazine = ammo
-	if oldAmmo.StackSize() > 0 {
+	oldAmmo := i.LoadedInMagazine
+	i.LoadedInMagazine = ammo
+	if oldAmmo.GetStackSize() > 0 {
 		return oldAmmo
 	}
 	return nil
 }
 
 func (i *Weapon) IsRanged() bool {
-	return i.weaponType.IsRanged()
+	return i.WeaponType.IsRanged()
 }
 
 func (i *Weapon) IsMelee() bool {
-	return i.weaponType.IsMelee()
+	return i.WeaponType.IsMelee()
 }
 
 func (i *Weapon) HasAmmo() bool {
@@ -407,88 +300,88 @@ func (i *Weapon) HasAmmo() bool {
 }
 
 func (i *Weapon) GetLoadedBullets() int {
-	if i.loadedInMagazine == nil {
+	if i.LoadedInMagazine == nil {
 		return 0
 	}
-	return i.loadedInMagazine.StackSize()
+	return i.LoadedInMagazine.GetStackSize()
 }
 
 func (i *Weapon) GetMagazineSize() int {
-	return i.magazineSize
+	return i.MagazineSize
 }
 
 func (i *Weapon) RemoveBullets(spent int) *Ammo {
-	if i.loadedInMagazine == nil {
+	if i.LoadedInMagazine == nil {
 		return nil
 	}
-	if spent >= i.loadedInMagazine.StackSize() {
-		spentBullets := i.loadedInMagazine
-		i.loadedInMagazine = nil
+	if spent >= i.LoadedInMagazine.GetStackSize() {
+		spentBullets := i.LoadedInMagazine
+		i.LoadedInMagazine = nil
 		return spentBullets
 	}
-	spentBullets := i.loadedInMagazine.Split(spent)
+	spentBullets := i.LoadedInMagazine.Split(spent)
 	return spentBullets.(*Ammo)
 }
 
 func (i *Weapon) GetBurstRounds() int {
-	return i.burstRounds
+	return i.BurstRounds
 }
 
 func (i *Weapon) NeedsAmmo() bool {
-	return i.caliberIndex > 0
+	return i.CaliberIndex > 0
 }
 
 func (i *Weapon) GetFireAudioCue(mode TargetingMode) string {
 	strMode := "single"
 	if (mode == TargetingModeFireBurst || mode == TargetingModeFireFullAuto) &&
-		len(i.attackModes) > 1 {
+		len(i.AttackModes) > 1 {
 		strMode = "burst"
 	}
-	return fmt.Sprintf("weapons/%d_%s", i.soundID, strMode)
+	return fmt.Sprintf("weapons/%d_%s", i.SoundID, strMode)
 }
 
 func (i *Weapon) GetReloadAudioCue() string {
-	return fmt.Sprintf("weapons/%d_reload", i.soundID)
+	return fmt.Sprintf("weapons/%d_reload", i.SoundID)
 }
 func (i *Weapon) GetOutOfAmmoAudioCue() string {
-	return fmt.Sprintf("weapons/%d_out_of_ammo", i.soundID)
+	return fmt.Sprintf("weapons/%d_out_of_ammo", i.SoundID)
 }
 func (i *Weapon) GetMissAudioCue() string {
-	return fmt.Sprintf("weapons/%d_hit_surface", i.soundID)
+	return fmt.Sprintf("weapons/%d_hit_surface", i.SoundID)
 }
 
 func (i *Weapon) GetDamageType() DamageType {
-	return i.damageType
+	return i.DamageType
 }
 
 func (i *Weapon) GetAttackMode(index int) AttackMode {
-	return i.attackModes[index]
+	return i.AttackModes[index]
 }
 
 func (i *Weapon) IsValid() bool {
-	return i.weaponType != WeaponTypeUnknown
+	return i.WeaponType != WeaponTypeUnknown
 }
 
 func (i *Weapon) GetLoadedAmmo() *Ammo {
-	return i.loadedInMagazine
+	return i.LoadedInMagazine
 
 }
 
 func (i *Weapon) IsLoaded() bool {
-	return i.loadedInMagazine != nil && i.loadedInMagazine.StackSize() > 0
+	return i.LoadedInMagazine != nil && i.LoadedInMagazine.GetStackSize() > 0
 }
 
 func (i *Weapon) Unload() *Ammo {
-	ammo := i.loadedInMagazine
-	i.loadedInMagazine = nil
+	ammo := i.LoadedInMagazine
+	i.LoadedInMagazine = nil
 	return ammo
 }
 
 func (i *Weapon) GetTargetDTModifier() int {
-	if i.loadedInMagazine == nil {
+	if i.LoadedInMagazine == nil {
 		return 0
 	}
-	ammo := i.loadedInMagazine
+	ammo := i.LoadedInMagazine
 	if ammo == nil {
 		return 0
 	}
@@ -515,29 +408,29 @@ func (i *Weapon) IsAutomaticWeapon() bool {
 }
 
 func (i *Weapon) IsBroken() bool {
-	return i.qualityInPercent <= 0
+	return i.QualityInPercent <= 0
 }
 
 func (i *Weapon) IsJammed() bool {
-	return i.jammed
+	return i.Jammed
 }
 
 func (i *Weapon) Unjam() {
-	i.jammed = false
+	i.Jammed = false
 }
 
 func (i *Weapon) GetAmmoTypeShortString() string {
-	if i.loadedInMagazine == nil {
+	if i.LoadedInMagazine == nil {
 		return ""
 	}
-	if i.loadedInMagazine.ShortIdentifier == "" {
+	if i.LoadedInMagazine.ShortIdentifier == "" {
 		return ""
 	}
-	return fmt.Sprintf(" %s", i.loadedInMagazine.ShortIdentifier)
+	return fmt.Sprintf(" %s", i.LoadedInMagazine.ShortIdentifier)
 }
 
 func (i *Weapon) GetCaliberName() string {
-	return i.caliberName
+	return i.CaliberName
 }
 
 type WeaponType int

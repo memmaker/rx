@@ -15,8 +15,8 @@ func (c WeaponChecker) PrintReport() {
 	ammoPath := path.Join(c.rootDir, "definitions", "ammo.rec")
 	weaponPath := path.Join(c.rootDir, "definitions", "weapons.rec")
 
-	ammoRecords := recfile.ReadAndClose(fxtools.MustOpen(ammoPath))
-	weaponRecords := recfile.ReadAndClose(fxtools.MustOpen(weaponPath))
+	ammoRecords, _ := recfile.ReadAndClose(fxtools.MustOpen(ammoPath))
+	weaponRecords, _ := recfile.ReadAndClose(fxtools.MustOpen(weaponPath))
 
 	caliberToAmmo := make(map[int][]string)
 	maxCaliberIndex := 0

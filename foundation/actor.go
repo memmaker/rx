@@ -1,8 +1,8 @@
 package foundation
 
 import (
-	"RogueUI/d100"
-	"RogueUI/fsmai"
+    "contractor/d100"
+    "contractor/fsmai"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"image/color"
@@ -10,7 +10,7 @@ import (
 )
 
 type ActorForUI interface {
-	Icon() textiles.TextIcon
+	GetIcon() textiles.TextIcon
 	TextIcon(background color.RGBA) textiles.TextIcon
 	Name() string
 	Position() geometry.Point

@@ -14,6 +14,7 @@ const (
 	PerkNonLethalTakeDown
 	PerkBackstab
 	PerkQuickDraw
+	PerkCharge
 	PerkOneLiners
 	PerkCount
 )
@@ -32,6 +33,8 @@ func (p Perk) String() string {
 		return "Quick Draw"
 	case PerkOneLiners:
 		return "One-Liners"
+	case PerkCharge:
+		return "Charge"
 	}
 	return "Unknown"
 }
@@ -50,6 +53,8 @@ func (p Perk) Description() string {
 		return "When you have only one holstered weapon, you can quickly draw it for a 50% damage bonus."
 	case PerkOneLiners:
 		return "You can drop one-liners to distract and intimidate enemies."
+	case PerkCharge:
+		return "You can charge at enemies for a forceful attack."
 	}
 	return "Unknown"
 }
@@ -67,6 +72,8 @@ func PerkFromString(s string) Perk {
 		return PerkQuickDraw
 	case "one-liners":
 		return PerkOneLiners
+	case "charge":
+		return PerkCharge
 	}
 	return PerkCount
 }
@@ -74,14 +81,15 @@ func (p Perk) MaxLevel() int {
 	return 1
 }
 
-type PerkRequirements struct {
+type CharacterRequirement struct {
 	Stats        map[Stat]int
 	Skills       map[Skill]int
 	DerivedStats map[DerivedStat]int
 	Perks        map[Perk]int
+	Level        int
 }
 
-func (r PerkRequirements) String() string {
+func (r CharacterRequirement) String() string {
 	var tableRows []fxtools.TableRow
 	for s := Stat(0); s < StatCount; s++ {
 		if v, ok := r.Stats[s]; ok {
@@ -107,12 +115,12 @@ func (r PerkRequirements) String() string {
 	return strings.Join(lines, "\n")
 }
 
-func LoadPerkRequirements(requirements map[Perk]PerkRequirements) {
+func LoadPerkRequirements(requirements map[Perk]CharacterRequirement) {
 	defaultPerkRequirements = requirements
 }
 
-var defaultPerkRequirements = map[Perk]PerkRequirements{}
+var defaultPerkRequirements = map[Perk]CharacterRequirement{}
 
-func GetPerkRequirements(p Perk) PerkRequirements {
+func GetPerkRequirements(p Perk) CharacterRequirement {
 	return defaultPerkRequirements[p]
 }

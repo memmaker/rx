@@ -159,32 +159,33 @@ var ebiten_mod_map = map[ebiten.Key]tcell.ModMask{
 }
 
 var ebiten_key_map = map[ebiten.Key]tcell.Key{
-	ebiten.KeyArrowDown:  tcell.KeyDown,
-	ebiten.KeyArrowLeft:  tcell.KeyLeft,
-	ebiten.KeyArrowRight: tcell.KeyRight,
-	ebiten.KeyArrowUp:    tcell.KeyUp,
-	ebiten.KeyBackspace:  tcell.KeyBackspace,
-	ebiten.KeyDelete:     tcell.KeyDelete,
-	ebiten.KeyEnd:        tcell.KeyEnd,
-	ebiten.KeyEnter:      tcell.KeyEnter,
-	ebiten.KeyEscape:     tcell.KeyEscape,
-	ebiten.KeyF1:         tcell.KeyF1,
-	ebiten.KeyF2:         tcell.KeyF2,
-	ebiten.KeyF3:         tcell.KeyF3,
-	ebiten.KeyF4:         tcell.KeyF4,
-	ebiten.KeyF5:         tcell.KeyF5,
-	ebiten.KeyF6:         tcell.KeyF6,
-	ebiten.KeyF7:         tcell.KeyF7,
-	ebiten.KeyF8:         tcell.KeyF8,
-	ebiten.KeyF9:         tcell.KeyF9,
-	ebiten.KeyF10:        tcell.KeyF10,
-	ebiten.KeyF11:        tcell.KeyF11,
-	ebiten.KeyF12:        tcell.KeyF12,
-	ebiten.KeyHome:       tcell.KeyHome,
-	ebiten.KeyInsert:     tcell.KeyInsert,
-	ebiten.KeyPageDown:   tcell.KeyPgDn,
-	ebiten.KeyPageUp:     tcell.KeyPgUp,
-	ebiten.KeyTab:        tcell.KeyTab,
+	ebiten.KeyArrowDown:   tcell.KeyDown,
+	ebiten.KeyArrowLeft:   tcell.KeyLeft,
+	ebiten.KeyArrowRight:  tcell.KeyRight,
+	ebiten.KeyArrowUp:     tcell.KeyUp,
+	ebiten.KeyBackspace:   tcell.KeyBackspace,
+	ebiten.KeyDelete:      tcell.KeyDelete,
+	ebiten.KeyEnd:         tcell.KeyEnd,
+	ebiten.KeyEnter:       tcell.KeyEnter,
+	ebiten.KeyNumpadEnter: tcell.KeyEnter,
+	ebiten.KeyEscape:      tcell.KeyEscape,
+	ebiten.KeyF1:          tcell.KeyF1,
+	ebiten.KeyF2:          tcell.KeyF2,
+	ebiten.KeyF3:          tcell.KeyF3,
+	ebiten.KeyF4:          tcell.KeyF4,
+	ebiten.KeyF5:          tcell.KeyF5,
+	ebiten.KeyF6:          tcell.KeyF6,
+	ebiten.KeyF7:          tcell.KeyF7,
+	ebiten.KeyF8:          tcell.KeyF8,
+	ebiten.KeyF9:          tcell.KeyF9,
+	ebiten.KeyF10:         tcell.KeyF10,
+	ebiten.KeyF11:         tcell.KeyF11,
+	ebiten.KeyF12:         tcell.KeyF12,
+	ebiten.KeyHome:        tcell.KeyHome,
+	ebiten.KeyInsert:      tcell.KeyInsert,
+	ebiten.KeyPageDown:    tcell.KeyPgDn,
+	ebiten.KeyPageUp:      tcell.KeyPgUp,
+	ebiten.KeyTab:         tcell.KeyTab,
 }
 
 var tcell_key_map = map[tcell.Key]ebiten.Key{}
@@ -253,7 +254,7 @@ func (et *etcell) Update() (err error) {
 	cursor := image.Point{X: cursor_x, Y: cursor_y}
 
 	var in_focus bool
-	var posted bool
+	//var posted bool
 
 	// Mouse buttons
 	if et.mouse_capture.Empty() || cursor.In(et.mouse_capture) {
@@ -275,7 +276,7 @@ func (et *etcell) Update() (err error) {
 		if !et.focused {
 			et.PostEvent(tcell.NewEventFocus(true))
 			et.focused = true
-			posted = true
+			//posted = true
 		}
 		var buttons tcell.ButtonMask
 		for e_button, t_button := range ebiten_button_map {
@@ -311,7 +312,7 @@ func (et *etcell) Update() (err error) {
 		et.PostEvent(tcell.NewEventMouse(mouse_x, mouse_y, buttons, modMask()))
 
 		in_focus = true
-		posted = true
+		//posted = true
 	}
 
 	if et.key_capture.Empty() || cursor.In(et.key_capture) {
@@ -329,7 +330,7 @@ func (et *etcell) Update() (err error) {
 					t_key := tcell.KeyCtrlA + tcell.Key(e_key-ebiten.KeyA)
 					ev := tcell.NewEventKey(t_key, rune(0), mods & ^tcell.ModCtrl)
 					et.PostEvent(ev)
-					posted = true
+					//posted = true
 				}
 			}
 		} else {
@@ -337,7 +338,7 @@ func (et *etcell) Update() (err error) {
 			for _, key_rune := range key_runes {
 				ev := tcell.NewEventKey(tcell.KeyRune, key_rune, mods & ^tcell.ModShift)
 				et.PostEvent(ev)
-				posted = true
+				//posted = true
 			}
 		}
 
@@ -350,7 +351,7 @@ func (et *etcell) Update() (err error) {
 			if ok {
 				ev := tcell.NewEventKey(t_key, rune(0), mods)
 				et.PostEvent(ev)
-				posted = true
+				//posted = true
 			}
 		}
 
@@ -361,16 +362,18 @@ func (et *etcell) Update() (err error) {
 		if et.focused {
 			et.PostEvent(tcell.NewEventFocus(false))
 			et.focused = false
-			posted = true
+			//posted = true
 		}
 	}
 
 	// Always post a time event, if no other event was fired.
-	if !posted {
-		ev := &tcell.EventTime{}
-		ev.SetEventNow()
-		et.PostEvent(ev)
-	}
+	/*
+		if !posted {
+			ev := &tcell.EventTime{}
+			ev.SetEventNow()
+			et.PostEvent(ev)
+		}
+	*/
 
 	return
 }

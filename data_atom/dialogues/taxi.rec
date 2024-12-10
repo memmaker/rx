@@ -30,7 +30,7 @@ name: UseTaxi
 npc: (Where do you want to go?)
 #
 o_text: Home
-o_cond: !IsMap('home_area')
+o_cond: !IsMap('zone_residential_south')
 o_goto: HeadQuarters
 #
 # Starter Mission
@@ -71,12 +71,12 @@ effect: EndConversation
 
 name: HeadQuarters
 npc: Alright, let's go.
-effect: Transition('home_area', 'taxi_stand')
+effect: Transition('zone_residential_south', 'taxi_stand')
 effect: AdvanceTimeByMinutes(15)
 
 name: EasternRim
 npc: You got it.
-effect: Transition('cb_hq', 'taxi_stand')
+effect: Transition('zone_commerce', 'taxi_stand')
 effect: AdvanceTimeByMinutes(15)
 
 name: Kelso

@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+    "contractor/d100"
+    "contractor/foundation"
 	"math/rand"
 )
 
@@ -11,7 +11,7 @@ var maxArmorDT = 30
 var ablationWithoutPenetration = 1
 var ablationWithPenetration = 2
 
-func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Weapon, defender *Actor, bulletsSpent *Ammo, situationalMods []d100.Modifier) (int, d100.Modifiers) {
+func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Weapon, defender *Actor, bulletsSpent *Ammo, situationalMods []d100.Modifier) (int, d100.ModList) {
 	distance := g.currentMap().MoveDistance(attacker.Position(), defender.Position())
 	weaponRange := equippedWeapon.Range()
 
@@ -28,7 +28,7 @@ func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Weapon
 	}
 
 	infos := d100.NewRangedModsFromSituation(situationalMods).
-		WithRangeMods(distance, weaponRange, isFullAuto, bulletsSpent.StackSize()).
+		WithRangeMods(distance, weaponRange, isFullAuto, bulletsSpent.GetStackSize()).
 		With(illuminationAtTarget)
 
 	if attacker.HasFlag(foundation.FlagRunning) {
@@ -62,7 +62,7 @@ func (g *GameState) getRangedChanceToHit(attacker *Actor, equippedWeapon *Weapon
 
 	hitChance := min(d100.SuccessChanceCap, max(0, moddedSkill))
 
-	return hitChance, d100.Modifiers(mods)
+	return hitChance, d100.ModList(mods)
 }
 
 func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Weapon, attackMode AttackMode, bulletsSpent *Ammo, chanceToHit int, victim *Actor, bodyPart d100.BodyPart, mods []d100.Modifier) (SourcedDamage, d100.CheckResult) {
@@ -70,13 +70,13 @@ func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Weapon, a
 	damage := weaponItem.GetWeaponDamage()
 	critChance := attacker.GetCharSheet().GetDerivedStat(d100.CriticalChance)
 	totalDamage := 0
-	damagePerBullet := make([]int, bulletsSpent.StackSize())
+	damagePerBullet := make([]int, bulletsSpent.GetStackSize())
 	attackResult := d100.SuccessRoll(d100.Percentage(chanceToHit), d100.Percentage(critChance))
 	if attackResult.Success {
 		firstBulletDamage := damage.Roll()
 		totalDamage = firstBulletDamage
 		damagePerBullet[0] = firstBulletDamage
-		bulletsLeft := bulletsSpent.StackSize() - 1
+		bulletsLeft := bulletsSpent.GetStackSize() - 1
 		for i := 0; i < bulletsLeft; i++ {
 			damageDone := 0
 			if rand.Intn(100)+1 < chanceToHit {
@@ -89,7 +89,7 @@ func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Weapon, a
 	damageFactor := 1.0
 	bonusDamage := 0
 
-	if bulletsSpent != nil && bulletsSpent.StackSize() > 0 && totalDamage > 0 {
+	if bulletsSpent != nil && bulletsSpent.GetStackSize() > 0 && totalDamage > 0 {
 		if victim != nil {
 			for tags, dmgBonus := range bulletsSpent.BonusDamageAgainstActorWithTags {
 				if victim.HasFlag(tags) {
@@ -175,7 +175,7 @@ func (g *GameState) getMeleeDamage(attacker *Actor, cth int, victim *Actor, part
 		damage = kickBaseDamage + meleeDamageBonus
 	}
 
-	itemInHand, hasItem := attacker.GetEquipment().GetMeleeWeapon()
+	itemInHand, hasItem := attacker.GetInventory().GetMeleeWeapon()
 
 	if hasItem && itemInHand.IsMeleeWeapon() {
 		weapon := itemInHand

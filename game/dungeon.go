@@ -1,68 +1,79 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
-	"bufio"
-	"fmt"
-	"os"
-	"path"
+    "bufio"
+    "contractor/foundation"
+    "contractor/gridmap"
+    "fmt"
+    "os"
 )
 
+func (g *GameState) ensureMapIsLoaded(levelName string) *gridmap.GridMap[*Actor, foundation.Item, Object] {
+    if _, ok := g.activeMaps[levelName]; !ok {
+        result := g.mapLoader.LoadMap(levelName)
+
+        if result.Map == nil {
+            g.msg(foundation.Msg("It's impossible to move there.."))
+            return nil
+        }
+
+        g.activeMaps[levelName] = result.Map
+
+        g.setFlagsAndRunScripts(result)
+
+    }
+    return g.activeMaps[levelName]
+}
+
+func (g *GameState) setFlagsAndRunScripts(result gridmap.MapLoadResult[*Actor, foundation.Item, Object]) {
+    flags := result.FlagsOfMap
+    for flagName, flagValue := range flags {
+        g.gameFlags.Set(flagName, flagValue)
+    }
+
+    scripts := result.ScriptsToRun
+    for _, script := range scripts {
+        g.RunScriptOnMap(result.Map.GetName(), script)
+    }
+}
+
 func (g *GameState) GotoNamedLevel(levelName string, location string) {
-	if g.metronome.LeavingMapEvents() {
-		g.ui.AnimatePending()
-	}
+    var loadedMap *gridmap.GridMap[*Actor, foundation.Item, Object]
+    var ok bool
+    var firstTimeInit func()
+    if loadedMap, ok = g.activeMaps[levelName]; !ok {
+        result := g.mapLoader.LoadMap(levelName)
+        loadedMap = result.Map
 
-	var loadedMap *gridmap.GridMap[*Actor, foundation.Item, Object]
-	var ok bool
-	var firstTimeInit func()
-	if loadedMap, ok = g.activeMaps[levelName]; !ok {
-		result := g.mapLoader.LoadMap(levelName)
-		loadedMap = result.Map
+        if loadedMap == nil {
+            g.msg(foundation.Msg("It's impossible to move there.."))
+            return
+        }
 
-		if loadedMap == nil {
-			g.msg(foundation.Msg("It's impossible to move there.."))
-			return
-		}
+        firstTimeInit = func() {
+            g.setFlagsAndRunScripts(result)
+        }
+    }
 
-		g.iconsForObjects = result.IconsForObjects
+    if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
+        g.currentMap().RemoveActor(g.Player)
+        g.Player.RemoveLevelStatusEffects()
+        g.currentMap().SetLastVisited(g.gameTime.Time)
+    }
 
-		firstTimeInit = func() {
-			flags := result.FlagsOfMap
-			for flagName, flagValue := range flags {
-				g.gameFlags.Set(flagName, flagValue)
-			}
+    namedLocation := loadedMap.GetNamedLocation(location)
+    g.Player.SetPosition(namedLocation)
 
-			scripts := result.ScriptsToRun
-			for _, script := range scripts {
-				g.RunScriptByName(script)
-			}
-		}
+    mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
+    g.gameFlags.Increment(mapVisited)
 
-	} else {
-		g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", levelName), g.palette)
-	}
+    g.setCurrentMap(loadedMap)
 
-	if g.currentMap() != nil && g.Player != nil { // RemoveItem Player from Old Map
-		g.currentMap().RemoveActor(g.Player)
-		g.Player.RemoveLevelStatusEffects()
-		g.currentMap().SetLastVisited(g.gameTime.Time)
-	}
+    if firstTimeInit != nil {
+        firstTimeInit()
+    }
 
-	namedLocation := loadedMap.GetNamedLocation(location)
-	g.Player.SetPosition(namedLocation)
-
-	mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
-	g.gameFlags.Increment(mapVisited)
-
-	g.setCurrentMap(loadedMap)
-
-	if firstTimeInit != nil {
-		firstTimeInit()
-	}
-
-	g.afterMapLoad()
+    g.afterMapLoad()
 }
 
 /*
@@ -216,15 +227,15 @@ func (g *GameState) decorateMapWithTiles(newMap *gridmap.GridMap[*Actor, *Item, 
 }
 */
 func ReadFileAsOneStringWithoutNewLines(filename string) string {
-	file, err := os.Open(filename)
-	if err != nil {
-		return ""
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	var result string
-	for scanner.Scan() {
-		result += scanner.Text()
-	}
-	return result
+    file, err := os.Open(filename)
+    if err != nil {
+        return ""
+    }
+    defer file.Close()
+    scanner := bufio.NewScanner(file)
+    var result string
+    for scanner.Scan() {
+        result += scanner.Text()
+    }
+    return result
 }

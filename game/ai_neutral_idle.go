@@ -1,15 +1,25 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/fsmai"
+	"contractor/foundation"
+	"contractor/fsmai"
 )
 
-func BehaviourNeutralIdleInit(g *GameState, actor *Actor, event fsmai.TransitionEvent) {
+type NeutralBehaviour struct {
+	InitEvent fsmai.TransitionEvent
+}
+
+func (b NeutralBehaviour) WithInitEvent(event fsmai.TransitionEvent) ActorBehavior {
+	return NeutralBehaviour{InitEvent: event}
+}
+
+func (b NeutralBehaviour) AssociatedState() fsmai.StateName {return fsmai.StateNeutral}
+
+func (b NeutralBehaviour) Init(state *GameState, actor *Actor) {
 	actor.SetGoal(GoalMoveToSpawn())
 }
 
-func BehaviourNeutralIdle(g *GameState, actor *Actor, event fsmai.TransitionEvent) (fsmai.TransitionEvent, int) {
+func (b NeutralBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
 	// act on goals
 	if actor.HasActiveGoal() {
 		return actor.ActOnGoal(g)
@@ -29,5 +39,5 @@ func BehaviourNeutralIdle(g *GameState, actor *Actor, event fsmai.TransitionEven
 		}
 	}
 
-	return fsmai.NoEvent, actor.timeEnergy
+	return fsmai.NoEvent, actor.RawTimeEnergy
 }

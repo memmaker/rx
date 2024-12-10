@@ -1,0 +1,8 @@
+%rec: blueprints
+%key: name
+
+name: meld_production
+input: liquid_methane
+input: lidocaine
+output: meld
+req_skill: biochemistry(30)

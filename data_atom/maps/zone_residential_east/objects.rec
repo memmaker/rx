@@ -1,0 +1,45 @@
+%rec: default
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (4,20)
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (4,18)
+
+Category: ClosedDoor
+Description: a door
+Position: (51,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (66,10)
+
+Category: Terminal
+Name: Taxi
+IconOverride: Taxi
+Description: a taxi
+Dialogue: taxi
+Tags: No_Sound
+Position: (3,20)
+
+Category: ClosedDoor
+Description: a door
+Position: (24,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (24,14)
+
+Category: ClosedDoor
+Description: a door
+Position: (51,14)
+
+Category: Transition
+Description: a street
+Location: street_to_south
+TargetMap: zone_residential_south
+TargetLocation: street_to_east
+Position: (4,22)
+

@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/d100"
+	"contractor/d100"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
 	"path"
@@ -25,7 +25,7 @@ func CanPerceive(observer *Actor, observed *Actor) bool {
 
 func loadD100Rules(definitionDirectory string) {
 	rulesFile := path.Join(definitionDirectory, "rules.rec")
-	rulesRecords := recfile.ReadMultiAndClose(fxtools.MustOpen(rulesFile))
+	rulesRecords, _ := recfile.ReadMultiAndClose(fxtools.MustOpen(rulesFile))
 
 	// Skill Definitions are mandatory
 	skillDefs := rulesRecords["Skills"]
@@ -37,8 +37,8 @@ func loadD100Rules(definitionDirectory string) {
 	d100.LoadSkillMap(skillMap)
 
 	// Perk Requirements are mandatory
-	perkRequirements := rulesRecords["PerkRequirements"]
-	perkReqMap := make(map[d100.Perk]d100.PerkRequirements)
+	perkRequirements := rulesRecords["CharacterRequirement"]
+	perkReqMap := make(map[d100.Perk]d100.CharacterRequirement)
 	for _, perkReqRecord := range perkRequirements {
 		perkName := d100.PerkFromString(perkReqRecord.FindValueForKeyIgnoreCase("perk"))
 		reqs := NewPerkRequirements(perkReqRecord)
@@ -82,10 +82,12 @@ func loadD100Rules(definitionDirectory string) {
 	}
 }
 
-func NewPerkRequirements(record recfile.Record) d100.PerkRequirements {
-	reqs := d100.PerkRequirements{}
+func NewPerkRequirements(record recfile.Record) d100.CharacterRequirement {
+	reqs := d100.CharacterRequirement{}
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
+		case "requirelevel":
+			reqs.Level = field.AsInt()
 		case "requirestat":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				if reqs.Stats == nil {

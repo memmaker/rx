@@ -1,677 +1,531 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/util"
-	"bytes"
-	"encoding/gob"
-	"fmt"
-	"github.com/Knetic/govaluate"
-	"github.com/memmaker/go/cview"
-	"github.com/memmaker/go/fxtools"
-	"github.com/memmaker/go/geometry"
-	"github.com/memmaker/go/textiles"
-	"image/color"
-	"math/rand"
-	"strings"
+    "contractor/d100"
+    "contractor/foundation"
+    "contractor/gridmap"
+    "contractor/util"
+    "encoding/gob"
+    "fmt"
+    "github.com/Knetic/govaluate"
+    "github.com/memmaker/go/cview"
+    "github.com/memmaker/go/fxtools"
+    "github.com/memmaker/go/geometry"
+    "github.com/memmaker/go/textiles"
+    "image/color"
+    "math/rand"
+    "strings"
 )
 
+func init() {
+    // This is a hack to make sure that the foundation package is imported
+    // so that the gob.Register function is called
+    gob.Register(&GenericItem{})
+    gob.Register(&Weapon{})
+    gob.Register(&Ammo{})
+    gob.Register(&Armor{})
+}
+
 type GenericItem struct {
-	name         string
-	internalName string
-	position     geometry.Point
-	category     foundation.ItemCategory
+    UID gridmap.ItemID
 
-	qualityInPercent d100.Percentage
+    // Configuration
+    DisplayName   string
+    InternalName  string
+    UseEffectName string
+    ZapEffectName string
+    StatChanges   StatChange
+    EquipFlag     foundation.ActorFlag
+    ThrownDamage  fxtools.Interval
+    TextFile      string
+    Text          string
 
-	useEffectName string
-	zapEffectName string
+    TextValue string
+    TextVar   string
 
-	stackSize int
+    Weight int
+    Cost   int
 
-	charges int
+    LockFlag             string
+    ChanceToBreakOnThrow int
+    SetFlagOnPickup      string
+    SetFlagOnDrop        string
+    EffectParameters     foundation.Params
 
-	statChanges StatChange
+    // State
+    RawPosition      geometry.Point
+    Category         foundation.ItemCategory
+    QualityInPercent d100.Percentage
+    StackSize        int
+    Charges          int
 
-	equipFlag    foundation.ActorFlag
-	thrownDamage fxtools.Interval
-	tags         foundation.ItemTags
-	textFile     string
-	text         string
+    Tags foundation.ItemTags
 
-	textValue string
-	textVar   string
+    Icon textiles.TextIcon
 
-	lockFlag string
+    posHandler func() geometry.Point
 
-	icon                   textiles.TextIcon
-	chanceToBreakOnThrow   int
-	currentAttackModeIndex int
-	setFlagOnPickup        string
-	setFlagOnDrop          string
-	weight                 int
-	cost                   int
-	posHandler             func() geometry.Point
-	alive                  bool
-	effectParameters       foundation.Params
-	invIndex               int
+    Alive bool
 
-	isHidden bool
+    InvIndex int
+
+    Hidden bool
 }
 
 func (i *GenericItem) SetInventoryIndex(index int) {
-	i.invIndex = index
+    i.InvIndex = index
 }
 func (i *GenericItem) AddStacks(item foundation.Item) {
-	i.stackSize += item.StackSize()
+    i.StackSize += item.GetStackSize()
 }
-
+func (i *GenericItem) ID() gridmap.ItemID {
+    return i.UID
+}
 func (i *GenericItem) SetStackSize(count int) {
-	i.stackSize = count
+    i.StackSize = count
 }
 func (i *GenericItem) IsStackable() bool {
-	return i.IsGold() || i.IsLockpick() || i.IsFood() || i.IsConsumable()
+    return i.IsGold() || i.IsLockpick() || i.IsFood() || i.IsConsumable() || i.IsReadable()
 }
 
-func (i *GenericItem) Price() int {
-	return i.cost
+func (i *GenericItem) GetPrice() int {
+    return i.Cost
 }
 func (i *GenericItem) IsHidden() bool {
-	return i.isHidden
+    return i.Hidden
 }
 func (i *GenericItem) SetHidden(hidden bool) {
-	i.isHidden = hidden
+    i.Hidden = hidden
 }
 func (i *GenericItem) IsRepairable() bool {
-	return false
+    return false
 }
-func (i *GenericItem) Quality() d100.Percentage {
-	return i.qualityInPercent
+func (i *GenericItem) GetQuality() d100.Percentage {
+    return i.QualityInPercent
 }
 func (i *GenericItem) String() string {
-	return fmt.Sprintf("Item: %s(%d)", i.internalName, i.charges)
+    return fmt.Sprintf("Item: %s(%d)", i.InternalName, i.Charges)
 }
 
 func (i *GenericItem) ShouldActivate(tickCount int) bool {
-	return i.charges == tickCount
+    return i.Charges == tickCount
 }
 
 func (i *GenericItem) IsTimerTicking(tickCount int) bool {
-	return tickCount <= i.charges && i.alive
+    return tickCount <= i.Charges && i.Alive
 }
 
 func (i *GenericItem) IsMultipleStacks() bool {
-	return i.stackSize > 1
+    return i.StackSize > 1
 }
 
-func (i *GenericItem) StackSize() int {
-	if i.IsMultipleStacks() {
-		return i.stackSize
-	}
-	return 1
-}
-
-// GobEncode encodes the Item struct into a byte slice.
-func (i *GenericItem) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-
-	// Encode each field of the struct in order
-	if err := encoder.Encode(i.name); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.internalName); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.position); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.category); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.qualityInPercent); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.useEffectName); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.zapEffectName); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.charges); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.statChanges); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.equipFlag); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.thrownDamage); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.tags); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.textFile); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.text); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.lockFlag); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.icon); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.chanceToBreakOnThrow); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.currentAttackModeIndex); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.setFlagOnPickup); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.weight); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.cost); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.alive); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-// GobDecode decodes a byte slice into an Item struct.
-func (i *GenericItem) GobDecode(data []byte) error {
-	buf := bytes.NewBuffer(data)
-	decoder := gob.NewDecoder(buf)
-
-	// Decode each field of the struct in order
-	if err := decoder.Decode(&i.name); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.internalName); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.position); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.category); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.qualityInPercent); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.useEffectName); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.zapEffectName); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.charges); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.statChanges); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.equipFlag); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.thrownDamage); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.tags); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.textFile); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.text); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.lockFlag); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.icon); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.chanceToBreakOnThrow); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.currentAttackModeIndex); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.setFlagOnPickup); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.weight); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.cost); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.alive); err != nil {
-		return err
-	}
-
-	return nil
+func (i *GenericItem) GetStackSize() int {
+    if i.IsMultipleStacks() {
+        return i.StackSize
+    }
+    return 1
 }
 
 func (g *GameState) NewItemFromString(itemName string) foundation.Item {
-	if fxtools.LooksLikeAFunction(itemName) {
-		name, args := fxtools.GetNameAndArgs(itemName)
-		switch name {
-		case "key":
-			return NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
-		case "note":
-			return NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
-		default: // parametric item name(stackSize, quality)
-			newItem := g.newItemFromName(name)
-			valOne := args.GetInt(0)
-			if newItem.IsStackable() {
-				newItem.SetStackSize(valOne)
-				if len(args) > 1 {
-					quality := args.GetInt(1)
-					newItem.SetQuality(d100.Percentage(quality))
-				}
-			} else if newItem.IsRepairable() {
-				newItem.SetQuality(d100.Percentage(valOne))
-			}
+    if fxtools.LooksLikeAFunction(itemName) {
+        name, args := fxtools.GetNameAndArgs(itemName)
+        switch name {
+        case "key":
+            return NewKey(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryKeys))
+        case "note":
+            return NewNoteFromFile(args.Get(0), args.Get(1), g.iconForItem(foundation.ItemCategoryReadables))
+        default: // parametric item name(stackSize, quality)
+            newItem := g.newItemFromName(name)
+            valOne := args.GetInt(0)
+            if newItem.IsStackable() {
+                newItem.SetStackSize(valOne)
+                if len(args) > 1 {
+                    quality := args.GetInt(1)
+                    newItem.SetQuality(d100.Percentage(quality))
+                }
+            } else if newItem.IsRepairable() {
+                newItem.SetQuality(d100.Percentage(valOne))
+            }
 
-			return newItem
-		}
-	}
+            return newItem
+        }
+    }
 
-	// default item creation from template without parameters
-	newItem := g.newItemFromName(itemName)
-	if newItem.IsRepairable() && newItem.Quality() == -1 {
-		newItem.SetQuality(d100.Percentage(rand.Intn(90) + 10))
-	}
-	return newItem
+    // default item creation from template without parameters
+    newItem := g.newItemFromName(itemName)
+    if newItem.IsRepairable() && newItem.GetQuality() == -1 {
+        newItem.SetQuality(d100.Percentage(rand.Intn(90) + 10))
+    }
+    return newItem
 }
 
 func (g *GameState) newItemFromName(itemName string) foundation.Item {
-	if itemName == "gold" {
-		return g.NewGold(1)
-	}
+    if itemName == "gold" {
+        return g.NewGold(1)
+    }
 
-	if itemName == "bowel_disruptor" {
-		return g.NewBowelDisruptor()
-	}
+    if itemName == "bowel_disruptor" {
+        return g.NewBowelDisruptor()
+    }
 
-	itemDef := g.getItemTemplateByName(itemName)
+    itemDef := g.getItemTemplateByName(itemName)
 
-	if len(itemDef) == 0 {
-		panic(fmt.Sprintf("Item not found: %s", itemName))
-	}
+    if len(itemDef) == 0 {
+        panic(fmt.Sprintf("Item not found: %s", itemName))
+    }
 
-	newItem := NewItemFromRecord(itemDef, g.NewItemFromString, g.iconForItem)
+    newItem := NewItemFromRecord(itemDef, g.NewItemFromString, g.iconForItem)
 
-	if newItem == nil {
-		panic(fmt.Sprintf("Item not found: %s", itemName))
-	}
-	return newItem
+    if newItem == nil {
+        panic(fmt.Sprintf("Item not found: %s", itemName))
+    }
+    return newItem
 }
 func NewNoteFromFile(fileName, description string, icon textiles.TextIcon) *GenericItem {
-	return &GenericItem{
-		name:         description,
-		internalName: fileName,
-		category:     foundation.ItemCategoryReadables,
-		textFile:     fileName,
-		icon:         icon,
-	}
+    return &GenericItem{
+        UID:          gridmap.NextItemID(),
+        DisplayName:  description,
+        InternalName: fileName,
+        Category:     foundation.ItemCategoryReadables,
+        TextFile:     fileName,
+        Icon:         icon,
+    }
 }
 func NewKey(keyID, description string, icon textiles.TextIcon) *GenericItem {
-	return &GenericItem{
-		name:         description,
-		internalName: keyID,
-		lockFlag:     keyID,
-		category:     foundation.ItemCategoryKeys,
-		charges:      -1,
-		icon:         icon,
-	}
+    return &GenericItem{
+        UID:          gridmap.NextItemID(),
+        DisplayName:  description,
+        InternalName: keyID,
+        LockFlag:     keyID,
+        Category:     foundation.ItemCategoryKeys,
+        Charges:      -1,
+        Icon:         icon,
+    }
 }
 
 func (i *GenericItem) InventoryNameWithColorsAndShortcut(lineColorCode string) string {
-	return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
+    return fmt.Sprintf("%c - %s", i.Shortcut(), i.InventoryNameWithColors(lineColorCode))
 }
 
 func (i *GenericItem) Shortcut() rune {
-	return foundation.ShortCutFromIndex(i.invIndex)
+    return foundation.ShortCutFromIndex(i.InvIndex)
 }
 
 func (i *GenericItem) DisplayLength() int {
-	return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut("[red]"))
+    return cview.TaggedStringWidth(i.InventoryNameWithColorsAndShortcut("[red]"))
 }
 
 func (i *GenericItem) FullDescription(colorCode string) string {
-	rows := i.fullDescriptionRows()
-	lines := fxtools.TableLayout(rows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
-	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+    rows := i.fullDescriptionRows()
+    lines := fxtools.TableLayout(rows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
+    lines = append([]string{i.InventoryNameWithColors(colorCode), i.Category.String()}, lines...)
 
-	lines = i.appendText(lines)
+    lines = i.appendText(lines)
 
-	return strings.Join(lines, "\n")
+    return strings.Join(lines, "\n")
 }
 
 func (i *GenericItem) fullDescriptionRows() []fxtools.TableRow {
-	var rows []fxtools.TableRow
-	statPairs := i.getStatPairsAsRows()
-	rows = append(rows, statPairs...)
+    var rows []fxtools.TableRow
+    statPairs := i.getStatPairsAsRows()
+    rows = append(rows, statPairs...)
 
-	if i.IsConsumable() {
-		rows = append(rows, fxtools.NewTableRow("Duration", fmt.Sprintf("%d turns", i.charges)))
-	}
-	return rows
+    if i.IsConsumable() {
+        rows = append(rows, fxtools.NewTableRow("Duration", fmt.Sprintf("%d turns", i.Charges)))
+    }
+    return rows
 }
 
 func (i *GenericItem) LongNameWithColors(colorCode string) string {
-	line := cview.Escape(i.Name())
-	statPairs := i.getStatPairsAsStrings()
+    line := cview.Escape(i.Name())
+    statPairs := i.getStatPairsAsStrings()
 
-	if len(statPairs) > 0 {
-		line = cview.Escape(fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|")))
-	}
+    if len(statPairs) > 0 {
+        line = cview.Escape(fmt.Sprintf("%s [%s]", line, strings.Join(statPairs, "|")))
+    }
 
-	return colorCode + line + "[-]"
+    return colorCode + line + "[-]"
 }
 
 func (i *GenericItem) InventoryNameWithColors(colorCode string) string {
-	line := cview.Escape(i.Name())
+    line := cview.Escape(i.Name())
 
-	if i.StackSize() > 1 && !i.IsGold() {
-		line = fmt.Sprintf("%s (x%d)", line, i.StackSize())
-	}
+    if i.GetStackSize() > 1 && !i.IsGold() {
+        line = fmt.Sprintf("%s (x%d)", line, i.GetStackSize())
+    }
 
-	lineWithColor := colorCode + line + "[-]"
+    lineWithColor := colorCode + line + "[-]"
 
-	return lineWithColor
+    return lineWithColor
 }
 
 func (i *GenericItem) getStatPairsAsStrings() []string {
-	var statPairs []string
-	if len(i.statChanges.StatChanges) > 0 {
-		for stat := d100.Stat(0); stat < d100.StatCount; stat++ {
-			if chg, hasChg := i.statChanges.StatChanges[stat]; hasChg {
-				var statName string
-				statName = stat.ToShortString()
-				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, statName))
-			}
-		}
-	}
+    var statPairs []string
+    if len(i.StatChanges.StatChanges) > 0 {
+        for stat := d100.Stat(0); stat < d100.StatCount; stat++ {
+            if chg, hasChg := i.StatChanges.StatChanges[stat]; hasChg {
+                var statName string
+                statName = stat.ToShortString()
+                statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, statName))
+            }
+        }
+    }
 
-	if len(i.statChanges.SkillChanges) > 0 {
-		for skill := d100.Skill(0); skill < d100.Skill(d100.SkillCount()); skill++ {
-			if chg, hasChg := i.statChanges.SkillChanges[skill]; hasChg {
-				var skillName string
-				skillName = skill.ToShortString()
+    if len(i.StatChanges.SkillChanges) > 0 {
+        for skill := d100.Skill(0); skill < d100.Skill(d100.SkillCount()); skill++ {
+            if chg, hasChg := i.StatChanges.SkillChanges[skill]; hasChg {
+                var skillName string
+                skillName = skill.ToShortString()
 
-				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, skillName))
-			}
-		}
-	}
+                statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, skillName))
+            }
+        }
+    }
 
-	if len(i.statChanges.DerivedStatChanges) > 0 {
-		for stat := d100.DerivedStat(0); stat < d100.DerivedStatCount; stat++ {
-			if chg, hasChg := i.statChanges.DerivedStatChanges[stat]; hasChg {
-				var statName string
-				statName = stat.ToShortString()
-				statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, statName))
-			}
-		}
-	}
-	return statPairs
+    if len(i.StatChanges.DerivedStatChanges) > 0 {
+        for stat := d100.DerivedStat(0); stat < d100.DerivedStatCount; stat++ {
+            if chg, hasChg := i.StatChanges.DerivedStatChanges[stat]; hasChg {
+                var statName string
+                statName = stat.ToShortString()
+                statPairs = append(statPairs, fmt.Sprintf("%+d %s", chg, statName))
+            }
+        }
+    }
+    return statPairs
 }
 func (i *GenericItem) getStatPairsAsRows() []fxtools.TableRow {
-	var statPairs []fxtools.TableRow
-	if len(i.statChanges.StatChanges) > 0 {
-		for stat := d100.Stat(0); stat < d100.StatCount; stat++ {
-			if chg, hasChg := i.statChanges.StatChanges[stat]; hasChg {
-				var statName string
-				statName = stat.String()
-				statPairs = append(statPairs, fxtools.NewTableRow(statName, fmt.Sprintf("%+d", chg)))
-			}
-		}
-	}
+    var statPairs []fxtools.TableRow
+    if len(i.StatChanges.StatChanges) > 0 {
+        for stat := d100.Stat(0); stat < d100.StatCount; stat++ {
+            if chg, hasChg := i.StatChanges.StatChanges[stat]; hasChg {
+                var statName string
+                statName = stat.String()
+                statPairs = append(statPairs, fxtools.NewTableRow(statName, fmt.Sprintf("%+d", chg)))
+            }
+        }
+    }
 
-	if len(i.statChanges.SkillChanges) > 0 {
-		for skill := d100.Skill(0); skill < d100.Skill(d100.SkillCount()); skill++ {
-			if chg, hasChg := i.statChanges.SkillChanges[skill]; hasChg {
-				var skillName string
-				skillName = skill.String()
-				statPairs = append(statPairs, fxtools.NewTableRow(skillName, fmt.Sprintf("%+d", chg)))
-			}
-		}
-	}
+    if len(i.StatChanges.SkillChanges) > 0 {
+        for skill := d100.Skill(0); skill < d100.Skill(d100.SkillCount()); skill++ {
+            if chg, hasChg := i.StatChanges.SkillChanges[skill]; hasChg {
+                var skillName string
+                skillName = skill.String()
+                statPairs = append(statPairs, fxtools.NewTableRow(skillName, fmt.Sprintf("%+d", chg)))
+            }
+        }
+    }
 
-	if len(i.statChanges.DerivedStatChanges) > 0 {
-		for stat := d100.DerivedStat(0); stat < d100.DerivedStatCount; stat++ {
-			if chg, hasChg := i.statChanges.DerivedStatChanges[stat]; hasChg {
-				var statName string
-				statName = stat.String()
-				statPairs = append(statPairs, fxtools.NewTableRow(statName, fmt.Sprintf("%+d", chg)))
-			}
-		}
-	}
-	return statPairs
+    if len(i.StatChanges.DerivedStatChanges) > 0 {
+        for stat := d100.DerivedStat(0); stat < d100.DerivedStatCount; stat++ {
+            if chg, hasChg := i.StatChanges.DerivedStatChanges[stat]; hasChg {
+                var statName string
+                statName = stat.String()
+                statPairs = append(statPairs, fxtools.NewTableRow(statName, fmt.Sprintf("%+d", chg)))
+            }
+        }
+    }
+    return statPairs
 }
 func getQualityIcon(quality d100.Percentage) string {
-	colorCode := "[green]"
-	// Lower one eighth block
-	char := ""
-	if quality < 13 {
-		colorCode = "[red]"
-		char = "▁"
-	} else if quality < 25 {
-		colorCode = "[red]"
-		char = "▂"
-	} else if quality < 38 {
-		colorCode = "[red]"
-		char = "▃"
-	} else if quality < 50 {
-		colorCode = "[yellow]"
-		char = "▄"
-	} else if quality < 63 {
-		colorCode = "[yellow]"
-		char = "▅"
-	} else if quality < 75 {
-		colorCode = "[yellow]"
-		char = "▆"
-	} else if quality < 88 {
-		char = "▇"
-	} else {
-		char = "█"
-	}
+    colorCode := "[green]"
+    // Lower one eighth block
+    char := ""
+    if quality < 13 {
+        colorCode = "[red]"
+        char = "▁"
+    } else if quality < 25 {
+        colorCode = "[red]"
+        char = "▂"
+    } else if quality < 38 {
+        colorCode = "[red]"
+        char = "▃"
+    } else if quality < 50 {
+        colorCode = "[yellow]"
+        char = "▄"
+    } else if quality < 63 {
+        colorCode = "[yellow]"
+        char = "▅"
+    } else if quality < 75 {
+        colorCode = "[yellow]"
+        char = "▆"
+    } else if quality < 88 {
+        char = "▇"
+    } else {
+        char = "█"
+    }
 
-	return fmt.Sprintf("%s%s[-]", colorCode, char)
+    return fmt.Sprintf("%s%s[-]", colorCode, char)
 }
 
 func (i *GenericItem) SetPosition(pos geometry.Point) {
-	i.position = pos
+    i.RawPosition = pos
 }
 
 func (i *GenericItem) Position() geometry.Point {
-	if i.posHandler != nil {
-		return i.posHandler()
-	}
-	return i.position
+    if i.posHandler != nil {
+        return i.posHandler()
+    }
+    return i.RawPosition
 }
 
 func (i *GenericItem) Name() string {
-	name := i.name
-	if i.IsGold() {
-		name = fmt.Sprintf("$%d", i.stackSize)
-	}
+    name := i.DisplayName
+    if i.IsGold() {
+        name = fmt.Sprintf("%d sat", i.StackSize)
+    }
 
-	return name
+    return name
 }
 
 func (i *GenericItem) IsThrowable() bool {
-	return true
+    return true
 }
 
 func (i *GenericItem) IsUsableOrZappable() bool {
-	return i.useEffectName != "" || i.zapEffectName != ""
+    return i.UseEffectName != "" || i.ZapEffectName != ""
 }
 
 func (i *GenericItem) IsReadable() bool {
-	isRealText := i.IsBook()
-	isSkillBook := i.IsSkillBook()
-	return isRealText || isSkillBook
+    isRealText := i.IsBook()
+    isSkillBook := i.IsSkillBook()
+    return isRealText || isSkillBook
 }
 
 func (i *GenericItem) TextVariables(scriptFuncs map[string]govaluate.ExpressionFunction) map[string]string {
-	//TextValue && TextVar
-	if i.textValue == "" || i.textVar == "" {
-		return make(map[string]string)
-	}
-	valueExpr, _ := govaluate.NewEvaluableExpressionWithFunctions(i.textValue, scriptFuncs)
-	value, _ := valueExpr.Evaluate(nil)
-	return map[string]string{
-		i.textVar: value.(string),
-	}
+    //TextValue && TextVar
+    if i.TextValue == "" || i.TextVar == "" {
+        return make(map[string]string)
+    }
+    valueExpr, _ := govaluate.NewEvaluableExpressionWithFunctions(i.TextValue, scriptFuncs)
+    value, _ := valueExpr.Evaluate(nil)
+    return map[string]string{
+        i.TextVar: value.(string),
+    }
 }
 
 func (i *GenericItem) IsBook() bool {
-	return i.textFile != "" || i.text != ""
+    return i.TextFile != "" || i.Text != ""
 }
 
 func (i *GenericItem) IsSkillBook() bool {
-	return len(i.statChanges.SkillChanges) == 1 &&
-		len(i.statChanges.StatChanges) == 0 &&
-		len(i.statChanges.DerivedStatChanges) == 0 &&
-		i.category == foundation.ItemCategoryReadables
+    return len(i.StatChanges.SkillChanges) == 1 &&
+        len(i.StatChanges.StatChanges) == 0 &&
+        len(i.StatChanges.DerivedStatChanges) == 0 &&
+        i.Category == foundation.ItemCategoryReadables
 }
 
 func (i *GenericItem) IsUsable() bool {
-	return i.useEffectName != ""
+    return i.UseEffectName != ""
 }
 
 func (i *GenericItem) UseEffect() string {
-	return i.useEffectName
+    return i.UseEffectName
 }
 
 func (i *GenericItem) ZapEffect() string {
-	return i.zapEffectName
+    return i.ZapEffectName
 }
 
 func (i *GenericItem) IsZappable() bool {
-	return i.zapEffectName != ""
+    return i.ZapEffectName != ""
 }
 
 func (i *GenericItem) Color() color.RGBA {
-	return color.RGBA{255, 255, 255, 255}
+    return color.RGBA{255, 255, 255, 255}
 }
 
 func (i *GenericItem) CanStackWith(other foundation.Item) bool {
-	if i.category != other.Category() {
-		return false
-	}
+    if i.Category != other.GetCategory() {
+        return false
+    }
 
-	if i.internalName != other.InternalName() {
-		return false
-	}
-	if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() {
-		return false
-	}
+    if i.InternalName != other.GetInternalName() {
+        return false
+    }
+    if (i.IsWeapon() && !i.IsMissile()) || i.IsArmor() || (other.IsWeapon() && !other.IsMissile()) || other.IsArmor() {
+        return false
+    }
 
-	if i.useEffectName != other.UseEffect() || i.zapEffectName != other.ZapEffect() {
-		return false
-	}
+    if i.UseEffectName != other.UseEffect() || i.ZapEffectName != other.ZapEffect() {
+        return false
+    }
 
-	if i.category == foundation.ItemCategoryGold && other.Category() == foundation.ItemCategoryGold {
-		return true
-	}
+    if i.Category == foundation.ItemCategoryGold && other.GetCategory() == foundation.ItemCategoryGold {
+        return true
+    }
 
-	if i.charges != other.Charges() {
-		return false
-	}
+    if i.Charges != other.GetCharges() {
+        return false
+    }
 
-	return true
+    return true
 }
 
 func (i *GenericItem) IsEquippable() bool {
-	return false
+    return false
 }
 
 func (i *GenericItem) IsMeleeWeapon() bool {
-	return false
+    return false
 }
 
 func (i *GenericItem) IsRangedWeapon() bool {
-	return false
+    return false
 }
 
 func (i *GenericItem) IsArmor() bool {
-	return false
+    return false
 }
 
 func (i *GenericItem) IsWeapon() bool {
-	return false
+    return false
 }
 
-func (i *GenericItem) Category() foundation.ItemCategory {
-	return i.category
+func (i *GenericItem) GetCategory() foundation.ItemCategory {
+    return i.Category
 }
 
 func (i *GenericItem) IsGold() bool {
-	return i.category == foundation.ItemCategoryGold
+    return i.Category == foundation.ItemCategoryGold
 }
 
-func (i *GenericItem) Charges() int {
-	return i.charges
+func (i *GenericItem) GetCharges() int {
+    return i.Charges
 }
 
 func (i *GenericItem) IsFood() bool {
-	return i.category == foundation.ItemCategoryFood
+    return i.Category == foundation.ItemCategoryFood
 }
 
 func (i *GenericItem) IsHeadGear() bool {
-	return i.category == foundation.ItemCategoryHeadgear
+    return i.Category == foundation.ItemCategoryHeadgear
 }
 
 func (i *GenericItem) IsConsumable() bool {
-	return i.category == foundation.ItemCategoryFood || i.category == foundation.ItemCategoryConsumables
+    return i.Category == foundation.ItemCategoryFood || i.Category == foundation.ItemCategoryConsumables
 }
 func (i *GenericItem) IsDrug() bool {
-	return i.charges > 0 && i.category == foundation.ItemCategoryConsumables && (len(i.statChanges.StatChanges) > 0 || len(i.statChanges.SkillChanges) > 0 || len(i.statChanges.DerivedStatChanges) > 0)
+    return i.Charges > 0 && i.Category == foundation.ItemCategoryConsumables && (len(i.StatChanges.StatChanges) > 0 || len(i.StatChanges.SkillChanges) > 0 || len(i.StatChanges.DerivedStatChanges) > 0)
 }
 
-func (i *GenericItem) InternalName() string {
-	return i.internalName
+func (i *GenericItem) GetInternalName() string {
+    return i.InternalName
 }
 
 func (i *GenericItem) GetEquipFlag() foundation.ActorFlag {
-	return i.equipFlag
+    return i.EquipFlag
 }
 
 func (i *GenericItem) GetThrowDamage() fxtools.Interval {
-	return i.thrownDamage
+    return i.ThrownDamage
 }
 
 func (i *GenericItem) ConsumeCharge() {
-	i.charges--
+    i.Charges--
 }
 
 func (i *GenericItem) SetCharges(amount int) {
-	i.charges = amount
+    i.Charges = amount
 }
 
 func (i *GenericItem) AfterEquippedTurn() {
@@ -679,156 +533,156 @@ func (i *GenericItem) AfterEquippedTurn() {
 }
 
 func (i *GenericItem) RemoveStacks(spent int) {
-	i.stackSize -= spent
-	if i.stackSize < 0 {
-		i.stackSize = 0
-	}
+    i.StackSize -= spent
+    if i.StackSize < 0 {
+        i.StackSize = 0
+    }
 }
 
 func (i *GenericItem) Split(bullets int) foundation.Item {
-	if bullets >= i.stackSize {
-		return i
-	}
-	clone := *i
-	clone.stackSize = bullets
-	i.stackSize -= bullets
-	return &clone
+    if bullets >= i.StackSize {
+        return i
+    }
+    clone := *i
+    clone.StackSize = bullets
+    i.StackSize -= bullets
+    return &clone
 }
 
 func (i *GenericItem) IsMissile() bool {
-	return false
+    return false
 }
 
 func (i *GenericItem) IsAmmo() bool {
-	return false
+    return false
 }
 
 func (i *GenericItem) IsLockpick() bool {
-	return i.category == foundation.ItemCategoryLockpicks
+    return i.Category == foundation.ItemCategoryLockpicks
 }
 
 func (i *GenericItem) IsKey() bool {
-	return i.category == foundation.ItemCategoryKeys && i.lockFlag != ""
+    return i.Category == foundation.ItemCategoryKeys && i.LockFlag != ""
 }
 
 func (i *GenericItem) GetLockFlag() string {
-	return i.lockFlag
+    return i.LockFlag
 }
 
 func (i *GenericItem) HasTag(tag foundation.ItemTags) bool {
-	return i.tags.Contains(tag)
+    return i.Tags.Contains(tag)
 }
 
 func (i *GenericItem) GetTextFile() string {
-	return i.textFile
+    return i.TextFile
 }
 
 func (i *GenericItem) GetIcon() textiles.TextIcon {
-	return i.icon
+    return i.Icon
 }
 
 func (i *GenericItem) IsBreakingNow() bool {
-	return rand.Intn(100) < i.chanceToBreakOnThrow
+    return rand.Intn(100) < i.ChanceToBreakOnThrow
 }
 
-func (i *GenericItem) PickupFlag() string {
-	return i.setFlagOnPickup
+func (i *GenericItem) GetPickupFlag() string {
+    return i.SetFlagOnPickup
 }
 
-func (i *GenericItem) DropFlag() string {
-	return i.setFlagOnDrop
+func (i *GenericItem) GetDropFlag() string {
+    return i.SetFlagOnDrop
 }
 
 func (i *GenericItem) GetText() string {
-	return i.text
+    return i.Text
 }
 
 func (i *GenericItem) IsLightSource() bool {
-	return i.HasTag(foundation.TagLightSource)
+    return i.HasTag(foundation.TagLightSource)
 }
 
 func (i *GenericItem) GetCarryWeight() int {
-	return i.weight
+    return i.Weight
 }
 
 func (i *GenericItem) NeedsRepair() bool {
-	if !i.IsWeapon() && !i.IsArmor() {
-		return false
-	}
-	return i.qualityInPercent < 100
+    if !i.IsWeapon() && !i.IsArmor() {
+        return false
+    }
+    return i.QualityInPercent < 100
 }
 
 func (i *GenericItem) CanBeRepairedWith(other foundation.Repairable) bool {
-	if !other.NeedsRepair() || i == other {
-		return false
-	}
-	return i.category == other.Category() && i.internalName == other.InternalName()
+    if !other.NeedsRepair() || i == other {
+        return false
+    }
+    return i.Category == other.GetCategory() && i.InternalName == other.GetInternalName()
 }
 
 func (i *GenericItem) IsWatch() bool {
-	return i.useEffectName == "show_time"
+    return i.UseEffectName == "show_time"
 }
 
 func (i *GenericItem) SetPositionHandler(handler func() geometry.Point) {
-	i.posHandler = handler
+    i.posHandler = handler
 }
 
 func (i *GenericItem) SetAlive(value bool) {
-	i.alive = value
+    i.Alive = value
 }
 
 func (i *GenericItem) GetEffectParameters() foundation.Params {
-	if i.effectParameters == nil {
-		return make(foundation.Params)
-	}
-	return i.effectParameters
+    if i.EffectParameters == nil {
+        return make(foundation.Params)
+    }
+    return i.EffectParameters
 }
 
 func (i *GenericItem) SetQuality(quality d100.Percentage) {
-	i.qualityInPercent = d100.Percentage(quality)
+    i.QualityInPercent = d100.Percentage(quality)
 }
 
 func (i *GenericItem) Degrade(degrade float64) {
-	i.qualityInPercent -= d100.Percentage(degrade)
+    i.QualityInPercent -= d100.Percentage(degrade)
 }
 
 func (i *GenericItem) GetSkillMod(skill d100.Skill) (int, bool) {
-	mod, hasMod := i.statChanges.SkillChanges[skill]
-	return mod, hasMod
+    mod, hasMod := i.StatChanges.SkillChanges[skill]
+    return mod, hasMod
 }
 
 func (i *GenericItem) GetStatMod(stat d100.Stat) (int, bool) {
-	mod, hasMod := i.statChanges.StatChanges[stat]
-	return mod, hasMod
+    mod, hasMod := i.StatChanges.StatChanges[stat]
+    return mod, hasMod
 }
 
 func (i *GenericItem) GetDerivedStatMod(stat d100.DerivedStat) (int, bool) {
-	mod, hasMod := i.statChanges.DerivedStatChanges[stat]
-	return mod, hasMod
+    mod, hasMod := i.StatChanges.DerivedStatChanges[stat]
+    return mod, hasMod
 }
 
 func (i *GenericItem) GetSkillBookValues() (d100.Skill, int) {
-	for skill, value := range i.statChanges.SkillChanges {
-		return skill, value
-	}
-	return d100.Skill(-1), 0
+    for skill, value := range i.StatChanges.SkillChanges {
+        return skill, value
+    }
+    return d100.Skill(-1), 0
 }
 
 func (i *GenericItem) appendText(lines []string) []string {
-	width := max(longestLine(lines), 26)
-	if i.text != "" {
-		lines = append(lines, "")
-		lines = append(lines, util.WrapString(i.text, uint(width)))
-	}
-	return lines
+    width := max(longestLine(lines), 26)
+    if i.Text != "" {
+        lines = append(lines, "")
+        lines = append(lines, util.WrapString(i.Text, uint(width)))
+    }
+    return lines
 }
 
 func longestLine(lines []string) int {
-	longest := 0
-	for _, line := range lines {
-		if cview.TaggedStringWidth(line) > longest {
-			longest = cview.TaggedStringWidth(line)
-		}
-	}
-	return longest
+    longest := 0
+    for _, line := range lines {
+        if cview.TaggedStringWidth(line) > longest {
+            longest = cview.TaggedStringWidth(line)
+        }
+    }
+    return longest
 }

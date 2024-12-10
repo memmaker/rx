@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
+    "contractor/foundation"
 	"cmp"
 	"encoding/gob"
 	"github.com/memmaker/go/fxtools"

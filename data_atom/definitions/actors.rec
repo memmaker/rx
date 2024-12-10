@@ -23,7 +23,7 @@ CriticalChance: 2
 Strength: 5
 Perception: 2
 Endurance: 6
-Charisma: 1
+Cool: 1
 Intelligence: 1
 Agility: 3
 Luck: 2
@@ -62,7 +62,7 @@ CriticalChance: 5
 Strength: 8
 Perception: 6
 Endurance: 6
-Charisma: 1
+Cool: 1
 Intelligence: 3
 Agility: 5
 Luck: 5
@@ -105,7 +105,7 @@ CriticalChance: 3
 Strength: 3
 Perception: 3
 Endurance: 6
-Charisma: 1
+Cool: 1
 Intelligence: 1
 Agility: 5
 Luck: 3
@@ -145,7 +145,7 @@ CriticalChance: 1
 Strength: 8
 Perception: 3
 Endurance: 8
-Charisma: 3
+Cool: 3
 Intelligence: 2
 Agility: 4
 Luck: 1
@@ -188,7 +188,7 @@ CriticalChance: 1
 Strength: 1
 Perception: 1
 Endurance: 1
-Charisma: 1
+Cool: 1
 Intelligence: 1
 Agility: 4
 Luck: 1
@@ -222,7 +222,7 @@ CriticalChance: 1
 Strength: 3
 Perception: 2
 Endurance: 5
-Charisma: 1
+Cool: 1
 Intelligence: 1
 Agility: 3
 Luck: 1
@@ -231,6 +231,225 @@ DREMP: 500
 DRRadiation: 10
 DRPoison: 25
 SourceFile: 00000012.pro
+
+Name: adrian_voss
+Description: Adrian Voss
+LongDescription: Adrian “The Architect” Voss, Chief Technology Officer (CTO) and Strategist at Eschaton Biotech International (EBI). Known for his innovative approach to corporate strategy and his unwavering commitment to the company’s vision, Voss is a key figure in EBI’s leadership team. With a background in engineering and a keen eye for detail, he has played a pivotal role in shaping EBI’s technological advancements and ensuring the company’s continued success.
+Dialogue: adrian_voss
+Chatter: adrian_voss_chatter
+Icon: A
+Foreground: green_1
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 30
+ActionPoints: 7
+MeleeDamage: 1
+CarryWeight: 125
+Sequence: 12
+HealingRate: 1
+CriticalChance: 4
+Strength: 4
+Perception: 7
+Endurance: 4
+Cool: 6
+Intelligence: 9
+Agility: 4
+SkillBonusTechnology: 70
+SkillBonusBioChemistry: 60
+equipment: binge(2)
+equipment: lab_coat_ebi
+
+Name: dr_iris_kwan
+Description: Dr. Iris Kwan
+LongDescription: Dr. Iris Kwan, Chief Biologist and Leader of the New World Program at Eschaton Biotech International (EBI). Once an idealistic ecologist, Dr. Kwan became disillusioned by humanity’s environmental destruction and turned to radical eugenics. She believes in creating a pure and sustainable humanity through strict genetic control, using bioengineering as a means to rebuild society according to her vision of perfection.
+Dialogue: dr_iris_kwan
+Chatter: dr_iris_kwan_chatter
+Icon: I
+Foreground: green_2
+Age: 42
+BodyType: 1
+XP: 95
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 30
+ActionPoints: 6
+MeleeDamage: 1
+CarryWeight: 115
+Sequence: 11
+HealingRate: 1
+CriticalChance: 5
+Strength: 3
+Perception: 6
+Endurance: 4
+Cool: 7
+Intelligence: 10
+Agility: 3
+SkillBonusBioChemistry: 100
+equipment: lab_coat_ebi
+
+Name: ebi_security_officer
+Description: EBI Security Officer
+LongDescription: An EBI Security Officer tasked with patrolling urban zones and enforcing Eschaton’s policies in Edge Haven. As the corporate police force, they project authority while maintaining a visible presence to deter criminal activity. Equipped for both lethal and non-lethal engagement, their role is to maintain public order and corporate compliance.
+Icon: E
+Foreground: green_1
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 30
+ActionPoints: 7
+MeleeDamage: 1
+CarryWeight: 125
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 5
+Perception: 7
+Endurance: 4
+Cool: 8
+Intelligence: 4
+Agility: 4
+aggressive: true
+SkillBonusRangedCombat: 40
+SkillBonusMeleeCombat: 40
+equipment: binge(2)
+equipment: eb8_service_pistol
+equipment: 9mm(36)
+equipment: pacifier_baton
+equipment: ebi_officer_cap
+equipment: ebi_officer_uniform
+
+Name: ebi_security_guard
+Description: EBI Security Guard
+LongDescription: An EBI Security Guard tasked with patrolling urban zones and enforcing Eschaton’s policies in Edge Haven. As the corporate police force, they project authority while maintaining a visible presence to deter criminal activity. Equipped for both lethal and non-lethal engagement, their role is to maintain public order and corporate compliance.
+Icon: E
+Foreground: light_gray_2
+aggressive: true
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 35
+ActionPoints: 5
+MeleeDamage: 1
+CarryWeight: 175
+Sequence: 12
+HealingRate: 1
+CriticalChance: 4
+Strength: 6
+Perception: 6
+Endurance: 6
+Cool: 6
+Intelligence: 3
+Agility: 6
+SkillBonusRangedCombat: 30
+SkillBonusMeleeCombat: 30
+equipment: binge(2)
+equipment: eb8_service_pistol
+equipment: 9mm(36)
+equipment: pacifier_baton
+equipment: ebi_guard_cap
+equipment: ebi_guard_uniform
+
+Name: haruki_tanaka
+Description: Haruki Tanaka
+LongDescription: Haruki Tanaka, CEO of Bushido-ArmaTech (BAT), is a charismatic and ambitious leader who preaches peace through strength. Beneath his composed exterior lies a deeply insecure individual driven by his father’s shadow and a desire to secure his legacy. Tanaka’s leadership has steered BAT into becoming a dominant force in military technology, blending innovation with ruthless pragmatism.
+Dialogue: haruki_tanaka
+Chatter: haruki_tanaka_chatter
+Icon: H
+Foreground: teal_1
+Age: 48
+BodyType: 0
+XP: 120
+KillType: 0
+DamageType: 0
+TeamNum: 2
+HitPoints: 40
+ActionPoints: 6
+MeleeDamage: 2
+CarryWeight: 125
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 5
+Perception: 7
+Endurance: 6
+Cool: 6
+Intelligence: 8
+Agility: 4
+SkillBonusIntimidate: 75
+SkillBonusSocial: 65
+equipment: armatech_executive_suit
+
+Name: jana_miller
+Description: Jana 'Jax' Miller
+LongDescription: Jana 'Jax' Miller, Chief Technology Officer (CTO) of Bushido-ArmaTech (BAT), is a brilliant but deeply misanthropic engineer. Her harsh upbringing and disdain for humanity have fueled her relentless drive to advance military technology, believing it to be humanity’s only hope for survival. Jax is known for her cutting-edge innovations and unyielding commitment to pushing the boundaries of what’s possible.
+Dialogue: jana_miller
+Chatter: jana_miller_chatter
+Icon: J
+Foreground: teal_1
+Age: 37
+BodyType: 1
+XP: 105
+KillType: 0
+DamageType: 0
+TeamNum: 2
+HitPoints: 35
+ActionPoints: 7
+MeleeDamage: 1
+CarryWeight: 120
+Sequence: 12
+HealingRate: 1
+CriticalChance: 5
+Strength: 4
+Perception: 7
+Endurance: 5
+Cool: 6
+Intelligence: 9
+Agility: 5
+SkillBonusTechnology: 85
+SkillBonusMechanics: 75
+equipment: tech_ops_jumpsuit
+
+Name: nova_starling
+Description: Nova Starling
+LongDescription: Nova Starling, Leader of Terra Vitae, is a visionary and determined environmentalist. Her childhood dream of 'eating the skies' symbolized freedom and the limitless potential of nature. After losing her father to corporate greed, Nova became a fierce advocate for decentralized, self-sustaining communities. Her leadership inspires hope and resilience among those seeking liberation from corporate oppression.
+Dialogue: nova_starling
+Chatter: nova_starling_chatter
+Icon: N
+Foreground: yellow_2
+Age: 34
+BodyType: 1
+XP: 110
+KillType: 0
+DamageType: 0
+TeamNum: 3
+HitPoints: 30
+ActionPoints: 7
+MeleeDamage: 1
+CarryWeight: 115
+Sequence: 11
+HealingRate: 1
+CriticalChance: 6
+Strength: 4
+Perception: 7
+Endurance: 4
+Cool: 8
+Intelligence: 8
+Agility: 5
+SkillBonusSocial: 70
+SkillBonusIntimidate: 80
+equipment: rugged_worker_attire
+equipment: foreman_cap
 
 Name: gun_thug
 Description: Gun Thug
@@ -254,7 +473,7 @@ CriticalChance: 6
 Strength: 6
 Perception: 6
 Endurance: 5
-Charisma: 3
+Cool: 3
 Intelligence: 4
 Agility: 5
 Luck: 6
@@ -294,7 +513,7 @@ CriticalChance: 5
 Strength: 10
 Perception: 8
 Endurance: 4
-Charisma: 1
+Cool: 1
 Intelligence: 5
 Agility: 4
 Luck: 5
@@ -335,7 +554,7 @@ CriticalChance: 5
 Strength: 10
 Perception: 10
 Endurance: 5
-Charisma: 1
+Cool: 1
 Intelligence: 6
 Agility: 6
 Luck: 5
@@ -373,7 +592,7 @@ CriticalChance: 1
 Strength: 6
 Perception: 8
 Endurance: 8
-Charisma: 1
+Cool: 1
 Intelligence: 5
 Agility: 4
 SkillBonusRangedCombat: 64
@@ -415,7 +634,7 @@ CriticalChance: 3
 Strength: 3
 Perception: 10
 Endurance: 7
-Charisma: 1
+Cool: 1
 Intelligence: 4
 Agility: 8
 Luck: 3
@@ -458,7 +677,7 @@ CriticalChance: 5
 Strength: 9
 Perception: 8
 Endurance: 8
-Charisma: 1
+Cool: 1
 Intelligence: 5
 Agility: 9
 Luck: 5
@@ -503,7 +722,7 @@ CriticalChance: 6
 Strength: 4
 Perception: 5
 Endurance: 4
-Charisma: 5
+Cool: 5
 Intelligence: 5
 Agility: 6
 Luck: 6
@@ -537,7 +756,7 @@ CriticalChance: 4
 Strength: 6
 Perception: 5
 Endurance: 6
-Charisma: 3
+Cool: 3
 Intelligence: 5
 Agility: 6
 Luck: 4
@@ -550,9 +769,30 @@ DRRadiation: 12
 DRPoison: 30
 SourceFile: 00000159.pro
 
+Name: corpse_male
+Flags: Spawn_Dead
+Description: male corpse
+Icon: M
+Foreground: light_gray_2
+HitPoints: 12
+
+Name: corpse_female
+Flags: Spawn_Dead
+Description: female corpse
+Icon: F
+Foreground: light_gray_2
+HitPoints: 12
+
+Name: corpse_child
+Flags: Spawn_Dead
+Description: child corpse
+Icon: C
+Foreground: light_gray_2
+HitPoints: 12
+
 Name: zombie
 Description: slow-moving ghoul
-LongDescription:
+LongDescription: 
 Flags: Is_Zombie
 Icon: G
 Foreground: red_12
@@ -573,7 +813,7 @@ CriticalChance: 4
 Strength: 6
 Perception: 5
 Endurance: 6
-Charisma: 3
+Cool: 3
 Intelligence: 5
 Agility: 6
 Luck: 4
@@ -585,3 +825,4 @@ DREMP: 500
 DRRadiation: 12
 DRPoison: 30
 SourceFile: 00000159.pro
+

@@ -1,7 +1,8 @@
 package foundation
 
 import (
-	"RogueUI/d100"
+    "contractor/d100"
+    "contractor/gridmap"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -34,11 +35,11 @@ type Zappable interface {
 type Repairable interface {
 	Name() string
 	CanBeRepairedWith(parts Repairable) bool
-	Quality() d100.Percentage
+	GetQuality() d100.Percentage
 	SetQuality(quality d100.Percentage)
 	NeedsRepair() bool
-	Category() ItemCategory
-	InternalName() string
+	GetCategory() ItemCategory
+	GetInternalName() string
 }
 type Equippable interface {
 	Name() string
@@ -49,10 +50,11 @@ type Equippable interface {
 	IsMeleeWeapon() bool
 	IsMissile() bool
 	GetEquipFlag() ActorFlag
-	Charges() int
+	GetCharges() int
 	AfterEquippedTurn()
-	InternalName() string
+	GetInternalName() string
 	IsHeadGear() bool
+	ID() gridmap.ItemID
 }
 
 type Timable interface {
@@ -67,7 +69,9 @@ type Timable interface {
 	Position() geometry.Point
 }
 type Item interface {
-	Category() ItemCategory
+	ID() gridmap.ItemID
+
+	GetCategory() ItemCategory
 	Name() string
 	String() string
 	InventoryNameWithColors(lineColorCode string) string
@@ -107,23 +111,23 @@ type Item interface {
 
 	// Stacking
 	IsMultipleStacks() bool
-	StackSize() int
+	GetStackSize() int
 	Split(count int) Item
 	CanStackWith(item Item) bool
 	AddStacks(item Item)
 
 	GetLockFlag() string
 	GetThrowDamage() fxtools.Interval
-	InternalName() string
+	GetInternalName() string
 
 	GetEffectParameters() Params
 	ZapEffect() string
 	UseEffect() string
-	Charges() int
+	GetCharges() int
 	SetCharges(count int)
 	SetQuality(qualityInPercent d100.Percentage)
 
-	Quality() d100.Percentage
+	GetQuality() d100.Percentage
 	GetEquipFlag() ActorFlag
 	NeedsRepair() bool
 	Color() color.RGBA
@@ -132,8 +136,8 @@ type Item interface {
 	HasTag(loot ItemTags) bool
 
 	AfterEquippedTurn()
-	DropFlag() string
-	PickupFlag() string
+	GetDropFlag() string
+	GetPickupFlag() string
 
 	CanBeRepairedWith(parts Repairable) bool
 
@@ -153,7 +157,7 @@ type Item interface {
 	IsHidden() bool
 	SetHidden(isHidden bool)
 	SetStackSize(count int)
-	Price() int
+	GetPrice() int
 	RemoveStacks(amount int)
 	IsGold() bool
 }

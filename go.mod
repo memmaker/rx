@@ -1,4 +1,4 @@
-module RogueUI
+module contractor
 
 go 1.23.1
 
@@ -7,11 +7,11 @@ toolchain go1.23.2
 require (
 	github.com/0xcafed00d/joystick v1.0.1
 	github.com/Knetic/govaluate v3.0.0+incompatible
-	github.com/ezrec/tcell_ebiten v0.2.1
 	github.com/gdamore/tcell/v2 v2.7.4
-	github.com/hajimehoshi/bitmapfont/v3 v3.2.0
-	github.com/hajimehoshi/ebiten/v2 v2.8.3
-	github.com/memmaker/go v0.0.0-20241028183720-0616fed9b065
+	github.com/hajimehoshi/ebiten/v2 v2.8.4
+	github.com/kelindar/binary v1.0.19
+	github.com/memmaker/go v0.0.0-20241207163819-a2952b12f29a
+	golang.org/x/image v0.22.0
 )
 
 require (
@@ -31,12 +31,10 @@ require (
 	github.com/jfreymuth/vorbis v1.0.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	golang.org/x/image v0.21.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/term v0.25.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )

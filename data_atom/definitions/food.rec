@@ -1,3 +1,6 @@
+%rec: item
+%key: Name
+
 Description: ration of food
 Name: food_ration
 Category: food

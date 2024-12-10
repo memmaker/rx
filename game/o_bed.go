@@ -1,9 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"bytes"
-	"encoding/gob"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -14,50 +12,14 @@ import (
 type Bed struct {
 	*BaseObject
 	isPlayer    func(*Actor) bool
-	nameOfOwner string
-	isOccupied  bool
+	NameOfOwner string
+	Occupied    bool
 	sleepAction func()
 }
 
-func (b *Bed) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-
-	if err := b.BaseObject.gobEncode(enc); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.nameOfOwner); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.isOccupied); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func (b *Bed) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-
-	b.BaseObject = &BaseObject{}
-
-	if err := b.BaseObject.gobDecode(dec); err != nil {
-		return err
-	}
-	if err := dec.Decode(&b.nameOfOwner); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.isOccupied); err != nil {
-		return err
-	}
-
-	return nil
-}
-func (g *GameState) NewBed(rec recfile.Record) *Bed {
+func (g *GameState) NewBed(rec recfile.Record, iconForObject func(objectType string) textiles.TextIcon) *Bed {
 	bed := &Bed{
-		BaseObject: NewObject(foundation.ObjectBed, g.iconForObject),
+		BaseObject: NewObject(foundation.ObjectBed, iconForObject),
 	}
 
 	bed.SetWalkable(true)
@@ -69,9 +31,9 @@ func (g *GameState) NewBed(rec recfile.Record) *Bed {
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
 		case "name":
-			bed.internalName = field.Value
+			bed.InternalName = field.Value
 		case "iconoverride":
-			customIcon = g.iconForObject(field.Value)
+			customIcon = bed.iconForObject(field.Value)
 			useCustomIcon = true
 		case "icon":
 			customIcon.Char = field.AsRune()
@@ -81,23 +43,23 @@ func (g *GameState) NewBed(rec recfile.Record) *Bed {
 		case "bg":
 			customIcon.Bg = field.AsRGB(",")
 		case "description":
-			bed.displayName = field.Value
+			bed.DisplayName = field.Value
 		case "position":
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
 			bed.SetPosition(spawnPos)
 		case "owner":
-			bed.nameOfOwner = field.Value
+			bed.NameOfOwner = field.Value
 		}
 	}
 
-	bed.customIcon = customIcon
-	bed.useCustomIcon = useCustomIcon
+	bed.CustomIcon = customIcon
+	bed.UseCustomIcon = useCustomIcon
 
-	if bed.internalName == "" {
-		if bed.nameOfOwner != "" {
-			bed.internalName = fmt.Sprintf("bed_of_%s", bed.nameOfOwner)
+	if bed.InternalName == "" {
+		if bed.NameOfOwner != "" {
+			bed.InternalName = fmt.Sprintf("bed_of_%s", bed.NameOfOwner)
 		} else {
-			bed.internalName = "bed"
+			bed.InternalName = "bed"
 		}
 	}
 
@@ -106,14 +68,13 @@ func (g *GameState) NewBed(rec recfile.Record) *Bed {
 }
 
 func (b *Bed) InitWithGameState(g *GameState) {
-	b.iconForObject = g.iconForObject
 	b.isPlayer = func(actor *Actor) bool { return actor == g.Player }
 	b.sleepAction = func() {
 		g.openRestMenu(true)
 	}
 }
 func (b *Bed) AppendContextActions(actions []foundation.MenuItem, g *GameState) []foundation.MenuItem {
-	if b.nameOfOwner != "" && b.nameOfOwner != "player" {
+	if b.NameOfOwner != "" && b.NameOfOwner != "player" {
 		return actions
 	}
 
@@ -125,7 +86,7 @@ func (b *Bed) AppendContextActions(actions []foundation.MenuItem, g *GameState) 
 }
 
 func (b *Bed) OnWalkOver(actor *Actor) []foundation.Animation {
-	if b.isPlayer(actor) {
+	if b.isPlayer(actor) && (b.NameOfOwner == "" || strings.ToLower(b.NameOfOwner) == "player") {
 		b.sleepAction()
 	}
 	return nil
@@ -133,16 +94,16 @@ func (b *Bed) OnWalkOver(actor *Actor) []foundation.Animation {
 
 func (b *Bed) ToRecord() recfile.Record {
 	rec := recfile.Record{
-		{Name: "category", Value: b.category.String()},
-		{Name: "position", Value: b.position.Encode()},
-		{Name: "description", Value: b.displayName},
-		{Name: "icon", Value: string(b.customIcon.Char)},
-		{Name: "fg", Value: recfile.RGBStr(b.customIcon.Fg)},
-		{Name: "bg", Value: recfile.RGBStr(b.customIcon.Bg)},
-		{Name: "isoccupied", Value: recfile.BoolStr(b.isOccupied)},
+		{Name: "category", Value: b.Category.String()},
+		{Name: "position", Value: b.RawPosition.Encode()},
+		{Name: "description", Value: b.DisplayName},
+		{Name: "icon", Value: string(b.CustomIcon.Char)},
+		{Name: "fg", Value: recfile.RGBStr(b.CustomIcon.Fg)},
+		{Name: "bg", Value: recfile.RGBStr(b.CustomIcon.Bg)},
+		{Name: "isoccupied", Value: recfile.BoolStr(b.Occupied)},
 	}
-	if b.nameOfOwner != "" {
-		rec = append(rec, recfile.Field{Name: "owner", Value: b.nameOfOwner})
+	if b.NameOfOwner != "" {
+		rec = append(rec, recfile.Field{Name: "owner", Value: b.NameOfOwner})
 	}
 	return rec
 }

@@ -1,0 +1,386 @@
+%rec: default
+
+Name: corpse_child
+Icon: C
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: child refugee
+HitPoints: 12
+Position: (40,19)
+
+Name: corpse_child
+Icon: C
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: child refugee
+HitPoints: 12
+Position: (42,18)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (14,21)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (36,19)
+
+Name: corpse_child
+Icon: C
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: child refugee
+HitPoints: 12
+Position: (39,21)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (44,20)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (33,18)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (18,19)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (18,21)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (44,17)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (16,20)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (48,18)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (17,19)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (20,21)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (21,20)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female corpse
+HitPoints: 12
+Position: (39,17)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (31,18)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (32,16)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female corpse
+HitPoints: 12
+Position: (41,19)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female corpse
+HitPoints: 12
+Position: (44,18)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female corpse
+HitPoints: 12
+Position: (76,15)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (35,16)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (20,19)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (33,19)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (49,21)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (17,20)
+
+Name: corpse_child
+Icon: C
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: child refugee
+HitPoints: 12
+Position: (75,15)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male corpse
+HitPoints: 12
+Position: (41,17)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male corpse
+HitPoints: 12
+Position: (40,17)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female corpse
+HitPoints: 12
+Position: (43,17)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (36,20)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (32,21)
+
+Name: corpse_child
+Icon: C
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: child refugee
+HitPoints: 12
+Position: (19,17)
+
+Name: corpse_child
+Icon: C
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: child refugee
+HitPoints: 12
+Position: (45,19)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (19,20)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (41,21)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male corpse
+HitPoints: 12
+Position: (42,17)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male corpse
+HitPoints: 12
+Position: (41,18)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (16,22)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male refugee
+HitPoints: 12
+Position: (39,20)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (47,18)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (15,20)
+
+Name: corpse_child
+Icon: C
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: child refugee
+HitPoints: 12
+Position: (17,16)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (18,20)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (39,18)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (18,17)
+
+Name: corpse_male
+Icon: M
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: male corpse
+HitPoints: 12
+Position: (74,15)
+
+Name: corpse_female
+Icon: F
+Foreground: light_gray_2
+Flags: Spawn_Dead
+Description: female refugee
+HitPoints: 12
+Position: (36,17)
+

@@ -1,0 +1,9 @@
+Editor Features missing:
+ - Big Map Support
+ - Zoom Levels
+
+Serialization is Key
+Creating new items/actors/maps quickly is essential
+Need a templating system for re-usable map pieces (roads, tables & chairs, etc)
+Linking up transitions is very cumbersome
+Creating Tiles for Text is a pain

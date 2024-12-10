@@ -1,10 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"bytes"
-	"encoding/gob"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -16,61 +14,49 @@ import (
 type Container struct {
 	*BaseObject
 
-	isKnown        bool
-	containedItems []foundation.Item
-	show           func()
-	isPlayer       func(actor *Actor) bool
-	lockFlag       string
+	Known                 bool
+	ContainedItems        []foundation.Item
+	show                  func(actor *Actor)
+	isPlayer              func(actor *Actor) bool
+	LockedFlag            string
+	LockDiff              d100.Difficulty
+	LockStrengthRemaining int
+	NumberLock            []rune
 
-	isVendingMachine bool
-	refill           func()
-	lastRefillTime   time.Time
+	VendingMachine bool
+	refill         func()
+	LastRefillTime time.Time
 
-	flagRemovalOf string
+	FlagRemovalOf string
 	flagCall      func()
+	Locked        bool
 }
 
-func (b *Container) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-
-	if err := b.BaseObject.gobEncode(enc); err != nil {
-		return nil, err
+func (b *Container) ReduceStrength(reduction int) (int, bool) {
+	if b.LockStrengthRemaining <= 0 {
+		return 0, false
 	}
-
-	if err := enc.Encode(b.isKnown); err != nil {
-		return nil, err
+	realReduction := int(float64(reduction) * b.LockDiff.LockReductionFactor())
+	b.LockStrengthRemaining -= realReduction
+	if b.LockStrengthRemaining <= 0 {
+		b.Unlock()
+		return realReduction, true
 	}
-
-	if err := enc.Encode(b.containedItems); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
+	return realReduction, false
 }
 
-func (b *Container) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
+func (b *Container) Unlock() {
+	b.Locked = false
+	b.LockStrengthRemaining = 0
+}
 
-	b.BaseObject = &BaseObject{}
-
-	if err := b.BaseObject.gobDecode(dec); err != nil {
-		return err
-	}
-	if err := dec.Decode(&b.isKnown); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.containedItems); err != nil {
-		return err
-	}
-
-	return nil
+func (b *Container) RemainingStrength() int {
+	return b.LockStrengthRemaining
 }
 
 func (b *Container) GetCategory() foundation.ObjectCategory {
-	if b.isKnown {
-		if len(b.containedItems) == 0 {
+	if b.Known {
+		if len(b.ContainedItems) == 0 {
 			return foundation.ObjectKnownEmptyContainer
 		} else {
 			return foundation.ObjectKnownContainer
@@ -78,98 +64,161 @@ func (b *Container) GetCategory() foundation.ObjectCategory {
 	}
 	return foundation.ObjectUnknownContainer
 }
-func (b *Container) Icon() textiles.TextIcon {
+func (b *Container) GetIcon() textiles.TextIcon {
 	return b.iconForObject(b.GetCategory().LowerString())
 }
 func (b *Container) OnBump(actor *Actor) {
 	if b.isPlayer(actor) {
-		b.show()
-		b.isKnown = true
+		b.show(actor)
+		b.Known = true
 	}
 }
 
 func (b *Container) RemoveItem(item foundation.Item) {
-	for i, containedItem := range b.containedItems {
+	for i, containedItem := range b.ContainedItems {
 		if containedItem == item {
-			if b.flagCall != nil && b.flagRemovalOf != "" && containedItem.InternalName() == b.flagRemovalOf {
+			if b.flagCall != nil && b.FlagRemovalOf != "" && containedItem.GetInternalName() == b.FlagRemovalOf {
 				b.flagCall()
 			}
-			b.containedItems = append(b.containedItems[:i], b.containedItems[i+1:]...)
+			b.ContainedItems = append(b.ContainedItems[:i], b.ContainedItems[i+1:]...)
 			return
 		}
 	}
 }
 
 func (b *Container) ContainsItems() bool {
-	return len(b.containedItems) > 0
+	return len(b.ContainedItems) > 0
 }
 
 func (b *Container) AddItem(item foundation.Item) {
-	for _, containedItem := range b.containedItems {
+	for _, containedItem := range b.ContainedItems {
 		if containedItem.CanStackWith(item) {
 			containedItem.AddStacks(item)
 			return
 		}
 	}
-	item.SetPosition(b.position)
-	b.containedItems = append(b.containedItems, item)
+	item.SetPosition(b.RawPosition)
+	b.ContainedItems = append(b.ContainedItems, item)
 }
 
-func (g *GameState) NewContainer(rec recfile.Record) Object {
+func (g *GameState) NewContainer(rec recfile.Record, iconForObject func(objectType string) textiles.TextIcon) Object {
 	container := &Container{
 		BaseObject: &BaseObject{
-			category: foundation.ObjectUnknownContainer,
+			iconForObject: iconForObject,
+			Category:      foundation.ObjectUnknownContainer,
 		},
+		LockStrengthRemaining: 100,
 	}
+	var randomNumberCode bool
 	container.SetWalkable(false)
 	container.SetHidden(false)
 	container.SetTransparent(true)
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
 		case "name":
-			container.internalName = field.Value
+			container.InternalName = field.Value
 		case "description":
-			container.displayName = field.Value
+			container.DisplayName = field.Value
 		case "iconoverride":
-			container.customIcon = g.iconForObject(field.Value)
+			container.CustomIcon = container.iconForObject(field.Value)
 		case "position":
-			container.position, _ = geometry.NewPointFromEncodedString(field.Value)
+			container.RawPosition, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "item":
 			item := g.NewItemFromString(field.Value)
 			if item != nil {
 				container.AddItem(item)
 			}
 		case "isvendingmachine":
-			container.isVendingMachine = recfile.StrBool(field.Value)
+			container.VendingMachine = recfile.StrBool(field.Value)
 		case "flag_removal_of":
-			container.flagRemovalOf = field.Value
+			container.FlagRemovalOf = field.Value
 		case "lockflag":
-			container.lockFlag = field.Value
+			container.Locked = true
+			container.LockedFlag = field.Value
+		case "numberlock":
+			container.Locked = true
+			if strings.ToLower(field.Value) == "random" {
+				// random 4-digit code
+				randomNumberCode = true
+			} else {
+				container.NumberLock = []rune(field.Value)
+			}
+		case "lockdifficulty":
+			container.LockDiff = d100.DifficultyFromString(field.Value)
 		}
+	}
+	if randomNumberCode {
+		container.NumberLock = g.getRandomNumberCode(container.InternalName)
 	}
 	container.InitWithGameState(g)
 	return container
 }
 
 func (b *Container) InitWithGameState(g *GameState) {
-	b.iconForObject = g.iconForObject
 	b.isPlayer = func(actor *Actor) bool { return actor == g.Player }
-	b.show = func() {
-		if b.isVendingMachine {
+	b.show = func(actor *Actor) {
+		if b.Locked {
+			if b.LockedFlag != "" && actor.HasKey(b.LockedFlag) {
+				b.Unlock()
+				g.msg(foundation.Msg("You unlocked the container using the key"))
+				g.ui.PlayCue("world/PICKKEYS")
+				g.endPlayerTurn(g.Player.TimeNeededForActions())
+				return
+			}
+			if len(b.NumberLock) > 0 {
+				picksNeeded := d100.ElectronicLockpicksNeeded(b.LockDiff, g.Player.GetCharSheet().GetSkill(d100.SkillForPickLocks))
+				actionInfo := fmt.Sprintf("Hack (%d)", picksNeeded)
+				g.ui.OpenKeypad(actionInfo, b.NumberLock, func() bool {
+					success := g.playerPickElectronicLock(b.LockDiff)
+					if success {
+						b.Unlock()
+					}
+					return success
+				}, func(result bool) {
+					if result {
+						b.Unlock()
+						g.msg(foundation.Msg("You unlocked the container using the code"))
+						g.endPlayerTurn(g.Player.TimeNeededForActions())
+					}
+				})
+			} else {
+				// lockpicking
+				if g.Player.GetInventory().GetLockpickCount(LockTypeMechanical) == 0 {
+					g.msg(foundation.Msg("You don't have any lockpicks"))
+					return
+				}
+				if b.IsLockAtFullStrength() {
+					g.ui.AskForConfirmation("Confirm", "Do you want to pick the lock?", func(result bool) {
+						if result {
+							g.playerTryPickLock(b)
+						}
+					})
+				} else {
+					g.playerTryPickLock(b)
+				}
+			}
+			return
+		}
+
+		if b.VendingMachine {
 			g.openVendingMachineMenu(b)
 		} else {
 			g.openContainer(b)
 		}
 	}
-	if b.flagRemovalOf != "" {
+	if b.FlagRemovalOf != "" {
 		b.flagCall = func() {
-			g.gameFlags.Increment(fmt.Sprintf("ContainerRemoved(%s, %s)", b.internalName, b.flagRemovalOf))
+			g.gameFlags.Increment(fmt.Sprintf("ContainerRemoved(%s, %s)", b.InternalName, b.FlagRemovalOf))
 		}
 	}
 }
 
+func (b *Container) IsLockAtFullStrength() bool {
+	return b.LockStrengthRemaining == 100
+}
+
 func (b *Container) AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem {
-	if b.isVendingMachine {
+	if b.VendingMachine {
 		items = append(items, foundation.MenuItem{
 			Name: "Buy",
 			Action: func() {
@@ -196,9 +245,9 @@ func (b *Container) AppendContextActions(items []foundation.MenuItem, g *GameSta
 }
 
 func (b *Container) HasItemsWithName(name string, stackSize int) bool {
-	for _, item := range b.containedItems {
-		if item.InternalName() == name {
-			stackSize -= item.StackSize()
+	for _, item := range b.ContainedItems {
+		if item.GetInternalName() == name {
+			stackSize -= item.GetStackSize()
 			if stackSize <= 0 {
 				return true
 			}
@@ -209,13 +258,13 @@ func (b *Container) HasItemsWithName(name string, stackSize int) bool {
 
 func (b *Container) RemoveItemsWithName(name string, count int) []foundation.Item {
 	var itemsRemoved []foundation.Item
-	for i := 0; i < len(b.containedItems); i++ {
-		item := b.containedItems[i]
-		if item.InternalName() == name {
-			if item.StackSize() <= count {
-				b.containedItems = append(b.containedItems[:i], b.containedItems[i+1:]...)
+	for i := 0; i < len(b.ContainedItems); i++ {
+		item := b.ContainedItems[i]
+		if item.GetInternalName() == name {
+			if item.GetStackSize() <= count {
+				b.ContainedItems = append(b.ContainedItems[:i], b.ContainedItems[i+1:]...)
 				itemsRemoved = append(itemsRemoved, item)
-				count -= item.StackSize()
+				count -= item.GetStackSize()
 				i--
 			} else {
 				splitItem := item.Split(count)
@@ -228,7 +277,7 @@ func (b *Container) RemoveItemsWithName(name string, count int) []foundation.Ite
 }
 
 func (b *Container) Has(item foundation.Item) bool {
-	for _, containedItem := range b.containedItems {
+	for _, containedItem := range b.ContainedItems {
 		if containedItem == item {
 			return true
 		}
@@ -242,18 +291,18 @@ func (b *Container) AddItems(items []foundation.Item) {
 	}
 }
 
-func (b *Container) Items() []foundation.Item {
-	return b.containedItems
+func (b *Container) GetItems() []foundation.Item {
+	return b.ContainedItems
 
 }
 
 func (b *Container) ItemsFiltered(keep func(item foundation.Item) bool) []foundation.Item {
-	return StackedFilteredAndSortedItems(b.containedItems, keep)
+	return StackedFilteredAndSortedItems(b.ContainedItems, keep)
 }
 
-func (g *GameState) openContainer(container *Container) {
-	containerItems := StackedFilteredAndSortedItems(container.containedItems, func(item foundation.Item) bool { return true })
-	playerItems := StackedFilteredAndSortedItems(g.Player.GetInventory().Items(), func(item foundation.Item) bool { return true })
+func (g *GameState) openContainer(container ItemContainer) {
+	containerItems := StackedFilteredAndSortedItems(container.GetItems(), func(item foundation.Item) bool { return true })
+	playerItems := StackedFilteredAndSortedItems(g.Player.GetInventory().GetItems(), func(item foundation.Item) bool { return true })
 
 	// PROBLEM: For "Take All", we are calling this function multiple times..
 	// Re-Opening the container multiple times, is not a good idea.
@@ -284,8 +333,8 @@ func (g *GameState) openContainer(container *Container) {
 		g.openContainer(container)
 	}
 	takeAll := func() {
-		for _, item := range container.containedItems {
-			stackTransfer(container, g.Player.GetInventory(), item, item.StackSize())
+		for _, item := range container.GetItems() {
+			stackTransfer(container, g.Player.GetInventory(), item, item.GetStackSize())
 		}
 		g.openContainer(container)
 	}
@@ -295,6 +344,8 @@ func (g *GameState) openContainer(container *Container) {
 type ItemContainer interface {
 	AddItem(item foundation.Item)
 	RemoveItem(item foundation.Item)
+	GetItems() []foundation.Item
+	Name() string
 }
 
 func stackTransfer(from ItemContainer, to ItemContainer, item foundation.Item, splitAmount int) {
@@ -303,7 +354,7 @@ func stackTransfer(from ItemContainer, to ItemContainer, item foundation.Item, s
 	}
 
 	multiItem := item
-	totalAmount := multiItem.StackSize()
+	totalAmount := multiItem.GetStackSize()
 
 	splitAmount = min(splitAmount, totalAmount)
 

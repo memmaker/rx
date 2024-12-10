@@ -1,0 +1,34 @@
+%rec: default
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (41,16)
+
+Category: Terminal
+Description: a terminal
+Dialogue: CHANGEME
+Position: (29,12)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (41,10)
+
+Category: LockedDoor
+Description: a door
+LockFlag: CHANGEME
+Position: (41,14)
+
+Category: Transition
+Description: CHANGEME
+Location: street_to_south
+TargetMap: zone_residential_south
+TargetLocation: street_to_wall
+Position: (42,0)
+
+Category: Terminal
+Description: a terminal
+Dialogue: CHANGEME
+Position: (50,12)
+

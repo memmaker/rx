@@ -1,23 +1,38 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/fsmai"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/fsmai"
 	"fmt"
 )
 
-func BehaviourKillInit(g *GameState, actor *Actor, event fsmai.TransitionEvent) {
-	actorEvent := event.(ActorEvent)
-	actor.SetGoal(GoalKillActor(actor, actorEvent.Actor))
+type KillBehaviour struct {
+	InitEvent fsmai.TransitionEvent
 }
 
-func BehaviourKill(g *GameState, actor *Actor, event fsmai.TransitionEvent) (fsmai.TransitionEvent, int) {
+func (b KillBehaviour) WithInitEvent(event fsmai.TransitionEvent) ActorBehavior {
+	return KillBehaviour{InitEvent: event}
+}
+
+func (b KillBehaviour) AssociatedState() fsmai.StateName { return fsmai.StateKill }
+
+func (b KillBehaviour) Init(state *GameState, actor *Actor) {
+	actorEvent := b.InitEvent.(ActorEvent)
+	actor.SetGoal(GoalKillActor(actorEvent.Actor))
+}
+
+func (b KillBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
+
+	if actor.CanSee(b.InitEvent.(ActorEvent).Actor.Position()) {
+		// Would have to remember last known position in order to pass it to
+		// the target lost event..
+	}
 	// act on goals
 	if actor.HasActiveGoal() {
 		return actor.ActOnGoal(g)
 	}
-	actorEvent := event.(ActorEvent)
+	actorEvent := b.InitEvent.(ActorEvent)
 
 	return NewTargetLostEvent(actorEvent.Actor), actor.TimeNeededForActions()
 }
@@ -34,15 +49,15 @@ func tryKill(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int)
 		}
 	}
 
-	if !a.GetEquipment().HasRangedWeaponInMainHand() {
+	if !a.GetInventory().HasRangedWeaponEquipped() {
 		a.tryEquipRangedWeapon()
 	}
 
 	if !g.IsInShootingRange(a, target) { // ensure shooting range
-		return moveTowardsActor(g, a, target)
+		return moveTowardsActor(g, a, target, 1)
 	}
 
-	mainHandItem, hasMainHandItem := a.GetEquipment().GetMainHandWeapon()
+	mainHandItem, hasMainHandItem := a.GetInventory().GetEquippedWeapon()
 
 	if hasMainHandItem && mainHandItem.IsRangedWeapon() {
 		isLoaded := mainHandItem.IsLoadedWeapon()
@@ -69,12 +84,12 @@ func tryKill(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int)
 		}
 	}
 
-	if !a.GetEquipment().HasMeleeWeaponEquipped() {
+	if !a.GetInventory().HasMeleeWeaponEquipped() {
 		a.tryEquipMeleeWeapon()
 	}
 
 	if distanceToTarget > 1 { // ensure melee range
-		return moveTowardsActor(g, a, target)
+		return moveTowardsActor(g, a, target, 1)
 	}
 
 	// melee attack

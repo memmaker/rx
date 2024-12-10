@@ -1,4 +1,5 @@
-%rec: default
+%rec: objectTemplate
+
 
 Category: OpenDoor
 Description: a door
@@ -90,4 +91,19 @@ Category: Readable
 IconOverride: WoodenSign
 Description: a sign
 Text: CHANGEME
+TextFile: CHANGEME
+
+Category: Readable
+IconOverride: PosterRed
+Description: a poster
+TextFile: CHANGEME
+
+Category: Readable
+IconOverride: PosterBlue
+Description: a poster
+TextFile: CHANGEME
+
+Category: Readable
+IconOverride: PosterGreen
+Description: a poster
 TextFile: CHANGEME

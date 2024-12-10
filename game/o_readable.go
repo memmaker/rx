@@ -1,9 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"bytes"
-	"encoding/gob"
+	"contractor/foundation"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -21,45 +19,9 @@ type ReadableObject struct {
 	textFile     string
 }
 
-func (r *ReadableObject) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-
-	if err := r.BaseObject.gobEncode(enc); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(r.text); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(r.textFile); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (r *ReadableObject) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-
-	r.BaseObject = &BaseObject{}
-
-	if err := r.BaseObject.gobDecode(dec); err != nil {
-		return err
-	}
-	if err := dec.Decode(&r.text); err != nil {
-		return err
-	}
-	if err := dec.Decode(&r.textFile); err != nil {
-		return err
-	}
-
-	return nil
-}
-func (g *GameState) NewReadable(rec recfile.Record) *ReadableObject {
+func (g *GameState) NewReadable(rec recfile.Record, resolver func(objType string) textiles.TextIcon) *ReadableObject {
 	sign := &ReadableObject{
-		BaseObject: NewObject(foundation.ObjectReadable, g.iconForObject),
+		BaseObject: NewObject(foundation.ObjectReadable, resolver),
 	}
 
 	sign.SetWalkable(false)
@@ -70,9 +32,9 @@ func (g *GameState) NewReadable(rec recfile.Record) *ReadableObject {
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
 		case "name":
-			sign.internalName = field.Value
+			sign.InternalName = field.Value
 		case "iconoverride":
-			customIcon = g.iconForObject(field.Value)
+			customIcon = sign.iconForObject(field.Value)
 		case "icon":
 			customIcon.Char = field.AsRune()
 		case "fg":
@@ -80,7 +42,7 @@ func (g *GameState) NewReadable(rec recfile.Record) *ReadableObject {
 		case "bg":
 			customIcon.Bg = field.AsRGB(",")
 		case "description":
-			sign.displayName = field.Value
+			sign.DisplayName = field.Value
 		case "position":
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
 			sign.SetPosition(spawnPos)
@@ -91,15 +53,14 @@ func (g *GameState) NewReadable(rec recfile.Record) *ReadableObject {
 		}
 	}
 
-	sign.customIcon = customIcon
-	sign.useCustomIcon = true
-	sign.internalName = "readable"
+	sign.CustomIcon = customIcon
+	sign.UseCustomIcon = true
+	sign.InternalName = "readable"
 	sign.InitWithGameState(g)
 	return sign
 }
 
 func (r *ReadableObject) InitWithGameState(g *GameState) {
-	r.iconForObject = g.iconForObject
 	r.isPlayer = func(actor *Actor) bool { return actor == g.Player }
 	r.showText = func(shown string) {
 		g.ui.OpenTextWindow(g.fillTemplatedText(shown))
@@ -133,12 +94,12 @@ func (r *ReadableObject) showTextToPlayer() {
 
 func (r *ReadableObject) ToRecord() recfile.Record {
 	rec := recfile.Record{
-		{Name: "category", Value: r.category.String()},
-		{Name: "position", Value: r.position.Encode()},
-		{Name: "description", Value: r.displayName},
-		{Name: "icon", Value: string(r.customIcon.Char)},
-		{Name: "fg", Value: recfile.RGBStr(r.customIcon.Fg)},
-		{Name: "bg", Value: recfile.RGBStr(r.customIcon.Bg)},
+		{Name: "category", Value: r.Category.String()},
+		{Name: "position", Value: r.RawPosition.Encode()},
+		{Name: "description", Value: r.DisplayName},
+		{Name: "icon", Value: string(r.CustomIcon.Char)},
+		{Name: "fg", Value: recfile.RGBStr(r.CustomIcon.Fg)},
+		{Name: "bg", Value: recfile.RGBStr(r.CustomIcon.Bg)},
 	}
 	if r.text != "" {
 		rec = append(rec, recfile.Field{Name: "text", Value: r.text})

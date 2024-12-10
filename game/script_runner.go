@@ -15,6 +15,9 @@ type ScriptInstance struct {
 }
 
 func (i *ScriptInstance) GetCurrentFrame() ScriptFrame {
+	if i.currentFrame >= len(i.script.Frames) {
+		return UserScriptFrame{}
+	}
 	return i.script.Frames[i.currentFrame]
 }
 

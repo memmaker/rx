@@ -1,39 +1,39 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
 
 func GetAllUseEffects() map[string]func(g *GameState, user *Actor) (bool, []foundation.Animation) {
 	return map[string]func(g *GameState, user *Actor) (endsTurnDirectly bool, animations []foundation.Animation){
-		"phase_door":                     endTurn(true, phaseDoor),
-		"confuse":                        endTurn(true, confuse),
-		"haste":                          endTurn(true, noAnim(haste)),
-		"blindness":                      endTurn(true, noAnim(blindness)),
-		"hallucination":                  endTurn(true, noAnim(hallucination)),
-		"levitation":                     endTurn(true, noAnim(levitation)),
-		"see_invisible":                  endTurn(true, noAnim(seeInvisible)),
-		"reveal_map":                     endTurn(true, revealMap),
-		"freeze_monsters_in_room":        endTurn(true, holdAllVisibleMonsters),
-		"sleep_monsters_in_room":         endTurn(true, sleepAllVisibleMonsters),
-		"scare_monsters_in_room":         endTurn(true, scareAllVisibleMonsters),
-		"enchant_armor":                  endTurn(false, playerEnchantArmor),
-		"enchant_weapon":                 endTurn(false, playerEnchantWeapon),
-		"aggravate_monsters":             endTurn(true, aggroMonsters),
-		"detect_food":                    endTurn(true, noAnim(playerDetectFood)),
-		"detect_magic":                   endTurn(true, noAnim(playerDetectMagic)),
-		"detect_monsters":                endTurn(true, noAnim(playerDetectMonsters)),
-		"detect_traps":                   endTurn(true, noAnim(playerDetectTraps)),
-		"drain_life":                     endTurn(true, drainLife),
-		"heal":                           endTurn(true, heal),
-		"extra_heal":                     endTurn(true, extraHeal),
-		"show_time":                      endTurn(false, showTime),
-		"raise_level":                    endTurn(true, noAnim(raiseLevel)),
-		"uncloak":                        endTurn(true, uncloak),
-		"satiate_fully":                  endTurn(true, satiateFully),
+		"phase_door":              endTurn(true, phaseDoor),
+		"confuse":                 endTurn(true, confuse),
+		"haste":                   endTurn(true, noAnim(haste)),
+		"blindness":               endTurn(true, noAnim(blindness)),
+		"hallucination":           endTurn(true, noAnim(hallucination)),
+		"levitation":              endTurn(true, noAnim(levitation)),
+		"see_invisible":           endTurn(true, noAnim(seeInvisible)),
+		"reveal_map":              endTurn(true, revealMap),
+		"freeze_monsters_in_room": endTurn(true, holdAllVisibleMonsters),
+		"sleep_monsters_in_room":  endTurn(true, sleepAllVisibleMonsters),
+		"scare_monsters_in_room":  endTurn(true, scareAllVisibleMonsters),
+		"enchant_armor":           endTurn(false, playerEnchantArmor),
+		"enchant_weapon":          endTurn(false, playerEnchantWeapon),
+		"aggravate_monsters":      endTurn(true, aggroMonsters),
+		"detect_food":             endTurn(true, noAnim(playerDetectFood)),
+		"detect_magic":            endTurn(true, noAnim(playerDetectMagic)),
+		"detect_monsters":         endTurn(true, noAnim(playerDetectMonsters)),
+		"detect_traps":            endTurn(true, noAnim(playerDetectTraps)),
+		"drain_life":              endTurn(true, drainLife),
+		"heal":                    endTurn(true, heal),
+		"extra_heal":              endTurn(true, extraHeal),
+		"show_time":               endTurn(false, showTime),
+		"raise_level":             endTurn(true, noAnim(raiseLevel)),
+		"uncloak":                 endTurn(true, uncloak),
+		"satiate_fully":           endTurn(true, satiateFully),
 	}
 }
 
@@ -294,7 +294,7 @@ func playerEnchantArmor(g *GameState, actor *Actor) []foundation.Animation {
 	}
 
 	//playerInventory := g.Player.GetInventoryForUI()
-	//playerEquipment := g.Player.GetEquipment()
+	//playerEquipment := g.Player.GetInventory()
 
 	onSelected := func(item foundation.Item) {
 		armorItem := item
@@ -427,7 +427,7 @@ func holdAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
-		//originalActorIcon := actor.Icon()
+		//originalActorIcon := actor.GetIcon()
 		// cover up anim
 
 		flightAnim, _ := g.ui.GetAnimProjectile('☼', "White", user.Position(), actor.Position(), nil)
@@ -449,7 +449,7 @@ func sleepAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
-		//originalActorIcon := actor.Icon()
+		//originalActorIcon := actor.GetIcon()
 		// cover up anim
 
 		flightAnim, _ := g.ui.GetAnimProjectile('Z', "Yellow", user.Position(), actor.Position(), nil)
@@ -472,7 +472,7 @@ func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 	}
 	var animations []foundation.Animation
 	for _, actor := range affectedMonsters {
-		//originalActorIcon := actor.Icon()
+		//originalActorIcon := actor.GetIcon()
 		// cover up anim
 
 		flightAnim, _ := g.ui.GetAnimProjectile('☼', "Red", user.Position(), actor.Position(), nil)
@@ -483,7 +483,6 @@ func scareAllVisibleMonsters(g *GameState, user *Actor) []foundation.Animation {
 
 	return animations
 }
-
 
 // Adapted from: https://github.com/memmaker/rogue-pc-modern-C/blob/582340fcaef32dd91595721efb2d5db41ff3cb05/src/potions.c#L47
 // and

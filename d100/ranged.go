@@ -4,7 +4,7 @@ func NewRangedModsFromSituation(mods []Modifier) RangedModifiers {
 	return RangedModifiers(mods)
 }
 
-type RangedModifiers Modifiers
+type RangedModifiers ModList
 
 func (r RangedModifiers) WithRangeMods(distance int, weaponRange int, fullAuto bool, bulletCount int) RangedModifiers {
 	mods := r

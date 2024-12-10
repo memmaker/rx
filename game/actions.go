@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -14,7 +14,7 @@ import (
 // MISC ACTIONS
 
 func (g *GameState) CycleTargetMode() {
-	equippedWeapon, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
+	equippedWeapon, hasWeapon := g.Player.GetInventory().GetEquippedWeapon()
 	if !hasWeapon || !equippedWeapon.IsWeapon() {
 		g.msg(foundation.Msg("You have no weapon equipped"))
 		return
@@ -31,7 +31,7 @@ func (g *GameState) PlayerReloadWeapon() {
 	g.actorReloadMainHandWeapon(g.Player)
 }
 func (g *GameState) actorReloadMainHandWeapon(actor *Actor) bool {
-	weaponPart, hasItem := actor.GetEquipment().GetMainHandWeapon()
+	weaponPart, hasItem := actor.GetInventory().GetEquippedWeapon()
 	if !hasItem {
 		if actor == g.Player {
 			g.msg(foundation.Msg("You have no weapon equipped"))
@@ -213,16 +213,17 @@ func (g *GameState) OpenTacticsMenu() {
 			CloseMenus: true,
 		})
 	}
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name: "Charge Attack",
-		Action: func() {
-			g.startZapEffect("charge_attack", nil, foundation.Params{})
-		},
-		CloseMenus: true,
-	})
-
+	if g.Player.HasPerk(d100.PerkCharge) {
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: "Charge Attack",
+			Action: func() {
+				g.startZapEffect("charge_attack", nil, foundation.Params{})
+			},
+			CloseMenus: true,
+		})
+	}
 	charSheet := g.Player.GetCharSheet()
-	if charSheet.GetActionPoints() > 0 {
+	if g.Player.HasPerk(d100.PerkCharge) && charSheet.GetActionPoints() > 0 {
 		menuItems = append(menuItems, foundation.MenuItem{
 			Name: "Heroic Charge",
 			Action: func() {
@@ -288,7 +289,7 @@ func (g *GameState) playerUseOrZapItem(item foundation.Item) {
 
 func (g *GameState) OpenRepairMenu() {
 	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
-		return item.NeedsRepair() && item.Quality() < g.Player.GetMaxRepairQuality()
+		return item.NeedsRepair() && item.GetQuality() < g.Player.GetMaxRepairQuality()
 	})
 	if len(inventory) == 0 {
 		g.ui.OpenTextWindow("You have nothing to repair")
@@ -301,7 +302,7 @@ func (g *GameState) OpenRepairMenu() {
 
 func (g *GameState) openNPCRepairMenu(npcVendor *Actor, whenDone func()) {
 	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
-		return item.NeedsRepair() && item.Quality() < npcVendor.GetMaxRepairQuality()
+		return item.NeedsRepair() && item.GetQuality() < npcVendor.GetMaxRepairQuality()
 	})
 	if len(inventory) == 0 {
 		g.ui.OpenTextWindow("You have nothing to repair")
@@ -318,7 +319,7 @@ func (g *GameState) actorRepairItem(npcVendor *Actor, item foundation.Repairable
 		return
 	}
 
-	firstQuality := item.Quality()
+	firstQuality := item.GetQuality()
 	secondQuality := d100.Percentage(50)
 
 	newQuality := npcVendor.GetRepairQuality(firstQuality, secondQuality)
@@ -337,7 +338,7 @@ func (g *GameState) playerRepairItem(item foundation.Repairable) {
 	}
 
 	redundantCopiesOfTheItemForRepair := g.GetFilteredInventory(func(i foundation.Item) bool {
-		return item.CanBeRepairedWith(i) && i.Quality() < g.Player.GetMaxRepairQuality()
+		return item.CanBeRepairedWith(i) && i.GetQuality() < g.Player.GetMaxRepairQuality()
 	})
 
 	if len(redundantCopiesOfTheItemForRepair) == 0 {
@@ -362,8 +363,8 @@ func (g *GameState) playerRepairItemWith(toRepair foundation.Repairable, sparePa
 
 	g.Player.GetInventory().RemoveItem(spareParts.(foundation.Item))
 
-	firstQuality := toRepair.Quality()
-	secondQuality := spareParts.Quality()
+	firstQuality := toRepair.GetQuality()
+	secondQuality := spareParts.GetQuality()
 
 	newQuality := g.Player.GetRepairQuality(firstQuality, secondQuality)
 
@@ -377,6 +378,10 @@ func (g *GameState) playerRepairItemWith(toRepair foundation.Repairable, sparePa
 func (g *GameState) playerReadItem(item foundation.Readable) {
 	if item.IsSkillBook() {
 		skill, increase := item.GetSkillBookValues()
+		if g.Player.GetCharSheet().GetUnmodifiedSkill(skill) >= d100.SkillCap {
+			g.msg(foundation.Msg("You're already a master of this skill"))
+			return
+		}
 		g.advanceTime(2 * time.Duration(time.Hour))
 		g.Player.GetCharSheet().AddSkillPointsTo(skill, increase)
 		g.msg(foundation.HiLite("Your %s skill increased by %s", skill.String(), strconv.Itoa(increase)))
@@ -391,7 +396,7 @@ func (g *GameState) playerReadItem(item foundation.Readable) {
 		lines = item.GetText()
 	}
 	if len(lines) > 0 {
-		g.ui.OpenTextWindow(g.fillTemplatedTextCustom(lines, item.TextVariables(g.getScriptFuncs())))
+		g.ui.OpenTextWindow(g.fillTemplatedTextCustom(lines, item.TextVariables(g.GetScriptFuncs())))
 		return
 	}
 }
@@ -439,7 +444,7 @@ func (g *GameState) actorSetItemCountdown(user *Actor, item foundation.Timable) 
 	setCharge := func(turns int) {
 		g.msg(foundation.HiLite("You set the timer of %s to %s", item.Name(), strconv.Itoa(turns)))
 		item.SetCharges(turns)
-		g.metronome.AddTimed(item, true, func() {
+		g.metronome.AddTimed(item, g.currentMapName, func() {
 			consequencesOfEffect := g.actorInvokeZapEffect(user, useEffectName, item.Position(), item.GetEffectParameters())
 			g.ui.AddAnimations(consequencesOfEffect)
 			g.removeItemFromGame(item.(foundation.Item))
@@ -482,8 +487,8 @@ func (g *GameState) PlayerPickupItemAt(itemPos geometry.Point) {
 		g.ui.PlayCue("world/pickup")
 		g.msg(foundation.HiLite("You picked up %s", item.Name()))
 
-		if item.PickupFlag() != "" {
-			g.gameFlags.Increment(item.PickupFlag())
+		if item.GetPickupFlag() != "" {
+			g.gameFlags.Increment(item.GetPickupFlag())
 		}
 		//g.endPlayerTurn()
 	}
@@ -503,7 +508,7 @@ func (g *GameState) dropItemFromUI(uiItem foundation.Item) {
 }
 
 func (g *GameState) actorDropItem(holder *Actor, item foundation.Item) {
-	equipment := holder.GetEquipment()
+	equipment := holder.GetInventory()
 	if equipment.IsEquipped(item) {
 		if equipment.CanUnequip(item) {
 			g.actorUnequipItem(holder, item)
@@ -518,8 +523,8 @@ func (g *GameState) actorDropItem(holder *Actor, item foundation.Item) {
 
 	if holder == g.Player {
 		g.msg(foundation.HiLite("You dropped %s", item.Name()))
-		if item.DropFlag() != "" {
-			g.gameFlags.Increment(item.DropFlag())
+		if item.GetDropFlag() != "" {
+			g.gameFlags.Increment(item.GetDropFlag())
 		}
 		g.endPlayerTurn(g.Player.TimeNeededForActions() / 2)
 		g.ui.PlayCue("world/drop")
@@ -539,7 +544,7 @@ func (g *GameState) EquipToggle(item foundation.Item) {
 		g.msg(foundation.Msg("You cannot equip this item"))
 		return
 	}
-	equipment := g.Player.GetEquipment()
+	equipment := g.Player.GetInventory()
 	if equipment.IsEquipped(item) {
 		if equipment.CanUnequip(item) {
 			g.actorUnequipItem(g.Player, item)
@@ -556,7 +561,7 @@ func (g *GameState) EquipToggle(item foundation.Item) {
 }
 
 func (g *GameState) actorEquipItem(wearer *Actor, item foundation.Item) {
-	equipment := wearer.GetEquipment()
+	equipment := wearer.GetInventory()
 	equipment.Equip(item)
 	if wearer == g.Player {
 		g.msg(foundation.HiLite("You equipped %s", item.Name()))
@@ -564,7 +569,7 @@ func (g *GameState) actorEquipItem(wearer *Actor, item foundation.Item) {
 }
 
 func (g *GameState) actorUnequipItem(wearer *Actor, item foundation.Item) {
-	equipment := wearer.GetEquipment()
+	equipment := wearer.GetInventory()
 	equipment.UnEquip(item)
 	if wearer == g.Player {
 		g.msg(foundation.HiLite("You unequipped %s", item.Name()))
@@ -678,7 +683,7 @@ func (g *GameState) ChooseItemForUse() {
 }
 
 func (g *GameState) ChooseWeaponForWield() {
-	equipment := g.Player.GetEquipment()
+	equipment := g.Player.GetInventory()
 	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
 		return item.IsWeapon() && item.IsEquippable() && !equipment.IsEquipped(item)
 	})
@@ -696,7 +701,7 @@ func (g *GameState) ChooseWeaponForWield() {
 }
 
 func (g *GameState) ChooseArmorForWear() {
-	equipment := g.Player.GetEquipment()
+	equipment := g.Player.GetInventory()
 	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
 		return item.IsArmor() && item.IsEquippable() && !equipment.IsEquipped(item)
 	})
@@ -714,7 +719,7 @@ func (g *GameState) ChooseArmorForWear() {
 }
 
 func (g *GameState) ChooseArmorToTakeOff() {
-	equipment := g.Player.GetEquipment()
+	equipment := g.Player.GetInventory()
 	wornArmor := g.GetFilteredInventory(func(item foundation.Item) bool {
 		return item.IsArmor() && item.IsEquippable() && equipment.IsEquipped(item)
 	})

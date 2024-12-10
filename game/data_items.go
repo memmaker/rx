@@ -1,8 +1,9 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -14,11 +15,12 @@ import (
 func NewItemFromRecord(record recfile.Record, itemFromString func(name string) foundation.Item, icon func(itemCategory foundation.ItemCategory) textiles.TextIcon) foundation.Item {
 	NoQualityDefined := d100.Percentage(-1)
 	item := &GenericItem{
-		qualityInPercent: NoQualityDefined,
-		alive:            true,
-		effectParameters: make(foundation.Params),
-		statChanges:      StatChange{},
-		isHidden:         false,
+		UID:              gridmap.NextItemID(),
+		QualityInPercent: NoQualityDefined,
+		Alive:            true,
+		EffectParameters: make(foundation.Params),
+		StatChanges:      StatChange{},
+		Hidden:           false,
 	}
 
 	charges := 1
@@ -31,7 +33,7 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 		SpreadFactor:                    1,
 	}
 	itemWeapon := &Weapon{
-		loadedInMagazine: nil,
+		LoadedInMagazine: nil,
 		PelletCount:      1,
 	}
 	var targetModes [2]TargetingMode
@@ -44,49 +46,49 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 		switch strings.ToLower(field.Name) {
 		// GLOBAL FIELDS
 		case "name":
-			item.internalName = field.Value
+			item.InternalName = field.Value
 		case "position":
 			spawnPos, _ := geometry.NewPointFromEncodedString(field.Value)
-			item.position = spawnPos
+			item.RawPosition = spawnPos
 		case "description":
-			item.name = field.Value
+			item.DisplayName = field.Value
 		case "longdescription":
-			item.text = field.Value
+			item.Text = field.Value
 		case "category":
-			item.category = foundation.ItemCategoryFromString(field.Value)
-			item.icon = icon(item.category)
+			item.Category = foundation.ItemCategoryFromString(field.Value)
+			item.Icon = icon(item.Category)
 		case "cost":
-			item.cost = field.AsInt()
+			item.Cost = field.AsInt()
 		case "weight":
-			item.weight = field.AsInt()
+			item.Weight = field.AsInt()
 		case "quality":
-			item.qualityInPercent = d100.Percentage(field.AsInt())
+			item.QualityInPercent = d100.Percentage(field.AsInt())
 		case "chance_to_break_on_throw":
-			item.chanceToBreakOnThrow = field.AsInt()
+			item.ChanceToBreakOnThrow = field.AsInt()
 		case "hidden":
-			item.isHidden = field.AsBool()
+			item.Hidden = field.AsBool()
 		case "tags":
-			item.tags |= foundation.ItemTagFromString(field.Value)
+			item.Tags |= foundation.ItemTagFromString(field.Value)
 		case "thrown_damage":
-			item.thrownDamage = fxtools.ParseInterval(field.Value)
+			item.ThrownDamage = fxtools.ParseInterval(field.Value)
 		case "use_effect":
 			if useEffectExists(field.Value) {
-				item.useEffectName = field.Value
+				item.UseEffectName = field.Value
 			} else {
 				panic("Invalid use effect: " + field.Value)
 			}
 		case "zap_effect":
 			if zapEffectExists(field.Value) {
-				item.zapEffectName = field.Value
+				item.ZapEffectName = field.Value
 			} else {
 				panic("Invalid zap effect: " + field.Value)
 			}
 		case "effect_damage":
-			item.effectParameters["damage"] = field.AsInt()
+			item.EffectParameters["damage"] = field.AsInt()
 		case "effect_damage_interval":
-			item.effectParameters["damage_interval"] = fxtools.ParseInterval(field.Value)
+			item.EffectParameters["damage_interval"] = fxtools.ParseInterval(field.Value)
 		case "effect_radius":
-			item.effectParameters["radius"] = field.AsInt()
+			item.EffectParameters["radius"] = field.AsInt()
 		case "charges":
 			charges = fxtools.ParseInterval(field.Value).Roll()
 		case "stat_bonus":
@@ -94,47 +96,47 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 				name, args := fxtools.GetNameAndArgs(field.Value)
 				stat := d100.StatFromString(name)
 				bonus := args.GetInt(0)
-				if item.statChanges.StatChanges == nil {
-					item.statChanges.StatChanges = make(map[d100.Stat]int)
+				if item.StatChanges.StatChanges == nil {
+					item.StatChanges.StatChanges = make(map[d100.Stat]int)
 				}
-				item.statChanges.StatChanges[stat] = bonus
+				item.StatChanges.StatChanges[stat] = bonus
 			}
 		case "skill_bonus":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				name, args := fxtools.GetNameAndArgs(field.Value)
 				skill := d100.SkillFromString(name)
 				bonus := args.GetInt(0)
-				if item.statChanges.SkillChanges == nil {
-					item.statChanges.SkillChanges = make(map[d100.Skill]int)
+				if item.StatChanges.SkillChanges == nil {
+					item.StatChanges.SkillChanges = make(map[d100.Skill]int)
 				}
-				item.statChanges.SkillChanges[skill] = bonus
+				item.StatChanges.SkillChanges[skill] = bonus
 			}
 		case "derived_stat_bonus":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				name, args := fxtools.GetNameAndArgs(field.Value)
 				stat := d100.DerivedStatFromString(name)
 				bonus := args.GetInt(0)
-				if item.statChanges.DerivedStatChanges == nil {
-					item.statChanges.DerivedStatChanges = make(map[d100.DerivedStat]int)
+				if item.StatChanges.DerivedStatChanges == nil {
+					item.StatChanges.DerivedStatChanges = make(map[d100.DerivedStat]int)
 				}
-				item.statChanges.DerivedStatChanges[stat] = bonus
+				item.StatChanges.DerivedStatChanges[stat] = bonus
 			}
 		case "equip_flag":
-			item.equipFlag = foundation.ActorFlagFromString(field.Value)
+			item.EquipFlag = foundation.ActorFlagFromString(field.Value)
 		case "textfile":
-			item.textFile = field.Value
+			item.TextFile = field.Value
 		case "text":
-			item.text = field.Value
+			item.Text = field.Value
 		case "textvar":
-			item.textVar = field.Value
+			item.TextVar = field.Value
 		case "textvalue":
-			item.textValue = field.Value
+			item.TextValue = field.Value
 		case "lockflag":
-			item.lockFlag = field.Value
+			item.LockFlag = field.Value
 		case "pickupflag":
-			item.setFlagOnPickup = field.Value
+			item.SetFlagOnPickup = field.Value
 		case "dropflag":
-			item.setFlagOnDrop = field.Value
+			item.SetFlagOnDrop = field.Value
 
 		// AMMO FIELDS
 		case "ammo_dmg_factor":
@@ -161,23 +163,23 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 
 		// WEAPON FIELDS
 		case "weapon_type":
-			itemWeapon.weaponType = WeaponTypeFromString(field.Value)
+			itemWeapon.WeaponType = WeaponTypeFromString(field.Value)
 		case "weapon_damage_type":
-			itemWeapon.damageType = DamageTypeFromString(field.Value)
+			itemWeapon.DamageType = DamageTypeFromString(field.Value)
 		case "weapon_caliber_index":
-			itemWeapon.caliberIndex = field.AsInt()
+			itemWeapon.CaliberIndex = field.AsInt()
 		case "weapon_uses_ammo":
-			itemWeapon.caliberName = field.Value
+			itemWeapon.CaliberName = field.Value
 		case "weapon_sound_id":
-			itemWeapon.soundID = field.AsInt32()
+			itemWeapon.SoundID = field.AsInt32()
 		case "weapon_skill_used":
-			itemWeapon.skillUsed = d100.SkillFromString(field.Value)
+			itemWeapon.SkillUsed = d100.SkillFromString(field.Value)
 		case "weapon_damage":
-			itemWeapon.damageDice = fxtools.ParseInterval(field.Value)
+			itemWeapon.DamageDice = fxtools.ParseInterval(field.Value)
 		case "weapon_magazine_size":
-			itemWeapon.magazineSize = field.AsInt()
+			itemWeapon.MagazineSize = field.AsInt()
 		case "weapon_burst_rounds":
-			itemWeapon.burstRounds = field.AsInt()
+			itemWeapon.BurstRounds = field.AsInt()
 		case "weapon_pellet_count":
 			itemWeapon.PelletCount = field.AsInt()
 		case "weapon_attack_mode_one":
@@ -195,91 +197,90 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 		case "weapon_min_str":
 			itemWeapon.MinSTR = field.AsInt()
 		case "weapon_reliability":
-			itemWeapon.reliability = d100.Percentage(field.AsInt())
+			itemWeapon.Reliability = d100.Percentage(field.AsInt())
 		case "weapon_concealability":
-			itemWeapon.relativeSize = WeaponSizeFromString(field.Value)
+			itemWeapon.RelativeSize = WeaponSizeFromString(field.Value)
 		case "weapon_accuracy":
-			itemWeapon.accuracyMod = d100.Percentage(field.AsInt())
+			itemWeapon.AccuracyMod = d100.Percentage(field.AsInt())
 		case "weapon_degrade_factor":
-			itemWeapon.degradeFactor = field.AsFloat()
+			itemWeapon.DegradeFactor = field.AsFloat()
 		case "weapon_always_load":
 			preLoadedAmmoName = field.Value
 		// ARMOR FIELDS
 		case "armor_encumbrance":
-			itemArmor.encumbrance = field.AsInt()
+			itemArmor.Encumbrance = field.AsInt()
 		case "armor_style":
-			itemArmor.fashionStyle = foundation.FashionStyleFromString(field.Value)
+			itemArmor.FashionStyle = foundation.FashionStyleFromString(field.Value)
 		case "armor_conceal_slot":
-			itemArmor.concealSlots = append(itemArmor.concealSlots, WeaponSizeFromString(field.Value))
+			itemArmor.ConcealSlots = append(itemArmor.ConcealSlots, WeaponSizeFromString(field.Value))
 		case "armor_radiation_reduction":
-			itemArmor.radiationReduction = field.AsInt()
+			itemArmor.RadiationReduction = field.AsInt()
 		case "armor_physical_reduction":
 			protectionValue := field.AsInt()
 			if protectionValue == 0 {
 				continue
 			}
-			if itemArmor.protection == nil {
-				itemArmor.protection = make(map[DamageType]Protection)
+			if itemArmor.Protection == nil {
+				itemArmor.Protection = make(map[DamageType]Protection)
 			}
-			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithReduction(protectionValue)
+			itemArmor.Protection[DamageTypeNormal] = itemArmor.Protection[DamageTypeNormal].WithReduction(protectionValue)
 		case "armor_physical_threshold":
 			protectionValue := field.AsInt()
-			if itemArmor.protection == nil {
-				itemArmor.protection = make(map[DamageType]Protection)
+			if itemArmor.Protection == nil {
+				itemArmor.Protection = make(map[DamageType]Protection)
 			}
 			if protectionValue == 0 {
 				continue
 			}
-			itemArmor.protection[DamageTypeNormal] = itemArmor.protection[DamageTypeNormal].WithThreshold(protectionValue)
+			itemArmor.Protection[DamageTypeNormal] = itemArmor.Protection[DamageTypeNormal].WithThreshold(protectionValue)
 		case "armor_energy_reduction":
 			protectionValue := field.AsInt()
-			if itemArmor.protection == nil {
-				itemArmor.protection = make(map[DamageType]Protection)
+			if itemArmor.Protection == nil {
+				itemArmor.Protection = make(map[DamageType]Protection)
 			}
 			if protectionValue == 0 {
 				continue
 			}
-			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithReduction(protectionValue)
+			itemArmor.Protection[DamageTypeEnergy] = itemArmor.Protection[DamageTypeEnergy].WithReduction(protectionValue)
 		case "armor_energy_threshold":
 			protectionValue := field.AsInt()
-			if itemArmor.protection == nil {
-				itemArmor.protection = make(map[DamageType]Protection)
+			if itemArmor.Protection == nil {
+				itemArmor.Protection = make(map[DamageType]Protection)
 			}
 			if protectionValue == 0 {
 				continue
 			}
-			itemArmor.protection[DamageTypeEnergy] = itemArmor.protection[DamageTypeEnergy].WithThreshold(protectionValue)
+			itemArmor.Protection[DamageTypeEnergy] = itemArmor.Protection[DamageTypeEnergy].WithThreshold(protectionValue)
 		}
 	}
 
-	item.charges = charges
+	item.Charges = charges
 
-	if item.qualityInPercent == NoQualityDefined {
-		item.qualityInPercent = max(10, d100.Percentage(rand.Intn(100)+1))
+	if item.QualityInPercent == NoQualityDefined {
+		item.QualityInPercent = max(10, d100.Percentage(rand.Intn(100)+1))
 	}
 
 	if itemAmmo.IsValid() {
 		itemAmmo.GenericItem = item
-		itemAmmo.GenericItem.stackSize = itemAmmo.RoundsInMagazine
+		itemAmmo.GenericItem.StackSize = itemAmmo.RoundsInMagazine
 		return itemAmmo
 	}
 
 	if itemWeapon.IsValid() {
-
-		noAim := item.tags.Contains(foundation.TagNoAim)
-		itemWeapon.attackModes = GetAttackModes(targetModes, tuCosts, maxRanges, noAim)
+		noAim := item.Tags.Contains(foundation.TagNoAim)
+		itemWeapon.AttackModes = GetAttackModes(targetModes, tuCosts, maxRanges, noAim)
 		itemWeapon.GenericItem = item
 
-		noReload := item.tags.Contains(foundation.TagNoReload)
+		noReload := item.Tags.Contains(foundation.TagNoReload)
 		if noReload && preLoadedAmmoName != "" {
 			preLoadAmmo := itemFromString(preLoadedAmmoName)
-			preLoadAmmo.SetStackSize(itemWeapon.magazineSize)
+			preLoadAmmo.SetStackSize(itemWeapon.MagazineSize)
 			itemWeapon.LoadAmmo(preLoadAmmo.(*Ammo))
 		}
 		return itemWeapon
 	}
 
-	if item.Category().IsArmor() {
+	if item.GetCategory().IsArmor() {
 		itemArmor.GenericItem = item
 		return itemArmor
 	}

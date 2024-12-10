@@ -1,4 +1,4 @@
-%rec: default
+%rec: palette
 
 blue: 0 | 0 | 255
 light_gray_1: 236 | 236 | 236

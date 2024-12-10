@@ -1,8 +1,8 @@
 package console
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
+    "contractor/foundation"
+    "contractor/gridmap"
 	"cmp"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"

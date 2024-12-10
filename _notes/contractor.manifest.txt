@@ -1,0 +1,4 @@
+1. When a contract has been accepted it will only end in one of three ways:
+  - The contract is fulfilled
+  - The contract is broken
+  - Contractor or Client dies

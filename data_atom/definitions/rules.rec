@@ -45,11 +45,11 @@ BaseValue: (per + 5) * 2 * if(per > 3, 1, 0)
 
 Name: Social
 Short: Soc
-BaseValue: (cha + 5) * 2 * if(cha > 3, 1, 0)
+BaseValue: (coo + 5) * 2 * if(coo > 3, 1, 0)
 
 Name: Intimidate
 Short: Int
-BaseValue: (cha + str) * 2 * if(str > 3, 1, 0)
+BaseValue: (coo + str) * 2 * if(str > 3, 1, 0)
 
 Name: Stealth
 Short: Ste
@@ -93,7 +93,7 @@ DamageResistance: 0
 HealingRate: max(1, end / 3)
 HitPoints: 15 + (2 * end) + str
 MeleeDamageBonus: max(1, str - 5)
-PartyLimit: floor(cha / 2.0)
+PartyLimit: floor(coo / 2.0)
 PerkRate: 3
 PoisonResistance: end * 5
 Speed: 2 * agi
@@ -132,17 +132,24 @@ xp: (currentLevel * (currentLevel - 1) / 2) * 1000
 Perk: pickpocket
 RequireSkill: Stealth(50)
 
+Perk: quickdraw
+RequireSkill: RangedCombat(30)
+RequireStat: Agility(6)
+
+Perk: one-liners
+RequireSkill: Intimidate(30)
+RequireStat: Cool(6)
+
+Perk: charge
+RequireSkill: MeleeCombat(30)
+RequireStat: Agility(6)
+
 Perk: disarm
 RequireSkill: MeleeCombat(50)
+RequireStat: Agility(6)
 
 Perk: takedown
 RequireSkill: MeleeCombat(30)
 
 Perk: backstab
 RequireSkill: MeleeCombat(50)
-
-Perk: quickdraw
-RequireSkill: RangedCombat(30)
-
-Perk: one-liners
-RequireSkill: Intimidate(30)

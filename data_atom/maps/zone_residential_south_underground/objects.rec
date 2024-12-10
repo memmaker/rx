@@ -1,0 +1,132 @@
+%rec: default
+
+Category: PushBox
+Description: a box
+Position: (27,1)
+
+Category: ClosedDoor
+Description: a door
+Position: (33,14)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (54,20)
+
+Category: UnknownContainer
+Description: plastic boxes
+item: meld(20)
+Position: (26,1)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (56,18)
+
+Category: Transition
+Description: upwards stairwell
+Location: home_clone_cellar
+TargetMap: zone_residential_south
+TargetLocation: home_secret_stairs
+Position: (71,8)
+
+Category: LockedDoor
+Name: hospital_cell_door
+Description: a door
+istransparent: true
+LockFlag: hospital_cell_door
+ispassableforprojectile: true
+Position: (42,3)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (21,18)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (53,18)
+
+Category: Transition
+Description: a ladder up
+Location: man_hole_east
+TargetMap: zone_residential_south
+TargetLocation: man_hole_east
+Position: (47,12)
+
+Category: Trap
+Name: frag_mine
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+Position: (55,3)
+
+Category: Trap
+Name: frag_mine
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+Position: (71,3)
+
+Category: Transition
+Description: stairs up
+Location: shooting_range_stairs
+TargetMap: zone_residential_south
+TargetLocation: gun_store_stairs
+Position: (26,16)
+
+Category: Trap
+Name: frag_mine
+Description: a frag-mine
+ZapEffect: explode
+IsHidden: false
+TriggerOnProximity: true
+Position: (76,20)
+
+Category: NamedLocation
+Identifier: shooting_range_visitor
+Position: (29,16)
+
+Category: NamedLocation
+Identifier: shooting_ranger_owner
+Position: (27,16)
+
+Category: Transition
+Description: a ladder up
+Location: man_hole_west
+TargetMap: zone_residential_south
+TargetLocation: man_hole_west
+Position: (9,9)
+
+Category: PushBox
+Description: a box
+Position: (29,1)
+
+Category: NamedLocation
+Identifier: next_to_the_cage
+Position: (37,5)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (76,9)
+
+Category: Transition
+Description: a ladder up
+Location: secret_ladder
+TargetMap: zone_residential_south
+TargetLocation: ripperdoc_toilet
+Position: (19,6)
+
+Category: UnknownContainer
+Description: plastic boxes
+item: meld(8)
+Position: (28,1)
+
+Category: ExplodingPushBox
+Description: a box
+Position: (18,20)
+
+Category: UnknownContainer
+Description: plastic boxes
+item: meld(10)
+Position: (30,1)
+

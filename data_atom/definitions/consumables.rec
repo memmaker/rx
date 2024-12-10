@@ -1,3 +1,6 @@
+%rec: item
+%key: Name
+
 Description: Binge
 Name: binge
 Category: food
@@ -9,6 +12,27 @@ Name: super_binge
 Category: food
 use_effect: satiate_fully
 cost: 450
+
+Description: "Meld"
+Name: meld
+Category: food
+use_effect: satiate_fully
+cost: 600
+LongDescription: Methyllidocaine, commonly known as 'Meld,' is an essential medication used to prevent the body from rejecting cyberware.
+
+Description: 500ml liquid methane
+Name: liquid_methane
+Category: food
+use_effect: satiate_fully
+cost: 200
+LongDescription: Laboratory-grade liquid methane. It's used as a coolant in various industrial applications.
+
+Description: 500ml lidocaine
+Name: lidocaine
+Category: food
+use_effect: satiate_fully
+cost: 200
+LongDescription: Laboratory-grade lidocaine. It's used as a local anesthetic in various medical procedures.
 
 Description: Butch
 Name: butch
@@ -22,7 +46,7 @@ Name: brainz
 Category: consumables
 stat_bonus: intelligence(2)
 stat_bonus: perception(2)
-stat_bonus: charisma(1)
+stat_bonus: cool(1)
 charges: 5
 cost: 200
 

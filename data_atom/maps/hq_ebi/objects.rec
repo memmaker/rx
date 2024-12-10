@@ -1,0 +1,30 @@
+%rec: default
+
+Category: Transition
+Description: CHANGEME
+Location: street_to_corporate
+TargetMap: zone_corporate
+TargetLocation: street_to_ebi
+Position: (0,14)
+
+Category: ClosedDoor
+Description: a door
+Position: (46,19)
+
+Category: Terminal
+Description: a terminal
+Dialogue: CHANGEME
+Position: (75,10)
+
+Category: Terminal
+Description: a terminal
+Dialogue: CHANGEME
+Position: (13,10)
+
+Category: UnknownContainer
+Description: brochure holder
+item: ebi_pamphlet_1(12)
+item: ebi_pamphlet_2(11)
+item: ebi_pamphlet_3(11)
+Position: (61,16)
+

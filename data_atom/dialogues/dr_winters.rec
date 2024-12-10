@@ -65,8 +65,8 @@ o_cond: Skill('Doctor') > 50
 o_goto: PlayerIsExpert
 #
 o_text: I'm kind of an expert on the subject myself.
-o_cond: Skill('Doctor') <= 50
-o_test: RollSkill('Doctor', 'Easy')
+o_cond: Skill('BioChemistry') <= 50
+o_test: RollSkill('BioChemistry', 'Easy')
 o_fail: PlayerIsAFraud
 o_succ: PlayerIsExpert
 #

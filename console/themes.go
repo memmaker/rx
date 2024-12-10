@@ -1,7 +1,7 @@
 package console
 
 import (
-	"RogueUI/foundation"
+	"contractor/foundation"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -27,7 +27,7 @@ func NewUIThemeFromDataDir(dataDirectory string, palette textiles.ColorPalette, 
 	uiThemeFile := path.Join(dataDirectory, "themes", "ui.rec")
 	file := fxtools.MustOpen(uiThemeFile)
 	defer file.Close()
-	records := recfile.ReadMulti(file)
+	records, _ := recfile.ReadMulti(file)
 
 	uiBorders := loadBorders(records["borders"][0])
 	uiColors := loadUIColors(records["ui"][0], palette)

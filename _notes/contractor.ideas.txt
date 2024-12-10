@@ -1,0 +1,159 @@
+On Speech Checks:
+ - Loosing with high investment on average checks is frustrating
+ - Lucking with low investment on checks is rewarding
+ - Combination?
+    - If you are above the threshold and/or can provide conclusive evidence, you will always succeed
+    - if you are below, you can roll for a lucky success
+ - Almost require circumstantial evidence to succeed
+ - Don't just remove content with speech checks, but change the outcome in a meaningful way
+
+
+On Hacking:
+ - Deus Ex (Spending Resources to hack, more powerful hacks require more skill)
+ - Watch Dogs (Manipulating the Environment instead of just bypassing locks)
+   - https://watchdogs.fandom.com/wiki/Category:Hackable
+ - Vampire: The Masquerade (Hacking is like using a real shell)
+ - Start out using cables, then upgrade to wireless hacking
+ - There must be a risk involved in hacking (trace, alert, etc.)
+ - Allow hackers to jack into robots and remote control them
+
+Weapons:
+ - Min should be about half of the max damage
+ - Add grazing shots as additional chance (so a miss can still be a graze)
+ - Accuracy
+ - Reliability
+ - Concealability
+
+https://vocal.media/futurism/the-coolest-futuristic-guns-that-actually-exist
+
+Believable Reactions:
+ - Entering a Police Department with a weapon and covered in blood should cause an immediate reaction
+ - Doing the same thing in a gang hideout should not
+
+Cool Ideas to add:
+ - Zombie Shooting Area - Headshots kill, limb shots slow down, body shots do nothing
+ - Escape Room - Solve puzzles to escape
+ - Stealth Mission - Avoid detection
+ - Manipulated Senses - Make the player kill innocents
+ - Doom Style Traps / Triggers / Secrets
+ - Spider Jerusalem Style Journalism Mission
+
+Clothing & Disguise System
+
+1: Getting jumped by thugs if you’re wearing nice clothes in a bad area
+2: Being able to pose as a sex worker to lure a feeding victim to a secluded area if you’re wearing something revealing.
+
+A disguise mechanic similar to Hitman or what FNV tried to do, I wish I could take down a security guard and wear their uniform to sneak into a place, dress like a doctor or nurse to steal some blood or even having a mision where I have the choice to frame a character for a crime I comitted while wearing their clothes
+
+Want interesting Dialogue and non-combat interactions?
+Look at DISCO ELYSIUM and their skill checks and thought cabinet
+
+Situational modifiers to actions (+10 because you did this or that beforehand)
+
+Contractor Beliefs
+ - I will never fail a mission
+ - I will fight for the Corps
+ - I will bring down the Corps
+ - I will fight for the underdogs
+ - I will fight alongside the winners
+ - I will set this world on fire
+ - I will bring peace to my surroundings
+ - I will be rich
+ - I will be famous
+ - I will be feared
+ - I will be helpful
+
+
+
+"Style over Substance"
+"Attitude is everything"
+"Always take it to the edge"
+"Break the rules"
+
+Instincts
+ - Compulsive Liar
+ - Cannot lie
+ - Always carry two weapons
+ - Will engage in combat if insulted
+
+Fashion matters
+ - Combat gear is obvious and will get you in trouble
+ - Dressing up/down will get you into places you shouldn't be
+ - Heat management - Dressing for the weather
+
+Beliefs & Instincts (Mouse Guard)
+
+Attitude is everything
+ - Reward acting in a cyberpunk way
+ - Reward acting towards your beliefs/principles
+
+Style over Substance
+ - One-liners and quips via Hotkey!
+   - More style points if you drop a one-liner before a kill
+ - Reward Stylish gameplay and looking the part
+ - Reward combos and flashy moves
+ - Style Points? Exchange for items or upgrades? Exchange for XP? Equal Reputation?
+
+Combat Style System:
+ - Combat Actions
+   - Ranged Attack / Trick Shot
+   - Melee Attack / Environmental Melee
+   - Dodge
+   - Parry
+   - Charge/Slide
+   - Special Moves / Attacks
+   - One-Liners & Quips
+ - What breaks the combo?
+   - Any critical failure
+   - Being knocked back/down
+   - A turn of non-combat action
+   - Being hit by a critical hit
+ - Reward the player with combat style points for chaining together actions
+ - Combat style points can be exchanged for combat gear & skills & Perks
+
+Live on the Edge
+ - Reward risky behavior
+
+Beliefs - A stance the player takes, rewards for acting according to them
+Instincts - Minor instinctive behaviors, can happen without the player directly initiating them
+--> Allow setting your own goals.???
+
+Interesting Faults/Flaws/Traits
+
+Organic Save System:
+ - Saving is only possible at designated save points ("Bio Constructors")
+ - Saving is done by going there
+ - How can we deduct the fee not on saving, but on restoring?
+ - Playthrough with the char needs a unique id. Game will set a flag if the char dies.
+   -> Reloading the char will then cost a fee (reloading when the player just quits the game is free)
+   -> If there is no money, the char is lost
+   -> Money and deaths have to be tracked outside the individual save files
+ - Do we only save the character state or also the world state? Both
+ - But, do we restore the only the character state or also the world state?
+   > If the character dies, just restore the character state
+     -> This is disabled in iron man mode, saving = quitting
+   > If the player quits, restore the world state
+
+
+
+The NPC will judge the threat level of the PC by his past actions
+and his potential for future actions.
+
+Tracked on a per person basis, but also by faction and globally.
+
+Diplomacy Points -> Acclaim = Bonus to Social Skill
+ - Helping people
+ - Non-Violent solutions
+War Points -> Notoriety = Bonus to Intimidate Skill
+ - Killing people
+ - Stealing
+
+
+Indirect Threats:
+ - Need proof of affiliation with dangerous third party
+ - Impersonation of a dangerous third party
+
+Physical Threats:
+ - Impressive Outfit (Clothes / Weapon) in Good Condition
+ - Much Higher Cool, Strength, Speed than the opponent
+

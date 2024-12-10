@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/d100"
+	"contractor/d100"
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/recfile"
@@ -40,13 +40,17 @@ func (c *Conversation) CreateGraph() string {
 func (c *Conversation) GetRootNode(params map[string]interface{}) ConversationNode {
 	c.Variables = params
 	for _, branch := range c.openingBranches {
-		evaluateResult, err := branch.branchCondition.Evaluate(params)
+		evaluateResult, err := branch.BranchCondition.Evaluate(params)
 		asBool := evaluateResult.(bool)
 		if err == nil && asBool {
-			return c.nodes[branch.branchName]
+			return c.nodes[branch.BranchName]
 		}
 	}
 	return ConversationNode{NpcText: "No opening branch found", Name: "invalid"}
+}
+
+func (c *Conversation) GetOpeningBranches() []OpeningBranch {
+	return c.openingBranches
 }
 
 func (c *Conversation) GetNextNode(chosenOption ConversationOption) ConversationNode {
@@ -57,9 +61,13 @@ func (c *Conversation) GetNodeByName(node string) ConversationNode {
 	return c.nodes[node]
 }
 
+func (c *Conversation) GetAllNodes() map[string]ConversationNode {
+	return c.nodes
+}
+
 type OpeningBranch struct {
-	branchCondition *govaluate.EvaluableExpression
-	branchName      string
+	BranchCondition *govaluate.EvaluableExpression
+	BranchName      string
 }
 
 type ConversationNode struct {
@@ -131,6 +139,30 @@ func (o *ConversationOption) RollInfo() string {
 	return fmt.Sprintf(" (%s - %s)", skillName.String(), difficulty)
 }
 
+func (o *ConversationOption) GetDisplayCondition() *govaluate.EvaluableExpression {
+	return o.displayCondition
+}
+
+func (o *ConversationOption) GetEffects() []string {
+	return o.effects
+}
+
+func (o *ConversationOption) GetBranchCondition() *govaluate.EvaluableExpression {
+	return o.branchCondition
+}
+
+func (o *ConversationOption) GetSuccessBranch() string {
+	return o.successBranch
+}
+
+func (o *ConversationOption) GetFailureBranch() string {
+	return o.failureBranch
+}
+
+func (o *ConversationOption) GetGotoBranch() string {
+	return o.successBranch
+}
+
 func ParseConversation(filename string, conditionFuncs map[string]govaluate.ExpressionFunction) (*Conversation, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -138,7 +170,7 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 	}
 	defer file.Close()
 
-	records := recfile.ReadMulti(file)
+	records, _ := recfile.ReadMulti(file)
 	conversation := NewConversation()
 	openingBranches := make([]OpeningBranch, 0)
 	for _, branchRecords := range records["OpeningBranch"] {
@@ -146,9 +178,9 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 		for _, fields := range branchRecords {
 			fieldName := strings.ToLower(fields.Name)
 			if fieldName == "cond" {
-				branch.branchCondition, _ = govaluate.NewEvaluableExpressionWithFunctions(fields.Value, conditionFuncs)
+				branch.BranchCondition, _ = govaluate.NewEvaluableExpressionWithFunctions(fields.Value, conditionFuncs)
 			} else if fieldName == "goto" {
-				branch.branchName = fields.Value
+				branch.BranchName = fields.Value
 			}
 		}
 		openingBranches = append(openingBranches, branch)

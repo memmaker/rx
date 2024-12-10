@@ -1,0 +1,210 @@
+%rec: default
+
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: street
+Char:  
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: street
+Char: |
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: some trash
+Char: ;
+Foreground: gray_blue_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: dirty street
+Char: ,
+Foreground: brown_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: trash can
+Char: í
+Foreground: olive_2
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 0
+
+Name: cracked wall
+Char: `
+Foreground: gray
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 32
+
+Name: stairs down
+Char: >
+Foreground: light_gray_7
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: tubes
+Char: ◙
+Foreground: tan_5
+Background: dark_gray_4
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: cracked wall
+Char: ,
+Foreground: gray
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 32
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: "I want to eat the skies"
+Char: =
+Foreground: green_5
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: sink
+Char: ▬
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: toilet
+Char: σ
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: shower
+Char: ⌠
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: shower
+Char: ≈
+Foreground: light_blue
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: dirty synthetic tree
+Char: ♣
+Foreground: tan_7
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 0
+
+Name: "They took my child"
+Char: =
+Foreground: yellow_1
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "Weil der Mensch ein Mensch ist.."
+Char: =
+Foreground: neon_pink_3
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: bench
+Char: π
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: a taxi
+Char:  
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: a taxi
+Char: ⌂
+Foreground: dark_gray_7
+Background: yellow_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "This machine kills fascists"
+Char: =
+Foreground: red_7
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "Refugees welcome"
+Char: =
+Foreground: yellow_1
+Background: light_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: a street sign (transition)
+Char: ≥
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+

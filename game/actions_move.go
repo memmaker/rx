@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
+	"contractor/foundation"
 	"github.com/memmaker/go/geometry"
 )
 

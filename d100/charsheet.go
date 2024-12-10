@@ -32,7 +32,7 @@ func (cs *CharSheet) getStatParameters() map[string]interface{} {
 		"str": cs.GetStat(Strength),
 		"per": cs.GetStat(Perception),
 		"end": cs.GetStat(Endurance),
-		"cha": cs.GetStat(Charisma),
+		"coo": cs.GetStat(Cool),
 		"int": cs.GetStat(Intelligence),
 		"agi": cs.GetStat(Agility),
 	}
@@ -48,7 +48,7 @@ func NewCharSheet() *CharSheet {
 			Strength:     5,
 			Perception:   5,
 			Endurance:    5,
-			Charisma:     5,
+			Cool:         5,
 			Intelligence: 5,
 			Agility:      5,
 		},
@@ -93,86 +93,6 @@ type CharSheet struct {
 	onDerivedStatChangedHandler func(DerivedStat)
 	onSkillChangedHandler       func(Skill)
 	xp                          int
-}
-
-// GobEncode encodes the CharSheet struct into a byte slice.
-func (cs *CharSheet) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-
-	// Encode each field of the struct in order
-	if err := encoder.Encode(cs.level); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.availableStatPoints); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.availableSkillPoints); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.availablePerks); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.stats); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.derivedStatAdjustments); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.skillAdjustments); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.taggedSkills); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.hitPointsCurrent); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(cs.actionPointsCurrent); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-// GobDecode decodes a byte slice into a CharSheet struct.
-func (cs *CharSheet) GobDecode(data []byte) error {
-	buf := bytes.NewBuffer(data)
-	decoder := gob.NewDecoder(buf)
-
-	// Decode each field of the struct in order
-	if err := decoder.Decode(&cs.level); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.availableStatPoints); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.availableSkillPoints); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.availablePerks); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.stats); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.derivedStatAdjustments); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.skillAdjustments); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.taggedSkills); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.hitPointsCurrent); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&cs.actionPointsCurrent); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 type FactorModifier struct {
@@ -253,33 +173,40 @@ var NoModifierList []Modifier
 var NoCombatModifier = CombatModifiers{}
 
 type CombatModifiers struct {
-	ChanceToHitMods Modifiers
-	DamageMods      Modifiers
+	ChanceToHitMods ModList
+	DamageMods      ModList
 }
 
-func (m CombatModifiers) WithChanceToHit(modifiers Modifiers) CombatModifiers {
+func (m CombatModifiers) WithChanceToHit(modifiers ModList) CombatModifiers {
 	m.ChanceToHitMods = append(m.ChanceToHitMods, modifiers...)
 	return m
 }
 
-type Modifiers []Modifier
+type ModList []Modifier
 
-func (r Modifiers) appendIfNonZero(mod Modifier) Modifiers {
+func (r ModList) appendIfNonZero(mod Modifier) ModList {
 	if mod.IsNonModifying() {
 		return r
 	}
 	return append(r, mod)
 }
 
-func (r Modifiers) String() string {
+func (r ModList) String() string {
 	return ModsToString(r)
 }
 
-func (r Modifiers) ApplyForInterval(value fxtools.Interval) fxtools.Interval {
+func (r ModList) ApplyForInterval(value fxtools.Interval) fxtools.Interval {
 	for _, mod := range r {
 		value = mod.ApplyForInterval(value)
 	}
 	return value
+}
+
+func (r ModList) Apply(skill int) int {
+	for _, mod := range r {
+		skill = mod.Apply(skill)
+	}
+	return skill
 }
 
 type Modifier interface {
@@ -401,7 +328,7 @@ func (cs *CharSheet) getDerivedStatBaseValue(ds DerivedStat) int {
 	case MeleeDamageBonus:
 		return max(1, cs.GetStat(Strength)-5)
 	case PartyLimit:
-		return int(math.Floor(float64(cs.GetStat(Charisma)) / 2.0))
+		return int(math.Floor(float64(cs.GetStat(Cool)) / 2.0))
 	case PerkRate:
 		return 3
 	case PoisonResistance:
@@ -644,7 +571,7 @@ func (cs *CharSheet) ToRecord() recfile.Record {
 		recfile.Field{Name: "Strength", Value: recfile.IntStr(cs.GetStat(Strength))},
 		recfile.Field{Name: "Perception", Value: recfile.IntStr(cs.GetStat(Perception))},
 		recfile.Field{Name: "Endurance", Value: recfile.IntStr(cs.GetStat(Endurance))},
-		recfile.Field{Name: "Charisma", Value: recfile.IntStr(cs.GetStat(Charisma))},
+		recfile.Field{Name: "Cool", Value: recfile.IntStr(cs.GetStat(Cool))},
 		recfile.Field{Name: "Intelligence", Value: recfile.IntStr(cs.GetStat(Intelligence))},
 		recfile.Field{Name: "Agility", Value: recfile.IntStr(cs.GetStat(Agility))},
 		recfile.Field{Name: "HitPoints", Value: recfile.IntStr(cs.GetHitPoints())},
@@ -846,7 +773,10 @@ func (cs *CharSheet) GetPerkLevel(perkID Perk) int {
 	return 0
 }
 
-func (cs *CharSheet) MeetsRequirements(requirements PerkRequirements) bool {
+func (cs *CharSheet) MeetsRequirements(requirements CharacterRequirement) bool {
+	if cs.level < requirements.Level {
+		return false
+	}
 	for stat, neededValue := range requirements.Stats {
 		if cs.GetStat(stat) < neededValue {
 			return false
@@ -1041,4 +971,98 @@ func panicHandle(expr *govaluate.EvaluableExpression, error error) *govaluate.Ev
 		panic(error)
 	}
 	return expr
+}
+
+func (cs *CharSheet) GobEncode() ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	gobber := gob.NewEncoder(buffer)
+
+	if err := gobber.Encode(cs.level); err != nil {
+		return nil, err
+	}
+
+	if err := gobber.Encode(cs.availableStatPoints); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.availableSkillPoints); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.availablePerks); err != nil {
+		return nil, err
+	}
+
+	if err := gobber.Encode(cs.stats); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.perks); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.derivedStatAdjustments); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.skillAdjustments); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.taggedSkills); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.hitPointsCurrent); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.actionPointsCurrent); err != nil {
+		return nil, err
+	}
+	if err := gobber.Encode(cs.xp); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func (cs *CharSheet) GobDecode(data []byte) error {
+	buffer := bytes.NewBuffer(data)
+	gobber := gob.NewDecoder(buffer)
+
+	if err := gobber.Decode(&cs.level); err != nil {
+		return err
+	}
+
+	if err := gobber.Decode(&cs.availableStatPoints); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.availableSkillPoints); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.availablePerks); err != nil {
+		return err
+	}
+
+	if err := gobber.Decode(&cs.stats); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.perks); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.derivedStatAdjustments); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.skillAdjustments); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.taggedSkills); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.hitPointsCurrent); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.actionPointsCurrent); err != nil {
+		return err
+	}
+	if err := gobber.Decode(&cs.xp); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cs *CharSheet) NeedsHealing() bool {
+	return cs.GetHitPoints() < cs.GetHitPointsMax()
 }

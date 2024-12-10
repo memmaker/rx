@@ -1,9 +1,9 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"fmt"
 )
 
@@ -14,10 +14,15 @@ func (g *GameState) animatedActionFromMenu(action func()) func() {
 	}
 }
 
+func (g *GameState) canPlayerTalkToActor(actor *Actor) bool {
+	distance := g.currentMap().MoveDistance(g.Player.Position(), actor.Position())
+	return g.canPlayerSee(actor.Position()) && actor.HasDialogue() && !actor.IsSleeping() && distance <= 6
+}
+
 func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, actor *Actor) []foundation.MenuItem {
 	distance := g.currentMap().MoveDistance(g.Player.Position(), actor.Position())
 
-	if actor.HasDialogue() && !actor.IsSleeping() && distance <= 6 {
+	if g.canPlayerTalkToActor(actor) {
 		buffer = append(buffer, foundation.MenuItem{
 			Name:       "[white]Talk To[-]",
 			Action:     func() { g.StartDialogue(actor.GetDialogueFile(), actor, false) },
@@ -30,7 +35,7 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 		CloseMenus: true,
 	})
 
-	if g.Player.HasPerk(d100.PerkDisarm) && actor.GetEquipment().HasWeaponEquipped() && distance == 1 {
+	if g.Player.HasPerk(d100.PerkDisarm) && actor.GetInventory().HasWeaponEquipped() && distance == 1 {
 		chances := formatContestSkSk(g.Player, actor, d100.SkillForUnarmed, d100.SkillForUnarmed)
 		label := fmt.Sprintf("Disarm (%s)", chances)
 		buffer = append(buffer, foundation.MenuItem{
@@ -101,7 +106,7 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 		})
 	}
 
-	if g.Player.HasPerk(d100.PerkBackstab) && g.Player.GetEquipment().HasMeleeWeaponEquipped() {
+	if g.Player.HasPerk(d100.PerkBackstab) && g.Player.GetInventory().HasMeleeWeaponEquipped() {
 		label := "Backstab"
 		if !actor.IsSleeping() {
 			stabChanceString := formatContestSkSt(g.Player, actor, d100.SkillForBackstabbing, d100.Perception)

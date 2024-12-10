@@ -1,4 +1,4 @@
-%rec: default
+%rec: tile
 
 Name: wall
 Char: █
@@ -305,7 +305,7 @@ IsTransparent: false
 Flags: 0
 
 Name: street
-Char: ─
+Char: -
 Foreground: light_gray_4
 Background: dark_gray_7
 IsWalkable: true

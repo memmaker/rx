@@ -1,9 +1,9 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -28,7 +28,7 @@ type MapLoader interface {
 func (g *GameState) giveAndTryEquipItem(actor *Actor, item foundation.Item) {
 	actor.GetInventory().AddItem(item)
 	if item.IsEquippable() {
-		actor.GetEquipment().Equip(item)
+		actor.GetInventory().Equip(item)
 	}
 }
 
@@ -40,7 +40,7 @@ func (g *GameState) updateUIStatus() {
 }
 
 func (g *GameState) msg(message foundation.HiLiteString) {
-	if !message.IsEmpty() {
+	if !message.IsEmpty() && g.mapContainsPlayer {
 		g.appendLogMessage(message)
 		g.ui.UpdateLogWindow()
 	}
@@ -73,11 +73,11 @@ func (g *GameState) hasPaidWithCharge(user *Actor, item foundation.Item) bool {
 	if item == nil { // no item = intrinsic effect
 		return true
 	}
-	if item.Charges() == 0 {
+	if item.GetCharges() == 0 {
 		g.msg(foundation.Msg("The item is out of charges"))
 		return false
 	}
-	if item.Charges() == 1 {
+	if item.GetCharges() == 1 {
 		if item.IsMultipleStacks() {
 			item.RemoveStacks(1)
 		} else {
@@ -87,7 +87,7 @@ func (g *GameState) hasPaidWithCharge(user *Actor, item foundation.Item) bool {
 	}
 
 	item.ConsumeCharge()
-	if item.Charges() == 0 { // destroy
+	if item.GetCharges() == 0 { // destroy
 		g.removeItemFromInventory(user, item)
 	}
 	return true
@@ -286,7 +286,7 @@ func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []
 
 	if len(observers) > 0 {
 		for _, observer := range observers {
-			if observer.teamName == actor.teamName {
+			if observer.TeamName == actor.TeamName {
 				continue
 			}
 
@@ -368,7 +368,7 @@ func (g *GameState) openCyberwareMenu(vendor *Actor, onClose func()) {
 	var tableRows []fxtools.TableRow
 	var menuItems []foundation.MenuItem
 	for _, item := range itemsForSale {
-		tableRows = append(tableRows, fxtools.NewTableRow(item.GetItem1().String(), fmt.Sprintf("$%d", item.GetItem2())))
+		tableRows = append(tableRows, fxtools.NewTableRow(item.GetItem1().String(), fmt.Sprintf("%d sat", item.GetItem2())))
 	}
 
 	labelLines := fxtools.TableLayoutLastRight(tableRows)
@@ -397,7 +397,7 @@ func (g *GameState) openCyberwareMenu(vendor *Actor, onClose func()) {
 }
 
 func (g *GameState) openVendorMenu(vendor *Actor, onClose func()) {
-	itemsForSale := vendor.GetVendorInventory().Items()
+	itemsForSale := vendor.GetVendorInventory().GetItems()
 	if len(itemsForSale) == 0 {
 		g.msg(foundation.Msg("Nothing for sale"))
 		return
@@ -429,7 +429,7 @@ func (g *GameState) buyItemFromVendor(vendor *Actor, onClose func()) func(item f
 
 		vendor.GetInventory().AddItem(player.RemoveGold(price))
 
-		g.msg(foundation.HiLite("You bought %s for $%s", item.Name(), fmt.Sprint(price)))
+		g.msg(foundation.HiLite("You bought %s for %s sat", item.Name(), fmt.Sprint(price)))
 
 		g.ui.PlayCue("world/pickup")
 
@@ -471,7 +471,7 @@ func (g *GameState) buyItemFromVendingMachine(machine *Container) func(item foun
 
 		machine.AddItem(player.RemoveGold(price))
 
-		g.msg(foundation.HiLite("You bought %s for $%s", item.Name(), fmt.Sprint(price)))
+		g.msg(foundation.HiLite("You bought %s for %s sat", item.Name(), fmt.Sprint(price)))
 
 		g.ui.PlayCue("world/pickup")
 
@@ -483,7 +483,7 @@ func (g *GameState) dropInventory(victim *Actor) {
 	if goldAmount > 0 {
 		g.addItemToMap(g.NewGold(goldAmount), victim.Position())
 	}
-	for _, item := range victim.GetInventory().Items() {
+	for _, item := range victim.GetInventory().GetItems() {
 		g.addItemToMap(item, victim.Position())
 	}
 }

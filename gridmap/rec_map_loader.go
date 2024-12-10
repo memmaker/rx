@@ -16,19 +16,18 @@ type RecMapLoader[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
 }] struct {
-	random                     *rand.Rand
-	palette                    textiles.ColorPalette
-	actorFactory               func(rec recfile.Record) (ActorType, geometry.Point)
-	itemFactory                func(rec recfile.Record) (ItemType, geometry.Point)
-	objectFactory              func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType]) (ObjectType, geometry.Point)
-	mapBaseDir                 string
-	diagonalMove               bool
-	setIconsResolverForObjects func(iconsForObject map[string]textiles.TextIcon)
+	random        *rand.Rand
+	palette       textiles.ColorPalette
+	actorFactory  func(rec recfile.Record) (ActorType, geometry.Point)
+	itemFactory   func(rec recfile.Record) (ItemType, geometry.Point)
+	objectFactory func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType], iconResolver func(objType string) textiles.TextIcon) (ObjectType, geometry.Point)
+	mapBaseDir    string
+	diagonalMove  bool
 }
 
 func NewRecMapLoader[ActorType interface {
@@ -36,27 +35,25 @@ func NewRecMapLoader[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
 }](
 	mapBaseDir string,
 	palette textiles.ColorPalette,
-	setIconResolver func(iconsForObject map[string]textiles.TextIcon),
 	actorFactory func(rec recfile.Record) (ActorType, geometry.Point),
 	itemFactory func(rec recfile.Record) (ItemType, geometry.Point),
-	objectFactory func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType]) (ObjectType, geometry.Point),
+	objectFactory func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType], iconsForObjects func(objType string) textiles.TextIcon) (ObjectType, geometry.Point),
 ) *RecMapLoader[ActorType, ItemType, ObjectType] {
 	return &RecMapLoader[ActorType, ItemType, ObjectType]{
-		random:                     rand.New(rand.NewSource(time.Now().UnixNano())),
-		palette:                    palette,
-		actorFactory:               actorFactory,
-		itemFactory:                itemFactory,
-		objectFactory:              objectFactory,
-		mapBaseDir:                 mapBaseDir,
-		diagonalMove:               true,
-		setIconsResolverForObjects: setIconResolver,
+		random:        rand.New(rand.NewSource(time.Now().UnixNano())),
+		palette:       palette,
+		actorFactory:  actorFactory,
+		itemFactory:   itemFactory,
+		objectFactory: objectFactory,
+		mapBaseDir:    mapBaseDir,
+		diagonalMove:  true,
 	}
 }
 
@@ -65,15 +62,14 @@ type MapLoadResult[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]
 }] struct {
-	Map             *GridMap[ActorType, ItemType, ObjectType]
-	IconsForObjects map[string]textiles.TextIcon
-	FlagsOfMap      map[string]int
-	ScriptsToRun    []string
+	Map          *GridMap[ActorType, ItemType, ObjectType]
+	FlagsOfMap   map[string]int
+	ScriptsToRun []string
 }
 
 func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) MapLoadResult[ActorType, ItemType, ObjectType] {
@@ -83,12 +79,18 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 	}
 
 	objTypes := LoadIconsForObjects(mapDir, t.palette)
-	t.setIconsResolverForObjects(objTypes)
+	iconresolver := func(objType string) textiles.TextIcon {
+		if icon, exists := objTypes[strings.ToLower(objType)]; exists {
+			return icon
+		}
+		return textiles.TextIcon{}
+	}
 
 	tileSet := textiles.ReadTilesFileAndClose(fxtools.MustOpen(path.Join(mapDir, "tileSet.rec")), t.palette)
 	mapSize, tileMap := textiles.ReadTileMap16(path.Join(mapDir, "tiles.bin"))
 
-	metaData, scriptsToRun := NewMapMetaData(recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "meta.rec")))[0])
+	scriptRecs, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "meta.rec")))
+	metaData, scriptsToRun := NewMapMetaData(scriptRecs[0])
 
 	var zones map[string]map[geometry.Point]bool
 	if fxtools.FileExists(path.Join(mapDir, "zones.bin")) {
@@ -97,25 +99,26 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 	var zoneRecords, actorRecords, objectRecords, itemRecords []recfile.Record
 	var zoneMeta map[string]ZoneMetadata
 	if fxtools.FileExists(path.Join(mapDir, "zones.rec")) {
-		zoneRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "zones.rec")))
+		zoneRecords, _ = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "zones.rec")))
 		zoneMeta = NewZoneMetadata(zoneRecords)
 	}
 
 	if fxtools.FileExists(path.Join(mapDir, "actors.rec")) {
-		actorRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "actors.rec")))
+		actorRecords, _ = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "actors.rec")))
 	}
 	if fxtools.FileExists(path.Join(mapDir, "objects.rec")) {
-		objectRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "objects.rec")))
+		objectRecords, _ = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "objects.rec")))
 	}
 	if fxtools.FileExists(path.Join(mapDir, "items.rec")) {
-		itemRecords = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "items.rec")))
+		itemRecords, _ = recfile.ReadAndClose(fxtools.MustOpen(path.Join(mapDir, "items.rec")))
 	}
 
 	// Optional: Read init flags, if they exist and haven't been loaded before
 	flagsFile := path.Join(mapDir, "initFlags.rec")
 	flagsOfMap := make(map[string]int)
 	if fxtools.FileExists(flagsFile) {
-		flags := recfile.ReadAndClose(fxtools.MustOpen(flagsFile))[0]
+		flagRecs, _ := recfile.ReadAndClose(fxtools.MustOpen(flagsFile))
+		flags := flagRecs[0]
 		for _, flag := range flags {
 			flagsOfMap[flag.Name] = flag.AsInt()
 		}
@@ -139,10 +142,15 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 
 	// Set Actors
 	for _, record := range actorRecords {
-		newMap.AddActor(t.actorFactory(record))
+		spawnedActor, spawnPos := t.actorFactory(record)
+		if spawnedActor.IsAlive() {
+			newMap.AddActor(spawnedActor, spawnPos)
+		} else {
+			newMap.AddDownedActor(spawnedActor, spawnPos)
+		}
 	}
 
-	// Set Items
+	// Set GetItems
 	for _, record := range itemRecords {
 		newMap.AddItem(t.itemFactory(record))
 	}
@@ -153,15 +161,14 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 		if tryHandleAsPseudoObject(objCategory, record, newMap) {
 			continue
 		}
-		newMap.AddObject(t.objectFactory(record, newMap))
+		newMap.AddObject(t.objectFactory(record, newMap, iconresolver))
 	}
 	newMap.UpdateBakedLights()
 
 	return MapLoadResult[ActorType, ItemType, ObjectType]{
-		Map:             newMap,
-		IconsForObjects: objTypes,
-		FlagsOfMap:      flagsOfMap,
-		ScriptsToRun:    scriptsToRun,
+		Map:          newMap,
+		FlagsOfMap:   flagsOfMap,
+		ScriptsToRun: scriptsToRun,
 	}
 }
 
@@ -223,7 +230,7 @@ func tryHandleAsPseudoObject[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]

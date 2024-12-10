@@ -1,3 +1,6 @@
+%rec: item
+%key: Name
+
 Description: a note
 Name: note
 Category: Notes
@@ -30,6 +33,29 @@ Name: skillbook_melee
 Category: Books
 skill_bonus: melee_combat(5)
 
+Description: The Hydraulic Press and You
+Name: skillbook_mechanics
+Category: Books
+skill_bonus: mechanics(5)
+
+Description: The Art of the Deal
+Name: skillbook_social
+Category: Books
+skill_bonus: social(5)
+
+Description: The Ghost in the Machine
+Name: skillbook_technology
+Category: Books
+skill_bonus: technology(5)
+
+
+
+Description: JUNK
+Name: junk
+Category: Other
+Weight: 1
+Cost: 1
+
 Description: a digital watch
 Name: watch
 Category: Other
@@ -53,7 +79,7 @@ Description: Aviator sunglasses
 Name: aviator_sunglasses
 Weight: 1
 Category: Headgear
-stat_bonus: charisma(1)
+stat_bonus: cool(1)
 Cost: 1200
 Text: These make you look ridiculously cool.
 chance_to_break_on_throw: 95
@@ -89,3 +115,60 @@ zap_effect: explode
 tags: timed
 chance_to_break_on_throw: 10
 
+Name: ebi_pamphlet_1
+Description: EBI Pamphlet #1
+Category: Notes
+TextFile: ebi_pamphlet_1
+Weight: 1
+Cost: 1
+
+Name: ebi_pamphlet_2
+Description: EBI Pamphlet #2
+Category: Notes
+TextFile: ebi_pamphlet_2
+Weight: 1
+Cost: 1
+
+Name: ebi_pamphlet_3
+Description: EBI Pamphlet #3
+Category: Notes
+TextFile: ebi_pamphlet_3
+Weight: 1
+Cost: 1
+
+Name: bat_pamphlet_1
+Description: BAT Pamphlet #1
+Category: Notes
+TextFile: bat_meld_pamphlet_1
+Weight: 1
+Cost: 1
+
+Name: bat_pamphlet_2
+Description: BAT Pamphlet #2
+Category: Notes
+TextFile: bat_meld_pamphlet_2
+Weight: 1
+Cost: 1
+
+Name: bat_pamphlet_3
+Description: BAT Pamphlet #3
+Category: Notes
+TextFile: bat_meld_pamphlet_3
+Weight: 1
+Cost: 1
+
+Name: robot_pamphlet
+Description: "Home Companion" Advertisement
+Category: Notes
+TextFile: project21_pamphlet
+Weight: 1
+Cost: 1
+pickupflag: KnowsAboutHomeCompanion
+
+Name: terra_vitae_pamphlet
+Description: Terra Vitae leaflet
+Category: Notes
+TextFile: terra_vitae_pamphlet
+Weight: 1
+Cost: 1
+pickupflag: KnowsAboutTerraVitae

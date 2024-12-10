@@ -1,0 +1,82 @@
+%rec: default
+
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: reinforced steel wall
+Char: █
+Foreground: light_blue
+Background: light_blue
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: carpet
+Char: ░
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: chair
+Char: ■
+Foreground: teal_3
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: front desk
+Char: █
+Foreground: teal_3
+Background: light_blue_16
+IsWalkable: false
+IsTransparent: true
+Flags: 8
+
+Name: sidewalk
+Char: ·
+Foreground: steel_blue_9
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: street
+Char:  
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: street
+Char: ─
+Foreground: light_gray_4
+Background: dark_gray_7
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: a street sign (transition)
+Char: ≥
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+

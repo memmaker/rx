@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
+    "contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -66,15 +66,15 @@ func (i *Ammo) DisplayLength() int {
 }
 
 func (i *Ammo) Split(bullets int) foundation.Item {
-	if bullets >= i.stackSize {
+	if bullets >= i.StackSize {
 		return i
 	}
 	cloneGeneric := *i.GenericItem
 	clone := *i
 	clone.GenericItem = &cloneGeneric
 
-	clone.stackSize = bullets
-	i.stackSize -= bullets
+	clone.StackSize = bullets
+	i.StackSize -= bullets
 	return &clone
 }
 
@@ -106,7 +106,7 @@ func (i *Ammo) FullDescription(colorCode string) string {
 	}
 
 	lines := fxtools.TableLayout(basicRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
-	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+	lines = append([]string{i.InventoryNameWithColors(colorCode), i.Category.String()}, lines...)
 
 	lines = i.appendText(lines)
 
@@ -117,7 +117,7 @@ func (i *Ammo) LongNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 
 	ammo := i
-	line = cview.Escape(fmt.Sprintf("%s [%s] (x%d)", i.Name(), ammo.ShortString(), i.StackSize()))
+	line = cview.Escape(fmt.Sprintf("%s [%s] (x%d)", i.Name(), ammo.ShortString(), i.GetStackSize()))
 
 	statPairs := i.getStatPairsAsStrings()
 
@@ -132,7 +132,7 @@ func (i *Ammo) LongNameWithColors(colorCode string) string {
 func (i *Ammo) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 
-	line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.StackSize()))
+	line = cview.Escape(fmt.Sprintf("%s (x%d)", i.Name(), i.GetStackSize()))
 
 	lineWithColor := colorCode + line + "[-]"
 

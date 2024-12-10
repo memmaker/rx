@@ -1,7 +1,0 @@
-%rec: default
-
-Name: Northside residential underground
-MusicFile: 13carvrn
-IsOutdoor: false
-IndoorAmbientLight: (0.3, 0.3, 0.3)
-

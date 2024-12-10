@@ -1,10 +1,10 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/fov"
-	"RogueUI/gridmap"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/fov"
+	"contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
@@ -207,12 +207,12 @@ func (g *GameState) playerStopBecauseOfTrap(trap *Trap) bool {
 			if result.Success {
 				trap.Disarm()
 				if trap.IsPlacedByPlayer() {
-					g.msg(foundation.HiLite("You disabled the %s", trap.displayName))
+					g.msg(foundation.HiLite("You disabled the %s", trap.DisplayName))
 				} else if !knownTrap {
 					g.knownTraps[trap.GetInternalName()] = true
-					g.msg(foundation.HiLite("You've learned how to disarm %s", trap.displayName))
+					g.msg(foundation.HiLite("You've learned how to disarm %s", trap.DisplayName))
 				} else {
-					g.msg(foundation.HiLite("You disarmed the %s", trap.displayName))
+					g.msg(foundation.HiLite("You disarmed the %s", trap.DisplayName))
 				}
 				g.endPlayerTurn(player.TimeNeededForActions())
 			} else {
@@ -252,7 +252,7 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 
 	if !actor.IsAlive() {
 		g.ui.ShowTakeOnlyContainer(actor.Name(), actorItems, func(uiItem foundation.Item) {
-			rightToLeft(uiItem, uiItem.StackSize())
+			rightToLeft(uiItem, uiItem.GetStackSize())
 		})
 		return
 	}
@@ -271,11 +271,11 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 			return !item.HasTag(foundation.TagNoLoot)
 		})
 		for _, item := range loot {
-			stackTransfer(actor.GetInventory(), g.Player.GetInventory(), item, item.StackSize())
+			stackTransfer(actor.GetInventory(), g.Player.GetInventory(), item, item.GetStackSize())
 		}
 		g.openInventoryOf(actor)
 	}
-	playerItems := g.Player.GetInventory().Items()
+	playerItems := g.Player.GetInventory().GetItems()
 	g.ui.ShowGiveAndTakeContainer(g.Player.Name(), playerItems, actor.Name(), actorItems, rightToLeft, leftToRight, takeAll)
 }
 

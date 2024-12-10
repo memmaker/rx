@@ -156,7 +156,7 @@ type Journal struct {
 // NewJournal Is used during initialization of the game state.
 func NewJournal(io io.ReadCloser, fMap map[string]govaluate.ExpressionFunction) *Journal {
 	j := &Journal{quests: make(map[string][]*Quest)}
-	records := recfile.ReadAndClose(io)
+	records, _ := recfile.ReadAndClose(io)
 	j.AddEntriesFromSource("default", records, fMap)
 	return j
 }
@@ -248,13 +248,13 @@ func (q *Quest) ToRecord() recfile.Record {
 	result = append(result, recfile.Field{Name: "XP", Value: recfile.IntStr(q.RewardInXP)})
 
 	for _, entry := range q.Starters {
-		result = append(result, entry.ToRecord("start_")...)
+		result = append(result, entry.ToRecord("start")...)
 	}
 	for _, entry := range q.Progress {
-		result = append(result, entry.ToRecord("prog_")...)
+		result = append(result, entry.ToRecord("prog")...)
 	}
 	for _, entry := range q.Outcomes {
-		result = append(result, entry.ToRecord("end_")...)
+		result = append(result, entry.ToRecord("end")...)
 	}
 	return result
 

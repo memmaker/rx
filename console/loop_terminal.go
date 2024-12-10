@@ -3,6 +3,7 @@
 package console
 
 import (
+	"contractor/foundation"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
 )
@@ -13,7 +14,7 @@ func NewTerminalUI() UILifeCycler {
 
 type TerminalUI struct {}
 
-func (u TerminalUI) StartGameLoop(application *cview.Application, onScreenReady func()) {
+func (u TerminalUI) StartGameLoop(settings *foundation.Configuration, application *cview.Application, onScreenReady func()) {
 	/*
 	cpuProfileFile, err := os.Create("cpu.prof")
 	if err != nil {

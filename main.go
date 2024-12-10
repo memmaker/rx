@@ -1,20 +1,20 @@
 package main
 
 import (
-	"RogueUI/console"
-	"RogueUI/dungen"
-	"RogueUI/foundation"
-	"RogueUI/game"
-	"RogueUI/validation"
 	"bufio"
+	"contractor/console"
+	"contractor/dungen"
+	"contractor/foundation"
+	"contractor/game"
+	"contractor/validation"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/fxtools"
 	"math/rand"
 	"os"
-	"path"
 	"strings"
 )
+
 var graphicsModes = make(map[string]console.UILifeCycler)
 
 func main() {
@@ -28,10 +28,23 @@ func main() {
 		if os.Args[1] == "dev" {
 			devStart = true
 		} else if os.Args[1] == "val_dialogue" {
-			validation.ValidateDialogue(path.Join(config.DataRootDir))
+			gameState := game.NewGameState(config)
+			validation.ValidateDialogue(config.DataRootDir, gameState.GetScriptFuncs())
+			return
+		} else if os.Args[1] == "graph_dialogue" {
+			hideBackLinksToNode := ""
+			filename := ""
+			if len(os.Args) > 3 {
+				hideBackLinksToNode = os.Args[2]
+				filename = os.Args[3]
+			} else {
+				filename = os.Args[2]
+			}
+			gameState := game.NewGameState(config)
+			validation.GraphDialogue(config.DataRootDir, gameState.GetScriptFuncs(), filename, hideBackLinksToNode)
 			return
 		} else if os.Args[1] == "val_ammo" {
-			validation.ValidateWeaponAndAmmoPairings(path.Join(config.DataRootDir))
+			validation.ValidateWeaponAndAmmoPairings(config.DataRootDir)
 			return
 		} else {
 			mode := os.Args[1]
@@ -76,7 +89,7 @@ func chooseGraphicsMode() console.UILifeCycler {
 	if len(graphicsModes) == 0 {
 		panic("No graphics modes available")
 	}
-	fallbackModes := []string{"ebiten","terminal"}
+	fallbackModes := []string{"ebiten", "terminal"}
 
 	for _, mode := range fallbackModes {
 		if lifeCyle, ok := graphicsModes[mode]; ok {
@@ -86,6 +99,7 @@ func chooseGraphicsMode() console.UILifeCycler {
 	panic("No fallback graphics mode available")
 	return nil
 }
+
 func showBanner(filename string, width int) {
 	bannerLines := fxtools.ReadFileAsLines(filename)
 	for _, line := range bannerLines {

@@ -7,6 +7,7 @@ const (
 	StateAggressive
 	StatePanic
 	StateKill
+	StateSearch
 	StateDead
 	StateCount
 	// Also change NewTransitionTable() below, if you add new states at the end or the beginning
@@ -20,6 +21,8 @@ func (s StateName) ToString() string {
 		return "Aggressive"
 	case StatePanic:
 		return "Panic"
+	case StateSearch:
+		return "Search"
 	case StateKill:
 		return "Kill"
 	case StateDead:

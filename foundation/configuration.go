@@ -29,9 +29,13 @@ type Configuration struct {
 
 	DialogueShortcutsAreNumbers bool
 
-	AudioEnabled        bool
-	MusicEnabled        bool
-	SoundEffectsEnabled bool
+	AudioEnabled          bool
+	MusicEnabled          bool
+	SoundEffectsEnabled   bool
+	MainFontName          string
+	FallbackFontName      string
+	ForcedFallbackRunes   string
+	SimulateAllLoadedMaps bool
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -41,7 +45,7 @@ func NewConfigurationFromFile(file string) *Configuration {
 		return configuration
 	}
 	openFile := fxtools.MustOpen(file)
-	data := recfile.ReadAndClose(openFile)
+	data, _ := recfile.ReadAndClose(openFile)
 	for _, field := range data[0] {
 		switch field.Name {
 		case "AnimationDelay":
@@ -88,6 +92,16 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.KeyMap = field.Value
 		case "DialogueShortcutsAreNumbers":
 			configuration.DialogueShortcutsAreNumbers = field.AsBool()
+		case "MainFontName":
+			configuration.MainFontName = field.Value
+		case "FallbackFontName":
+			configuration.FallbackFontName = field.Value
+		case "ForcedFallbackRunes":
+			configuration.ForcedFallbackRunes = field.Value
+		case "ForcedFallbackCodepoint":
+			configuration.ForcedFallbackRunes += string(rune(field.AsInt()))
+		case "SimulateAllLoadedMaps":
+			configuration.SimulateAllLoadedMaps = field.AsBool()
 		}
 	}
 	return configuration
@@ -117,6 +131,9 @@ func NewDefaultConfiguration() *Configuration {
 		AudioEnabled:                true,
 		MusicEnabled:                true,
 		SoundEffectsEnabled:         true,
+		MainFontName:                "Monofonto-Regular",
+		FallbackFontName:            "MesloLGS NF Regular",
+		SimulateAllLoadedMaps:       true,
 	}
 }
 
@@ -125,32 +142,34 @@ func (c *Configuration) GetMinTerminalSize() (int, int) {
 }
 
 func (c *Configuration) WriteToFile(filename string) {
-	records := []recfile.Record{
-		{
-			recfile.Field{Name: "AnimationDelay", Value: recfile.Int64Str(c.AnimationDelay.Milliseconds())},
-			recfile.Field{Name: "AnimationsEnabled", Value: recfile.BoolStr(c.AnimationsEnabled)},
-			recfile.Field{Name: "AnimateMovement", Value: recfile.BoolStr(c.AnimateMovement)},
-			recfile.Field{Name: "AnimateProjectiles", Value: recfile.BoolStr(c.AnimateProjectiles)},
-			recfile.Field{Name: "AnimateDamage", Value: recfile.BoolStr(c.AnimateDamage)},
-			recfile.Field{Name: "AnimateEffects", Value: recfile.BoolStr(c.AnimateEffects)},
-			recfile.Field{Name: "AudioEnabled", Value: recfile.BoolStr(c.AudioEnabled)},
-			recfile.Field{Name: "MusicEnabled", Value: recfile.BoolStr(c.MusicEnabled)},
-			recfile.Field{Name: "MapWidth", Value: recfile.IntStr(c.MapWidth)},
-			recfile.Field{Name: "MapHeight", Value: recfile.IntStr(c.MapHeight)},
-			recfile.Field{Name: "DiagonalMovementEnabled", Value: recfile.BoolStr(c.DiagonalMovementEnabled)},
-			recfile.Field{Name: "AutoPickup", Value: recfile.BoolStr(c.AutoPickup)},
-			recfile.Field{Name: "WallSlide", Value: recfile.BoolStr(c.WallSlide)},
-			recfile.Field{Name: "PlayerName", Value: c.PlayerName},
-			recfile.Field{Name: "PlayerChar", Value: string(c.PlayerChar)},
-			recfile.Field{Name: "PlayerColor", Value: c.PlayerColor},
-			recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
-			recfile.Field{Name: "SaveGameDir", Value: c.SaveGameDir},
-			recfile.Field{Name: "DefaultToAdvancedTargeting", Value: recfile.BoolStr(c.DefaultToAdvancedTargeting)},
-			recfile.Field{Name: "KeyMap", Value: c.KeyMap},
-			recfile.Field{Name: "DialogueShortcutsAreNumbers", Value: recfile.BoolStr(c.DialogueShortcutsAreNumbers)},
-		},
+	record := recfile.Record{
+		recfile.Field{Name: "AnimationDelay", Value: recfile.Int64Str(c.AnimationDelay.Milliseconds())},
+		recfile.Field{Name: "AnimationsEnabled", Value: recfile.BoolStr(c.AnimationsEnabled)},
+		recfile.Field{Name: "AnimateMovement", Value: recfile.BoolStr(c.AnimateMovement)},
+		recfile.Field{Name: "AnimateProjectiles", Value: recfile.BoolStr(c.AnimateProjectiles)},
+		recfile.Field{Name: "AnimateDamage", Value: recfile.BoolStr(c.AnimateDamage)},
+		recfile.Field{Name: "AnimateEffects", Value: recfile.BoolStr(c.AnimateEffects)},
+		recfile.Field{Name: "AudioEnabled", Value: recfile.BoolStr(c.AudioEnabled)},
+		recfile.Field{Name: "MusicEnabled", Value: recfile.BoolStr(c.MusicEnabled)},
+		recfile.Field{Name: "MapWidth", Value: recfile.IntStr(c.MapWidth)},
+		recfile.Field{Name: "MapHeight", Value: recfile.IntStr(c.MapHeight)},
+		recfile.Field{Name: "DiagonalMovementEnabled", Value: recfile.BoolStr(c.DiagonalMovementEnabled)},
+		recfile.Field{Name: "AutoPickup", Value: recfile.BoolStr(c.AutoPickup)},
+		recfile.Field{Name: "WallSlide", Value: recfile.BoolStr(c.WallSlide)},
+		recfile.Field{Name: "PlayerName", Value: c.PlayerName},
+		recfile.Field{Name: "PlayerChar", Value: string(c.PlayerChar)},
+		recfile.Field{Name: "PlayerColor", Value: c.PlayerColor},
+		recfile.Field{Name: "DataRootDir", Value: c.DataRootDir},
+		recfile.Field{Name: "SaveGameDir", Value: c.SaveGameDir},
+		recfile.Field{Name: "DefaultToAdvancedTargeting", Value: recfile.BoolStr(c.DefaultToAdvancedTargeting)},
+		recfile.Field{Name: "KeyMap", Value: c.KeyMap},
+		recfile.Field{Name: "DialogueShortcutsAreNumbers", Value: recfile.BoolStr(c.DialogueShortcutsAreNumbers)},
+		recfile.Field{Name: "MainFontName", Value: c.MainFontName},
+		recfile.Field{Name: "FallbackFontName", Value: c.FallbackFontName},
+		recfile.Field{Name: "ForcedFallbackRunes", Value: c.ForcedFallbackRunes},
+		recfile.Field{Name: "SimulateAllLoadedMaps", Value: recfile.BoolStr(c.SimulateAllLoadedMaps)},
 	}
 	file, _ := os.Create(filename)
 	defer file.Close()
-	recfile.Write(file, records)
+	recfile.Write(file, []recfile.Record{record})
 }

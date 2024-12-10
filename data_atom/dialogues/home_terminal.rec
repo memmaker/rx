@@ -12,7 +12,7 @@ effect: None
 #
 # Starter Mission
 o_text: (Job offer) Extract money, reward: 50% cut.
-o_cond: !HasFlag('JobAccepted(starter)') && !HasFlag('JobDeclined(starter)')
+o_cond: !HasFlag('JobAccepted(starter)') && !HasFlag('JobDeclined(starter)') && !HasFlag('Killed(jacob_thorne)')
 o_goto: starter_mission
 #
 #

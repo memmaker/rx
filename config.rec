@@ -22,3 +22,9 @@ SaveGameDir: savegames
 DefaultToAdvancedTargeting: false
 KeyMap: numpad
 DialogueShortcutsAreNumbers: false
+SimulateAllLoadedMaps: true
+MainFontName: Monofonto-Regular
+FallbackFontName: MesloLGS NF Regular
+ForcedFallbackRunes: ▁▂▃▄▅▆▇∞↨►☙─│┌┐└┘├┤┬┴┼╭╮╯╰
+ForcedFallbackCodepoint: 9664
+ForcedFallbackCodepoint: 9668

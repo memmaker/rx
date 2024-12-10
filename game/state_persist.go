@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -17,14 +17,15 @@ func (g *GameState) Save(directory string) error {
 	globalRecord := recfile.Record{
 		recfile.Field{Name: "CurrentMap", Value: g.currentMapName},
 		recfile.Field{Name: "TurnsTaken", Value: recfile.IntStr(g.TurnsTaken())},
+		recfile.Field{Name: "ActorID", Value: recfile.UInt64Str(uint64(gridmap.CurrentActorID()))},
+		recfile.Field{Name: "ItemID", Value: recfile.UInt64Str(uint64(gridmap.CurrentItemID()))},
 		recfile.Field{Name: "GameTime", Value: recfile.TimeStr(g.gameTime.Time)},
 		recfile.Field{Name: "ShowEverything", Value: recfile.BoolStr(g.showEverything)},
 	}
 	globalFile := fxtools.MustCreate(path.Join(directory, "global.rec"))
 	err := recfile.WriteMulti(globalFile, map[string][]recfile.Record{
-		"global":           {globalRecord},
-		"flags":            g.gameFlags.ToRecord(),
-		"terminal_guesses": g.terminalGuessesToRecords(),
+		"global": {globalRecord},
+		"flags":  g.gameFlags.ToRecord(),
 	})
 	if err != nil {
 		return err
@@ -63,7 +64,7 @@ func (g *GameState) Save(directory string) error {
 func (g *GameState) Load(directory string) {
 	// Global game state
 	globalFile := fxtools.MustOpen(path.Join(directory, "global.rec"))
-	globalRecords := recfile.ReadMulti(globalFile)
+	globalRecords, _ := recfile.ReadMulti(globalFile)
 	globalFile.Close()
 
 	globalRecord := globalRecords["global"][0]
@@ -78,6 +79,10 @@ func (g *GameState) Load(directory string) {
 			g.gameTime = g.gameTime.WithTime(recfile.StrTime(field.Value))
 		case "showeverything":
 			g.showEverything = recfile.StrBool(field.Value)
+		case "actorid":
+			gridmap.SetCurrentActorID(gridmap.ActorID(recfile.StrUInt64(field.Value)))
+		case "itemid":
+			gridmap.SetCurrentItemID(gridmap.ItemID(recfile.StrUInt64(field.Value)))
 		}
 	}
 
@@ -86,13 +91,12 @@ func (g *GameState) Load(directory string) {
 		g.gameFlags = fxtools.NewStringFlagsFromRecord(flagRecords)
 	}
 	g.logBuffer = make([]foundation.HiLiteString, 0)
-	g.terminalGuesses = g.terminalGuessesFromRecords(globalRecords["terminal_guesses"])
 
 	// Journal
 	journalFile := fxtools.MustOpen(path.Join(directory, "journal.rec"))
-	journalRecords := recfile.ReadMulti(journalFile)
+	journalRecords, _ := recfile.ReadMulti(journalFile)
 	journalFile.Close()
-	g.journal = NewJournalFromRecords(journalRecords, g.getScriptFuncs())
+	g.journal = NewJournalFromRecords(journalRecords, g.GetScriptFuncs())
 
 	// Loaded Map States
 	mapEntries, err := os.ReadDir(path.Join(directory, "maps"))
@@ -104,6 +108,10 @@ func (g *GameState) Load(directory string) {
 		if mapEntry.IsDir() {
 			mapName := mapEntry.Name()
 			gameMap := gridmap.Load[*Actor, foundation.Item, Object](directory, mapName)
+			for _, actor := range gameMap.Actors() {
+				// TODO: restore poshandlers for inventory items and other attach stuff, fsm.RestoreState
+				actor.InitWithGameState(g)
+			}
 			for _, obj := range gameMap.Objects() {
 				obj.InitWithGameState(g)
 			}
@@ -118,45 +126,12 @@ func (g *GameState) Load(directory string) {
 	g.Player = filteredActors[0]
 
 	// Restore missing glue
-	g.iconsForObjects = gridmap.LoadIconsForObjects(path.Join(g.config.DataRootDir, "maps", g.currentMapName), g.palette)
-
 	g.hookupJournalAndFlags()
-	g.attachHooksToPlayer()
+	g.playerSecondaryInit()
 
 	// CheckAndRunFrames lights & player position
 	g.currentMap().UpdateBakedLights()
 	g.afterPlayerMoved(geometry.Point{}, true)
 
 	g.updateUIStatus()
-}
-
-func (g *GameState) terminalGuessesToRecords() []recfile.Record {
-	var recs []recfile.Record
-	for key, values := range g.terminalGuesses {
-		record := recfile.Record{
-			recfile.Field{Name: "terminal", Value: key},
-		}
-		for _, value := range values {
-			record = append(record, recfile.Field{Name: "guess", Value: value})
-		}
-		recs = append(recs, record)
-	}
-	return recs
-}
-
-func (g *GameState) terminalGuessesFromRecords(records []recfile.Record) map[string][]string {
-	result := make(map[string][]string)
-	for _, record := range records {
-		var terminal string
-		var guesses []string
-		for _, field := range record {
-			if field.Name == "terminal" {
-				terminal = field.Value
-			} else if field.Name == "guess" {
-				guesses = append(guesses, field.Value)
-			}
-		}
-		result[terminal] = guesses
-	}
-	return result
 }

@@ -12,8 +12,8 @@ func (s Stat) ToShortString() string {
 		return "PE"
 	case Endurance:
 		return "EN"
-	case Charisma:
-		return "CH"
+	case Cool:
+		return "CO"
 	case Intelligence:
 		return "IN"
 	case Agility:
@@ -30,8 +30,8 @@ func (s Stat) GetDescription() string {
 		return "Perception affects your ranged combat skills, and your ability to detect traps and enemies."
 	case Endurance:
 		return "Endurance affects your Hit Points, Poison Resistance, and Radiation Resistance."
-	case Charisma:
-		return "Charisma affects your ability to negotiate, and the size of your party."
+	case Cool:
+		return "Cool affects your ability to negotiate, and the size of your party."
 	case Intelligence:
 		return "Intelligence affects the number of skill points you receive when you level up, and the number of new Perks you can choose."
 	case Agility:
@@ -48,8 +48,8 @@ func (s Stat) String() string {
 		return "Perception"
 	case Endurance:
 		return "Endurance"
-	case Charisma:
-		return "Charisma"
+	case Cool:
+		return "Cool"
 	case Intelligence:
 		return "Intelligence"
 	case Agility:
@@ -62,7 +62,7 @@ const (
 	Strength Stat = iota
 	Perception
 	Endurance
-	Charisma
+	Cool
 	Intelligence
 	Agility
 	StatCount
@@ -77,13 +77,14 @@ func StatFromString(name string) Stat {
 		return Perception
 	case "endurance":
 		return Endurance
-	case "charisma":
-		return Charisma
+	case "cool":
+		return Cool
 	case "intelligence":
 		return Intelligence
 	case "agility":
 		return Agility
 	}
-	panic("invalid stat name")
+	panic("invalid stat name: " + name)
+
 	return 0
 }

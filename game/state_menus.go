@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
@@ -119,7 +119,7 @@ func (g *GameState) PlayerRest(isHealing bool, duration time.Duration) {
 	}
 	g.ui.FadeFromBlack()
 
-	if isHealing {
+	if isHealing && g.Player.GetCharSheet().NeedsHealing() {
 		hours := int(duration.Hours())
 		healingRate := g.Player.GetCharSheet().GetDerivedStat(d100.HealingRate)
 		healedPoints := hours * healingRate
@@ -288,6 +288,11 @@ func (g *GameState) OpenWizardMenu() {
 			},
 		},
 		{
+			Name:       "Test Team Spawn",
+			Action:     g.TestTeamSpawn,
+			CloseMenus: true,
+		},
+		{
 			Name: "All the lockpicks",
 			Action: func() {
 				for i := 0; i < 200; i++ {
@@ -392,11 +397,37 @@ func (g *GameState) OpenWizardMenu() {
 }
 
 func (g *GameState) RunScriptByName(scriptName string) {
-	g.scriptRunner.RunScriptByName(path.Join(g.config.DataRootDir, "maps"), g.currentMap().GetName(), scriptName, g.getScriptFuncs())
+	if fxtools.LooksLikeAFunction(scriptName) {
+		name, args := fxtools.GetNameAndArgs(scriptName)
+		switch name {
+		case "LeaveMapAt":
+			actorName := args.Get(0)
+			locationName := args.Get(1)
+			running := false
+			if len(args) > 2 {
+				running = args.GetBool(2)
+			}
+			actor := g.actorWithName(actorName)
+			leaveMapAtLocation := g.NewScriptLeaveMapAtLocation(actor, running, locationName)
+			g.RunScript(leaveMapAtLocation)
+		}
+	} else {
+		mapName := g.currentMap().GetName()
+
+		g.RunScriptOnMap(mapName, scriptName)
+	}
+}
+
+func (g *GameState) RunScriptOnMap(mapName string, scriptName string) {
+	pathToMaps := path.Join(g.config.DataRootDir, "maps")
+	g.ExecuteOnMap(mapName, func() {
+		g.scriptRunner.RunScriptByName(pathToMaps, mapName, scriptName, g.GetScriptFuncs())
+	})
 }
 
 func (g *GameState) RunScript(script ActionScript) {
-	g.scriptRunner.RunScript(g.currentMap().GetName(), script)
+	mapName := g.currentMap().GetName()
+	g.scriptRunner.RunScript(mapName, script)
 }
 
 func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource, isTerminal bool) {
@@ -405,7 +436,7 @@ func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource,
 		g.msg(foundation.HiLite("%s has nothing to say.", partner.Name()))
 		return
 	}
-	conversation, err := ParseConversation(conversationFilename, g.getScriptFuncs())
+	conversation, err := ParseConversation(conversationFilename, g.GetScriptFuncs())
 	if err != nil {
 		panic(err)
 		return
@@ -533,7 +564,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 					}
 
 				default: // parse as generic expression and effect
-					expr, parseErr := govaluate.NewEvaluableExpressionWithFunctions(effect, g.getScriptFuncs())
+					expr, parseErr := govaluate.NewEvaluableExpressionWithFunctions(effect, g.GetScriptFuncs())
 					if parseErr != nil {
 						panic(parseErr)
 					}

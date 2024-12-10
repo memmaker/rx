@@ -1,7 +1,7 @@
 package console
 
 import (
-	"RogueUI/foundation"
+    "contractor/foundation"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
 	"strings"

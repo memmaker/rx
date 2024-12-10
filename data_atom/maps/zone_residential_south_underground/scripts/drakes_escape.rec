@@ -1,0 +1,25 @@
+%rec: definitions
+
+var: DRAKE
+set: ActorWithName('drake_gallows')
+
+%rec: outcomes
+
+if: IsActorDead(DRAKE)
+do: AddChatter(DRAKE, 'No! No! No!')
+
+if: IsActorAtNamedLocation(DRAKE, 'secret_ladder')
+do: ActorTransition(DRAKE)
+do: RunScriptOnMap('zone_residential_south', 'drakes_escape')
+
+%rec: cancel
+
+if: true
+do: AddChatter(DRAKE, 'HUH?')
+
+%rec: frames
+
+if: IsActorAbleToReach(DRAKE, 'secret_ladder')
+do: AddChatter(DRAKE, 'About time!')
+do: SetFlag('drake_freed')
+do: SetGoalMoveToNamedLocation(DRAKE, 'secret_ladder', true)

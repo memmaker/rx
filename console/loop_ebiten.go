@@ -3,7 +3,8 @@
 package console
 
 import (
-	"RogueUI/tcell_ebiten"
+	"contractor/foundation"
+	"contractor/tcell_ebiten"
 	"github.com/gdamore/tcell/v2"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -21,22 +22,23 @@ func NewEbitenUI() UILifeCycler {
 
 type EbitenUI struct{}
 
-func (u EbitenUI) StartGameLoop(application *cview.Application, onScreenReady func()) {
+func (u EbitenUI) StartGameLoop(config *foundation.Configuration, application *cview.Application, onScreenReady func()) {
 	ebiten.SetWindowSize(1280, 800)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("CONTRACTOR")
 	ebiten.SetWindowDecorated(true)
 	ebiten.SetWindowFloating(false)
 
-	//mainFont, closeMainFont := mustLoadFontByName("Monofonto-Regular")
-	mainFont, closeMainFont := mustLoadFontByName("PerfectDOSVGA437Unicode")
-	fallbackFont, closeFallbackFont := mustLoadFontByName("MesloLGS NF Regular")
+	mainFont, closeMainFont := mustLoadFontByName(config.MainFontName)
+	//mainFont, closeMainFont := mustLoadFontByName("PerfectDOSVGA437Unicode")
+	fallbackFont, closeFallbackFont := mustLoadFontByName(config.FallbackFontName)
 	defer closeMainFont()
 	defer closeFallbackFont()
 
 	gs := tcell_ebiten.NewGameScreen(text.NewGoXFace(mainFont))
+	gs.Clear()
 	gs.SetFallbackFont(text.NewGoXFace(fallbackFont))
-	gs.ForcedFallbacks([]rune{'▁', '▂', '▃', '▄', '▅', '▆', '▇', '∞', '↨', '►', 9664, 9668, '☙', '─', '│', '┌', '┐', '└', '┘', '├', '┤', '┬', '┴', '┼', '╭', '╮', '╯', '╰'})
+	gs.ForcedFallbacks([]rune(config.ForcedFallbackRunes))
 	gs.Init()
 	defer gs.Fini()
 
@@ -73,7 +75,7 @@ func (u EbitenUI) QuitGame(application *cview.Application) {
 }
 
 func mustLoadFontByName(fontName string) (fontFace font.Face, close func() error) {
-	filename := path.Join("data_atom", fontName+".ttf")
+	filename := path.Join("data_atom", "glfonts", fontName+".ttf")
 	file := fxtools.MustOpen(filename)
 	//defer file.Close()
 	tt, err := opentype.ParseReaderAt(file)

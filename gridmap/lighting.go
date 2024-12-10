@@ -281,7 +281,7 @@ type MapLighter[ActorType interface {
 	MapActor
 }, ItemType interface {
 	comparable
-	MapObject
+	MapItem
 }, ObjectType interface {
 	comparable
 	MapObjectWithProperties[ActorType]

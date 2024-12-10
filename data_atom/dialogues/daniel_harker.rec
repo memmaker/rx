@@ -5,20 +5,20 @@
 
 # When the game starts, Daniel is the Ripperdoc and Drake is locked away.
 
-cond: HasFlag('starter(money_collected)') && !HasFlag('Killed(daniel_harker)') && !HasFlag('Killed(drake_gallows)')
-goto: BackAfterCollectingMoney
+cond: HasFlag('TalkedTo(drake_gallows)') && !HasFlag('drake_freed')
+goto: TalkedToDrake
+
+cond: HasFlag('drake_freed')
+goto: FreedDrake
 
 cond: HasFlag('Killed(drake_gallows)')
-goto: DanielAfterKillingDrake
-
-cond: HasFlag('Killed(daniel_harker)')
-goto: DrakeAfterKillingDaniel
+goto: KilledDrake
 
 cond: HasFlag('JobAccepted(starter)')
-goto: DanielAfterJobAccepted
+goto: MoneyCollection
 
 cond: true
-goto: DanielIsRipperdoc
+goto: DefaultIntroduction
 
 %rec: Nodes
 
@@ -26,24 +26,62 @@ name: End
 npc: So long.
 effect: EndConversation
 
-name: BackAfterCollectingMoney
-npc: So, you are back. What do you want?
+name: TalkedToDrake
+npc: So, you found my old friend and business partner?
++ I am not sure what you want to achieve by sticking your nose into our business.
++ Care to explain yourself?
 #
-o_text: I need some medical supplies.
-o_goto: MedicalSupplies
+o_text: Why is he locked away?
+o_goto: WhyIsDrakeLockedAway
 #
-o_text: I need some cyberware.
-o_goto: Cyberware
+o_text: I can help you deal with him.
+o_goto: OfferContract
 #
-o_text: I need to know where I can find Jacob.
-o_cond: !HasFlag('LocationKnown(jacobs_home)')
-o_goto: JacobLocation
-#
-o_text: I am fine.
-o_goto: End
+o_text: No.
+o_goto: DefaultIntroduction
 
-name: DanielIsRipperdoc
-npc: I am Daniel Harker, the Ripperdoc. What can I do for you?
+name: WhyIsDrakeLockedAway
+npc: I had to protect myself. I found evidence that he was on the verge of ratting me out to Eschaton.
++ I couldn't let that happen. Do you know what they do to people like me?
++ So I locked him away. I had no other choice.
+#
+effect: ReturnToPreviousNode
+
+name: OfferContract
+npc: No, I don't think that would be a good idea. I will handle it myself.
+effect: ReturnToPreviousNode
+
+name: FreedDrake
+npc: We had a break-in last night.
++ Did you have anything to do with that?
+#
+o_text: Yes. I freed Drake.
+o_goto: FreedDrakeYes
+#
+o_text: No.
+o_goto: FreedDrakeNo
+
+name: FreedDrakeYes
+npc: You dumbass! You have no idea what you have done.
++ Care to explain yourself?
+#
+o_text: Why was he locked away?
+o_goto: WhyIsDrakeLockedAway
+#
+o_text: I can help you deal with him.
+o_goto: OfferContract
+#
+o_text: No.
+o_goto: DefaultIntroduction
+
+name: KilledDrake
+npc: I do miss Drake. His demise is a real tragedy.
++ He was a risk though. The world is a safer place without him.
+#
+effect: GotoNode('DefaultIntroduction')
+
+name: DefaultIntroduction
+npc: What can I do for you?
 #
 o_text: I need some medical supplies.
 o_goto: MedicalSupplies
@@ -58,6 +96,7 @@ o_goto: JacobQuestion
 o_text: Nothing.
 o_goto: End
 
+
 name: MedicalSupplies
 npc: I am sorry, but I am out of supplies. We're restocking soon.
 effect: ReturnToPreviousNode
@@ -71,7 +110,7 @@ o_text: What do you have?
 o_effect: StartCyberware
 #
 o_text: I will come back later.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: JacobQuestion
 npc: Yes, I know Jacob. What's your business with him?
@@ -84,14 +123,14 @@ o_text: What is your relationship with him?
 o_goto: JacobRelationship
 #
 o_text: None of your business.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: JacobMoney
 npc: I see. I am sorry, but I don't have the money right now.
 + I will have it in a few days.
 #
 o_text: I will come back later.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 #
 o_text: I insist. I will take the money from you now.
 o_goto: JacobMoneyNow
@@ -110,13 +149,13 @@ effect: SetFlag('starter(money_collected)')
 effect: SetFlag('Angered(daniel_harker)')
 #
 o_text: Thanks.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: JacobMoneyWorkOut
 npc: I could give a discount on some of my services, if you keep that bastard off my back.
 #
 o_text: I will think about it.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 #
 o_text: We have a deal.
 o_goto: AcceptDiscount
@@ -136,7 +175,7 @@ effect: SetFlag('starter(money_collected)')
 effect: SetFlag('WorkFor(daniel_harker)')
 #
 o_text: Thanks.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 
 name: AcceptDiscount
@@ -146,19 +185,19 @@ effect: SetFlag('Discount(daniel_harker)')
 effect: SetFlag('WorkFor(daniel_harker)')
 #
 o_text: You're welcome.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: WantMore
 npc: I am sorry, but I can't give you more than that. I have a wife and kids to feed.
 #
 o_text: I will come back later.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 #
-o_text: My means of violence are not limited by morality. I want $1000 on this table in 5 seconds.
+o_text: My means of violence are not limited by morality. I want 1000 Sat on this table in 5 seconds.
 o_cond: HasFlag('PlayerKillCount')
 o_goto: JacobDoubleThreat
 #
-o_text: I can see a list of solvent clients on your terminal. I am sure you can pay me $1000 right now.
+o_text: I can see a list of solvent clients on your terminal. I am sure you can pay me 1000 sat right now.
 o_cond: GetStat('Perception') > 6
 o_goto: JacobTerminalThreat
 
@@ -170,7 +209,7 @@ effect: SetFlag('starter(money_collected)')
 effect: SetFlag('Angered(daniel_harker)')
 #
 o_text: Nice doing business with you.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: JacobTerminalThreat
 npc: I see you are a smart one. Let's just keep this between us.
@@ -180,7 +219,7 @@ effect: SetFlag('starter(money_collected)')
 effect: SetFlag('Angered(daniel_harker)')
 #
 o_text: Thanks.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: JacobRelationship
 npc: I know him from the old days, his full name is Jacob Thorne.
@@ -188,7 +227,7 @@ npc: I know him from the old days, his full name is Jacob Thorne.
 + He is a dangerous criminal. Better stay away from him.
 #
 o_text: Thanks.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 #
 o_text: I will take care of him.
 o_goto: JacobKill
@@ -201,13 +240,13 @@ npc: That may be a solution.. Usually, I don't condone violence, but in this cas
 + I can offer you a discount on my services if you take care of him.
 #
 o_text: I will think about it.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 #
 o_text: We have a deal.
 o_goto: AcceptKillJacob
 #
 o_text: I can't do that.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: AcceptKillJacob
 npc: Good luck. You will need it.
@@ -216,7 +255,7 @@ effect: SetFlag('WorkFor(daniel_harker)')
 effect: SetFlag('LocationKnown(jacobs_home)')
 #
 o_text: Thanks.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
 name: JacobLocation
 npc: He lives in a small hut in the woods. You can't miss it.
@@ -224,26 +263,9 @@ npc: He lives in a small hut in the woods. You can't miss it.
 effect: SetFlag('LocationKnown(jacobs_home)')
 #
 o_text: Thanks.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 
-name: DanielAfterKillingDrake
-npc: Thanks for taking care of my little problem.
-+ What can I do for you?
-#
-o_text: I need some medical supplies.
-o_goto: MedicalSupplies
-#
-o_text: I need some cyberware.
-o_goto: Cyberware
-#
-o_text: Do you know a guy named 'Jacob'?
-o_cond: HasFlag('JobRead(starter)')
-o_goto: JacobQuestion
-#
-o_text: Nothing.
-o_goto: End
-
-name: DanielAfterJobAccepted
+name: MoneyCollection
 npc: (He looks a bit nervous.)
 + I'll take a wild guess and say you are here for the money.
 #
@@ -251,5 +273,5 @@ o_text: Yes, I am.
 o_goto: JacobMoney
 #
 o_text: No, I am not.
-o_goto: DanielIsRipperdoc
+o_goto: DefaultIntroduction
 

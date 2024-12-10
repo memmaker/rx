@@ -1,0 +1,23 @@
+%rec: default
+
+Category: Transition
+Description: CHANGEME
+Location: street_to_ebi
+TargetMap: hq_ebi
+TargetLocation: street_to_corporate
+Position: (79,8)
+
+Category: Transition
+Description: a street
+Location: street_to_commerce
+TargetMap: zone_commerce
+TargetLocation: street_to_corporate
+Position: (45,20)
+
+Category: Transition
+Description: CHANGEME
+Location: street_to_bat
+TargetMap: hq_bat
+TargetLocation: street_to_corporate
+Position: (0,8)
+

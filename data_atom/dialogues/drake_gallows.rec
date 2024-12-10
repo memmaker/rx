@@ -5,8 +5,11 @@
 
 # When the game starts, Daniel is the Ripperdoc and Drake is locked away.
 
-cond: !HasFlag('drake_freed')
+cond: !HasFlag('drake_promised_freedom')
 goto: FoundInCellar
+
+cond: HasFlag('Killed(daniel_harker)') && HasFlag('drake_promised_freedom')
+goto: DrakeAfterKillingDaniel
 
 cond: true
 goto: JustLeaving
@@ -18,32 +21,32 @@ npc: I don't have time for this.
 effect: EndWithChatter
 
 name: EndNoPayment
-npc: Thank you! For what it's worth, there is a stash of money in the operating room.
-+ Maybe you can find a way to get it.
+npc: Thank you! For what it's worth, there is a small stash in the operating room.
++ We both had a key, here is mine.
 #
-effect: SetFlag('drake_freed')
+effect: GiveItemToPlayer('doc_stash_key')
 effect: SetFlag('drake_freed_without_payment')
-effect: RunScriptLeave('drake_gallows', true)
 effect: EndWithChatter
 
+
 name: FoundInCellar
-npc: Damn, now who might you be?
+npc: Damn, get me out of here already.
 #
-o_text: I am here to get you out.
+o_text: Sure thing.
 o_goto: FreeDrake
 #
-o_text: Come with me if you want to live.
-o_goto: FreeDrake
-#
-o_text: You are in no position to ask questions. So, who are you?
+o_text: So, who are you?
 o_goto: WhoAreYou
 #
-o_text: I just wanted you to know that you are not forgotten. I am your executioner.
-o_goto: KillDrake
+o_text: Do you know a guy named 'Jacob'?
+o_cond: HasFlag('JobRead(starter)')
+o_goto: DrakeJacobQuestion
+#
+o_text: I am your executioner.
+o_goto: EndKillDrake
 
 name: FreeDrake
 npc: You are busting me out? This must be my lucky day.
-effect: SetFlag('Freed(drake_gallows)')
 #
 o_text: You are welcome.
 o_goto: EndNoPayment
@@ -52,8 +55,8 @@ o_text: Nothing is free. I need something from you.
 o_goto: NothingIsFree
 
 name: WhoAreYou
-npc: I am Drake Gallows, the Ripperdoc of this hospital.
-+ This bastard locked me away in my own cellar.
+npc: I am Drake Gallows, I work here.
++ Daniel, the bastard, locked me away in the cellar.
 #
 o_text: Stay calm. I will get you out.
 o_goto: FreeDrake
@@ -61,67 +64,89 @@ o_goto: FreeDrake
 o_text: So you have no idea why he did this?
 o_goto: WhyDidHeDoThis
 #
-o_text: Rightfully so. I will close the door behind me.
-o_goto: LeaveDrake
+o_text: I have no running contract involving you. I am leaving.
+o_goto: NoContract
 #
 o_text: I just don't get why he didn't kill you. I will correct this mistake right here.
-o_goto: KillDrake
+o_goto: EndKillDrake
 
 name: WhyDidHeDoThis
 npc: I sure do.
-+ This corporate bastard is here to ensure the dominance of Eschaton Biotech.
-+ He was sent to silence me because I provide independent medical support.
++ We are running a clinic for augmented patients.
++ As you might know from the press, these patients are depending on regular
++ medication with 'Meld'. This stuff is hard to acquire without support from the
++ big corporations. So Daniel took a shortcut and found some local gangsters that could provide the stuff.
++ When I found out I told him he has to stop making shady deals in back alleys.
++ He is putting our joint venture at risk and I won't be silent about it anymore.
++ That's when he flipped and forced me down here at gun point.
 #
 effect: ReturnToPreviousNode
 
 name: NothingIsFree
 npc: Figures. So what is it?
 #
-o_text: You owe me $1000 for my troubles. I'll fetch it in a few days.
-o_goto: ThousandCash
+o_text: You owe me 1000 sat for my troubles.
+o_goto: WantCash
 #
 o_text: You owe me a favor. You'll see me again.
-o_goto: Favor
+o_goto: EndWithFavor
 
-name: ThousandCash
-npc: Deal. I am leaving now.
+name: WantCash
+npc: Listen, I obviously don't run this hospital anymore,
++ but I got 200 sat right here with me.
++ It's all yours if you just open that damned door.
 #
-effect: SetFlag('drake_freed')
-effect: SetFlag('drake_owes_cash')
-effect: RunScriptLeave('drake_gallows', true)
+o_text: Fine, we have a deal.
+o_goto: EndWithPayment
+#
+o_text: Let's just say you owe me a favor then.
+o_goto: EndWithFavor
+#
+o_text: I'll think about it.
+o_goto: FoundInCellar
+
+
+name: EndWithPayment
+npc: Fine. I am leaving now.
+#
+effect: SetFlag('drake_promised_freedom')
+effect: GiveItemToPlayer('gold', 200)
 effect: EndWithChatter
 
 
-name: Favor
+name: EndWithFavor
 npc: Guess I have no choice. I am leaving then.
 #
-effect: SetFlag('drake_freed')
+effect: SetFlag('drake_promised_freedom')
 effect: SetFlag('drake_owes_favor')
-effect: RunScriptLeave('drake_gallows', true)
 effect: EndWithChatter
 
-name: KillDrake
+name: EndKillDrake
 npc: What? Why?
 #
 effect: StartCombat
 
-name: LeaveDrake
+name: NoContract
+npc: So, you are for hire? I have a really simple job for you right now.
+#
+o_text: I am listening.
+o_goto: WantCash
+#
+o_text: I am not interested.
+o_goto: EndLeaveDrake
+
+name: EndLeaveDrake
 npc: (Drake sneers, his voice is cold.)
-npc: So, you’re just going to leave me here to rot, huh?
++ So, you’re just going to leave me here to rot, huh?
 #
-o_text: You deserve it. Enjoy the solitude.
-o_goto: JustLeaving
-#
-o_text: Maybe next time, choomba.
-o_goto: JustLeaving
-#
-o_text: It’s nothing personal. You’re not my problem.
-o_goto: JustLeaving
+effect: EndWithChatter
+
+
+### After Daniel is killed ###
 
 
 name: DrakeAfterKillingDaniel
-npc: (He looks at you with joy.)
-+ Thank you for freeing me. What can I do for you?
+npc: What can I do for you?
 #
 o_text: I need some medical supplies.
 o_goto: DrakeMedicalSupplies
@@ -137,10 +162,10 @@ o_text: Nothing.
 o_goto: End
 
 name: DrakeJacobQuestion
-npc: I have no idea who you are talking about.
+npc: No, not really.
++ Wait, I think Daniel mentioned him once.
 #
-o_text: Alright.
-o_goto: DrakeAfterKillingDaniel
+effect: ReturnToPreviousNode
 
 name: DrakeCyberware
 npc: (Drake scratches the back of his neck, looking uneasy.)

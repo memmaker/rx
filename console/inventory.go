@@ -1,7 +1,7 @@
 package console
 
 import (
-	"RogueUI/foundation"
+    "contractor/foundation"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
@@ -179,7 +179,7 @@ func (i *TextInventory) SetItems(invItem []foundation.Item) {
 func (i *TextInventory) updateListBounds() {
 	labels := make([]fxtools.TableRow, len(i.items))
 	for lineIndex, invItem := range i.items {
-		namePart := invItem.InventoryNameWithColorsAndShortcut(textiles.RGBAToFgColorCode(i.lineColor(invItem.Category())))
+		namePart := invItem.InventoryNameWithColorsAndShortcut(textiles.RGBAToFgColorCode(i.lineColor(invItem.GetCategory())))
 		weightPart := fmt.Sprintf("[#00FF00]%d[-]lbs", invItem.GetCarryWeight())
 		row := fxtools.NewTableRow(namePart, weightPart)
 		labels[lineIndex] = row

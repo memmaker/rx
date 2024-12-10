@@ -9,7 +9,7 @@ import (
 type ObjectForUI interface {
 	GetCategory() ObjectCategory
 	Position() geometry.Point
-	Icon() textiles.TextIcon
+	GetIcon() textiles.TextIcon
 }
 type ObjectCategory int
 

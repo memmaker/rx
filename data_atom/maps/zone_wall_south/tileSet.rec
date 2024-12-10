@@ -1,0 +1,162 @@
+%rec: default
+
+Name: sidewalk
+Char: ·
+Foreground: dark_gray_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: a street sign (transition)
+Char: ≤
+Foreground: light_blue_3
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: dome interior walls
+Char: █
+Foreground: beige_2
+Background: beige_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "The golden cage"
+Char: =
+Foreground: steel_blue_10
+Background: beige_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "Sic gorgiamus allos subjectatos nunc"
+Char: =
+Foreground: red_10
+Background: beige_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "I want to eat the skies"
+Char: =
+Foreground: green_5
+Background: beige_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "Fuck the corps!"
+Char: =
+Foreground: red_10
+Background: beige_2
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: air filtering tubes
+Char: ╟
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 16
+
+Name: air filtering tubes
+Char: ╫
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 16
+
+Name: air filtering tubes
+Char: ╢
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: true
+Flags: 16
+
+Name: wires and tubing
+Char: {
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: big machine
+Char: Φ
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: wires and tubing
+Char: }
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: dome exterior wall
+Char:  
+Foreground: light_blue_3
+Background: light_blue_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "The Price of Privilege"
+Char: =
+Foreground: red_10
+Background: light_blue_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "S+G+J"
+Char: =
+Foreground: neon_purple_1
+Background: light_blue_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: wasteland
+Char: ·
+Foreground: tan_12
+Background: tan_10
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: "Days: ///// ////."
+Char: =
+Foreground: black
+Background: light_blue_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: "..truths to be self-evident, that all men are created equal.."
+Char: =
+Foreground: black
+Background: light_blue_3
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+

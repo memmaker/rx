@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
+	"path"
 	"slices"
 	"strings"
 	"time"
@@ -23,6 +24,13 @@ const (
 
 	Everyday
 )
+
+func (d DayOfWeek) DayBefore() DayOfWeek {
+	if d == Sunday {
+		return Saturday
+	}
+	return d - 1
+}
 
 func WeekdayFromString(s string) DayOfWeek {
 	switch strings.ToLower(s) {
@@ -49,9 +57,11 @@ func WeekdayFromString(s string) DayOfWeek {
 type TimeSlot struct {
 	Day                DayOfWeek
 	Time               time.Time
+	MapName            string
 	Location           string
 	ActionFormatString string
 	ObservationFlag    string
+	UseTransition      string
 }
 
 func (s TimeSlot) Description() string {
@@ -63,9 +73,9 @@ type SlotID struct {
 	Index int
 }
 type Schedule struct {
-	MapName    string
 	Slots      map[DayOfWeek][]TimeSlot
 	LastSlotID SlotID
+	SourceFile string
 }
 
 func clockAsSeconds(t time.Time) int {
@@ -89,8 +99,30 @@ func (s *Schedule) MoveToNextTimeSlot(now time.Time) (TimeSlot, bool) {
 		lastSlotID = s.LastSlotID.Index
 	}
 
+	lastSlot := allSlots[len(allSlots)-1] // first in time
+
+	if clockAsSeconds(lastSlot.Time) > clockAsSeconds(now) {
+		var slotsBefore []TimeSlot
+		var dayBefore DayOfWeek
+		for len(slotsBefore) == 0 {
+			dayBefore = day.DayBefore()
+			slotsBefore = s.slotsForDay(dayBefore)
+		}
+		if s.LastSlotID.Day == dayBefore {
+			lastSlotID = s.LastSlotID.Index
+		}
+
+		if 0 < lastSlotID || lastSlotID == -1 {
+			// last slot of the day before
+			lastSlot = slotsBefore[0]
+			s.LastSlotID = SlotID{Day: dayBefore, Index: 0}
+			return lastSlot, true
+		}
+		return TimeSlot{}, false
+	}
+
 	for index, slot := range allSlots {
-		if clockAsSeconds(slot.Time) < clockAsSeconds(now) && (index < lastSlotID || lastSlotID == -1) {
+		if clockAsSeconds(slot.Time) <= clockAsSeconds(now) && (index < lastSlotID || lastSlotID == -1) {
 			s.LastSlotID = SlotID{Day: day, Index: index}
 			return slot, true
 		}
@@ -124,22 +156,20 @@ func (s *Schedule) CurrentTimeSlot() TimeSlot {
 }
 
 func (s *Schedule) String() string {
-	return fmt.Sprintf("%s (%d)", s.MapName, len(s.Slots))
+	return fmt.Sprintf("%s (%d)", s.SourceFile, len(s.Slots))
 }
 
 func NewScheduleFromFile(filename string) *Schedule {
 	schedule := &Schedule{
-		MapName:    filename,
+		SourceFile: path.Base(filename),
 		Slots:      make(map[DayOfWeek][]TimeSlot),
 		LastSlotID: SlotID{Index: -1},
 	}
 	file := fxtools.MustOpen(filename)
 	defer file.Close()
-	records := recfile.ReadMulti(file)
-	meta := records["meta"][0]
+	records, _ := recfile.ReadMulti(file)
 	slots := records["slots"]
 
-	schedule.MapName = meta.FindValueForKeyIgnoreCase("map")
 	for _, slot := range slots {
 		newSlot := NewTimeSlotFromRecord(slot)
 		schedule.Slots[newSlot.Day] = append(schedule.Slots[newSlot.Day], newSlot)
@@ -158,6 +188,10 @@ func NewTimeSlotFromRecord(slot recfile.Record) TimeSlot {
 			timeSlot.Time, _ = time.Parse("15:04", field.Value)
 		case "location":
 			timeSlot.Location = field.Value
+		case "map":
+			timeSlot.MapName = field.Value
+		case "transition":
+			timeSlot.UseTransition = field.Value
 		case "description":
 			timeSlot.ActionFormatString = field.Value
 		case "observation_flag":

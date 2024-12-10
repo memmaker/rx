@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -52,8 +52,8 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			charSheet.SetStat(d100.Perception, field.AsInt())
 		case "endurance":
 			charSheet.SetStat(d100.Endurance, field.AsInt())
-		case "charisma":
-			charSheet.SetStat(d100.Charisma, field.AsInt())
+		case "cool":
+			charSheet.SetStat(d100.Cool, field.AsInt())
 		case "intelligence":
 			charSheet.SetStat(d100.Intelligence, field.AsInt())
 		case "agility":
@@ -77,20 +77,20 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		case "fashion_vendor_style":
 			fashionVendorStyle = foundation.FashionStyleFromString(field.Value)
 		case "aggressive":
-			actor.isAggressive = field.AsBool()
+			actor.Aggressive = field.AsBool()
 		case "guarding_zone":
 			actor.GuardingZone = field.Value
 		case "position":
 			pos, _ := geometry.NewPointFromEncodedString(field.Value)
 			actor.SetPosition(pos)
 		case "audio":
-			actor.audioBaseName = field.Value
+			actor.AudioBaseName = field.Value
 		case "dialogue":
 			actor.SetDialogueFile(field.Value)
 		case "chatter":
 			actor.SetChatterFile(field.Value)
 		case "faction":
-			actor.teamName = field.Value
+			actor.TeamName = field.Value
 		case "flags":
 			for _, mFlag := range field.AsList("|") {
 				flags.Set(foundation.ActorFlagFromString(mFlag.Value))
@@ -124,7 +124,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	charSheet.HealAPAndHPCompletely()
 
 	if actor.HasFlag(foundation.FlagZombie) {
-		actor.isAggressive = true
+		actor.Aggressive = true
 	}
 
 	actor.SetCharSheet(charSheet)
@@ -137,13 +137,13 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		if item != nil {
 			actor.GetInventory().AddItem(item)
 			if item.IsArmor() {
-				actor.GetEquipment().Equip(item)
+				actor.GetInventory().Equip(item)
 			}
 		}
 	}
 
 	if len(vendorInv) > 0 {
-		actor.vendorInv = NewInventory(40, actor.Position)
+		actor.VendorInv = NewInventory(40)
 		for _, itemName := range vendorInv {
 			item := newItemFromString(itemName)
 			if item != nil {
@@ -171,11 +171,15 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	}
 
 	if fashionVendorStyle != -2 {
-		actor.vendorInv = NewInventory(40, actor.Position)
+		actor.VendorInv = NewInventory(40)
 		actor.GetVendorInventory().AddItems(newFashionInventory(fashionVendorStyle))
 	}
 
-	actor.attachHooksToActor()
+	actor.secondaryInit()
+
+	if actor.HasFlag(foundation.FlagSpawnDead) {
+		actor.Kill()
+	}
 
 	return actor
 }

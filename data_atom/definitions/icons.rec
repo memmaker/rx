@@ -436,3 +436,95 @@ Char: ░
 Fg: steel_blue_10
 Bg: light_blue_16
 
+Char: ÷
+Fg: tan_2
+Bg: 
+
+Char: ÷
+Fg: light_pink_1
+Bg: 
+
+Char: ÷
+Fg: teal_1
+Bg: 
+
+Char: ÷
+Fg: neon_pink_2
+Bg: 
+
+Char: ÷
+Fg: neon_green_1
+Bg: 
+
+Char: ■
+Fg: teal_3
+Bg: light_blue_16
+
+Char: =
+Fg: light_blue
+Bg: 
+
+Char: =
+Fg: red_4
+Bg: 
+
+Char: =
+Fg: neon_green_1
+Bg: 
+
+Char: =
+Fg: neon_pink_2
+Bg: 
+
+Char: =
+Fg: steel_blue_10
+Bg: beige_2
+
+Char: =
+Fg: red_10
+Bg: beige_2
+
+Char: =
+Fg: green_5
+Bg: beige_2
+
+Char: ╟
+Fg: light_gray_5
+Bg: dark_gray_5
+
+Char: ╫
+Fg: light_gray_5
+Bg: dark_gray_5
+
+Char: ╢
+Fg: light_gray_5
+Bg: dark_gray_5
+
+Char: {
+Fg: light_gray_5
+Bg: dark_gray_5
+
+Char: Φ
+Fg: light_gray_5
+Bg: dark_gray_5
+
+Char: }
+Fg: light_gray_5
+Bg: dark_gray_5
+
+Char: =
+Fg: green_5
+Bg: light_gray_5
+
+Char: =
+Fg: yellow_1
+Bg: light_gray_5
+
+Char: =
+Fg: red_7
+Bg: light_gray_5
+
+Char: =
+Fg: neon_pink_3
+Bg: light_gray_5
+

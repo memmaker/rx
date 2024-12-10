@@ -29,7 +29,7 @@ func (n EquipSlot) IsArmorSlot() bool {
 const (
 	SlotNameNotEquippable EquipSlot = iota
 
-	// On Body & Items
+	// On Body & GetItems
 
 	SlotNameArmorTorso
 	SlotNameArmorHead

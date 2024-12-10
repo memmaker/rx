@@ -1,0 +1,62 @@
+A choice should only be provided for one of two reasons:
+1. Pure roleplaying reasons, eg. as flavor text.
+2. To provide a meaningful choice that affects the game world.
+
+We want different player types to have different options and outcomes.
+
+There should be interesting and different outcomes.
+
+Approaches (Skill locked):
+
+Soldier
+Scientist/Techie
+Sneaker
+Silver Tongue
+
+Moral Alignments:
+
+Good
+Indifferent
+Chaotic
+Codex bound
+Evil
+
+Case #1: The clinic
+
+Jacob Thorne is a drug dealer and is selling to Daniel Harker, who is an addict.
+
+Daniel is owing Jacob money.
+
+The local clinic is currently run by Daniel Harker and Drake Gallows.
+
+They need "Meld" to treat their patients.
+
+Meld is hard to acquire without support from the big corporations.
+
+Daniel took a shortcut and found some local gangsters that could provide the stuff.
+
+Drake has received an offer from Eschaton to rat out Daniel for a big reward.
+
+Daniel found the offer and locked Drake away.
+
+NPCs:
+= Jacob Thorne
+Outcomes:
+ - He gets his money - More contracts from him
+ - He doesn't get his money - No more contracts from him
+ - He dies - No more contracts from him
+
+= Daniel Harker
+ - Can be Persuaded to join EBI
+ - Can be Persuaded to join BAT
+ - Can be Persuaded to stay independent
+ - Can be persuaded to free Drake
+ - Can be persuaded to kill Drake
+ - He hires the player to kill Jacob
+ - He hires the player to kill Drake
+ - He dies & Drake lives - Drake takes over the clinic and joins EBI
+ - He dies & Drake dies - The clinic is taken over by nameless EBIs
+
+
+= Drake Gallows
+

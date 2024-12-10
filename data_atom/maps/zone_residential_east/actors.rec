@@ -1,0 +1,84 @@
+%rec: default
+
+Name: gun_thug
+Icon: G
+Foreground: light_gray_2
+Description: Gun Thug
+LongDescription: 
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 50
+ActionPoints: 7
+ArmorClass: 13
+MeleeDamage: 1
+CarryWeight: 175
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 6
+Perception: 6
+Endurance: 5
+Cool: 3
+Intelligence: 4
+Agility: 5
+Luck: 6
+SkillBonusRangedCombat: 16
+SkillBonusMeleeCombat: 5
+SkillBonusMeleeCombat: 10
+DRNormal: 20
+DRLaser: 20
+DRFire: 10
+DRPlasma: 10
+DRElectrical: 30
+DREMP: 500
+DRExplosive: 20
+DRRadiation: 10
+DRPoison: 25
+SourceFile: 00000036.pro
+Position: (62,16)
+
+Name: gun_thug
+Icon: G
+Foreground: light_gray_2
+Description: Gun Thug
+LongDescription: 
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 50
+ActionPoints: 7
+ArmorClass: 13
+MeleeDamage: 1
+CarryWeight: 175
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 6
+Perception: 6
+Endurance: 5
+Cool: 3
+Intelligence: 4
+Agility: 5
+Luck: 6
+SkillBonusRangedCombat: 16
+SkillBonusMeleeCombat: 5
+SkillBonusMeleeCombat: 10
+DRNormal: 20
+DRLaser: 20
+DRFire: 10
+DRPlasma: 10
+DRElectrical: 30
+DREMP: 500
+DRExplosive: 20
+DRRadiation: 10
+DRPoison: 25
+SourceFile: 00000036.pro
+Position: (65,16)
+

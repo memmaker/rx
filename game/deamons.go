@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
+	"contractor/foundation"
 	"github.com/memmaker/go/fxtools"
 	"path"
 	"time"
@@ -24,6 +24,7 @@ func (g *GameState) enemyMovement(playerTimeSpent int) {
 
 		// IMPORTANT:
 		// Actions of enemies should never remove actors from the game directly
+		g.actorsComputed++
 		enemy.AddTimeEnergy(playerTimeSpent)
 		hasActions := true
 		for hasActions {
@@ -63,23 +64,9 @@ func (g *GameState) isPlayerStarving() bool {
 	return false
 }
 
-func (g *GameState) removeDeadAndApplyTurnCounters() {
-	if g.isPlayerStarving() {
-
-		g.Player.SetFlag(foundation.FlagStarving)
-		g.Player.GetFlags().Unset(foundation.FlagHunger)
-
-		if g.Player.HasActionPoints() {
-			g.Player.GetCharSheet().LooseActionPoints(1)
-		} else if g.Player.GetHitPoints() > 1 {
-			g.Player.GetCharSheet().TakeRawDamage(1)
-		}
-	} else if g.isPlayerHungry() {
-		g.Player.SetFlag(foundation.FlagHunger)
-		g.Player.GetFlags().Unset(foundation.FlagStarving)
-	}
-
-	allActorsOnThisMap := g.currentMap().Actors()
+func (g *GameState) applyTurnCounters() {
+	currentMap := g.currentMap()
+	allActorsOnThisMap := currentMap.Actors()
 	for i := len(allActorsOnThisMap) - 1; i >= 0; i-- {
 		actor := allActorsOnThisMap[i]
 		wornOff := actor.AfterTurn()
@@ -95,12 +82,34 @@ func (g *GameState) removeDeadAndApplyTurnCounters() {
 
 }
 
+func (g *GameState) applyPlayerHunger() {
+	if g.isPlayerStarving() {
+
+		g.Player.SetFlag(foundation.FlagStarving)
+		g.Player.GetFlags().Unset(foundation.FlagHunger)
+
+		if g.Player.HasActionPoints() {
+			g.Player.GetCharSheet().LooseActionPoints(1)
+		} else if g.Player.GetHitPoints() > 1 {
+			g.Player.GetCharSheet().TakeRawDamage(1)
+		}
+	} else if g.isPlayerHungry() {
+		g.Player.SetFlag(foundation.FlagHunger)
+		g.Player.GetFlags().Unset(foundation.FlagStarving)
+	}
+}
+
+// updateAllSchedules is called whenever time advances.
+// It will set a new goal from a schedule, if applicable.
+// It will also make an actor transition to another map, if applicable.
 func (g *GameState) updateAllSchedules() {
-	allActorsOnThisMap := g.currentMap().Actors()
+	gridmap := g.currentMap()
+	allActorsOnThisMap := gridmap.Actors()
+
 	for i := len(allActorsOnThisMap) - 1; i >= 0; i-- {
 		actor := allActorsOnThisMap[i]
 
-		if actor.schedule == nil || actor == g.Player {
+		if actor.Schedule == nil || actor == g.Player {
 			continue
 		}
 		// update scheduled actions
@@ -108,127 +117,28 @@ func (g *GameState) updateAllSchedules() {
 			return
 		}
 
-		// remove actors that are transitioning to another map via schedule
-		isAtScheduledLocation := g.isAtScheduledLocation(actor)
-		if !isAtScheduledLocation {
-			continue
-		}
-
-		if transition, isTransition := g.currentMap().GetTransitionAt(actor.Position()); isTransition && actor.HasFlag(foundation.FlagWantsToTransition) {
-			g.removeActorFromMap(g.currentMap(), actor, transition)
+		if transition, isTransition := gridmap.GetTransitionAt(actor.Position()); isTransition && actor.HasFlag(foundation.FlagWantsToTransition) {
+			g.actorTransition(gridmap, actor, transition)
 			actor.UnsetFlag(foundation.FlagWantsToTransition)
 			continue
 		}
 	}
-	// PROBLEM: We are missing those actors, that only decided to leave the map when the player already left.
-	for activeMap, actors := range g.allActorsInOtherActiveMaps() {
-		for _, actor := range actors {
-			if actor.schedule == nil {
-				continue
-			}
-
-			var currentSlot TimeSlot
-			if slot, move := actor.MoveToNextTimeSlot(g.gameTime.Time); move {
-				currentSlot = slot
-			} else {
-				currentSlot = actor.schedule.CurrentTimeSlot()
-			}
-
-			// check if this slot was more than 2 minute ago
-			if g.gameTime.Time.Sub(currentSlot.Time) <= 2*time.Minute {
-				continue
-			}
-
-			locationName := currentSlot.Location
-			location := activeMap.GetNamedLocation(locationName)
-			transition, isTransition := activeMap.GetTransitionAt(location)
-			if !isTransition {
-				actor.SetPosition(location)
-				continue
-			}
-
-			targetMap := transition.TargetMap
-
-			g.setScheduleFromMapName(actor, targetMap)
-			g.trySetGoalFromSchedule(actor)
-
-			if targetMap != g.currentMap().GetName() {
-				g.removeActorFromMap(activeMap, actor, transition)
-				continue
-			}
-
-			// actor wants to transition to the current map
-			// remove the actor from the outOfGame map
-			activeMap.RemoveActor(actor)
-
-			spawnPos := g.currentMap().GetNamedLocation(transition.TargetLocation)
-			g.currentMap().AddActorWithDisplacement(actor, spawnPos)
-		}
-	}
-	// check for schedules that would make an actor transition to another map
-	// this does not care about actor's that were already trying to transition
-	// to the current map, this is handled after map loading.
-	for actor, _ := range g.outOfGame {
-		if actor.schedule == nil {
-			continue
-		}
-
-		var currentSlot TimeSlot
-		if slot, move := actor.MoveToNextTimeSlot(g.gameTime.Time); move {
-			currentSlot = slot
-		} else {
-			currentSlot = actor.schedule.CurrentTimeSlot()
-		}
-
-		// check if this slot was more than 2 minute ago
-		if g.gameTime.Time.Sub(currentSlot.Time) <= 2*time.Minute {
-			continue
-		}
-
-		locationName := currentSlot.Location
-		location := g.currentMap().GetNamedLocation(locationName)
-		transition, isTransition := g.currentMap().GetTransitionAt(location)
-		if !isTransition {
-			actor.SetPosition(location)
-			continue
-		}
-
-		targetMap := transition.TargetMap
-
-		g.setScheduleFromMapName(actor, targetMap)
-
-		if targetMap != g.currentMap().GetName() {
-			// update target map and schedule
-			g.outOfGame[actor] = TimedTransition{
-				Destination: transition,
-				Time:        g.gameTime.Time,
-			}
-			continue
-		}
-
-		// actor wants to transition to the current map
-		// remove the actor from the outOfGame map
-		delete(g.outOfGame, actor)
-
-		spawnPos := g.currentMap().GetNamedLocation(transition.TargetLocation)
-		g.currentMap().AddActorWithDisplacement(actor, spawnPos)
-	}
 }
 
 func (g *GameState) isAtScheduledLocation(actor *Actor) bool {
-	if actor.schedule == nil {
+	if actor.Schedule == nil {
 		return false
 	}
-	location := actor.schedule.CurrentTimeSlot().Location
+	location := actor.Schedule.CurrentTimeSlot().Location
 	if location == "" {
 		return false
 	}
 	return actor.Position() == g.currentMap().GetNamedLocation(location)
 }
 
-func (g *GameState) setScheduleFromMapName(actor *Actor, mapName string) {
-	schedulePath := path.Join(g.config.DataRootDir, "maps", mapName, "schedules", actor.GetInternalName()+".rec")
+func (g *GameState) loadSchedule(actor *Actor) {
+	schedulePath := path.Join(g.config.DataRootDir, "schedules", actor.GetInternalName()+".rec")
 	if fxtools.FileExists(schedulePath) {
-		actor.schedule = NewScheduleFromFile(schedulePath)
+		actor.Schedule = NewScheduleFromFile(schedulePath)
 	}
 }

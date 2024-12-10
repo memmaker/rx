@@ -1,8 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 )
@@ -37,7 +37,7 @@ func (g *GameState) PlayerRangedAttack() {
 			g.endPlayerTurn(attackMode.TUCost)
 		})
 	} else {
-		g.ui.SelectTarget(g.getRangedChanceToHitForUI(combatMods), func(targetPos geometry.Point) {
+		g.ui.SelectTarget(g.getPlayerRangedChanceToHitForUI(combatMods), func(targetPos geometry.Point) {
 			if g.currentMap().IsActorAt(targetPos) {
 				target := g.currentMap().ActorAt(targetPos)
 				shotAnim := g.actorRangedAttack(g.Player, rangedWeapon, attackMode, target, d100.Body, combatMods)
@@ -54,7 +54,7 @@ func (g *GameState) PlayerRangedAttack() {
 }
 
 func (g *GameState) CanPlayerAttackAtRange() (*Weapon, bool, bool) {
-	mainHandItem, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
+	mainHandItem, hasWeapon := g.Player.GetInventory().GetEquippedWeapon()
 
 	if !hasWeapon && g.Player.HasPerk(d100.PerkQuickDraw) && g.Player.GetInventory().HasExactlyOneRangedWeapon() {
 		if !g.Player.HasActionPoints() {
@@ -62,7 +62,7 @@ func (g *GameState) CanPlayerAttackAtRange() (*Weapon, bool, bool) {
 			return nil, false, false
 		}
 		mainHandItem = g.Player.GetInventory().GetBestWeapon()
-		g.Player.GetEquipment().Equip(mainHandItem)
+		g.Player.GetInventory().Equip(mainHandItem)
 		g.Player.GetCharSheet().LooseActionPoints(1)
 		g.ui.UpdateStats()
 		g.msg(foundation.HiLite("You quickly equip your %s", mainHandItem.Name()))
@@ -133,7 +133,7 @@ func (g *GameState) PlayerQuickRangedAttack() {
 func (g *GameState) QuickThrow() {
 	enemies := g.playerVisibleActorsByDistance()
 	preselectedTarget := g.Player.Position()
-	equipment := g.Player.GetEquipment()
+	equipment := g.Player.GetInventory()
 	item, hasItem := equipment.GetMainHandItem()
 	if hasItem || !item.IsMissile() {
 		g.msg(foundation.Msg("You have no suitable item equipped"))
@@ -203,7 +203,7 @@ func (g *GameState) playerBackstab(defender *Actor) {
 	}
 }
 func (g *GameState) actorDisarm(attacker, victim *Actor) {
-	weaponTaken, hasWeapon := victim.GetEquipment().GetMainHandWeapon()
+	weaponTaken, hasWeapon := victim.GetInventory().GetEquippedWeapon()
 	if !hasWeapon {
 		g.msg(foundation.Msg("Target has no weapon equipped"))
 		return
@@ -221,7 +221,7 @@ func (g *GameState) actorDisarm(attacker, victim *Actor) {
 
 		victim.GetInventory().RemoveItem(weaponTaken)
 		attacker.GetInventory().AddItem(weaponTaken)
-		attacker.GetEquipment().Equip(weaponTaken)
+		attacker.GetInventory().Equip(weaponTaken)
 
 		if attacker == g.Player {
 			g.trySetHostile(victim, attacker)
@@ -272,7 +272,7 @@ func (g *GameState) playerMeleeAttackLocation(targetPos geometry.Point) {
 		objectAt := g.currentMap().ObjectAt(targetPos)
 		damageWithSource := g.getMeleeDamage(g.Player, 100, nil, d100.Body, nil)
 		var attackAudioCue string
-		if weapon, hasMeleeWeapon := g.Player.GetEquipment().GetMeleeWeapon(); hasMeleeWeapon {
+		if weapon, hasMeleeWeapon := g.Player.GetInventory().GetMeleeWeapon(); hasMeleeWeapon {
 			weapon.Degrade(1)
 			attackAudioCue = weapon.GetFireAudioCue(damageWithSource.TargetingMode)
 		} else {
@@ -295,7 +295,7 @@ func (g *GameState) playerMeleeAttack(defender *Actor) {
 		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	}
 
-	mainhandItem, hasWeapon := g.Player.GetEquipment().GetMainHandWeapon()
+	mainhandItem, hasWeapon := g.Player.GetInventory().GetEquippedWeapon()
 	if hasWeapon && !mainhandItem.HasAmmo() && mainhandItem.IsMeleeWeapon() {
 		g.ui.PlayCue(mainhandItem.GetOutOfAmmoAudioCue())
 		g.msg(foundation.Msg("You have no ammo"))
@@ -316,7 +316,7 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100
 	}
 	var afterAttackAnimations []foundation.Animation
 
-	mainHandItem, hasMeleeWeapon := attacker.GetEquipment().GetMeleeWeapon()
+	mainHandItem, hasMeleeWeapon := attacker.GetInventory().GetMeleeWeapon()
 
 	chanceToHit, _ := g.getMeleeChanceToHit(attacker, mainHandItem, defender, mods.ChanceToHitMods)
 	chanceToHit += part.AimPenalty() / 2 // melee attacks are more precise
@@ -367,7 +367,7 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attac
 	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
 
 	// Generate the attack animation based on the weapon and damage type
-	attackAnimations, isProjectileAnimation := g.getWeaponAttackAnim(attacker, defender.Position(), weaponItem, attackMode, bulletsSpent.StackSize())
+	attackAnimations, isProjectileAnimation := g.getWeaponAttackAnim(attacker, defender.Position(), weaponItem, attackMode, bulletsSpent.GetStackSize())
 
 	// Calculate the chance to hit
 	baseChanceToHit, _ := g.getRangedChanceToHit(attacker, weaponItem, defender, bulletsSpent, situationalMods.ChanceToHitMods)
@@ -397,7 +397,7 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attac
 	attacker.GetFlags().Unset(foundation.FlagConcentratedAiming)
 
 	// apply weapon degradation by shooting
-	baseDegrade := 0.1 * float64(min(5, bulletsSpent.StackSize()))
+	baseDegrade := 0.1 * float64(min(5, bulletsSpent.GetStackSize()))
 	weaponItem.Degrade(baseDegrade)
 
 	// Return animations based on whether there is a projectile or not
@@ -425,7 +425,7 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Weapo
 
 	bulletsSpent, weapon := g.removeBulletsFromWeapon(weaponItem, attackMode)
 
-	onAttackAnims, isProjectileAnimation := g.getWeaponAttackAnim(attacker, targetPos, weaponItem, attackMode, bulletsSpent.StackSize())
+	onAttackAnims, isProjectileAnimation := g.getWeaponAttackAnim(attacker, targetPos, weaponItem, attackMode, bulletsSpent.GetStackSize())
 
 	chanceToHit := 100
 
@@ -446,7 +446,7 @@ func (g *GameState) actorRangedAttackLocation(attacker *Actor, weaponItem *Weapo
 	}
 
 	// apply weapon degradation by shooting
-	baseDegrade := 0.1 * float64(min(5, bulletsSpent.StackSize()))
+	baseDegrade := 0.1 * float64(min(5, bulletsSpent.GetStackSize()))
 	weaponItem.Degrade(baseDegrade)
 
 	if isProjectileAnimation {
@@ -518,7 +518,7 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weap
 
 // Validation for Player Commands
 func (g *GameState) Throw() {
-	equipment := g.Player.GetEquipment()
+	equipment := g.Player.GetInventory()
 	weapon, hasWeapon := equipment.GetMainHandItem()
 	if !hasWeapon || !weapon.IsMissile() {
 		g.msg(foundation.Msg("You have no suitable weapon equipped"))

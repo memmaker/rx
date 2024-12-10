@@ -1,0 +1,7 @@
+%rec: default
+
+Name: Southside residential underground
+MusicFile: 13carvrn
+IsOutdoor: false
+IndoorAmbientLight: (0.3, 0.3, 0.3)
+RunScript: drakes_escape

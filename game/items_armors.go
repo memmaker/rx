@@ -1,11 +1,9 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"bytes"
+    "contractor/d100"
+    "contractor/foundation"
 	"cmp"
-	"encoding/gob"
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -16,24 +14,24 @@ import (
 
 type Armor struct {
 	*GenericItem
-	protection         map[DamageType]Protection
-	encumbrance        int
-	radiationReduction int
+	Protection         map[DamageType]Protection
+	Encumbrance        int
+	RadiationReduction int
 
-	fashionStyle foundation.FashionStyle
+	FashionStyle foundation.FashionStyle
 
-	concealSlots []WeaponSize
+	ConcealSlots []WeaponSize
 }
 
 func (i *Armor) CanConceal(weapons []*Weapon) bool {
-	slotsAvailable := slices.Clone(i.concealSlots)
+	slotsAvailable := slices.Clone(i.ConcealSlots)
 	// smallest slots first
 	slices.SortStableFunc(slotsAvailable, func(i, j WeaponSize) int {
 		return cmp.Compare(i, j)
 	})
 	// biggest weapons first
 	slices.SortStableFunc(weapons, func(i, j *Weapon) int {
-		return cmp.Compare(j.relativeSize, i.relativeSize)
+		return cmp.Compare(j.RelativeSize, i.RelativeSize)
 	})
 	hasSlot := func(weaponOfSize WeaponSize) int {
 		for index, availableSlot := range slotsAvailable {
@@ -47,7 +45,7 @@ func (i *Armor) CanConceal(weapons []*Weapon) bool {
 		slotsAvailable = append(slotsAvailable[:index], slotsAvailable[index+1:]...)
 	}
 	for _, weapon := range weapons {
-		size := weapon.relativeSize
+		size := weapon.RelativeSize
 		if index := hasSlot(size); index != -1 {
 			popSlot(index) // we can fit this weapon
 		} else {
@@ -71,29 +69,29 @@ func (i *Armor) IsRepairable() bool {
 func (i *Armor) FullDescription(colorCode string) string {
 	basicRows := i.GenericItem.fullDescriptionRows()
 
-	basicRows = append([]fxtools.TableRow{fxtools.NewTableRow("Style", i.fashionStyle.String())}, basicRows...)
+	basicRows = append([]fxtools.TableRow{fxtools.NewTableRow("Style", i.FashionStyle.String())}, basicRows...)
 
 	appendIfNotZero := func(value int, name string) {
 		if value != 0 {
 			basicRows = append(basicRows, fxtools.NewTableRow(name, fmt.Sprintf("%+d", value)))
 		}
 	}
-	basicRows = append(basicRows, fxtools.NewTableRow("Quality", fmt.Sprintf("%d%%", int(i.qualityInPercent))))
+	basicRows = append(basicRows, fxtools.NewTableRow("GetQuality", fmt.Sprintf("%d%%", int(i.QualityInPercent))))
 	appendIfNotZero(i.GetEncumbrance(), "Encumbrance")
 
 	for dType := DamageType(0); dType < DamageTypeCount; dType++ {
-		if protection, exists := i.protection[dType]; exists {
-			protection = protection.Scaled(i.qualityInPercent.Normalized())
+		if protection, exists := i.Protection[dType]; exists {
+			protection = protection.Scaled(i.QualityInPercent.Normalized())
 			protLabel := fmt.Sprintf("Protection vs. %s", dType.String())
 			basicRows = append(basicRows, fxtools.NewTableRow(protLabel, protection.String()))
 		}
 	}
-	appendIfNotZero(i.radiationReduction, "Radiation Reduction")
+	appendIfNotZero(i.RadiationReduction, "Radiation Reduction")
 
 	lines := fxtools.TableLayout(basicRows, []fxtools.TextAlignment{fxtools.AlignLeft, fxtools.AlignLeft})
-	lines = append([]string{i.InventoryNameWithColors(colorCode), i.category.String()}, lines...)
+	lines = append([]string{i.InventoryNameWithColors(colorCode), i.Category.String()}, lines...)
 
-	if len(i.concealSlots) > 0 {
+	if len(i.ConcealSlots) > 0 {
 		lines = append(lines, "Conceals:")
 		lines = append(lines, i.concealSlotsAsStrings()...)
 	}
@@ -108,7 +106,7 @@ func (i *Armor) InventoryNameWithColorsAndShortcut(lineColorCode string) string 
 
 func (i *Armor) LongNameWithColors(colorCode string) string {
 	var baseName string
-	if len(i.protection) == 0 || !i.HasProtectionValue() {
+	if len(i.Protection) == 0 || !i.HasProtectionValue() {
 		baseName = i.Name()
 	} else {
 		baseName = fmt.Sprintf("%s [%d]", i.Name(), i.GetProtectionRating())
@@ -125,7 +123,7 @@ func (i *Armor) LongNameWithColors(colorCode string) string {
 
 	lineWithColor := colorCode + line + "[-]"
 
-	qIcon := getQualityIcon(i.qualityInPercent)
+	qIcon := getQualityIcon(i.QualityInPercent)
 	lineWithColor = fmt.Sprintf("%s %s", qIcon, lineWithColor)
 
 	return lineWithColor
@@ -136,7 +134,7 @@ func (i *Armor) InventoryNameWithColors(colorCode string) string {
 
 	lineWithColor := colorCode + baseName + "[-]"
 
-	qIcon := getQualityIcon(i.qualityInPercent)
+	qIcon := getQualityIcon(i.QualityInPercent)
 	lineWithColor = fmt.Sprintf("%s %s", qIcon, lineWithColor)
 
 	return lineWithColor
@@ -144,7 +142,7 @@ func (i *Armor) InventoryNameWithColors(colorCode string) string {
 
 func (i *Armor) InventoryName() string {
 	var baseName string
-	if len(i.protection) == 0 || !i.HasProtectionValue() {
+	if len(i.Protection) == 0 || !i.HasProtectionValue() {
 		baseName = i.Name()
 	} else {
 		baseName = fmt.Sprintf("%s [%d]", i.Name(), i.GetProtectionRating())
@@ -160,7 +158,7 @@ func (i *Armor) GetArmorProtection(damageType DamageType) Protection {
 			return i.getRawProtection(DamageTypeEnergy)
 		}
 	*/
-	return i.getRawProtection(damageType).Scaled(i.qualityInPercent.Normalized())
+	return i.getRawProtection(damageType).Scaled(i.QualityInPercent.Normalized())
 }
 
 func (i *Armor) GetArmorProtectionValueAsString() string {
@@ -170,49 +168,8 @@ func (i *Armor) GetArmorProtectionValueAsString() string {
 
 }
 
-func (i *Armor) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-
-	// Encode each field of the struct in order
-
-	if err := encoder.Encode(i.protection); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.encumbrance); err != nil {
-		return nil, err
-	}
-
-	if err := encoder.Encode(i.radiationReduction); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (i *Armor) GobDecode(data []byte) error {
-	decoder := gob.NewDecoder(bytes.NewReader(data))
-
-	// Decode each field of the struct in order
-
-	if err := decoder.Decode(&i.protection); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.encumbrance); err != nil {
-		return err
-	}
-
-	if err := decoder.Decode(&i.radiationReduction); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (i *Armor) getRawProtection(dType DamageType) Protection {
-	protection, exists := i.protection[dType]
+	protection, exists := i.Protection[dType]
 	if !exists {
 		return Protection{}
 	}
@@ -220,7 +177,7 @@ func (i *Armor) getRawProtection(dType DamageType) Protection {
 }
 
 func (i *Armor) GetEncumbrance() int {
-	return i.encumbrance
+	return i.Encumbrance
 }
 
 func (i *Armor) GetProtectionRating() int {
@@ -231,18 +188,18 @@ func (i *Armor) GetProtectionRating() int {
 }
 
 func (i *Armor) IsValid() bool {
-	return i.category == foundation.ItemCategoryArmor || i.category == foundation.ItemCategoryHeadgear
+	return i.Category == foundation.ItemCategoryArmor || i.Category == foundation.ItemCategoryHeadgear
 }
 
 func (i *Armor) DegradeDT(ablation int) {
-	for dmg, protection := range i.protection {
-		i.protection[dmg] = protection.WithDTReducedBy(ablation)
+	for dmg, protection := range i.Protection {
+		i.Protection[dmg] = protection.WithDTReducedBy(ablation)
 	}
 }
 
 func (i *Armor) HasProtectionValue() bool {
-	for _, protection := range i.protection {
-		protection = protection.Scaled(i.qualityInPercent.Normalized())
+	for _, protection := range i.Protection {
+		protection = protection.Scaled(i.QualityInPercent.Normalized())
 		if protection.DamageReduction != 0 || protection.DamageThreshold != 0 {
 			return true
 		}
@@ -252,7 +209,7 @@ func (i *Armor) HasProtectionValue() bool {
 
 func (i *Armor) concealSlotsAsStrings() []string {
 	slotCount := make(map[WeaponSize]int)
-	for _, slot := range i.concealSlots {
+	for _, slot := range i.ConcealSlots {
 		slotCount[slot]++
 	}
 	result := make([]string, 0, len(slotCount))
@@ -328,20 +285,20 @@ func DefaultRandomizedArmorFromType(armorType ArmorWeight, quality ArmorConditio
 	armorName := randomArmorName(armorType, roll)
 	newArmor := &Armor{
 		GenericItem: &GenericItem{
-			name:             armorName,
-			internalName:     "default_randomized_armor",
-			category:         foundation.ItemCategoryArmor,
-			qualityInPercent: d100.Percentage(quality),
-			stackSize:        1,
-			charges:          -1,
-			thrownDamage:     fxtools.Interval{Min: 1, Max: 2},
-			weight:           weight,
-			cost:             cost,
-			alive:            true,
+			DisplayName:      armorName,
+			InternalName:     "default_randomized_armor",
+			Category:         foundation.ItemCategoryArmor,
+			QualityInPercent: d100.Percentage(quality),
+			StackSize:        1,
+			Charges:          -1,
+			ThrownDamage:     fxtools.Interval{Min: 1, Max: 2},
+			Weight:           weight,
+			Cost:             cost,
+			Alive:            true,
 		},
-		protection:   prot,
-		encumbrance:  encumbrance,
-		fashionStyle: foundation.FashionStyleCombatGear,
+		Protection:   prot,
+		Encumbrance:  encumbrance,
+		FashionStyle: foundation.FashionStyleCombatGear,
 	}
 	return newArmor
 }

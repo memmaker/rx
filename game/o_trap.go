@@ -1,9 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
-	"bytes"
-	"encoding/gob"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -61,10 +59,10 @@ func (t *Trap) Name() string {
 	return fmt.Sprintf("%s (%s)", baseName, t.state.String())
 }
 
-func (t *Trap) Icon() textiles.TextIcon {
-	baseIcon := t.BaseObject.Icon()
-	if t.useCustomIcon {
-		baseIcon = t.customIcon
+func (t *Trap) GetIcon() textiles.TextIcon {
+	baseIcon := t.BaseObject.GetIcon()
+	if t.UseCustomIcon {
+		baseIcon = t.CustomIcon
 	}
 	if t.state == TrapTriggered {
 		return baseIcon.WithFg(color.RGBA{R: 255, G: 0, B: 0, A: 255})
@@ -83,7 +81,7 @@ func (t *Trap) IsTimerTicking(tickCount int) bool {
 }
 
 func (t *Trap) String() string {
-	return t.displayName
+	return t.DisplayName
 }
 
 func (t *Trap) SetPlacedByPlayer() {
@@ -91,13 +89,12 @@ func (t *Trap) SetPlacedByPlayer() {
 }
 
 func (t *Trap) InitWithGameState(g *GameState) {
-	t.iconForObject = g.iconForObject
 	t.trigger = func() {
 		if !t.state.CanTrigger() {
 			return
 		}
 		t.state = TrapTriggered
-		g.metronome.AddTimed(t, true, func() {
+		g.metronome.AddTimed(t, g.currentMapName, func() {
 			g.ui.AddAnimations(t.explode())
 		})
 	}
@@ -109,50 +106,23 @@ func (t *Trap) InitWithGameState(g *GameState) {
 			return nil
 		}
 		t.state = TrapActivated
+
 		g.currentMap().RemoveObject(t)
 		zapEffect := ZapEffectFromName(t.zapEffect)
 		anims := zapEffect(g, nil, t.Position(), foundation.Params{})
+
 		return anims
 	}
 }
 func (t *Trap) ToRecord() recfile.Record {
 	return recfile.Record{
-		{Name: "category", Value: t.category.String()},
-		{Name: "position", Value: t.position.Encode()},
+		{Name: "category", Value: t.Category.String()},
+		{Name: "position", Value: t.RawPosition.Encode()},
 	}
 }
 
-func (t *Trap) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-
-	if err := t.BaseObject.gobEncode(enc); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(t.state); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (t *Trap) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-
-	t.BaseObject = &BaseObject{}
-
-	if err := t.BaseObject.gobDecode(dec); err != nil {
-		return err
-	}
-	if err := dec.Decode(&t.state); err != nil {
-		return err
-	}
-
-	return nil
-}
-func (g *GameState) NewTrap(record recfile.Record) *Trap {
-	trap := &Trap{BaseObject: NewObject(foundation.ObjectTrap, g.iconForObject), state: TrapArmed}
+func (g *GameState) NewTrap(record recfile.Record, resolver func(objType string) textiles.TextIcon) *Trap {
+	trap := &Trap{BaseObject: NewObject(foundation.ObjectTrap, resolver), state: TrapArmed}
 	trap.SetHidden(false)
 	trap.SetWalkable(true)
 	trap.minSkillNeededForDisarm = 10
@@ -160,14 +130,14 @@ func (g *GameState) NewTrap(record recfile.Record) *Trap {
 	for _, field := range record {
 		switch strings.ToLower(field.Name) {
 		case "name":
-			trap.internalName = field.Value
+			trap.InternalName = field.Value
 		case "iconoverride":
-			trap.customIcon = g.iconForObject(field.Value)
-			trap.useCustomIcon = true
+			trap.CustomIcon = trap.iconForObject(field.Value)
+			trap.UseCustomIcon = true
 		case "position":
-			trap.position, _ = geometry.NewPointFromEncodedString(field.Value)
+			trap.RawPosition, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "description":
-			trap.displayName = field.Value
+			trap.DisplayName = field.Value
 		case "triggeronproximity":
 			trap.triggerOnProximity = recfile.StrBool(field.Value)
 		case "zapeffect":
@@ -199,7 +169,7 @@ func (t *Trap) OnProximity(actor *Actor) []foundation.Animation {
 	return nil
 }
 func (t *Trap) IsHidden() bool {
-	return t.isHidden
+	return t.Hidden
 }
 func (t *Trap) OnDamage(damage SourcedDamage) []foundation.Animation {
 	return t.explode()

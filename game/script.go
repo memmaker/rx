@@ -1,9 +1,9 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/fsmai"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/fsmai"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -28,6 +28,9 @@ type UserScriptFrame struct {
 }
 
 func (f UserScriptFrame) String() string {
+	if f.condition == nil {
+		return "Empty{}"
+	}
 	return f.condition.String()
 }
 
@@ -85,7 +88,7 @@ func mergeMaps(maps ...map[string]govaluate.ExpressionFunction) map[string]goval
 	return result
 }
 
-func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
+func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 	return map[string]govaluate.ExpressionFunction{
 		// Player Only
 		"IsWounded": func(args ...interface{}) (interface{}, error) {
@@ -103,6 +106,17 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 				diff = d100.DifficultyFromString(args[1].(string))
 			}
 			result := g.Player.GetCharSheet().SkillRollVsDiff(d100.SkillFromString(skillName), diff)
+			return (bool)(result.Success), nil
+		},
+		// o_test: DialogueCheck(NPC, 'intimidate')
+		"DialogueCheck": func(args ...interface{}) (interface{}, error) {
+			opponent := args[0].(*Actor)
+			skillName := args[0].(string)
+			skill := d100.SkillFromString(skillName)
+			skillValue := g.Player.GetCharSheet().GetSkill(skill)
+			mods := g.getDialogueCheckMods(g.Player, opponent, skill, nil)
+			chance := mods.Apply(skillValue)
+			result := d100.SuccessRoll(d100.Percentage(chance), 0)
 			return (bool)(result.Success), nil
 		},
 
@@ -144,19 +158,27 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			return g.Player.GetInventory().HasItemWithNameAndCount(itemName, count), nil
 		},
 		"HasArmorEquipped": func(args ...interface{}) (interface{}, error) {
-			return g.Player.GetEquipment().HasArmorEquipped(), nil
+			return g.Player.GetInventory().HasArmorEquipped(), nil
+		},
+		"HasOutfit": func(args ...interface{}) (interface{}, error) {
+			style := args[0].(string)
+			outfitStyle := foundation.FashionStyleFromString(style)
+			return g.Player.OutfitStyle() == outfitStyle, nil
+		},
+		"HasVisibleWeapon": func(args ...interface{}) (interface{}, error) {
+			return g.Player.IsOpenCarryWeapon(), nil
 		},
 		"HasArmorEquippedWithName": func(args ...interface{}) (interface{}, error) {
 			armorName := args[0].(string)
-			return g.Player.GetEquipment().HasArmorWithNameEquipped(armorName), nil
+			return g.Player.GetInventory().HasArmorWithNameEquipped(armorName), nil
 		},
 		"HasWeaponEquippedWithName": func(args ...interface{}) (interface{}, error) {
 			weaponName := args[0].(string)
-			mainHandItem, hasMainHandItem := g.Player.GetEquipment().GetMainHandItem()
+			mainHandItem, hasMainHandItem := g.Player.GetInventory().GetMainHandItem()
 			if !hasMainHandItem {
 				return false, nil
 			}
-			return mainHandItem.InternalName() == weaponName, nil
+			return mainHandItem.GetInternalName() == weaponName, nil
 		},
 
 		// Global Queries & Actions
@@ -220,6 +242,12 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			g.RunScriptByName(scriptName)
 			return nil, nil
 		},
+		"RunScriptOnMap": func(args ...interface{}) (interface{}, error) {
+			mapName := args[0].(string)
+			scriptName := args[1].(string)
+			g.RunScriptOnMap(mapName, scriptName)
+			return nil, nil
+		},
 		"StopScript": func(args ...interface{}) (interface{}, error) {
 			scriptName := args[0].(string)
 			g.scriptRunner.StopScript(g.currentMap().GetName(), scriptName)
@@ -242,13 +270,39 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			return nil, nil
 		},
 		"RunScriptLeave": func(args ...interface{}) (interface{}, error) {
-			leaverName := args[0].(string)
+			argZero := args[0]
+			var leaver *Actor
+			if nameOfLeaver, isString := argZero.(string); isString {
+				leaver = g.actorWithName(nameOfLeaver)
+			} else if actor, isActor := argZero.(*Actor); isActor {
+				leaver = actor
+			}
+
 			isRunning := false
 			if len(args) > 1 {
 				isRunning = args[1].(bool)
 			}
-			leaver := g.actorWithName(leaverName)
+
 			killScript := g.NewScriptLeaveMap(leaver, isRunning)
+			g.RunScript(killScript)
+			return nil, nil
+		},
+		"RunScriptLeaveAt": func(args ...interface{}) (interface{}, error) {
+			argZero := args[0]
+			var leaver *Actor
+			if nameOfLeaver, isString := argZero.(string); isString {
+				leaver = g.actorWithName(nameOfLeaver)
+			} else if actor, isActor := argZero.(*Actor); isActor {
+				leaver = actor
+			}
+
+			transitionLocation := args[1].(string)
+			isRunning := false
+			if len(args) > 2 {
+				isRunning = args[2].(bool)
+			}
+
+			killScript := g.NewScriptLeaveMapAtLocation(leaver, isRunning, transitionLocation)
 			g.RunScript(killScript)
 			return nil, nil
 		},
@@ -286,6 +340,11 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			return nil, nil
 		},
+		"HasActorFlag": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			flagName := args[1].(string)
+			return actor.HasFlag(foundation.ActorFlagFromString(flagName)), nil
+		},
 		"IsActorWounded": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			return actor.IsWounded(), nil
@@ -300,6 +359,23 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			locName := args[1].(string)
 			loc := g.currentMap().GetNamedLocation(locName)
 			return actor.Position() == loc, nil
+		},
+		"IsActorAbleToReach": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			locName := args[1].(string)
+			loc := g.currentMap().GetNamedLocation(locName)
+			if loc == actor.Position() {
+				return true, nil
+			}
+			pathToDest := g.currentMap().GetJPSPath(actor.Position(), loc, func(point geometry.Point) bool {
+				return g.currentMap().IsWalkableFor(point, actor)
+			})
+			if len(pathToDest) == 0 {
+				return false, nil
+			}
+
+			lastPos := pathToDest[len(pathToDest)-1]
+			return lastPos == loc, nil
 		},
 		"IsActorDead": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
@@ -343,6 +419,16 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			return nil, nil
 		},
+		"ActorTransition": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			currentMap := g.currentMap()
+			transition, exists := currentMap.GetTransitionAt(actor.Position())
+			if !exists {
+				return nil, nil
+			}
+			g.actorTransition(currentMap, actor, transition)
+			return nil, nil
+		},
 		"PlayerAddCyberware": func(args ...interface{}) (interface{}, error) {
 			cyberwareName := args[0].(string)
 			g.playerAddCyberware(NewCyberWareFromString(cyberwareName))
@@ -376,7 +462,7 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 			actor := args[0].(*Actor)
 			locName := args[1].(string)
 			loc := g.currentMap().GetNamedLocation(locName)
-			actor.SetGoal(GoalWalkToLocation(loc))
+			actor.SetGoal(GoalRunToLocation(loc))
 			return nil, nil
 		},
 		"SetGoalMoveToSpawn": func(args ...interface{}) (interface{}, error) {
@@ -394,7 +480,7 @@ func (g *GameState) getScriptFuncs() map[string]govaluate.ExpressionFunction {
 		"SetGoalKill": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			target := args[1].(*Actor)
-			actor.SetGoal(GoalKillActor(actor, target))
+			actor.SetGoal(GoalKillActor(target))
 			return nil, nil
 		},
 
@@ -473,8 +559,25 @@ func moveAwayFromActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionE
 
 	return fsmai.NoEvent, a.TimeNeededForMovement()
 }
-func moveTowardsActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int) {
-	nextMovePos := a.getMoveTowardsActor(g, target)
+func moveTowardsActor(g *GameState, a *Actor, target *Actor, maxDist int) (fsmai.TransitionEvent, int) {
+	if target == nil {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+	nextMovePos := a.getMoveTowardsActor(g, target, maxDist)
+	if nextMovePos == a.Position() {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+
+	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+
+	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
+
+	return fsmai.NoEvent, a.TimeNeededForMovement()
+}
+func runTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
+	nextMovePos := a.getMoveTowards(g, targetPos)
 	if nextMovePos == a.Position() {
 		return fsmai.NoEvent, a.TimeNeededForMovement()
 	}
@@ -488,22 +591,18 @@ func moveTowardsActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEv
 	return fsmai.NoEvent, a.TimeNeededForMovement()
 }
 func walkTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
-	nextMovePos := a.getMoveTowards(g, targetPos)
-	if nextMovePos == a.Position() {
-		return fsmai.NoEvent, a.TimeNeededForMovement()
-	}
-
-	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
-		return fsmai.NoEvent, a.TimeNeededForMovement()
-	}
-
-	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
-
-	return fsmai.NoEvent, a.TimeNeededForMovement()
-}
-func strideTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
-	nextMovePos := a.getMoveTowards(g, targetPos)
 	timeForMove := max(a.TimeNeededForMovement(), 10)
+
+	if a == g.Player &&
+		g.currentMap().MoveDistance(a.Position(), targetPos) == 1 &&
+		g.currentMap().IsObjectAt(targetPos) &&
+		!g.currentMap().IsCurrentlyPassable(targetPos) {
+		g.currentMap().ObjectAt(targetPos).OnBump(a)
+		return fsmai.NoEvent, timeForMove
+	}
+
+	nextMovePos := a.getMoveTowards(g, targetPos)
+
 	if nextMovePos == a.Position() {
 		return fsmai.NoEvent, timeForMove
 	}
@@ -519,7 +618,7 @@ func strideTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.Tran
 
 func LoadScript(dataDir string, name string, condFuncs map[string]govaluate.ExpressionFunction) ActionScript {
 	filePath := path.Join(dataDir, "scripts", name+".rec")
-	records := recfile.ReadMultiAndClose(fxtools.MustOpen(filePath))
+	records, _ := recfile.ReadMultiAndClose(fxtools.MustOpen(filePath))
 	return NewActionScript(name, records, condFuncs)
 }
 
@@ -554,11 +653,19 @@ func NewActionScript(name string, records map[string][]recfile.Record, condFuncs
 				case "var":
 					varName = f.Value
 				case "set":
-					varValue, _ = govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
+					var parseErr error
+					varValue, parseErr = govaluate.NewEvaluableExpressionWithFunctions(f.Value, condFuncs)
+					if parseErr != nil {
+						panic(parseErr)
+					}
 				}
 			}
 			if varName != "" && varValue != nil {
-				script.Variables[varName], _ = varValue.Evaluate(nil)
+				var evalErr error
+				script.Variables[varName], evalErr = varValue.Evaluate(nil)
+				if evalErr != nil {
+					panic(evalErr)
+				}
 			}
 		}
 

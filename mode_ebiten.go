@@ -1,8 +1,9 @@
 //go:build ebiten
+
 package main
 
-import "RogueUI/console"
+import "contractor/console"
 
 func init() {
-    graphicsModes["ebiten"] = console.NewEbitenUI()
+	graphicsModes["ebiten"] = console.NewEbitenUI()
 }

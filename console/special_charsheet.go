@@ -1,7 +1,7 @@
 package console
 
 import (
-	"RogueUI/d100"
+    "contractor/d100"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"

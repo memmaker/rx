@@ -1,10 +1,8 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"bytes"
-	"encoding/gob"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -14,47 +12,54 @@ import (
 
 type Door struct {
 	*BaseObject
-	lockedFlag            string
-	lockDiff              d100.Difficulty
-	lockStrengthRemaining int
-	numberLock            []rune
+	LockedFlag            string
+	LockDiff              d100.Difficulty
+	LockStrengthRemaining int
+	NumberLock            []rune
 
-	hitpoints        int
-	damageThreshold  int
-	audioCueBaseName string
+	HitPoints        int
+	DamageThreshold  int
+	AudioCueBaseName string
 	player           foundation.AudioCuePlayer
 	onBump           func(actor *Actor)
 	updateAllFoVs    func()
+	setUnlockedFlag  func()
+}
+
+func (b *Door) RemainingStrength() int {
+	return b.LockStrengthRemaining
 }
 
 func (b *Door) InitWithGameState(g *GameState) {
-	b.iconForObject = g.iconForObject
 	b.player = g.ui
 	b.updateAllFoVs = func() {
 		g.updateAllFoVsAndDijkstras()
 	}
+	b.setUnlockedFlag = func() {
+		g.gameFlags.SetFlag(fmt.Sprintf("DoorUnlocked(%s)", b.InternalName))
+	}
 	b.onBump = func(actor *Actor) {
 		if actor == g.Player && b.GetCategory() == foundation.ObjectLockedDoor {
-			if b.lockedFlag != "" && actor.HasKey(b.lockedFlag) {
-				b.category = foundation.ObjectClosedDoor
+			if b.LockedFlag != "" && actor.HasKey(b.LockedFlag) {
+				b.Unlock()
 				g.msg(foundation.Msg("You unlocked the door using the key"))
 				g.ui.PlayCue("world/PICKKEYS")
 				g.endPlayerTurn(g.Player.TimeNeededForActions())
 				return
 			}
 
-			if len(b.numberLock) > 0 {
-				picksNeeded := d100.ElectronicLockpicksNeeded(b.lockDiff, g.Player.GetCharSheet().GetSkill(d100.SkillForPickLocks))
+			if len(b.NumberLock) > 0 {
+				picksNeeded := d100.ElectronicLockpicksNeeded(b.LockDiff, g.Player.GetCharSheet().GetSkill(d100.SkillForPickLocks))
 				actionInfo := fmt.Sprintf("Hack (%d)", picksNeeded)
-				g.ui.OpenKeypad(actionInfo, b.numberLock, func() bool {
-					success := g.playerPickElectronicLock(b.lockDiff)
+				g.ui.OpenKeypad(actionInfo, b.NumberLock, func() bool {
+					success := g.playerPickElectronicLock(b.LockDiff)
 					if success {
 						b.Unlock()
 					}
 					return success
 				}, func(result bool) {
 					if result {
-						b.category = foundation.ObjectClosedDoor
+						b.Unlock()
 						g.msg(foundation.Msg("You unlocked the door using the code"))
 						g.endPlayerTurn(g.Player.TimeNeededForActions())
 					}
@@ -99,7 +104,14 @@ func (g *GameState) playerPickElectronicLock(difficulty d100.Difficulty) bool {
 		return false
 	}
 }
-func (g *GameState) playerTryPickLock(door *Door) {
+
+type Pickable interface {
+	ReduceStrength(reduction int) (int, bool)
+	Unlock()
+	RemainingStrength() int
+}
+
+func (g *GameState) playerTryPickLock(pickable Pickable) {
 	if g.playerMinorCrimeIsDenied() {
 		return
 	}
@@ -110,88 +122,18 @@ func (g *GameState) playerTryPickLock(door *Door) {
 		return
 	}
 	reduction := int(float64(skill) * d100.LockStrengthReductionPerSkill)
-	if reducedBy, didOpen := door.ReduceStrength(reduction); didOpen {
-		door.category = foundation.ObjectClosedDoor
+	if reducedBy, didOpen := pickable.ReduceStrength(reduction); didOpen {
+		pickable.Unlock()
 		g.msg(foundation.Msg("You picked the lock deftly"))
 		g.ui.PlayCue("world/PICKKEYS")
 	} else {
-		remaining := door.lockStrengthRemaining
+		remaining := pickable.RemainingStrength()
 		g.msg(foundation.Msg(fmt.Sprintf("You reduced the lock strength by %d%%, lock strength remaining: %d%%", reducedBy, remaining)))
 	}
 	g.endPlayerTurn(g.Player.TimeNeededForActions())
 }
-func (b *Door) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-
-	if err := b.BaseObject.gobEncode(enc); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.lockedFlag); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.lockDiff); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.numberLock); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.hitpoints); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.damageThreshold); err != nil {
-		return nil, err
-	}
-
-	if err := enc.Encode(b.audioCueBaseName); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (b *Door) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-
-	b.BaseObject = &BaseObject{}
-
-	if err := b.BaseObject.gobDecode(dec); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.lockedFlag); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.lockDiff); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.numberLock); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.hitpoints); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.damageThreshold); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.audioCueBaseName); err != nil {
-		return err
-	}
-
-	return nil
-}
 func (b *Door) IsTransparent() bool {
-	if b.isTransparent {
+	if b.Transparent {
 		return true
 	}
 	switch b.GetCategory() {
@@ -203,23 +145,29 @@ func (b *Door) IsTransparent() bool {
 	return false
 }
 
-func (b *Door) Icon() textiles.TextIcon {
+func (b *Door) GetIcon() textiles.TextIcon {
 	return b.iconForObject(b.GetCategory().LowerString())
 }
 func (b *Door) IsWalkable(actor *Actor) bool {
-	return b.GetCategory() != foundation.ObjectLockedDoor || (actor != nil && actor.HasKey(b.lockedFlag))
+	return b.GetCategory() != foundation.ObjectLockedDoor || (actor != nil && actor.HasKey(b.LockedFlag))
 }
 func (b *Door) AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem {
-	if b.GetCategory() == foundation.ObjectLockedDoor && g.Player.HasKey(b.lockedFlag) {
-		items = append(items, foundation.MenuItem{
-			Name: "Unlock",
-			Action: func() {
-				b.Unlock()
-				g.msg(foundation.Msg("You unlocked the door using the key"))
-				g.ui.PlayCue("world/PICKKEYS")
-			},
-			CloseMenus: true,
-		})
+	if b.GetCategory() == foundation.ObjectLockedDoor {
+		if g.Player.HasKey(b.LockedFlag) {
+			items = append(items, foundation.MenuItem{
+				Name: "Unlock",
+				Action: func() {
+					b.Unlock()
+					g.msg(foundation.Msg("You unlocked the door using the key"))
+					g.ui.PlayCue("world/PICKKEYS")
+				},
+				CloseMenus: true,
+			})
+		}
+		if len(b.NumberLock) > 0 {
+
+		}
+
 	}
 	if b.GetCategory() == foundation.ObjectOpenDoor {
 		items = append(items, foundation.MenuItem{
@@ -239,11 +187,11 @@ func (b *Door) AppendContextActions(items []foundation.MenuItem, g *GameState) [
 }
 
 func (b *Door) SetLockedByFlag(flag string) {
-	b.lockedFlag = flag
+	b.LockedFlag = flag
 }
 func (b *Door) SetLockDifficulty(difficulty d100.Difficulty) {
-	b.lockDiff = difficulty
-	b.lockStrengthRemaining = 100
+	b.LockDiff = difficulty
+	b.LockStrengthRemaining = 100
 }
 
 func (b *Door) IsLocked() bool {
@@ -251,54 +199,55 @@ func (b *Door) IsLocked() bool {
 }
 
 func (b *Door) GetLockFlag() string {
-	return b.lockedFlag
+	return b.LockedFlag
 }
 
 func (b *Door) Unlock() {
 	if b.IsBroken() {
 		return
 	}
-	b.category = foundation.ObjectClosedDoor
+	b.Category = foundation.ObjectClosedDoor
+	b.setUnlockedFlag()
 }
 
 func (b *Door) Close() {
 	if b.IsBroken() {
 		return
 	}
-	b.category = foundation.ObjectClosedDoor
+	b.Category = foundation.ObjectClosedDoor
 	b.PlayCloseSfx()
 	b.updateAllFoVs()
 }
 
 func (b *Door) PlayCloseSfx() {
-	cueName := fmt.Sprintf("world/%s_close", b.audioCueBaseName)
+	cueName := fmt.Sprintf("world/%s_close", b.AudioCueBaseName)
 	b.player.PlayCue(cueName)
 }
 func (b *Door) Open() {
 	if b.IsBroken() {
 		return
 	}
-	b.category = foundation.ObjectOpenDoor
+	b.Category = foundation.ObjectOpenDoor
 	b.PlayOpenSfx()
 	b.updateAllFoVs()
 }
 
 func (b *Door) PlayOpenSfx() {
-	cueName := fmt.Sprintf("world/%s_open", b.audioCueBaseName)
+	cueName := fmt.Sprintf("world/%s_open", b.AudioCueBaseName)
 	b.player.PlayCue(cueName)
 }
 func (b *Door) IsBroken() bool {
 	return b.GetCategory() == foundation.ObjectBrokenDoor
 }
-func (g *GameState) NewDoor(rec recfile.Record) *Door {
+func (g *GameState) NewDoor(rec recfile.Record, resolver func(objType string) textiles.TextIcon) *Door {
 	door := &Door{
 		BaseObject: &BaseObject{
-			category:      foundation.ObjectClosedDoor,
-			displayName:   "a door",
-			iconForObject: g.iconForObject,
+			Category:      foundation.ObjectClosedDoor,
+			DisplayName:   "a door",
+			iconForObject: resolver,
 		},
-		hitpoints:       10,
-		damageThreshold: 2,
+		HitPoints:       10,
+		DamageThreshold: 2,
 	}
 	door.SetLockDifficulty(d100.Easy)
 	door.SetWalkable(false)
@@ -308,47 +257,47 @@ func (g *GameState) NewDoor(rec recfile.Record) *Door {
 	for _, field := range rec {
 		switch strings.ToLower(field.Name) {
 		case "name":
-			door.internalName = field.Value
+			door.InternalName = field.Value
 		case "category":
 			switch strings.ToLower(field.Value) {
 			case "lockeddoor":
-				door.category = foundation.ObjectLockedDoor
+				door.Category = foundation.ObjectLockedDoor
 			case "closeddoor":
-				door.category = foundation.ObjectClosedDoor
+				door.Category = foundation.ObjectClosedDoor
 			case "opendoor":
-				door.category = foundation.ObjectOpenDoor
+				door.Category = foundation.ObjectOpenDoor
 			case "brokendoor":
-				door.category = foundation.ObjectBrokenDoor
+				door.Category = foundation.ObjectBrokenDoor
 			}
 		case "description":
-			door.displayName = field.Value
+			door.DisplayName = field.Value
 		case "lockflag":
-			door.lockedFlag = field.Value
+			door.LockedFlag = field.Value
 		case "numberlock":
 			if strings.ToLower(field.Value) == "random" {
 				// random 4-digit code
 				randomNumberCode = true
 			} else {
-				door.numberLock = []rune(field.Value)
+				door.NumberLock = []rune(field.Value)
 			}
 		case "lockdifficulty":
 			door.SetLockDifficulty(d100.DifficultyFromString(field.Value))
 		case "position":
-			door.position, _ = geometry.NewPointFromEncodedString(field.Value)
+			door.RawPosition, _ = geometry.NewPointFromEncodedString(field.Value)
 		case "hitpoints":
-			door.hitpoints = field.AsInt()
+			door.HitPoints = field.AsInt()
 		case "damage_threshold":
-			door.damageThreshold = field.AsInt()
+			door.DamageThreshold = field.AsInt()
 		case "audiocue":
-			door.audioCueBaseName = field.Value
+			door.AudioCueBaseName = field.Value
 		case "istransparent":
 			door.SetTransparent(field.AsBool())
 		case "ispassableforprojectile":
-			door.isPassableForProjectile = field.AsBool()
+			door.PassableForProjectile = field.AsBool()
 		}
 	}
 	if randomNumberCode {
-		door.numberLock = g.getRandomNumberCode(door.internalName)
+		door.NumberLock = g.getRandomNumberCode(door.InternalName)
 	}
 	door.InitWithGameState(g)
 	return door
@@ -359,11 +308,11 @@ func (b *Door) OnDamage(dmg SourcedDamage) []foundation.Animation {
 		return nil
 	}
 
-	reducedDamage := max(0, dmg.DamageAmount-b.damageThreshold)
+	reducedDamage := max(0, dmg.DamageAmount-b.DamageThreshold)
 	if reducedDamage > 0 {
-		b.hitpoints -= reducedDamage
-		if b.hitpoints <= 0 {
-			b.category = foundation.ObjectBrokenDoor
+		b.HitPoints -= reducedDamage
+		if b.HitPoints <= 0 {
+			b.Category = foundation.ObjectBrokenDoor
 		}
 	}
 
@@ -372,25 +321,25 @@ func (b *Door) OnDamage(dmg SourcedDamage) []foundation.Animation {
 
 func (b *Door) Name() string {
 	if b.IsBroken() {
-		return fmt.Sprintf("%s (broken)", b.displayName)
+		return fmt.Sprintf("%s (broken)", b.DisplayName)
 	}
 
 	if b.IsOpen() {
-		return fmt.Sprintf("%s (open)", b.displayName)
+		return fmt.Sprintf("%s (open)", b.DisplayName)
 	}
 
 	if b.IsLocked() {
 		var lockedWith string
-		if b.lockedFlag != "" && len(b.numberLock) == 0 {
-			lockedWith = fmt.Sprintf("a %s mechanical lock", b.lockDiff.String())
-		} else if len(b.numberLock) > 0 {
+		if b.LockedFlag != "" && len(b.NumberLock) == 0 {
+			lockedWith = fmt.Sprintf("a %s mechanical lock", b.LockDiff.String())
+		} else if len(b.NumberLock) > 0 {
 			lockedWith = "a numeric keypad"
 		}
-		strengthString := fmt.Sprintf("DT: %d HP: %d", b.damageThreshold, b.hitpoints)
-		return fmt.Sprintf("%s (locked with %s, %s)", b.displayName, lockedWith, strengthString)
+		strengthString := fmt.Sprintf("DT: %d HP: %d", b.DamageThreshold, b.HitPoints)
+		return fmt.Sprintf("%s (locked with %s, %s)", b.DisplayName, lockedWith, strengthString)
 	}
 
-	return fmt.Sprintf("%s (closed)", b.displayName)
+	return fmt.Sprintf("%s (closed)", b.DisplayName)
 }
 
 func (b *Door) IsOpen() bool {
@@ -409,37 +358,37 @@ func (b *Door) OnBump(actor *Actor) {
 
 func (b *Door) ToRecord() recfile.Record {
 	rec := recfile.Record{}
-	rec = append(rec, recfile.Field{Name: "position", Value: b.position.Encode()})
+	rec = append(rec, recfile.Field{Name: "position", Value: b.RawPosition.Encode()})
 	rec = append(rec, recfile.Field{Name: "category", Value: b.GetCategory().String()})
-	rec = append(rec, recfile.Field{Name: "description", Value: b.displayName})
-	if b.lockedFlag != "" {
-		rec = append(rec, recfile.Field{Name: "lockflag", Value: b.lockedFlag})
+	rec = append(rec, recfile.Field{Name: "description", Value: b.DisplayName})
+	if b.LockedFlag != "" {
+		rec = append(rec, recfile.Field{Name: "lockflag", Value: b.LockedFlag})
 	}
-	if len(b.numberLock) > 0 {
-		rec = append(rec, recfile.Field{Name: "numberlock", Value: string(b.numberLock)})
+	if len(b.NumberLock) > 0 {
+		rec = append(rec, recfile.Field{Name: "numberlock", Value: string(b.NumberLock)})
 	}
-	if b.lockDiff != d100.Easy {
-		rec = append(rec, recfile.Field{Name: "lockdifficulty", Value: b.lockDiff.String()})
+	if b.LockDiff != d100.Easy {
+		rec = append(rec, recfile.Field{Name: "lockdifficulty", Value: b.LockDiff.String()})
 	}
-	if b.hitpoints != 10 {
-		rec = append(rec, recfile.Field{Name: "hitpoints", Value: recfile.IntStr(b.hitpoints)})
+	if b.HitPoints != 10 {
+		rec = append(rec, recfile.Field{Name: "hitpoints", Value: recfile.IntStr(b.HitPoints)})
 	}
-	if b.damageThreshold != 2 {
-		rec = append(rec, recfile.Field{Name: "damage_threshold", Value: recfile.IntStr(b.damageThreshold)})
+	if b.DamageThreshold != 2 {
+		rec = append(rec, recfile.Field{Name: "damage_threshold", Value: recfile.IntStr(b.DamageThreshold)})
 	}
-	if b.audioCueBaseName != "" {
-		rec = append(rec, recfile.Field{Name: "audiocue", Value: b.audioCueBaseName})
+	if b.AudioCueBaseName != "" {
+		rec = append(rec, recfile.Field{Name: "audiocue", Value: b.AudioCueBaseName})
 	}
 	return rec
 }
 
 func (b *Door) ReduceStrength(reduction int) (int, bool) {
-	if b.IsBroken() || b.IsOpen() || b.IsClosedButNotLocked() || b.lockStrengthRemaining <= 0 {
+	if b.IsBroken() || b.IsOpen() || b.IsClosedButNotLocked() || b.LockStrengthRemaining <= 0 {
 		return 0, false
 	}
-	realReduction := int(float64(reduction) * b.lockDiff.LockReductionFactor())
-	b.lockStrengthRemaining -= realReduction
-	if b.lockStrengthRemaining <= 0 {
+	realReduction := int(float64(reduction) * b.LockDiff.LockReductionFactor())
+	b.LockStrengthRemaining -= realReduction
+	if b.LockStrengthRemaining <= 0 {
 		b.Unlock()
 		return realReduction, true
 	}
@@ -447,5 +396,5 @@ func (b *Door) ReduceStrength(reduction int) (int, bool) {
 }
 
 func (b *Door) IsLockAtFullStrength() bool {
-	return b.lockStrengthRemaining == 100
+	return b.LockStrengthRemaining == 100
 }

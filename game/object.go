@@ -1,7 +1,7 @@
 package game
 
 import (
-	"RogueUI/foundation"
+	"contractor/foundation"
 	"encoding/gob"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
@@ -17,129 +17,43 @@ func init() {
 	gob.Register(&Elevator{})
 	gob.Register(&Container{})
 	gob.Register(&PushBox{})
+	gob.Register(&Bed{})
+	gob.Register(&ItemMaker{})
 }
 
 type BaseObject struct {
-	position                geometry.Point
-	category                foundation.ObjectCategory
-	customIcon              textiles.TextIcon
-	iconForObject           func(string) textiles.TextIcon
-	internalName            string
-	displayName             string
-	isWalkable              bool
-	isHidden                bool
-	isTransparent           bool
-	useCustomIcon           bool
-	isPassableForProjectile bool
-}
-
-func (b *BaseObject) gobEncode(enc *gob.Encoder) error {
-	if err := enc.Encode(b.position); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.category); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.customIcon); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.internalName); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.displayName); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.isPassableForProjectile); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.isWalkable); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.isHidden); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.isTransparent); err != nil {
-		return err
-	}
-
-	if err := enc.Encode(b.useCustomIcon); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (b *BaseObject) gobDecode(dec *gob.Decoder) error {
-	if err := dec.Decode(&b.position); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.category); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.customIcon); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.internalName); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.displayName); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.isPassableForProjectile); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.isWalkable); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.isHidden); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.isTransparent); err != nil {
-		return err
-	}
-
-	if err := dec.Decode(&b.useCustomIcon); err != nil {
-		return err
-	}
-
-	return nil
+	RawPosition           geometry.Point
+	Category              foundation.ObjectCategory
+	CustomIcon            textiles.TextIcon
+	iconForObject         func(string) textiles.TextIcon
+	InternalName          string
+	DisplayName           string
+	Walkable              bool
+	Hidden                bool
+	Transparent           bool
+	UseCustomIcon         bool
+	PassableForProjectile bool
 }
 
 func (b *BaseObject) GetCategory() foundation.ObjectCategory {
-	return b.category
+	return b.Category
 }
 
 func NewObject(icon foundation.ObjectCategory, iconForObject func(objectType string) textiles.TextIcon) *BaseObject {
 	return &BaseObject{
-		category:      icon,
+		Category:      icon,
 		iconForObject: iconForObject,
 	}
 }
 func (b *BaseObject) GetInternalName() string {
-	return b.internalName
+	return b.InternalName
 }
 func (b *BaseObject) Position() geometry.Point {
-	return b.position
+	return b.RawPosition
 }
 
 func (b *BaseObject) SetPosition(pos geometry.Point) {
-	b.position = pos
+	b.RawPosition = pos
 }
 func (b *BaseObject) OnDamage(damage SourcedDamage) []foundation.Animation {
 	return nil
@@ -151,59 +65,59 @@ func (b *BaseObject) OnProximity(actor *Actor) []foundation.Animation {
 	return nil
 }
 func (b *BaseObject) IsWalkable(actor *Actor) bool {
-	return b.isWalkable
+	return b.Walkable
 }
 
 func (b *BaseObject) IsTransparent() bool {
-	return b.isTransparent
+	return b.Transparent
 }
 func (b *BaseObject) IsPassableForProjectile() bool {
-	return b.isPassableForProjectile
+	return b.PassableForProjectile
 }
 func (b *BaseObject) IsProximityTriggered() bool {
 	return false
 }
 
 func (b *BaseObject) SetWalkable(isWalkable bool) {
-	b.isWalkable = isWalkable
+	b.Walkable = isWalkable
 }
 
 func (b *BaseObject) IsHidden() bool {
-	return b.isHidden
+	return b.Hidden
 }
 
 func (b *BaseObject) SetHidden(isHidden bool) {
-	b.isHidden = isHidden
+	b.Hidden = isHidden
 }
 
 func (b *BaseObject) Name() string {
-	if b.displayName != "" {
-		return b.displayName
+	if b.DisplayName != "" {
+		return b.DisplayName
 	}
-	return b.category.String()
+	return b.Category.String()
 }
 
 func (b *BaseObject) IsTrap() bool {
-	return b.category.IsTrap()
+	return b.Category.IsTrap()
 }
 func (b *BaseObject) IsBed() bool {
-	return b.category == foundation.ObjectBed
+	return b.Category == foundation.ObjectBed
 }
 func (b *BaseObject) OnBump(actor *Actor) {
 
 }
 
 func (b *BaseObject) SetTransparent(transparent bool) {
-	b.isTransparent = transparent
+	b.Transparent = transparent
 }
 
 func (b *BaseObject) SetDisplayName(name string) {
-	b.displayName = name
+	b.DisplayName = name
 }
 
-func (b *BaseObject) Icon() textiles.TextIcon {
-	if b.useCustomIcon {
-		return b.customIcon
+func (b *BaseObject) GetIcon() textiles.TextIcon {
+	if b.UseCustomIcon {
+		return b.CustomIcon
 	}
 	return b.iconForObject(b.GetCategory().LowerString())
 }
@@ -233,7 +147,7 @@ type Object interface {
 	OnWalkOver(actor *Actor) []foundation.Animation
 	OnProximity(actor *Actor) []foundation.Animation
 	OnBump(actor *Actor)
-	Icon() textiles.TextIcon
+	GetIcon() textiles.TextIcon
 	AppendContextActions(items []foundation.MenuItem, g *GameState) []foundation.MenuItem
 	SetIconResolver(object func(objectType string) textiles.TextIcon)
 	InitWithGameState(g *GameState)

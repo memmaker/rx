@@ -1,57 +1,19 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/fsmai"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/fsmai"
 	"github.com/memmaker/go/geometry"
 	"math/rand"
 )
 
-type Behaviour struct {
-	StateName       fsmai.StateName
-	BehaviourAction func(g *GameState, actor *Actor, event fsmai.TransitionEvent) (fsmai.TransitionEvent, int)
-	InitAction      func(g *GameState, actor *Actor, event fsmai.TransitionEvent)
-	InitEvent       fsmai.TransitionEvent
-}
-
-func (b *Behaviour) AssociatedState() fsmai.StateName {
-	return b.StateName
-}
-
-func (b *Behaviour) Init(state *GameState, actor *Actor, event fsmai.TransitionEvent) {
-	b.InitEvent = event
-	if b.InitAction != nil {
-		b.InitAction(state, actor, event)
-	}
-}
-
-func (b *Behaviour) Execute(state *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
-	return b.BehaviourAction(state, actor, b.InitEvent)
-}
-
 func DefaultBehaviorFactory(state fsmai.StateName) ActorBehavior {
 	var BehaviorTable = map[fsmai.StateName]ActorBehavior{
-		fsmai.StateNeutral: &Behaviour{
-			StateName:       fsmai.StateNeutral,
-			BehaviourAction: BehaviourNeutralIdle,
-			InitAction:      BehaviourNeutralIdleInit,
-		},
-		fsmai.StateAggressive: &Behaviour{
-			StateName:       fsmai.StateAggressive,
-			BehaviourAction: BehaviourAggressiveIdle,
-			InitAction:      BehaviourAggressiveIdleInit,
-		},
-		fsmai.StateKill: &Behaviour{
-			StateName:       fsmai.StateKill,
-			BehaviourAction: BehaviourKill,
-			InitAction:      BehaviourKillInit,
-		},
-		fsmai.StatePanic: &Behaviour{
-			StateName:       fsmai.StatePanic,
-			BehaviourAction: BehaviourPanic,
-			InitAction:      BehaviourPanicInit,
-		},
+		fsmai.StateNeutral:    NeutralBehaviour{},
+		fsmai.StateAggressive: AggressiveBehaviour{},
+		fsmai.StateKill:       KillBehaviour{},
+		fsmai.StatePanic:      PanicBehaviour{},
 	}
 	return BehaviorTable[state]
 }
@@ -59,7 +21,7 @@ func DefaultBehaviorFactory(state fsmai.StateName) ActorBehavior {
 func (g *GameState) TryAIAction(enemy *Actor) int {
 	enemy.GetFlags().Increment(foundation.FlagTurnsSinceLastIdleChatter)
 
-	if enemy.timeEnergy <= 0 || enemy.timeEnergy < enemy.maximalTimeNeededForActions() {
+	if enemy.RawTimeEnergy <= 0 || enemy.RawTimeEnergy < enemy.maximalTimeNeededForActions() {
 		return 0 // not enough time energy for any action, spend 0 to accumulate
 	}
 
@@ -70,13 +32,13 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 			standupTime := enemy.TimeNeededForActions() // get this before resetting knocked down flag
 			return standupTime
 		} else {
-			return enemy.timeEnergy
+			return enemy.RawTimeEnergy
 		}
 	}
 
 	if bed, isBedNear := g.isBedNear(enemy.Position()); isBedNear && g.isAtScheduledLocation(enemy) && enemy.IsIdle() {
 		enemy.SetGoal(GoalSleepAt(bed.Position()))
-		return enemy.timeEnergy
+		return enemy.RawTimeEnergy
 	}
 
 	return enemy.FSM.ExecuteBehavior()
@@ -87,11 +49,11 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		if stunCounter == 1 {
 			//g.msg(foundation.HiLite("%s is stunned", enemy.Name()))
 			enemy.GetFlags().Increment(foundation.FlagStun)
-			return enemy.timeEnergy
+			return enemy.RawTimeEnergy
 		} else {
 			if true { // result.IsFailure() { TODO
 				enemy.GetFlags().Increment(foundation.FlagStun)
-				return enemy.timeEnergy
+				return enemy.RawTimeEnergy
 			}
 			g.msg(foundation.HiLite("%s clears its mind", enemy.Name()))
 		}
@@ -102,7 +64,7 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 			enemy.GetFlags().Unset(foundation.FlagHeld)
 			g.msg(foundation.HiLite("%s breaks free", enemy.Name()))
 		} else {
-			return enemy.timeEnergy
+			return enemy.RawTimeEnergy
 		}
 	}
 
@@ -116,7 +78,7 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 			g.ui.AddAnimations(OneAnimation(g.ui.GetAnimWakeUp(enemy.Position(), nil)))
 			g.msg(foundation.HiLite("%s wakes up", enemy.Name()))
 		} else {
-			return enemy.timeEnergy
+			return enemy.RawTimeEnergy
 		}
 	}
 
@@ -132,7 +94,7 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 	if !inCombat {
 
 		// IDLE STUFF HERE
-		if nearEachOther && g.canPlayerSee(enemy.Position()) && enemy.chatterFile != "" && enemy.GetFlags().Get(foundation.FlagTurnsSinceLastIdleChatter) > 40 && rand.Intn(4) == 0 {
+		if nearEachOther && g.canPlayerSee(enemy.Position()) && enemy.ChatterFile != "" && enemy.GetFlags().Get(foundation.FlagTurnsSinceLastIdleChatter) > 40 && rand.Intn(4) == 0 {
 			if g.tryAddRandomChatter(enemy, foundation.ChatterBeingAroundPlayer) {
 				enemy.GetFlags().Unset(foundation.FlagTurnsSinceLastIdleChatter)
 			}
@@ -149,22 +111,22 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		if slot, move := enemy.MoveToNextTimeSlot(g.gameTime.Time); move {
 			loc := g.currentMap().GetNamedLocation(slot.Location)
 			g.msg(foundation.HiLite("%s moves to %s", enemy.Name(), slot.Location))
-			enemy.SetGoal(GoalWalkToLocation(loc))
+			enemy.SetGoal(GoalRunToLocation(loc))
 		}
 
-		return enemy.timeEnergy // just wait and spend all time energy
+		return enemy.RawTimeEnergy // just wait and spend all time energy
 	}
 
 	if !enemy.IsHostileTowards(g.Player) {
-		return enemy.timeEnergy
+		return enemy.RawTimeEnergy
 	}
 
 	wantToChase := nearEachOther || enemy.HasFlag(foundation.FlagChase)
 	if !wantToChase {
-		return enemy.timeEnergy
+		return enemy.RawTimeEnergy
 	}
 
-	return enemy.timeEnergy
+	return enemy.RawTimeEnergy
 }
 
 func (g *GameState) actConfused(enemy *Actor) []foundation.Animation {

@@ -1,0 +1,6 @@
+%rec: default
+
+Name: Terra Vitae Headquarters
+MusicFile: town_ambience
+IndoorAmbientLight: (0.2, 0.2, 0.2)
+IsOutdoor: false

@@ -1,0 +1,45 @@
+General play styles:
+ - Fighter
+   - Mad Max - Rugged / Survivalist
+   - Augmented Street Samurai - Speed / Agility
+   - Walking Tank - Heavy Armor / Firepower
+ - Diplomat
+   - Corporate Opportunist - Social / Intimidation
+ - Stealth
+   - Ghost - Silent / Non-Lethal
+
+Archetypes:
+ - Mad Scientist - Tech / BioChem
+ - Techie/Hacker - Mechanics / Tech
+ - Codex bound Contractor - Mission / Honor
+ - Joker - Chaos / Evil
+
+
+
+Dialogue Stances:
+
+Morality:
+ - Rugged Do-Gooder
+ - Silver-Tongued Opportunist
+ - Chaotic Evil
+
+Themes:
+ - No Nonsense Professional Contractor
+ - Scientifically Curious
+ - Corporate Loyalist / Anti-Corporate
+
+Daniel Harker
+ - Doc has fallen from grace
+ - buys meld from street gangs
+ - locked his former partner in a cell
+
+Do-Good: "Stop this madness."
+Opportunist: "I want a cut."
+Evil: "Y'all die now."
+Contractor: "Just give me Jacob's money."
+Scientist: "That stuff is bad quality."
+Corporate:
+ -> "Joing EBI"
+ -> "Join BAT"
+ -> "Stay independent"
+

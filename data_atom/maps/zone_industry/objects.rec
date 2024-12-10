@@ -1,0 +1,16 @@
+%rec: default
+
+Category: Transition
+Description: a street
+Location: street_to_commerce
+TargetMap: zone_commerce
+TargetLocation: street_to_industry
+Position: (43,0)
+
+Category: Transition
+Description: a street
+Location: street_to_south
+TargetMap: zone_residential_south
+TargetLocation: street_to_industry
+Position: (43,22)
+

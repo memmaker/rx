@@ -1,4 +1,6 @@
-mapName: home_area
+%rec: playerStart
+
+mapName: zone_residential_south
 mapLocation: spawn
 #item: combat_knife
 item: rugged_trenchcoat

@@ -1,7 +1,7 @@
 package console
 
 import (
-	"RogueUI/gridmap"
+    "contractor/gridmap"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"

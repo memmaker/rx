@@ -1,9 +1,9 @@
 package console
 
 import (
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
 	"cmp"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"fmt"
 	"github.com/0xcafed00d/joystick"
 	"github.com/gdamore/tcell/v2"
@@ -49,7 +49,7 @@ const (
 )
 
 type UILifeCycler interface {
-	StartGameLoop(application *cview.Application, afterScreenReady func())
+	StartGameLoop(settings *foundation.Configuration, application *cview.Application, afterScreenReady func())
 	QuitGame(application *cview.Application)
 }
 
@@ -65,6 +65,8 @@ type UI struct {
 
 	mapOverlay *Overlay
 
+	mapScroll geometry.Point
+
 	mainGrid        *cview.Grid
 	lowerRightPanel *cview.TextView
 	messageLabel    *cview.TextView
@@ -73,10 +75,11 @@ type UI struct {
 	pages           *cview.Panels
 	application     *cview.Application
 	mapWindow       *cview.Box
-	currentMouseX   int
-	currentMouseY   int
-	state           UIState
-	targetingTiles  map[geometry.Point]rune
+
+	currentMouseX  int
+	currentMouseY  int
+	state          UIState
+	targetingTiles map[geometry.Point]rune
 
 	animator  *Animator
 	targetPos geometry.Point
@@ -132,7 +135,7 @@ func (u *UI) ChooseSaveDir(savegameBaseDirectory string, onSubDirConfirmed func(
 	})
 	if len(menuItems) == 0 {
 		u.AskForString("Enter new savegame name", "", func(entered string) {
-			onSubDirConfirmed(entered)
+			onSubDirConfirmed(path.Join(savegameBaseDirectory, entered))
 		})
 		return
 	}
@@ -140,7 +143,7 @@ func (u *UI) ChooseSaveDir(savegameBaseDirectory string, onSubDirConfirmed func(
 		Name: "<New Savegame..>",
 		Action: func() {
 			u.AskForString("Enter new savegame name", "", func(entered string) {
-				onSubDirConfirmed(entered)
+				onSubDirConfirmed(path.Join(savegameBaseDirectory, entered))
 			})
 		},
 		CloseMenus: true,
@@ -244,6 +247,11 @@ func (u *UI) OpenKeypad(specialAction string, correctSequence []rune, onSpecialA
 	u.lockFocusToPrimitive(keyPad)
 }
 
+func (u *UI) isMapScrolling() bool {
+	mapSize := u.game.GetMapSize()
+	return mapSize.X > u.settings.MapWidth || mapSize.Y > u.settings.MapHeight
+}
+
 func (u *UI) SetColors(palette textiles.ColorPalette, colors map[foundation.ItemCategory]color.RGBA) {
 	u.uiTheme = NewUIThemeFromDataDir(u.settings.DataRootDir, palette, colors)
 	u.setTheme()
@@ -345,7 +353,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 			Action: func() {
 				closeContainer()
 				if item.IsMultipleStacks() {
-					u.openAmountWidget(item.Name(), item.StackSize(), func(amount int) {
+					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
 						transferToRight(item, amount)
 					})
 				} else {
@@ -362,7 +370,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 			Action: func() {
 				closeContainer()
 				if item.IsMultipleStacks() {
-					u.openAmountWidget(item.Name(), item.StackSize(), func(amount int) {
+					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
 						transferToLeft(item, amount)
 					})
 				} else {
@@ -376,6 +384,7 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 	leftMenu, longestItemLeft := u.createSimpleMenu(leftPanel, leftMenuItems)
 	longestItemLeft = max(longestItemLeft, len(leftName))
 	leftWidth := longestItemLeft + 2
+
 	leftMenu.SetTitle(leftName)
 	leftMenu.SetSelectedFocusOnly(true)
 
@@ -394,16 +403,28 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 	screenWidth, screenHeight := u.application.GetScreen().Size()
 
 	height := min(screenHeight-4, max(len(leftItems)+2, len(rightItems)+2))
+
+	leftHasScrollbar := len(leftItems) > height-2
+	rightHasScrollbar := len(rightItems) > height-2
+
 	centerGap := 4
-	if screenWidth < leftWidth+rightWidth+centerGap {
+	equalWidth := max(leftWidth, rightWidth)
+	if screenWidth <= (equalWidth*2)+centerGap+4 {
 		centerGap = 0
 	}
 	//borderPadding := 2
 
 	//screenRemaining := screenWidth - centerGap - (2 * borderPadding)
-	equalWidth := max(leftWidth, rightWidth)
 	leftWidth = equalWidth
 	rightWidth = equalWidth
+
+	if leftHasScrollbar {
+		leftWidth += 2
+	}
+
+	if rightHasScrollbar {
+		rightWidth += 2
+	}
 
 	halfCenterGap := centerGap / 2
 	centerScreen := screenWidth / 2
@@ -411,6 +432,22 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 	leftListStart := centerScreen - leftWidth - halfCenterGap
 	rightListStart := leftListStart + leftWidth + centerGap
 	leftMenu.ShowFocus(true)
+	leftMenu.SetMouseCapture(func(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
+		if action == cview.MouseRightClick {
+			if !leftMenu.InRect(event.Position()) && !rightMenu.InRect(event.Position()) {
+				u.application.QueueUpdateDraw(closeContainer)
+				return action, nil
+			}
+		}
+		if action == cview.MouseMove {
+			if leftMenu.InRect(event.Position()) {
+				u.application.SetFocus(leftMenu)
+			} else if rightMenu.InRect(event.Position()) {
+				u.application.SetFocus(rightMenu)
+			}
+		}
+		return action, event
+	})
 	leftMenu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEscape {
 			closeContainer()
@@ -431,7 +468,22 @@ func (u *UI) ShowGiveAndTakeContainer(leftName string, leftItems []foundation.It
 		}
 		return event
 	})
-
+	rightMenu.SetMouseCapture(func(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
+		if action == cview.MouseRightClick {
+			if !leftMenu.InRect(event.Position()) && !rightMenu.InRect(event.Position()) {
+				u.application.QueueUpdateDraw(closeContainer)
+				return action, nil
+			}
+		}
+		if action == cview.MouseMove {
+			if leftMenu.InRect(event.Position()) {
+				u.application.SetFocus(leftMenu)
+			} else if rightMenu.InRect(event.Position()) {
+				u.application.SetFocus(rightMenu)
+			}
+		}
+		return action, event
+	})
 	rightMenu.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEscape {
 			closeContainer()
@@ -490,7 +542,7 @@ func (u *UI) menuLabelsFor(items []foundation.Item) []string {
 	for index, i := range items {
 		item := i
 
-		itemName := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.Category()))
+		itemName := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory()))
 		itemWeight := fmt.Sprintf("%dlbs", item.GetCarryWeight())
 
 		tablerows[index] = fxtools.NewTableRow(itemName, itemWeight)
@@ -511,7 +563,7 @@ func (u *UI) PlayMusic(fileName string) {
 	u.audioPlayer.StreamLoop(fileName)
 }
 func (u *UI) PlayCue(cueName string) {
-	if !u.settings.AudioEnabled || !u.settings.SoundEffectsEnabled {
+	if !u.settings.AudioEnabled || !u.settings.SoundEffectsEnabled || !u.game.MapContainsPlayer() {
 		return
 	}
 	u.audioPlayer.PlayCue(cueName)
@@ -522,14 +574,14 @@ func (u *UI) OpenVendorMenu(title string, itemsForSale []foundation.Item, buyIte
 	var tableRows []fxtools.TableRow
 	for _, i := range itemsForSale {
 		item := i
-		price := i.Price()
-		itemName := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.Category()))
-		tableRows = append(tableRows, fxtools.NewTableRow(itemName, fmt.Sprintf("$%d", price)))
+		price := i.GetPrice()
+		itemName := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory()))
+		tableRows = append(tableRows, fxtools.NewTableRow(itemName, fmt.Sprintf("%d sat", price)))
 	}
 	rendered := fxtools.TableLayoutLastRight(tableRows)
 	for index, line := range rendered {
 		item := itemsForSale[index]
-		tooExpensive := item.Price() > u.game.PlayerGold()
+		tooExpensive := item.GetPrice() > u.game.PlayerGold()
 		if tooExpensive {
 			line = fmt.Sprintf("%s%s[-]", textiles.RGBAToFgColorCode(u.uiTheme.palette.Get("dark_gray_3")), string(cview.StripTags([]byte(line), true, true)))
 		}
@@ -541,11 +593,11 @@ func (u *UI) OpenVendorMenu(title string, itemsForSale []foundation.Item, buyIte
 					return
 				}
 				if item.IsMultipleStacks() {
-					u.openAmountWidget(item.Name(), item.StackSize(), func(amount int) {
-						buyItem(item, amount, item.Price()*amount)
+					u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
+						buyItem(item, amount, item.GetPrice()*amount)
 					})
 				} else {
-					buyItem(item, 1, item.Price())
+					buyItem(item, 1, item.GetPrice())
 				}
 			},
 			CloseMenus: !tooExpensive,
@@ -713,7 +765,7 @@ func (u *UI) showHighscoresAndRestart(highScores []foundation.ScoreInfo) {
 }
 
 func (u *UI) StartGameLoop() {
-	u.lifeCycle.StartGameLoop(u.application, u.afterScreenReady)
+	u.lifeCycle.StartGameLoop(u.settings, u.application, u.afterScreenReady)
 }
 
 func (u *UI) QuitGame() {
@@ -731,9 +783,9 @@ func toLinesOfText(highScores []foundation.ScoreInfo) []string {
 		}
 		scoreLine := ""
 		if highScore.Escaped {
-			scoreLine = fmt.Sprintf("[#c9c54d::b]%d. %s: $%d, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
+			scoreLine = fmt.Sprintf("[#c9c54d::b]%d. %s: %d sat, %s[-:-:-]", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
 		} else {
-			scoreLine = fmt.Sprintf("%d. %s: $%d, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
+			scoreLine = fmt.Sprintf("%d. %s: %d sat, CoD: %s", i+1, highScore.PlayerName, highScore.Gold, highScore.DescriptiveMessage)
 		}
 		scoreTable = append(scoreTable, scoreLine)
 	}
@@ -762,6 +814,9 @@ func (u *UI) ShowHighScoresOnly(highScores []foundation.ScoreInfo) {
 }
 
 func (u *UI) AddAnimations(animations []foundation.Animation) {
+	if !u.game.MapContainsPlayer() {
+		return
+	}
 	for _, animation := range animations {
 		if textAnim, isTextAnim := animation.(TextAnimation); isTextAnim && textAnim != nil {
 			u.animator.AddAnimation(textAnim)
@@ -802,7 +857,7 @@ func (u *UI) AfterPlayerMoved(moveInfo foundation.MoveInfo) {
 	} else if moveInfo.Mode == foundation.PlayerMoveModeRun && u.autoRun {
 		u.application.QueueEvent(tcell.NewEventKey(tcell.KeyRune, directionToRune(moveInfo.Direction), 64))
 	}
-
+	u.updateMapScrollPosition()
 }
 
 func (u *UI) GetAnimMove(actor foundation.ActorForUI, old geometry.Point, new geometry.Point) foundation.Animation {
@@ -832,7 +887,7 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
 
 	if actor.HasFlag(foundation.FlagHeld) {
 		return textiles.TextIcon{
-			Char: actor.Icon().Char,
+			Char: actor.GetIcon().Char,
 			Fg:   u.uiTheme.GetColorByName("Blue_1"),
 			Bg:   u.uiTheme.GetColorByName("White"),
 		}
@@ -851,7 +906,7 @@ func (u *UI) getIconForActor(actor foundation.ActorForUI) textiles.TextIcon {
 			fgColor = fxtools.LerpColorRGBA(mapIconHere.Bg, u.uiTheme.GetColorByName("White"), 0.1)
 		}
 		return textiles.TextIcon{
-			Char: actor.Icon().Char,
+			Char: actor.GetIcon().Char,
 			Fg:   fgColor,
 			Bg:   backGroundColor,
 		}
@@ -1695,7 +1750,6 @@ func (u *UI) GenericInteraction() {
 	u.SelectDirection(func(direction geometry.CompassDirection) {
 		u.game.PlayerInteractInDirection(direction)
 	})
-
 }
 
 func (u *UI) startAutoRun(direction geometry.CompassDirection) {
@@ -1736,16 +1790,44 @@ func (u *UI) setTheme() {
 	u.applyStylingToUI()
 }
 
+func (u *UI) updateMapScrollPosition() {
+	if !u.isMapScrolling() {
+		u.mapScroll = geometry.PointZero
+		return
+	}
+	currentScrollOffset := u.mapScroll
+	minDistToBorders := 5
+
+	windowWidth, windowHeight := u.settings.MapWidth, u.settings.MapHeight
+	mapSize := u.game.GetMapSize()
+	playerPos := u.game.GetPlayerPosition()
+
+	if playerPos.X-currentScrollOffset.X < minDistToBorders {
+		u.mapScroll.X = max(0, playerPos.X-minDistToBorders)
+	} else if playerPos.X-currentScrollOffset.X > windowWidth-minDistToBorders {
+		// Player is too far right, scroll to keep player within border
+		u.mapScroll.X = min(mapSize.X-windowWidth, playerPos.X+minDistToBorders-windowWidth)
+	}
+	if playerPos.Y-currentScrollOffset.Y < minDistToBorders {
+		u.mapScroll.Y = max(0, playerPos.Y-minDistToBorders)
+	} else if playerPos.Y-currentScrollOffset.Y > windowHeight-minDistToBorders {
+		// Player is too far down, scroll to keep player within border
+		u.mapScroll.Y = min(mapSize.Y-windowHeight, playerPos.Y+minDistToBorders-windowHeight)
+	}
+}
+
 func (u *UI) drawMap(screen tcell.Screen, x int, y int, width int, height int) (int, int, int, int) {
 	if !u.game.IsPlayerAndMapInitialized() {
 		return x, y, width, height
 	}
+
 	defaultMapStyle := u.uiTheme.GetMapDefaultStyle()
+
 	for row := y; row < y+height; row++ {
 		for col := x; col < x+width; col++ {
 
-			mapPosX := col - x
-			mapPosY := row - y
+			mapPosX := col - x + u.mapScroll.X
+			mapPosY := row - y + u.mapScroll.Y
 
 			mapPos := geometry.Point{X: mapPosX, Y: mapPosY}
 
@@ -1871,7 +1953,7 @@ func (u *UI) UpdateInventory() {
 			return
 		}
 		getItemName = func(item foundation.Item, isEquipped bool) string {
-			itemIcon := item.GetIcon().WithFg(u.uiTheme.GetInventoryItemColor(item.Category())).WithBg(u.uiTheme.GetUIColor(UIColorUIBackground))
+			itemIcon := item.GetIcon().WithFg(u.uiTheme.GetInventoryItemColor(item.GetCategory())).WithBg(u.uiTheme.GetUIColor(UIColorUIBackground))
 			if isEquipped {
 				itemIcon = itemIcon.Reversed()
 			}
@@ -1880,7 +1962,7 @@ func (u *UI) UpdateInventory() {
 		}
 	} else {
 		getItemName = func(item foundation.Item, isEquipped bool) string {
-			nameWithColorsAndShortcut := item.InventoryNameWithColorsAndShortcut(u.uiTheme.GetInventoryItemColorCode(item.Category()))
+			nameWithColorsAndShortcut := item.InventoryNameWithColorsAndShortcut(u.uiTheme.GetInventoryItemColorCode(item.GetCategory()))
 			if isEquipped {
 				nameWithColorsAndShortcut = nameWithColorsAndShortcut[:2] + "+" + nameWithColorsAndShortcut[3:]
 			}
@@ -2003,7 +2085,7 @@ func (u *UI) UpdateStats() {
 
 	itemName := "| bare hands |"
 	if isEquipped {
-		itemName = "| " + equippedItem.LongNameWithColors(textiles.RGBAToFgColorCode(u.uiTheme.GetInventoryItemColor(equippedItem.Category()))) + " |"
+		itemName = "| " + equippedItem.LongNameWithColors(textiles.RGBAToFgColorCode(u.uiTheme.GetInventoryItemColor(equippedItem.GetCategory()))) + " |"
 	}
 
 	turns := statusValues.GetInt(foundation.HudTurnsTaken)
@@ -2565,9 +2647,9 @@ func (u *UI) popOnSpaceWithNotification(currentPage string, onClose func()) func
 
 func (u *UI) ScreenToMap(point geometry.Point) geometry.Point {
 	x, y, _, _ := u.mapWindow.GetInnerRect()
-
-	mapX := point.X - x
-	mapY := point.Y - y
+	offsetX, offsetY := u.mapScroll.X, u.mapScroll.Y
+	mapX := point.X - x + offsetX
+	mapY := point.Y - y + offsetY
 	return geometry.Point{X: mapX, Y: mapY}
 }
 
@@ -2585,30 +2667,39 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 	if newX != u.currentMouseX || newY != u.currentMouseY {
 		u.currentMouseX = newX
 		u.currentMouseY = newY
-		if !u.autoRun {
+		if !u.autoRun && action == cview.MouseMove {
 			mapPos := u.ScreenToMap(mousePos)
 			mapInfo := u.game.GetMapInfo(mapPos)
-			if !mapInfo.IsEmpty() {
-				u.Print(mapInfo)
-			} else {
+			if mapInfo.IsEmpty() {
 				u.application.QueueUpdateDraw(u.UpdateLogWindow)
+			} else {
+				u.Print(mapInfo)
 			}
 		}
 	}
 	mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})
 	isModified := event.Modifiers() != 0
+
+	_, screenHeight := u.application.GetScreenSize()
+
 	if action == cview.MouseLeftClick {
 		u.autoRun = false
 		if u.currentMouseX >= u.settings.MapWidth {
 			// clicked on right panel
 			u.onRightPanelClicked(mousePos, false, isModified)
+		} else if u.currentMouseY == screenHeight-1 {
+			// clicked status bar
+			if isModified {
+				u.game.PlayerReloadWeapon()
+			} else {
+				u.game.PlayerRangedAttack()
+			}
 		} else {
 			if isModified {
 				u.game.DebugClickAt(mapPos)
 			} else {
 				u.game.PlayerInteractAtPosition(mapPos)
 			}
-
 			//u.game.OpenContextMenuFor(mapPos)
 		}
 		return nil, -1
@@ -2617,6 +2708,9 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 		if u.currentMouseX >= u.settings.MapWidth {
 			// clicked on right panel
 			u.onRightPanelClicked(mousePos, true, isModified)
+		} else if u.currentMouseY == screenHeight-1 {
+			// clicked status bar
+			u.game.CycleTargetMode()
 		} else {
 			actorAt := u.game.ActorAt(mapPos)
 			if actorAt != nil {
@@ -2711,7 +2805,7 @@ func (u *UI) ShowActorOverlay() {
 
 func (u *UI) TryAddChatter(source foundation.ChatterSource, text string) bool {
 	windowSize := u.GetMapWindowGridSize()
-	if u.mapOverlay.TryAddOverlayColored(source.Position(), text, source.Icon().Fg, windowSize, u.game.IsSomethingInterestingAtLoc) {
+	if u.mapOverlay.TryAddOverlayColored(source.Position(), text, source.GetIcon().Fg, windowSize, u.game.IsSomethingInterestingAtLoc) {
 		return true
 	}
 	return false
@@ -2740,7 +2834,7 @@ func (u *UI) ShowVisibleActors() {
 	}
 	tableRows := make([]fxtools.TableRow, len(listOfEnemies)+1)
 	header := fxtools.NewTableRow(
-		"Icon",
+		"GetIcon",
 		"Name",
 		"HP",
 		"Dmg",
@@ -2768,10 +2862,10 @@ func (u *UI) ShowVisibleItems() {
 		return
 	}
 	var infoTexts strings.Builder
-	infoTexts.WriteString("Items in sight:\n")
+	infoTexts.WriteString("GetItems in sight:\n")
 	longestLine := 0
 	for i, item := range listOfItems {
-		info := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.Category()))
+		info := item.InventoryNameWithColors(u.uiTheme.GetInventoryItemColorCode(item.GetCategory()))
 		icon := item.GetIcon()
 		char := icon.Char
 		info = fmt.Sprintf(" %s%c[-:-] - %s", textiles.RGBAToColorCodes(icon.Fg, icon.Bg), char, info)
@@ -2922,8 +3016,8 @@ func (u *UI) mapLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 		return mapIcon, found
 	} else if u.game.IsExplored(loc) {
 		mapIcon, found := u.exploredLookup(loc)
-		mapIcon.Fg = desaturate(mapIcon.Fg)
-		mapIcon.Bg = desaturate(mapIcon.Bg)
+		mapIcon.Fg = darken(desaturate(mapIcon.Fg))
+		mapIcon.Bg = darken(desaturate(mapIcon.Bg))
 		return mapIcon, found
 	}
 	return textiles.TextIcon{}, false
@@ -2932,6 +3026,15 @@ func (u *UI) mapLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 func desaturate(fg color.RGBA) color.RGBA {
 	gray := uint8((uint16(fg.R) + uint16(fg.G) + uint16(fg.B)) / 3)
 	return color.RGBA{R: gray, G: gray, B: gray, A: fg.A}
+}
+
+func darken(fg color.RGBA) color.RGBA {
+	return color.RGBA{
+		R: fg.R / 2,
+		G: fg.G / 2,
+		B: fg.B / 2,
+		A: fg.A,
+	}
 }
 func (u *UI) getMapTileBackgroundColor(loc geometry.Point) color.RGBA {
 	icon := u.getIconForMap(loc)
@@ -2956,7 +3059,7 @@ func (u *UI) exploredLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 	var icon textiles.TextIcon
 	objectAtLoc := u.game.ObjectAt(loc)
 	if objectAtLoc != nil {
-		icon = conditionalBackgroundWrapper(objectAtLoc.Icon())
+		icon = conditionalBackgroundWrapper(objectAtLoc.GetIcon())
 	} else {
 		icon = u.getIconForMap(loc)
 	}
@@ -2988,7 +3091,7 @@ func (u *UI) visibleLookup(loc geometry.Point) (textiles.TextIcon, bool) {
 		icon = conditionalBackgroundWrapper(item.GetIcon())
 	case foundation.EntityTypeObject:
 		object := u.game.ObjectAt(loc)
-		icon = conditionalBackgroundWrapper(object.Icon())
+		icon = conditionalBackgroundWrapper(object.GetIcon())
 	default:
 		icon = u.getIconForMap(loc)
 	}
@@ -3041,11 +3144,11 @@ func (u *UI) onRightPanelClicked(clickPos geometry.Point, isRightClick bool, mod
 	} else {
 		if modified {
 			if item.IsStackable() && item.IsMultipleStacks() {
-				u.openAmountWidget(item.Name(), item.StackSize(), func(amount int) {
+				u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
 					if amount == 0 {
 						return
 					}
-					if amount == item.StackSize() {
+					if amount == item.GetStackSize() {
 						u.game.PlayerDropItem(item)
 						return
 					}
@@ -3336,7 +3439,7 @@ func (u *UI) loadAudioSfx() {
 		u.audioPlayer.SoundsLoaded()
 	}()
 
-	u.animator.SetAudioCuePlayer(u.audioPlayer)
+	u.animator.SetAudioCuePlayer(u)
 }
 
 func (u *UI) getIconForMap(loc geometry.Point) textiles.TextIcon {
@@ -3471,6 +3574,7 @@ func (u *UI) OpenSystemMenu() {
 				Action: func() {
 					u.game.SaveGame(path.Join(u.settings.SaveGameDir, "iron_man"))
 				},
+				CloseMenus: true,
 			},
 			{
 				Name: "Quit Game",
@@ -3481,18 +3585,21 @@ func (u *UI) OpenSystemMenu() {
 						}
 					})
 				},
+				CloseMenus: true,
 			},
 		})
 		return
 	}
 	u.OpenMenu([]foundation.MenuItem{
 		{
-			Name:   "Save Game",
-			Action: u.SelectSaveName,
+			Name:       "Save Game",
+			Action:     u.SelectSaveName,
+			CloseMenus: true,
 		},
 		{
-			Name:   "Load Game",
-			Action: u.SelectLoadName,
+			Name:       "Load Game",
+			Action:     u.SelectLoadName,
+			CloseMenus: true,
 		},
 		{
 			Name: "Quit Game",
@@ -3503,6 +3610,7 @@ func (u *UI) OpenSystemMenu() {
 					}
 				})
 			},
+			CloseMenus: true,
 		},
 	})
 }

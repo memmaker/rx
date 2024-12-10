@@ -1,9 +1,10 @@
 package game
 
 import (
-	"RogueUI/foundation"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
 	"math"
 	"strings"
 )
@@ -13,54 +14,63 @@ func (g *GameState) NewScriptLeaveMap(leaver *Actor, running bool) ActionScript 
 		g.msg(foundation.HiLite("NewScriptLeaveMap: leaver is nil"))
 		return ActionScript{}
 	}
-	targetPos := leaver.Position()
+	transitionPos := leaver.Position()
 
 	g.updateFoVAndDijkstraMap(leaver)
 
 	minDist := math.MaxInt
 	for reachablePos, dist := range leaver.DijkstraMap {
 		if g.currentMap().IsTransitionAt(reachablePos) && dist < minDist {
-			targetPos = reachablePos
+			transitionPos = reachablePos
 			minDist = dist
 		}
 	}
-	if targetPos == leaver.Position() {
-		g.msg(foundation.HiLite("NewScriptLeaveMap: no transition found"))
+
+	if transitionPos == leaver.Position() && !g.currentMap().IsTransitionAt(transitionPos) {
+		g.msg(foundation.Msg("No transition found"))
 		return ActionScript{}
 	}
 
-	transition, _ := g.currentMap().GetTransitionAt(targetPos)
+	return g.NewScriptLeaveMapAt(leaver, running, transitionPos)
+}
 
-	var goal ActorGoal
+func (g *GameState) NewScriptLeaveMapAtLocation(leaver *Actor, running bool, location string) ActionScript {
+	transitionPos := g.currentMap().GetNamedLocation(location)
+	return g.NewScriptLeaveMapAt(leaver, running, transitionPos)
+}
+
+func (g *GameState) NewScriptLeaveMapAt(leaver *Actor, running bool, transitionPos geometry.Point) ActionScript {
+	transition, _ := g.currentMap().GetTransitionAt(transitionPos)
+
+	var goToTransition ActorGoal
 	if running {
-		goal = GoalWalkToLocation(targetPos)
+		goToTransition = GoalRunToLocation(transitionPos)
 	} else {
-		goal = GoalStrideToLocation(targetPos)
+		goToTransition = GoalWalkToLocation(transitionPos)
 	}
 
 	return ActionScript{
 		Name: fmt.Sprintf("leaves_map_%s", leaver.GetInternalName()),
 		Frames: []ScriptFrame{
-			FrameSetGoal(goal, leaver),
-			FrameRemoveFromGame(leaver, func(actor *Actor) {
-				g.removeActorFromMap(g.currentMap(), actor, transition)
+			FrameSetGoal(goToTransition, leaver),
+			FrameRemoveFromMap(leaver, func(actor *Actor) {
+				g.actorTransition(g.currentMap(), actor, transition)
 			}).WithCondition(func() bool {
-				return leaver.Position() == targetPos
+				return leaver.Position() == transitionPos
 			}),
 		},
 		Outcomes: []ScriptFrame{
 			BasicScriptFrame{
-				condition: func() bool { return g.IsRemovedFromGame(leaver) },
-				action: func() {
-					g.gameFlags.SetFlag(fmt.Sprintf("removed(%s)", leaver.GetInternalName()))
+				condition: func() bool {
+					return leaver.Position() == transitionPos && leaver.HasFlag(foundation.FlagWantsToTransition)
 				},
 			},
 			BasicScriptFrame{
 				condition: func() bool { return !leaver.IsAlive() },
 			},
 		},
-		CancelFrame: FrameRemoveFromGame(leaver, func(actor *Actor) {
-			g.removeActorFromMap(g.currentMap(), actor, transition)
+		CancelFrame: FrameRemoveFromMap(leaver, func(actor *Actor) {
+			g.actorTransition(g.currentMap(), actor, transition)
 		}),
 	}
 }
@@ -79,7 +89,7 @@ func (g *GameState) NewScriptKill(killer, victim *Actor) ActionScript {
 			FrameSetGoal(GoalMoveIntoShootingRange(victim), killer).WithAction(func() {
 				g.tryAddRandomChatter(killer, foundation.ChatterOnTheWayToAKill)
 			}),
-			FrameSetGoal(GoalKillActor(killer, victim), killer).
+			FrameSetGoal(GoalKillActor(victim), killer).
 				WithCondition(func() bool {
 					return g.IsInShootingRange(killer, victim)
 				}).
@@ -151,38 +161,38 @@ func FrameSetGoal(goal ActorGoal, actors ...*Actor) SetGoalFrame {
 	return SetGoalFrame{actors: actors, goal: goal}
 }
 
-type RemoveFromGameFrame struct {
+type RemoveFromMapFrame struct {
 	actor  *Actor
 	cond   func() bool
 	remove func(actor *Actor)
 }
 
-func (r RemoveFromGameFrame) IsEmpty() bool {
+func (r RemoveFromMapFrame) IsEmpty() bool {
 	return r.actor == nil
 }
 
-func (r RemoveFromGameFrame) Condition(m map[string]interface{}) bool {
+func (r RemoveFromMapFrame) Condition(m map[string]interface{}) bool {
 	if r.cond != nil {
 		return r.cond()
 	}
 	return true
 }
 
-func (r RemoveFromGameFrame) ExecuteActions(m map[string]interface{}) {
+func (r RemoveFromMapFrame) ExecuteActions(m map[string]interface{}) {
 	r.remove(r.actor)
 }
 
-func (r RemoveFromGameFrame) String() string {
-	return fmt.Sprintf("RemoveFromGameFrame{actor: %s}", r.actor.Name())
+func (r RemoveFromMapFrame) String() string {
+	return fmt.Sprintf("RemoveFromMapFrame{actor: %s}", r.actor.Name())
 }
 
-func (r RemoveFromGameFrame) WithCondition(f func() bool) RemoveFromGameFrame {
+func (r RemoveFromMapFrame) WithCondition(f func() bool) RemoveFromMapFrame {
 	r.cond = f
 	return r
 }
 
-func FrameRemoveFromGame(leaver *Actor, remove func(actor *Actor)) RemoveFromGameFrame {
-	return RemoveFromGameFrame{actor: leaver, remove: remove}
+func FrameRemoveFromMap(leaver *Actor, remove func(actor *Actor)) RemoveFromMapFrame {
+	return RemoveFromMapFrame{actor: leaver, remove: remove}
 }
 
 type BasicScriptFrame struct {

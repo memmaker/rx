@@ -1,9 +1,9 @@
 package game
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
-	"RogueUI/gridmap"
+	"contractor/d100"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -346,7 +346,7 @@ func invisibilityTarget(g *GameState, zapper *Actor, targetPos geometry.Point) [
 
 	if g.currentMap().IsActorAt(targetPos) {
 		targetActor := g.currentMap().ActorAt(targetPos)
-		//actorIcon := targetActor.Icon()
+		//actorIcon := targetActor.GetIcon()
 		//coverAnim := g.ui.GetAnimCover(targetPos, actorIcon, dist, nil)
 		//animations = append(animations, coverAnim)
 		makeInvisible(g, targetActor)
@@ -376,7 +376,7 @@ func teleportTargetTo(g *GameState, zapper *Actor, targetPos geometry.Point) []f
 
 	if g.currentMap().IsActorAt(targetPos) {
 		targetActor := g.currentMap().ActorAt(targetPos)
-		//hitActorIcon := targetActor.Icon()
+		//hitActorIcon := targetActor.GetIcon()
 		//coverAnim := g.ui.GetAnimCover(targetPos, hitActorIcon, dist, nil)
 		//animations = append(animations, coverAnim)
 
@@ -403,7 +403,7 @@ func teleportTargetAway(g *GameState, zapper *Actor, targetPos geometry.Point) [
 
 	if g.currentMap().IsActorAt(targetPos) {
 		targetActor := g.currentMap().ActorAt(targetPos)
-		//hitActorIcon := targetActor.Icon()
+		//hitActorIcon := targetActor.GetIcon()
 		//coverAnim := g.ui.GetAnimCover(targetPos, hitActorIcon, dist, nil)
 		//animations = append(animations, coverAnim)
 
@@ -500,12 +500,12 @@ func (d DelayedEffect) String() string {
 	return fmt.Sprintf("Delayed: %s", d.description)
 }
 
-func NewDelayedEffect(turnsUntilActivation int, description string, effectCall func()) (Timed, bool, func()) {
+func NewDelayedEffect(turnsUntilActivation int, description string, effectCall func()) (Timed, string, func()) {
 	delayedEffect := &DelayedEffect{
 		ticksUntilActivation: turnsUntilActivation,
 		description:          description,
 	}
-	return delayedEffect, true, effectCall
+	return delayedEffect, "", effectCall
 }
 
 func hasteTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
@@ -630,7 +630,7 @@ func (g *GameState) damageLocation(damage SourcedDamage, targetPos geometry.Poin
 func (g *GameState) damageItem(damage SourcedDamage, item foundation.Item) {
 	destroyItem := item.IsBreakingNow()
 	if item.IsArmor() || item.IsWeapon() {
-		currentQuality := int(item.Quality())
+		currentQuality := int(item.GetQuality())
 		newQuality := currentQuality - damage.DamageAmount
 		if newQuality > 0 {
 			destroyItem = false
@@ -686,8 +686,8 @@ func (d SourcedDamage) ModifyDamageByArmor(target *Actor) SourcedDamage {
 	threshold := 0
 	originalDamageAmount := d.DamageAmount
 
-	if target.GetEquipment().HasArmorEquipped() {
-		armor := target.GetEquipment().GetArmor()
+	if target.GetInventory().HasArmorEquipped() {
+		armor := target.GetInventory().GetArmor()
 		protection := armor.GetArmorProtection(d.DamageType)
 		threshold = protection.DamageThreshold
 		reduction += protection.DamageReduction
@@ -711,12 +711,12 @@ func (d SourcedDamage) ModifyDamageByArmor(target *Actor) SourcedDamage {
 	}
 
 	// degrade armor
-	if target.GetEquipment().HasArmorEquipped() {
+	if target.GetInventory().HasArmorEquipped() {
 		ablation := ablationWithoutPenetration
 		if newDamageAmount > 0 {
 			ablation = ablationWithPenetration
 		}
-		armor := target.GetEquipment().GetArmor()
+		armor := target.GetInventory().GetArmor()
 		armor.Degrade(float64(ablation))
 	}
 

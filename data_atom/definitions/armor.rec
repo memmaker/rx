@@ -1,3 +1,6 @@
+%rec: armor
+%key: Name
+
 ## Very generic clothing
 
 Description: Street wear
@@ -16,6 +19,122 @@ armor_style: low_life
 weight: 1
 cost: 15
 armor_conceal_slot: hand
+
+## EBI Security ##
+
+name: ebi_officer_cap
+Description: EBI Officer Cap
+Category: Headgear
+armor_physical_threshold: 0
+skill_bonus: intimidate(5)
+armor_style: business
+weight: 1
+cost: 85
+LongDescription: A dark green cap with the EBI logo prominently embroidered on the front. The hat is simple yet symbolic, marking the wearer as an officer of Eschaton’s security division.
+
+name: ebi_guard_cap
+Description: EBI Guard Cap
+Category: Headgear
+armor_physical_threshold: 0
+skill_bonus: intimidate(2)
+armor_style: business
+weight: 1
+cost: 50
+LongDescription: A dark green cap with the EBI logo prominently embroidered on the front. The hat is simple yet symbolic, marking the wearer as a guard of Eschaton’s security division.
+
+name: ebi_officer_uniform
+Description: EBI Officer Uniform
+Category: Armor
+armor_physical_threshold: 2
+armor_style: business
+weight: 2
+cost: 340
+skill_bonus: intimidate(5)
+LongDescription: A dark green and black uniform with high-visibility yellow accents, tailored for patrol officers. The uniform features the EBI insignia on the chest and shoulders, multiple utility pockets, and durable bio-fiber material designed for long shifts and varying weather conditions.
+armor_conceal_slot: hand
+armor_conceal_slot: hand
+
+name: ebi_guard_uniform
+Description: EBI Guard Uniform
+Category: Armor
+armor_physical_threshold: 2
+armor_style: business
+weight: 2
+cost: 200
+skill_bonus: intimidate(2)
+LongDescription: A dark green and black uniform with high-visibility yellow accents, tailored for security guards. The uniform features the EBI insignia on the chest and shoulders, multiple utility pockets, and durable bio-fiber material designed for long shifts and varying weather conditions.
+armor_conceal_slot: hand
+armor_conceal_slot: hand
+
+Name: rugged_worker_attire
+Description: Rugged Worker Attire
+Category: Armor
+armor_physical_threshold: 1
+armor_style: casual
+weight: 1
+cost: 50
+LongDescription: A well-worn set of rugged clothes for laborers, stitched together from durable fabric and designed to endure the hardships of daily toil.
+
+Name: foreman_cap
+Description: Foreman Cap
+Category: Headgear
+armor_physical_threshold: 0
+armor_style: casual
+weight: 1
+cost: 25
+LongDescription: A sturdy brown cap often worn by site foremen, adding a touch of authority to its practicality.
+
+Name: armatech_executive_suit
+Description: ArmaTech Executive Suit
+Category: Armor
+armor_physical_threshold: 3
+armor_style: business
+weight: 2
+cost: 500
+skill_bonus: social(5)
+LongDescription: A sleek, tailored suit worn by the most influential executives at Bushido-ArmaTech. It radiates confidence and authority, with discreet protective enhancements for the discerning leader.
+
+Name: precision_specs
+Description: Precision Specs
+Category: Headgear
+armor_physical_threshold: 0
+armor_style: business
+weight: 1
+cost: 40
+skill_bonus: perception(1)
+LongDescription: A pair of finely crafted spectacles, ideal for reviewing critical documents or commanding a room with clarity.
+
+Name: tech_ops_jumpsuit
+Description: Tech Ops Jumpsuit
+Category: Armor
+armor_physical_threshold: 2
+armor_style: utility
+weight: 2
+cost: 300
+skill_bonus: technology(5)
+skill_bonus: mechanics(3)
+LongDescription: A high-performance jumpsuit designed for engineers on the cutting edge. Packed with utility pockets and integrated diagnostic tools, it ensures efficiency and durability in the field.
+
+Name: engineer_bandana
+Description: Engineer Bandana
+Category: Headgear
+armor_physical_threshold: 0
+armor_style: utility
+weight: 1
+cost: 20
+skill_bonus: technology(2)
+LongDescription: A practical bandana that keeps sweat at bay while signaling a tech-savvy style.
+
+Name: ebi_business_shirt_pants
+Description: Business Shirt and Pants
+Category: Armor
+armor_physical_threshold: 1
+armor_style: business
+weight: 1
+cost: 150
+skill_bonus: biochemistry(3)
+LongDescription: A crisp, white outfit adorned with the insignia of Eschaton Biotech International, perfect for projecting professionalism and allegiance.
+
 
 ## High Fashion
 
@@ -109,6 +228,7 @@ armor_style: business
 Category: Armor
 weight: 1
 cost: 250
+skill_bonus: biochemistry(5)
 armor_conceal_slot: long
 armor_conceal_slot: long
 LongDescription: A standard issue lab coat from Eschaton Biotech International. It's made from a special material that resists staining and is easy to clean.
@@ -119,6 +239,7 @@ armor_style: business
 Category: Armor
 weight: 1
 cost: 250
+skill_bonus: technology(5)
 armor_conceal_slot: long
 armor_conceal_slot: long
 LongDescription: A lab coat from Bushido-ArmaTech. It's made from a special material that resists staining and is easy to clean.

@@ -1,6 +1,0 @@
-%rec: default
-
-Name: Kelso, California
-MusicFile: town_ambience
-#IndoorAmbientLight: (1.0, 1.0, 1.0)
-IsOutdoor: true

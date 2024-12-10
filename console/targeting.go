@@ -1,8 +1,8 @@
 package console
 
 import (
-	"RogueUI/d100"
-	"RogueUI/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
@@ -70,7 +70,7 @@ func (u *UI) SelectTarget(getAttackInfo func(target foundation.ActorForUI) found
 		actorAt := u.game.ActorAt(targetPos)
 		if actorAt != nil {
 			attackInfo := getAttackInfo(actorAt)
-			hitChance := attackInfo.HitChance()
+			hitChance := attackInfo.SuccessChance()
 			cthString := fmt.Sprintf("%d%%", hitChance)
 			placeBelow := u.game.GetPlayerPosition().Y < targetPos.Y
 			if placeBelow {
@@ -93,7 +93,9 @@ func (u *UI) SelectTarget(getAttackInfo func(target foundation.ActorForUI) found
 			} else {
 				damageText = fmt.Sprintf("Damage Range: %s", attackInfo.DamageBase().ShortString())
 			}
-			fullText := fmt.Sprintf("%s\n\n%s", cthText, damageText)
+			totalCth := attackInfo.SuccessChance()
+			totalCthString := fmt.Sprintf("Total CTH: %d%%", totalCth)
+			fullText := fmt.Sprintf("%s\n%s\n\n%s", cthText, totalCthString, damageText)
 
 			u.rightPanel.SetText(fullText)
 		}
@@ -135,6 +137,10 @@ func (u *UI) beginTargeting(onSelected func(targetPos geometry.Point, hitZone in
 				onSelected(u.targetPos, 0)
 				return nil, action
 			}
+		} else if action == cview.MouseRightClick {
+			u.cancelTargeting()
+			u.UpdateLogWindow()
+			return nil, action
 		}
 		return event, action
 	})
@@ -154,7 +160,7 @@ func (u *UI) LookTargeting() {
 }
 func (u *UI) handleDirectionalTargetingInput(onSelected func(targetDir geometry.CompassDirection)) func(ev *tcell.EventKey) *tcell.EventKey {
 	return func(ev *tcell.EventKey) *tcell.EventKey {
-		//_, _, ch := ev.Modifiers(), ev.Key(), ev.Rune()
+		//_, _, ch := ev.ModList(), ev.Key(), ev.Rune()
 		if ev.Key() == tcell.KeyCtrlC {
 			return ev
 		}
@@ -196,7 +202,7 @@ func (u *UI) handleAdvancedTargetingInput(listOfVisibleEnemies []foundation.Acto
 		u.updateTarget(listOfVisibleEnemies[enemyIndex].Position())
 	}
 	return func(ev *tcell.EventKey) *tcell.EventKey {
-		//mod, key, ch := ev.Modifiers(), ev.Key(), ev.Rune()
+		//mod, key, ch := ev.ModList(), ev.Key(), ev.Rune()
 		if ev.Key() == tcell.KeyCtrlC {
 			return ev
 		}

@@ -1,0 +1,39 @@
+# idea:
+# define when a NPC should be where
+# and optionally what he does there
+
+%rec: slots
+
+day: every_day
+time: 08:00
+map: zone_residential_south
+location: quinns_home
+description: looking through some magazines
+
+day: every_day
+time: 12:00
+map: zone_residential_south
+location: dark_alley_meeting_spot_two
+description: waiting, looking around for someone
+observation_flag: Knows(quinn_dark_alley_meeting)
+
+day: every_day
+time: 12:10
+map: zone_residential_south
+location: quinns_home
+description: looking through some magazines
+
+day: every_day
+time: 18:00
+map: zone_commerce
+location: quinns_place
+transition: street_to_north_west
+description: he looks thirsty
+
+day: every_day
+time: 23:55
+map: zone_residential_south
+transition: street_to_north
+location: quinns_bed
+description: sleeping
+sleep: true

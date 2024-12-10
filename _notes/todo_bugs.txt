@@ -1,0 +1,173 @@
+BUGS
+
+ - Status Bar overflows on minimal terminal size
+ - Shotgun Pellets act as one bullet right now.
+ - Actor AI in general and their states
+   - Interaction Markers (incl. Objects and Descriptions)
+   - Sandbox Behaviours
+ - Cannot pickup mines
+ - Buying 1 bullet from Bob doesn't work
+ - Drake has no goal and no schedule after map transition
+ - Schedules are broken, because of the way we determine the current time slot
+ - Actors can have conflicting states (Kill), goals (Fleeing) and status effects (Sleeping)
+ - Picking up two Terra Vitae leaflets registers as only one
+ - Hitting someone with the tranq dart gun won't give a confirmation message for the hit
+ - Dropping from the inventory doesn't ask for amount of the stack
+ - Game crashes on firing the bowel disruptor, presumably when hitting
+
+//TODO
+ - Guns
+ - Stopping an attacker with an firearm
+   - Fear, just display a weapon + the willingness to use it
+   - Pain, except if drugged or with pain tolerance
+   - Lower blood pressure, eg. blood loss -> unconsciousness in 15 seconds to 1 minute
+   - Severe the central nervous system, eg. headshot -> instant death
+ - Knockback produces equal force on the shooter
+ - Firing a big caliber without the strength can injure you
+ - Silencer reduce sound by a factor of about 40x, but that's still as loud as a chainsaw
+ - Bullets usually don't penetrate door locks
+ - Igniting explosives with bullets requires incendiary bullets
+ - Make player quips more situational, like barks are already, let them have different effects, depending on outfit, gear, motivation, situation
+   -> Make it a mini conversation puzzle in the Monkey Island style?
+   -> List one random line from different situations in the current one. When the player selects the matching line to this situation, the bonus is doubled.
+ - Perk actions in dialogue (quick draw as an intimidation action)
+ - Weapon Spread (hitting multiple targets)
+ - Let NPCs initiate Dialogues
+ - Let NPCs fight each other
+ - Chem effects bound to their quality
+ - Police Force (EHPD)
+ - no way to repair items without skill investment
+ - Disguises
+ - Sound Propagation
+ - Vents or Windows for breaking and entering
+ - Ownership of Items / Doors
+ - Weapon Concealment / Reliability
+ - Jams
+ - Criticals
+ - Concealment of Weapons
+ - Unified Item Naming according to Lore
+ - Abstractions / Generators
+   -> Corporate Goons (Eschaton, NoArmor, [Melee, Pistols])
+   -> Small Loot Cache
+   -> Rooms & Streets
+   -> Furniture & Clutter
+
+Weapons with knock-down, will also knockdown the shooter.
+Except if he has cyber legs with anchor points.
+
+
+Bullets vs. Doors
+Ammo Tags
+ - small_caliber (6mm) .22
+ - medium_caliber (9mm) .357
+ - large_caliber (13mm) .500
+ - small_gauge (15mm) 20 gauge
+ - medium_gauge (18mm) 12 gauge
+ - large_gauge (27mm) 4 gauge
+ - grenades (40mm)
+
+Energy Cells for Lasers:
+ - PF1x (Pocket Fusion)
+ - PF2x
+ - PF3x
+
+Plasma Cells for Plasma Weapons:
+ - CP1x (Contained Plasma)
+ - CP2x
+ - CP3x
+
+CP1A cells
+PF1A cells
+
+3T plasma cells
+
+Weapon Manufacturer Shorts:
+ - A - Military    - Bushido ArmaTech
+   - ArmaTech 15
+
+ - B - Cheap/Melee - BluntWare
+   - B9 Pistol
+ - E - Exotic      - Eschaton Biotech International
+   - Wrath of God
+ - T - Japanese    - Tengu Tactical Systems
+  - Type 400 SMG
+
+Ammo Caliber:
+ - Diameter in mm
+ - Manufacturer (A, B, E, T)
+
+
+bullets, shotgun shells, grenades, rockets, lasers, plasma, darts, flechettes
+
+
+ammo_caliber: 9 // 6, 9, 13, 15, 18, 27, 40, E1, E2, E3, P1, P2, P3
+ammo_manufacturer: A
+ammo_case: brass
+ammo_propellant: gunpowder // gyrojet, ramjet, rocket, laser, plasma
+
+A15 buckshot -> ArmaTech 15mm buckshot (20 gauge)
+
+E18 slug -> Eschaton 18mm slug (12 gauge)
+
+B13 magnum -> BluntWare ArmaTech 13mm magnum round
+
+T40 grenade -> Tengu 40mm grenade
+
+By default, all weapons are vendor locked and will only accept ammo from the same manufacturer.
+There is perk to unlock this restriction.
+
+Ammo Types
+ - high_velocity -> more noise, easier to hit, more damage & recoil
+ - gyrojet -> no recoil, less noise, caseless, expensive, require special weapon, speeds up per distance, so less damage up close
+ - polymer casing
+ - brass casing
+ - caseless -> less jamming
+ - flechette -> more range, armor piercing
+ - armor_piercing -> less damage, more penetration
+ - hollow_point -> more damage, less penetration
+ - overpressure (dangerous in low quality weapons)
+ - magnum -> more power, more recoil
+ - subsonic -> harder to hit, but less noise
+ - handloaded -> depend on quality center at 50%
+
+Shotgun Ammo Types
+ - slug
+ - breaching_rounds
+ - buckshot
+
+Unique Weapons:
+ - Keymaster
+ - Industrial Shotgun
+ - Carl Gustaf 8.4 cm recoilless rifle
+
+
+One of two things will happen if you use a small caliber weapon:
+80% -> The bullet will ricochet off the lock
+20% -> The bullet will lodge itself into the lock and make it even more difficult to open.
+
+Larger Calibers (> .45) will:
+60% -> Ricochet off the lock
+20% -> Destroy the lock and make it impossible to open.
+20% -> Destroy the lock and make it possible to open.
+
+Better:
+100% -> Shotgun + Breaching Rounds
+80% Shotgun Slug
+60% Shotgun Buckshot
+
+Breaching Grenades 40mm
+
+
+Reactions to being attacked:
+ - Offensive
+   - Self-defense
+   - Activate a trap, guns, etc.
+ - Defensive
+    - Duck and cover
+    - Run away
+    - Activate a panic room
+    - Activate a shield
+ - Communication
+   - Try to talk the attacker down
+   - Activate an alarm
+   - Call your guards

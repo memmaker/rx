@@ -19,13 +19,20 @@ o_text: I'm here to collect my reward.
 o_cond: !HasFlag('ClientRewardReceived(starter)')
 o_goto: CollectPayment
 #
-o_text: I'd like to know my client on a more personal level.
-o_test: RollSkill('seduce', 'Easy')
-o_succ: SeduceSuccess
-o_fail: SeduceFail
-#
 o_text: I'm here to renegotiate the terms of our contract.
 o_goto: NegotiateContract
+#
+o_text: I represent some bigger third party. You better listen carefully now.
+o_cond: HasOutfit('business') && HasVisibleWeapon()
+o_test: RollSkill('social', 'Hard')
+o_succ: CorporateSuccess
+o_fail: CorporateFail
+#
+o_text: I represent some bigger third party. You better listen carefully now.
+o_cond: HasOutfit('business') && !HasVisibleWeapon()
+o_test: RollSkill('social', 'Easy')
+o_succ: CorporateSuccess
+o_fail: CorporateFail
 #
 o_text: You'll leave the Ripperdoc alone, is that clear?
 o_test: RollSkill('intimidate', 'Hard')
@@ -91,7 +98,7 @@ npc: The deal was already set. What makes you think you deserve more?
 + I’m not in the habit of paying twice.
 #
 o_text: The risk was higher than expected. I want double.
-o_test: RollSkill('persuade', 'Easy')
+o_test: RollSkill('social', 'Hard')
 o_succ: NegotiateSuccess
 o_fail: NegotiateFail
 #
@@ -100,10 +107,8 @@ o_test: RollSkill('intimidate', 'Easy')
 o_succ: NegotiateSuccess
 o_fail: NegotiateFail
 #
-o_text: Fine, I’ll settle for half now, half later.
-o_test: RollSkill('Seduce', 'Easy')
-o_succ: NegotiateSuccess
-o_fail: NegotiateFail
+o_text: Fine, let’s call it even. I’ll take the original payment.
+o_goto: DefaultIntroduction
 
 name: NegotiateSuccess
 npc: (He sighs, clearly annoyed but willing to concede.)
@@ -119,23 +124,4 @@ npc: You’ve got guts, but no brains. No more cash, choomba. Take the deal or w
 + I’m done negotiating.
 #
 o_text: You’ll regret this.
-o_goto: DefaultIntroduction
-
-name: SeduceSuccess
-npc: (He smirks, leaning in slightly.)
-npc: I didn’t think you were that kind of operator... but I’m not complaining.
-+ Maybe we can work out a more... intimate arrangement.
-#
-o_text: That’s exactly what I had in mind.
-o_goto: DefaultIntroduction
-#
-o_text: This is strictly business. I just needed to know where I stand.
-o_goto: DefaultIntroduction
-
-name: SeduceFail
-npc: (He looks you up and down, unimpressed.)
-npc: Nice try, but you’re not my type. Stick to the job, maybe you’ll get paid.
-+ Don't push your luck.
-#
-o_text: Worth a shot.
 o_goto: DefaultIntroduction
