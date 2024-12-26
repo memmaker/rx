@@ -1,0 +1,5 @@
+%rec: Function
+
+Name: PAMPHLETS_DISTRIBUTED
+Expr: ItemCountZoneRecursiveSinglePrefix('ebi_pamphlet', 'zone_residential_west', 'poor_residential') +\
+ ItemCountZoneRecursiveSinglePrefix('ebi_pamphlet', 'zone_residential_east', 'mid_residential')

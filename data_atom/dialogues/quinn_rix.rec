@@ -3,6 +3,10 @@
 cond: true
 goto: DefaultIntroduction
 
+name: WhatDoYouWant
+cond: PlayerInZone('trespass_quinn')
+goto: DefaultIntroduction
+
 %rec: Nodes
 
 name: DefaultIntroduction

@@ -19,4 +19,4 @@ do: AddChatter(DRAKE, 'HUH?')
 %rec: frames
 
 if: true
-do: SetGoalMoveToNamedLocation(DRAKE, 'drakes_place')
+do: MoveTo(DRAKE, 'drakes_place')

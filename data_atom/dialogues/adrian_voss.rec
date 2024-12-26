@@ -1,0 +1,61 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: Welcome to the Eschaton Biotech International headquarters. How can I help you?
+#
+o_text: I'm looking for a job.
+o_cond: !HasFlag('job_ebi1_accepted')
+o_goto: LookingForJob
+#
+o_text: I've finished the distribution job.
+o_cond: HasFlag('job_ebi1_accepted') && !HasFlag('job_ebi1_completed')
+o_test: UserFunc('PAMPHLETS_DISTRIBUTED') > 0
+o_succ: FinishedJob1
+o_fail: NotFinishedJob1
+#
+o_text: Is there anything else I can do for you?
+o_cond: HasFlag('job_ebi1_completed')
+o_goto: LookingForJob2
+#
+o_text: I have to go.
+o_goto: Goodbye
+
+name: Goodbye
+npc: Goodbye.
+#
+effect: EndConversation
+
+name: LookingForJob
+npc: Deliver our EBI Pamphlets to the citizens of the city. You will be paid for each one you hand out or place on a bed.
+#
+o_text: I'll do it.
+o_goto: AcceptJob1
+#
+o_text: I'm not interested.
+o_goto: DefaultIntroduction
+
+name: AcceptJob1
+npc: Perfect, take them from the brochure stand over there. Come back when you're done.
+#
+effect: SetFlag('job_ebi1_accepted')
+#
+o_text: Understood.
+o_goto: DefaultIntroduction
+
+name: NotFinishedJob1
+npc: You haven't finished the job yet.
+#
+effect: ReturnToPreviousNode
+
+name: FinishedJob1
+npc: Excellent work. Here's your payment.
+#
+effect: PlayerAddGold(UserFunc('PAMPHLETS_DISTRIBUTED') * 10)
+effect: SetFlag('job_ebi1_completed')
+
+name: LookingForJob2

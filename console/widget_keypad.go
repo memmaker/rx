@@ -2,6 +2,7 @@ package console
 
 import (
 	"contractor/foundation"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/geometry"
@@ -16,6 +17,35 @@ type KeyPad struct {
 	onCompletion    func(success bool)
 	audioPlayer     foundation.AudioCuePlayer
 	specialString   string
+}
+
+func (u *UI) OpenKeypad(specialAction string, correctSequence []rune, onSpecialAction func() bool, onCompletion func(success bool)) {
+	width, height := u.application.GetScreen().Size()
+	panelName := "keypad"
+	specialString := fmt.Sprintf("[%s] %s", u.GetKeysForCommandAsString(KeyLayerMain, "pickup"), specialAction)
+	keyPad := NewKeyPad(geometry.Point{X: width, Y: height})
+	keyPad.SetCorrectSequence(correctSequence)
+	keyPad.SetAudioPlayer(u.audioPlayer)
+	keyPad.SetSpecialString(specialString)
+	keyPad.SetOnCompletion(func(success bool) {
+		u.popPanel(panelName)
+		onCompletion(success)
+	})
+	keyPad.SetVisible(true)
+	origCapt := keyPad.GetInputCapture()
+	keyPad.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		command := u.getCommandForKey(toUIKey(event))
+		if command == "look" {
+			u.popPanel(panelName)
+		} else if command == "pickup" {
+			if onSpecialAction() {
+				u.popPanel(panelName)
+			}
+		}
+		return origCapt(event)
+	})
+	u.pages.AddPanel(panelName, keyPad, false, true)
+	u.lockFocusToPrimitive(keyPad)
 }
 
 func NewKeyPad(screenSize geometry.Point) *KeyPad {

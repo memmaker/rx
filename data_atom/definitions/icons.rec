@@ -528,3 +528,55 @@ Char: =
 Fg: neon_pink_3
 Bg: light_gray_5
 
+Char: ┘
+Fg: yellow_2
+Bg: dark_gray_5
+
+Char: ┌
+Fg: yellow_2
+Bg: dark_gray_5
+
+Char: └
+Fg: yellow_2
+Bg: dark_gray_5
+
+Char: ┐
+Fg: yellow_2
+Bg: dark_gray_5
+
+Char: ├
+Fg: yellow_2
+Bg: dark_gray_5
+
+Char: ┘
+Fg: neon_green_1
+Bg: dark_gray_5
+
+Char: ┌
+Fg: neon_green_1
+Bg: dark_gray_5
+
+Char: ┐
+Fg: neon_green_1
+Bg: dark_gray_5
+
+Char: └
+Fg: neon_green_1
+Bg: dark_gray_5
+
+Char: ┤
+Fg: neon_green_1
+Bg: dark_gray_5
+
+Char: ■
+Fg: yellow_7
+Bg: light_gray_5
+
+Char: |
+Fg: light_red_1
+Bg: light_gray_2
+
+Char: |
+Fg: light_red_1
+Bg: light_gray_2
+

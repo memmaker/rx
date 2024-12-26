@@ -8,7 +8,16 @@ import (
 )
 
 type KillBehaviour struct {
-	InitEvent fsmai.TransitionEvent
+	InitEvent fsmai.TransitionEvent // state that needs saving..
+}
+
+func (b KillBehaviour) IsCombatBehavior() bool {
+	return true
+}
+
+func (b KillBehaviour) IsHostilityTowards(other *Actor) bool {
+	actorEvent := b.InitEvent.(ActorEvent)
+	return other == actorEvent.Actor
 }
 
 func (b KillBehaviour) WithInitEvent(event fsmai.TransitionEvent) ActorBehavior {
@@ -18,86 +27,73 @@ func (b KillBehaviour) WithInitEvent(event fsmai.TransitionEvent) ActorBehavior 
 func (b KillBehaviour) AssociatedState() fsmai.StateName { return fsmai.StateKill }
 
 func (b KillBehaviour) Init(state *GameState, actor *Actor) {
-	actorEvent := b.InitEvent.(ActorEvent)
-	actor.SetGoal(GoalKillActor(actorEvent.Actor))
+
 }
 
 func (b KillBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
-
-	if actor.CanSee(b.InitEvent.(ActorEvent).Actor.Position()) {
-		// Would have to remember last known position in order to pass it to
-		// the target lost event..
-	}
-	// act on goals
-	if actor.HasActiveGoal() {
-		return actor.ActOnGoal(g)
-	}
 	actorEvent := b.InitEvent.(ActorEvent)
+	victim := actorEvent.Actor
 
-	return NewTargetLostEvent(actorEvent.Actor), actor.TimeNeededForActions()
-}
+	distanceToTarget := g.currentMap().MoveDistance(actor.Position(), victim.Position())
+	if !actor.CanSee(victim.Position()) { // ensure visibility, else -> target lost
 
-func tryKill(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int) {
-	distanceToTarget := g.currentMap().MoveDistance(a.Position(), target.Position())
-	if !a.CanSee(target.Position()) { // ensure visibility, else -> target lost
-
-		targetIsMuchFaster := float64(target.MovementSpeed()) > float64(a.MovementSpeed())*2
-		fartherThanCanBeDeduced := distanceToTarget > (a.GetCharSheet().GetStat(d100.Intelligence) * 3)
+		targetIsMuchFaster := float64(victim.MovementSpeed()) > float64(actor.MovementSpeed())*2
+		fartherThanCanBeDeduced := distanceToTarget > (actor.GetCharSheet().GetStat(d100.Intelligence) * 3)
 
 		if fartherThanCanBeDeduced || targetIsMuchFaster {
-			return NewTargetLostEvent(target), a.TimeNeededForMovement()
+			return NewTargetLostEvent(victim), actor.TimeNeededForMovement()
 		}
 	}
 
-	if !a.GetInventory().HasRangedWeaponEquipped() {
-		a.tryEquipRangedWeapon()
+	if !actor.GetInventory().HasRangedWeaponEquipped() {
+		actor.tryEquipRangedWeapon()
 	}
 
-	if !g.IsInShootingRange(a, target) { // ensure shooting range
-		return moveTowardsActor(g, a, target, 1)
+	if !g.IsInShootingRange(actor, victim) { // ensure shooting range
+		return moveTowardsActor(g, actor, victim, 1)
 	}
 
-	mainHandItem, hasMainHandItem := a.GetInventory().GetEquippedWeapon()
+	mainHandItem, hasMainHandItem := actor.GetInventory().GetEquippedWeapon()
 
 	if hasMainHandItem && mainHandItem.IsRangedWeapon() {
 		isLoaded := mainHandItem.IsLoadedWeapon()
-		canBeReloaded := a.GetInventory().HasAmmoWithCaliber(mainHandItem.GetCaliber())
+		canBeReloaded := actor.GetInventory().HasAmmoWithCaliber(mainHandItem.GetCaliber())
 		doesntNeedAmmo := !mainHandItem.NeedsAmmo()
 		if !isLoaded && canBeReloaded { // reload
-			g.actorReloadMainHandWeapon(a)
-			return fsmai.NoEvent, a.TimeNeededForActions()
+			g.actorReloadMainHandWeapon(actor)
+			return fsmai.NoEvent, actor.TimeNeededForActions()
 		}
 
 		if mainHandItem.IsJammed() {
 			mainHandItem.Unjam()
-			g.msg(foundation.Msg(fmt.Sprintf("%s unjams %s", a.Name(), mainHandItem.Name())))
-			return fsmai.NoEvent, a.TimeNeededForActions()
+			g.msg(foundation.Msg(fmt.Sprintf("%s unjams %s", actor.Name(), mainHandItem.Name())))
+			return fsmai.NoEvent, actor.TimeNeededForActions()
 		}
 
 		if isLoaded || doesntNeedAmmo { // ranged attack
-			g.ui.AddAnimations(g.actorRangedAttack(a, mainHandItem, mainHandItem.GetCurrentAttackMode(), target, d100.Body, d100.NoCombatModifier))
+			g.ui.AddAnimations(g.actorRangedAttack(actor, mainHandItem, mainHandItem.GetCurrentAttackMode(), victim, d100.Body, d100.NoCombatModifier))
 			event := fsmai.TransitionEvent(fsmai.NoEvent)
-			if !target.IsAlive() {
-				event = NewTargetDiedEvent(target)
+			if !victim.IsAlive() {
+				event = NewTargetDiedEvent(victim)
 			}
 			return event, mainHandItem.GetCurrentAttackMode().TUCost
 		}
 	}
 
-	if !a.GetInventory().HasMeleeWeaponEquipped() {
-		a.tryEquipMeleeWeapon()
+	if !actor.GetInventory().HasMeleeWeaponEquipped() {
+		actor.tryEquipMeleeWeapon()
 	}
 
 	if distanceToTarget > 1 { // ensure melee range
-		return moveTowardsActor(g, a, target, 1)
+		return moveTowardsActor(g, actor, victim, 1)
 	}
 
 	// melee attack
-	consequencesOfMonsterAttack := g.actorMeleeAttack(a, target, d100.Body, d100.NoCombatModifier)
+	consequencesOfMonsterAttack := g.actorMeleeAttack(actor, victim, d100.Body, d100.NoCombatModifier)
 	g.ui.AddAnimations(consequencesOfMonsterAttack)
 	event := fsmai.TransitionEvent(fsmai.NoEvent)
-	if !target.IsAlive() {
-		event = NewTargetDiedEvent(target)
+	if !victim.IsAlive() {
+		event = NewTargetDiedEvent(victim)
 	}
-	return event, a.GetMeleeTUCost()
+	return event, actor.GetMeleeTUCost()
 }

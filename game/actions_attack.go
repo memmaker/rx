@@ -5,6 +5,7 @@ import (
 	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/geometry"
+	"math/rand"
 )
 
 // melee attacks with and without weapons
@@ -19,8 +20,10 @@ import (
 // OFFENSIVE ACTIONS
 
 func (g *GameState) PlayerRangedAttack() {
-	rangedWeapon, canAttack, quickDraw := g.CanPlayerAttackAtRange()
-	if !canAttack {
+
+	rangedWeapon, quickDraw := g.playerDrawnWeapon()
+	canAttack := g.CanPlayerAttackAtRange()
+	if !canAttack || rangedWeapon == nil {
 		return
 	}
 	combatMods := d100.NoCombatModifier
@@ -52,47 +55,51 @@ func (g *GameState) PlayerRangedAttack() {
 	}
 
 }
-
-func (g *GameState) CanPlayerAttackAtRange() (*Weapon, bool, bool) {
+func (g *GameState) playerDrawnWeapon() (drawnWeapon *Weapon, isQuickDraw bool) {
 	mainHandItem, hasWeapon := g.Player.GetInventory().GetEquippedWeapon()
-
 	if !hasWeapon && g.Player.HasPerk(d100.PerkQuickDraw) && g.Player.GetInventory().HasExactlyOneRangedWeapon() {
 		if !g.Player.HasActionPoints() {
 			g.msg(foundation.Msg("Not enough action points for quick draw"))
-			return nil, false, false
+			return nil, false
 		}
 		mainHandItem = g.Player.GetInventory().GetBestWeapon()
 		g.Player.GetInventory().Equip(mainHandItem)
 		g.Player.GetCharSheet().LooseActionPoints(1)
 		g.ui.UpdateStats()
 		g.msg(foundation.HiLite("You quickly equip your %s", mainHandItem.Name()))
-		return mainHandItem, true, true
+		return mainHandItem, true
 	}
+	return mainHandItem, false
+}
+
+func (g *GameState) CanPlayerAttackAtRange() (canAttack bool) {
+	mainHandItem, hasWeapon := g.Player.GetInventory().GetEquippedWeapon()
 
 	if hasWeapon && mainHandItem.GetCurrentAttackMode().IsThrow() {
 		g.startThrowItem(mainHandItem)
-		return nil, false, false
+		return false
 	}
+
 	if hasWeapon && mainHandItem.IsMeleeWeapon() && !mainHandItem.IsRangedWeapon() {
 		g.ui.SelectDirection(func(direction geometry.CompassDirection) {
 			targetPos := g.Player.Position().Add(direction.ToPoint())
 			g.playerMeleeAttackLocation(targetPos)
 		})
-		return nil, false, false
+		return false
 	}
 	if !hasWeapon || !mainHandItem.IsRangedWeapon() {
 		g.msg(foundation.Msg("You have no suitable weapon equipped"))
-		return nil, false, false
+		return false
 	}
 	weapon := mainHandItem
 	if !weapon.HasAmmo() {
 		g.ui.PlayCue(weapon.GetOutOfAmmoAudioCue())
 		g.msg(foundation.Msg("You have no ammo"))
-		return nil, false, false
+		return false
 	}
 	if weapon.IsBroken() {
 		g.msg(foundation.Msg("Your weapon is broken"))
-		return nil, false, false
+		return false
 	}
 
 	if weapon.IsJammed() {
@@ -103,9 +110,9 @@ func (g *GameState) CanPlayerAttackAtRange() (*Weapon, bool, bool) {
 				g.endPlayerTurn(g.Player.TimeNeededForActions())
 			}
 		})
-		return nil, false, false
+		return false
 	}
-	return mainHandItem, true, false
+	return true
 }
 
 func (g *GameState) PlayerQuickRangedAttack() {
@@ -116,8 +123,10 @@ func (g *GameState) PlayerQuickRangedAttack() {
 		return
 	}
 
-	rangedWeapon, canAttack, quickDraw := g.CanPlayerAttackAtRange()
-	if !canAttack {
+	rangedWeapon, quickDraw := g.playerDrawnWeapon()
+	canAttack := g.CanPlayerAttackAtRange()
+
+	if !canAttack || rangedWeapon == nil {
 		return
 	}
 	combatMods := d100.NoCombatModifier
@@ -167,7 +176,7 @@ func (g *GameState) playerDrown(defender *Actor) {
 			BodyPart:        d100.Body,
 		}
 		g.msg(foundation.HiLite("You drown %s", defender.Name()))
-		g.ui.AddAnimations(g.damageActor(sourcedDamage, defender))
+		g.ui.AddAnimations(OneAnimation(g.damageActor(sourcedDamage, defender)))
 		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	} else {
 		g.msg(foundation.HiLite("You fail to sneak up on %s", defender.Name()))
@@ -195,7 +204,7 @@ func (g *GameState) playerBackstab(defender *Actor) {
 			BodyPart:        d100.Body,
 		}
 		g.msg(foundation.HiLite("You stab %s in the back", defender.Name()))
-		g.ui.AddAnimations(g.damageActor(sourcedDamage, defender))
+		g.ui.AddAnimations(OneAnimation(g.damageActor(sourcedDamage, defender)))
 		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	} else {
 		g.msg(foundation.HiLite("You fail to sneak up on %s", defender.Name()))
@@ -489,9 +498,17 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weap
 			if damageWithSource.IsCritical {
 				parameters = parameters.WithCritical()
 			}
+			if weaponZapEffect == nil {
+				panic(fmt.Sprintf("Weapon zap effect not found: %s", weaponItem.ZapEffect()))
+			}
 			damageAnims = weaponZapEffect(g, attacker, defender.Position(), parameters)
+			if attacker == g.Player {
+				g.msg(foundation.Msg("You hit"))
+			} else {
+				g.msg(foundation.Msg(fmt.Sprintf("%s hits", attacker.Name())))
+			}
 		} else {
-			damageAnims = g.damageActor(damageWithSource, defender)
+			damageAnims = OneAnimation(g.damageActor(damageWithSource, defender))
 		}
 	} else {
 		if damageWithSource.IsObviousAttack {
@@ -514,6 +531,76 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weap
 		}
 	}
 	return damageAnims
+}
+
+// damageActor applies damage to an actor and returns the animations for the damage.
+// The animations will also paint blood on the map.
+// It will also
+// - set the hostile flag on the victim if the attack is obvious
+// - set the global flags that are applicable
+// - play the appropriate audio cues
+// - emit chatter and log messages
+// - check if the victim is dead and handle that
+func (g *GameState) damageActor(damage SourcedDamage, victim *Actor) foundation.Animation {
+	didCripple := victim.TakeDamage(damage)
+
+	if !victim.IsAlive() {
+		damage = damage.WithKillingBlow()
+	}
+	if didCripple {
+		damage = damage.WithCrippling()
+	}
+	if damage.IsObviousAttack {
+		g.trySetHostile(victim, damage.Attacker)
+	}
+	isOverKill := victim.GetHitPoints() <= (-victim.GetHitPointsMax() / 2)
+	if isOverKill {
+		damage = damage.WithOverkill()
+	}
+	var damageAnim foundation.Animation
+	var damageAudioCue string
+
+	hurtFlag := fmt.Sprintf("WasHurt(%s)", victim.GetInternalName())
+	g.gameFlags.SetFlag(hurtFlag)
+
+	if damage.Attacker == g.Player {
+		hurtByPlayerFlag := fmt.Sprintf("WasHurtByPlayer(%s)", victim.GetInternalName())
+		g.gameFlags.SetFlag(hurtByPlayerFlag)
+	}
+
+	g.actorHitMessage(victim, damage)
+
+	if damage.IsKillingBlow {
+		g.actorKilled(damage, victim)
+		if damage.IsCritical {
+			damageAudioCue = victim.GetDeathCriticalAudioCue(damage.TargetingMode, damage.DamageType)
+		} else {
+			damageAudioCue = victim.GetDeathAudioCue()
+		}
+		// TODO: replace this with cool matching death animations
+		g.makeMapBloody(victim.Position())
+		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, 4)
+		//damageAnim.SetVictimSizeModifier(victim.GetSizeModifier())
+		//damageAnim.SetFollowUp(followUps)
+	} else { // only a flesh wound
+		damageAudioCue = victim.GetHitAudioCue(damage.TargetingMode.IsMelee())
+
+		//
+		bullets := 1
+		if damage.TargetingMode.IsBurstOrFullAuto() {
+			bullets = 3
+		}
+		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, bullets)
+		//damageAnim.SetVictimSizeModifier(victim.GetSizeModifier())
+		//damageAnim.SetFollowUp(followUps)
+
+		if victim != g.Player && rand.Intn(5) == 0 {
+			g.tryAddRandomChatter(victim, foundation.ChatterBeingDamaged)
+		}
+	}
+
+	damageAnim.SetAudioCue(damageAudioCue)
+	return damageAnim
 }
 
 // Validation for Player Commands
@@ -552,7 +639,7 @@ func (g *GameState) actorThrowItem(thrower *Actor, missile foundation.Item, orig
 	}
 	var onHitAnimations []foundation.Animation
 
-	g.removeItemFromInventory(thrower, missile)
+	thrower.Inventory.RemoveItem(missile)
 
 	if missile.IsBreakingNow() {
 		missile.SetPosition(targetPos)

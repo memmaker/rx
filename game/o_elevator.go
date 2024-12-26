@@ -31,7 +31,7 @@ func (b *Elevator) InitWithGameState(g *GameState) {
 
 	transitionTo := func(levelName, location string) {
 		g.ui.PlayCue("world/elevator")
-		g.GotoNamedLevel(levelName, location)
+		g.transitionToMapLocation(levelName, location)
 		g.advanceTime(1 * time.Minute)
 	}
 	b.activate = func() {

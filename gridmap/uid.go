@@ -3,33 +3,33 @@ package gridmap
 type ItemID uint64
 type ActorID uint64
 
-var currentItemID ItemID
-var currentActorID ActorID
+var nextItemID ItemID
+var nextActorID ActorID
 
 func NextItemID() ItemID {
-	next := currentItemID
-	currentItemID++
+	next := nextItemID
+	nextItemID++
 	return next
 }
 
 func NextActorID() ActorID {
-	next := currentActorID
-	currentActorID++
+	next := nextActorID
+	nextActorID++
 	return next
 }
 
-func CurrentItemID() ItemID {
-	return currentItemID
+func PeekAtNextItemID() ItemID {
+	return nextItemID
 }
 
-func CurrentActorID() ActorID {
-	return currentActorID
+func PeekAtNextActorID() ActorID {
+	return nextActorID
 }
 
-func SetCurrentItemID(id ItemID) {
-	currentItemID = id
+func SetNextItemID(id ItemID) {
+	nextItemID = id
 }
 
-func SetCurrentActorID(id ActorID) {
-	currentActorID = id
+func SetNextActorID(id ActorID) {
+	nextActorID = id
 }

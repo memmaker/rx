@@ -1,0 +1,12 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: Welcome to the Terra Vitae headquarters. How can I help you?
+#
+o_text: I'm looking for a job.
+o_goto: LookingForJob

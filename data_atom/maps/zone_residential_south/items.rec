@@ -2,60 +2,6 @@
 
 Category: Other
 Name: junk
-Description: medical waste
-Weight: 1
-Cost: 1
-Position: (10,2)
-
-Category: Notes
-Name: note_access_to_random_code
-Description: access to clone cellar
-TextVar: code
-TextValue: RandomNumberCode('home_secret_door')
-Text: The code for the clone cellar is {{ .code }}.
-Position: (68,8)
-
-Category: Books
-Name: adult_magazine
-Description: Adult Entertainment Weekly
-hidden: true
-Text: Some light pornography for the connoisseur of naked bodies.
-Position: (5,13)
-
-Category: Books
-Name: skillbook_ranged
-Description: Killing: from a distance
-skill_bonus: ranged_combat(5)
-Position: (10,12)
-
-Category: Weapons
-Name: 10mm_pistol
-Description: 10mm Pistol
-LongDescription: A Colt 6520 10mm autoloading pistol. Each pull of the trigger will automatically reload the firearm until the magazine is empty. Single shot only, using the powerful 10mm round. Min ST: 3.
-Size: 2
-Weight: 3
-Hidden: true
-Cost: 250
-Quality: 80
-weapon_type: Pistol
-weapon_damage: 5-12
-weapon_magazine_size: 12
-weapon_burst_rounds: 1
-weapon_damage_type: Normal
-weapon_min_str: 3
-weapon_attack_mode_one: Fire_Single
-weapon_attack_mode_two: None
-weapon_ap_cost_one: 5
-weapon_ap_cost_two: 0
-weapon_max_range_one: 25
-weapon_max_range_two: 0
-weapon_uses_ammo: 10mm
-weapon_caliber_index: 8
-weapon_sound_id: 65
-Position: (49,3)
-
-Category: Other
-Name: junk
 Description: PolyClean
 Weight: 1
 Cost: 1
@@ -128,19 +74,25 @@ Weight: 1
 Cost: 1
 Position: (60,18)
 
-Category: Books
-Name: skillbook_melee
-Hidden: true
-Description: Killing: up close
-skill_bonus: melee_combat(5)
-Position: (76,7)
-
 Category: Other
 Name: junk
 Description: bullet casings
 Weight: 1
 Cost: 1
 Position: (18,16)
+
+Category: Books
+Name: adult_magazine
+Description: Adult Entertainment Weekly
+hidden: true
+Text: Some light pornography for the connoisseur of naked bodies.
+Position: (5,13)
+
+Category: Books
+Name: skillbook_ranged
+Description: Killing: from a distance
+skill_bonus: ranged_combat(5)
+Position: (10,12)
 
 Category: Ammo
 Name: 9mm
@@ -157,4 +109,52 @@ ammo_caliber_index: 12
 ammo_caliber_name: 9mm
 ammo_bonus_radius: 0
 Position: (1,2)
+
+Category: Weapons
+Name: 10mm_pistol
+Description: 10mm Pistol
+LongDescription: A Colt 6520 10mm autoloading pistol. Each pull of the trigger will automatically reload the firearm until the magazine is empty. Single shot only, using the powerful 10mm round. Min ST: 3.
+Size: 2
+Weight: 3
+Hidden: true
+Cost: 250
+Quality: 80
+weapon_type: Pistol
+weapon_damage: 5-12
+weapon_magazine_size: 12
+weapon_burst_rounds: 1
+weapon_damage_type: Normal
+weapon_min_str: 3
+weapon_attack_mode_one: Fire_Single
+weapon_attack_mode_two: None
+weapon_ap_cost_one: 5
+weapon_ap_cost_two: 0
+weapon_max_range_one: 25
+weapon_max_range_two: 0
+weapon_uses_ammo: 10mm
+weapon_caliber_index: 8
+weapon_sound_id: 65
+Position: (49,3)
+
+Category: Books
+Name: skillbook_melee
+Hidden: true
+Description: Killing: up close
+skill_bonus: melee_combat(5)
+Position: (76,7)
+
+Category: Other
+Name: junk
+Description: medical waste
+Weight: 1
+Cost: 1
+Position: (10,2)
+
+Category: Notes
+Name: note_access_to_random_code
+Description: access to clone cellar
+TextVar: code
+TextValue: RandomNumberCode('home_secret_door')
+Text: The code for the clone cellar is {{ .code }}.
+Position: (68,8)
 

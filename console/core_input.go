@@ -2,24 +2,175 @@ package console
 
 import (
 	"bufio"
+	"cmp"
 	"contractor/foundation"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"regexp"
+	"slices"
 	"strings"
+	"time"
 )
 
-func (u *UI) executePlayerCommand(command string) {
-	if command == "" {
-		return
+func (u *UI) appInputCapture(event *tcell.EventKey) *tcell.EventKey {
+	if u.onAnyKey != nil {
+		u.onAnyKey()
+		u.onAnyKey = nil
+		return nil
 	}
-	if action, ok := u.commandTable[command]; ok {
-		action()
-	} else {
-		u.Print(foundation.Msg(fmt.Sprintf("Unknown command: %s", command)))
+
+	if u.stateOfIntro == Fading {
+		return nil
 	}
+	if u.stateOfIntro == MainMenu {
+		return event
+	}
+	if u.stateOfIntro == TitleScreen {
+		//u.endIntro()
+		u.endIntro()
+		return nil
+	}
+	u.animator.CancelAll()
+	if event.Key() == tcell.KeyCtrlC {
+		_, frontPanel := u.pages.GetFrontPanel()
+		if inventory, isInventory := frontPanel.(*TextInventory); isInventory {
+			inventory.handleInput(event)
+			return nil // don't forward, or else we will quit
+		} else {
+			u.QuitGame()
+			return nil
+		}
+	}
+	return event
+}
+
+func (u *UI) directionalWrapperWithoutAlphabet(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune && (event.Rune() >= 'a' && event.Rune() <= 'z') || (event.Rune() >= 'A' && event.Rune() <= 'Z') {
+			return originalCapture(event)
+		}
+		return u.directionalWrapper(originalCapture)(event)
+	}
+}
+
+func (u *UI) directionalWrapperWithoutNumbers(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune && (event.Rune() >= '0' && event.Rune() <= '9') {
+			return originalCapture(event)
+		}
+		return u.directionalWrapper(originalCapture)(event)
+	}
+}
+func (u *UI) directionalWrapper(originalCapture func(event *tcell.EventKey) *tcell.EventKey) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		command := u.getCommandForKey(toUIKey(event))
+
+		if command == "wait" {
+			event = tcell.NewEventKey(tcell.KeyEscape, ' ', tcell.ModNone)
+		} else if command == "look" {
+			event = tcell.NewEventKey(tcell.KeyEnter, ' ', tcell.ModNone)
+		} else if command == "run_direction" {
+			event = tcell.NewEventKey(tcell.KeyRune, ' ', tcell.ModNone)
+		}
+
+		direction, possible := directionFromCommand(command)
+		if !possible {
+			if originalCapture != nil {
+				return originalCapture(event)
+			} else {
+				return event
+			}
+		}
+		if direction == geometry.North {
+			event = tcell.NewEventKey(tcell.KeyUp, ' ', tcell.ModNone)
+		} else if direction == geometry.South {
+			event = tcell.NewEventKey(tcell.KeyDown, ' ', tcell.ModNone)
+		} else if direction == geometry.West {
+			event = tcell.NewEventKey(tcell.KeyLeft, ' ', tcell.ModNone)
+		} else if direction == geometry.East {
+			event = tcell.NewEventKey(tcell.KeyRight, ' ', tcell.ModNone)
+		}
+		if originalCapture != nil {
+			return originalCapture(event)
+		} else {
+			return event
+		}
+	}
+}
+
+func (u *UI) GetKeysForCommandAsString(layer KeyLayer, command string) string {
+	var keys []string
+	for key, c := range u.keyTable[layer] {
+		if c == command && key.name != "" {
+			keys = append(keys, key.name)
+		}
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	slices.SortStableFunc(keys, func(i, j string) int {
+		return cmp.Compare(i, j)
+	})
+	return strings.Join(keys, ", ")
+}
+
+func (u *UI) GetKeybindingsAsString(command string) string {
+	if command == "move" {
+		allKeys := []string{
+			u.GetKeysForCommandAsString(KeyLayerMain, "north"),
+			u.GetKeysForCommandAsString(KeyLayerMain, "west"),
+			u.GetKeysForCommandAsString(KeyLayerMain, "south"),
+			u.GetKeysForCommandAsString(KeyLayerMain, "east"),
+		}
+		return fmt.Sprintf("[%s]", strings.Join(allKeys, ", "))
+	}
+	return u.GetKeysForCommandAsPrettyString(KeyLayerMain, command)
+}
+
+func (u *UI) GetKeysForCommandAsPrettyString(layer KeyLayer, command string) string {
+	var keys []string
+	for key, c := range u.keyTable[layer] {
+		if c == command && key.name != "" {
+			keys = append(keys, key.name)
+		}
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	slices.SortStableFunc(keys, func(i, j string) int {
+		return cmp.Compare(i, j)
+	})
+
+	for i, k := range keys {
+		keys[i] = fmt.Sprintf("[%s]", k)
+	}
+	return strings.Join(keys, ", ")
+}
+
+func (u *UI) getCommandForKey(key UIKey) string {
+	if command, ok := u.keyTable[KeyLayerMain][key]; ok {
+		return command
+	}
+	//println("No command found for key %s", key.String())
+	return ""
+}
+
+func (u *UI) getDirectionalTargetingCommandForKey(key UIKey) string {
+	if command, ok := u.keyTable[KeyLayerDirectionalTargeting][key]; ok {
+		return command
+	}
+	//println("No command found for key %s", key.String())
+	return ""
+}
+
+func (u *UI) getAdvancedTargetingCommandForKey(key UIKey) string {
+	if command, ok := u.keyTable[KeyLayerAdvancedTargeting][key]; ok {
+		return command
+	}
+	//println("No command found for key %s", key.String())
+	return ""
 }
 
 func directionFromCommand(command string) (geometry.CompassDirection, bool) {
@@ -65,7 +216,8 @@ func (u *UI) setupCommandTable() {
 
 	u.commandTable["quit"] = u.QuitGame
 
-	u.commandTable["inventory"] = u.game.OpenInventory
+	u.commandTable["inventory"] = u.OpenInventoryForManagement
+
 	u.commandTable["tactics"] = u.game.OpenTacticsMenu
 	u.commandTable["cyberware"] = u.game.OpenCyberWareMenu
 	u.commandTable["quip"] = u.game.PlayerQuip
@@ -150,7 +302,6 @@ func (u *UI) setupCommandTable() {
 	//u.commandTable["targeted_shot"] = u.game.TargetedShot
 
 	u.commandTable["pickup"] = u.game.PlayerPickupItem
-	u.commandTable["map_interaction"] = u.GenericInteraction
 	u.commandTable["run_direction"] = u.ChooseDirectionForRun
 	u.commandTable["wait"] = u.game.Wait
 	u.commandTable["show_key_bindings"] = u.showKeyBindings
@@ -208,7 +359,6 @@ func (u *UI) showKeyBindings() {
 		"attack":            "Ranged Attack",
 		"quick_attack":      "Ranged Attack Nearest",
 		"pickup":            "Pickup",
-		"map_interaction":   "Map Interaction",
 		"run_direction":     "Run Direction",
 		"wait":              "Wait",
 		"cycle_target_mode": "Cycle Weapon Mode",
@@ -246,7 +396,6 @@ func (u *UI) showKeyBindings() {
 	}
 
 	rightColCommands := []string{
-		"map_interaction",
 		"wait",
 		"throw",
 		"drop",
@@ -381,6 +530,22 @@ type UIKey struct {
 }
 
 func UIKeyFromString(s string) UIKey {
+	switch strings.ToLower(s) {
+	case "tab":
+		return UIKey{
+			ch:   0,
+			name: "Tab",
+			key:  tcell.KeyTAB,
+		}
+	case "backtab":
+		return UIKey{
+			ch:   0,
+			name: "Tab",
+			key:  tcell.KeyTAB,
+			mod:  tcell.ModShift,
+		}
+	}
+
 	if printableRune, ok := ParsePrintableKey(s); ok {
 		return Letter(printableRune)
 	}
@@ -416,8 +581,6 @@ func ParsePrintableKey(s string) (rune, bool) {
 		s = " "
 	} else if trimmedLower == "enter" {
 		s = "\n"
-	} else if trimmedLower == "tab" {
-		s = "\t"
 	}
 	if len(s) == 1 {
 		return []rune(s)[0], true
@@ -449,9 +612,11 @@ func ParseNonPrintableKey(s string) (tcell.Key, bool) {
 	}
 	return 0, false
 }
+
 func FunctionKey(key tcell.Key) UIKey {
 	return UIKey{key: key, name: tcell.KeyNames[key]}
 }
+
 func Letter(letter rune) UIKey {
 	keyName := string(letter)
 	key := tcell.KeyRune
@@ -493,4 +658,51 @@ func NonPrintableKeyCombo(key tcell.Key, mod tcell.ModMask) UIKey {
 }
 func (k UIKey) String() string {
 	return fmt.Sprintf("UIKey{mod: %d, key: %d, ch: %d, name: %s}", k.mod, k.key, k.ch, k.name)
+}
+
+// Block input
+func (u *UI) blockInput(blockDuration time.Duration) {
+	duration := 2 * time.Millisecond
+
+	screen := u.application.GetScreen()
+
+	u.application.Lock()
+	defer u.application.Unlock()
+
+	u.isAnimationFrame = true
+
+	startTime := time.Now()
+
+	for len(u.animator.runningAnimations) > 0 {
+		u.mapWindow.Draw(screen)
+		screen.Show()
+
+		var waited time.Duration
+		for waited < u.settings.AnimationDelay {
+			if screen.HasPendingEvent() {
+				screen.PollEvent()
+			}
+			time.Sleep(duration)
+			waited += duration
+		}
+
+		shouldMapFrameBeUpdated := u.animator.Tick()
+		if shouldMapFrameBeUpdated {
+			u.updateLastFrame()
+		}
+	}
+
+	u.isAnimationFrame = false
+
+	for time.Since(startTime) < blockDuration {
+		if screen.HasPendingEvent() {
+			screen.PollEvent()
+		}
+		u.mapWindow.Draw(screen)
+		screen.Show()
+		time.Sleep(duration * 10)
+	}
+
+	u.mapWindow.Draw(screen)
+	screen.Show()
 }

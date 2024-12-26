@@ -300,6 +300,22 @@ func (b *Container) ItemsFiltered(keep func(item foundation.Item) bool) []founda
 	return StackedFilteredAndSortedItems(b.ContainedItems, keep)
 }
 
+func (b *Container) ItemCountByPrefix(prefix string) int {
+	count := 0
+	for _, item := range b.ContainedItems {
+		if strings.HasPrefix(item.GetInternalName(), prefix) {
+			count += item.GetStackSize()
+		}
+	}
+	return count
+}
+
+func (b *Container) IterateItems(action func(foundation.Item)) {
+	for _, item := range b.ContainedItems {
+		action(item)
+	}
+}
+
 func (g *GameState) openContainer(container ItemContainer) {
 	containerItems := StackedFilteredAndSortedItems(container.GetItems(), func(item foundation.Item) bool { return true })
 	playerItems := StackedFilteredAndSortedItems(g.Player.GetInventory().GetItems(), func(item foundation.Item) bool { return true })

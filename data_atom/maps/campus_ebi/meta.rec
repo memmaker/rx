@@ -1,0 +1,7 @@
+%rec: default
+
+Name: campus_ebi
+MusicFile: 
+IsOutdoor: false
+IndoorAmbientLight: (1.0, 1.0, 1.0)
+

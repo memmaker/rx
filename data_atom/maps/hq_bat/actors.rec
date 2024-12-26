@@ -29,7 +29,7 @@ Agility: 5
 SkillBonusTechnology: 85
 SkillBonusMechanics: 75
 equipment: tech_ops_jumpsuit
-Position: (73,15)
+Position: (68,15)
 
 Name: haruki_tanaka
 Icon: H
@@ -60,7 +60,7 @@ Agility: 4
 SkillBonusIntimidate: 75
 SkillBonusSocial: 65
 equipment: armatech_executive_suit
-Position: (75,5)
+Position: (70,5)
 
 Name: bat_receptionist
 Icon: R
@@ -95,5 +95,5 @@ DREMP: 500
 DRRadiation: 8
 DRPoison: 20
 SourceFile: 00000150.pro
-Position: (28,10)
+Position: (23,10)
 

@@ -263,15 +263,9 @@ func (g *GameState) startZapEffect(zapEffectName string, payCost func(), params 
 	})
 }
 
-func (g *GameState) PlayerApplyItem(uiItem foundation.Item) {
-	g.playerUseOrZapItem(uiItem)
-}
-func (g *GameState) PlayerExamineItem(uiItem foundation.Item) {
-	g.inspectItem(uiItem)
-}
-func (g *GameState) playerUseOrZapItem(item foundation.Item) {
+func (g *GameState) PlayerApplyItem(item foundation.Item) {
 	if item.IsLockpick() {
-		g.inspectItem(item)
+		g.PlayerExamineItem(item)
 	} else if item.IsDrug() {
 		g.actorConsumeDrug(g.Player, item.(*GenericItem))
 	} else if item.IsReadable() {
@@ -495,45 +489,25 @@ func (g *GameState) PlayerPickupItemAt(itemPos geometry.Point) {
 }
 
 func (g *GameState) DropItemFromInventory(uiItem foundation.Item) {
-	g.dropItemFromUI(uiItem)
-	g.OpenInventory()
+	g.PlayerDropItem(uiItem)
+	g.GetNonAmmoPlayerInventory()
 }
 
-func (g *GameState) PlayerDropItem(uiItem foundation.Item) {
-	g.actorDropItem(g.Player, uiItem)
-}
+func (g *GameState) PlayerDropItem(item foundation.Item) {
+	holder := g.Player
+	holder.Inventory.RemoveItem(item)
 
-func (g *GameState) dropItemFromUI(uiItem foundation.Item) {
-	g.actorDropItem(g.Player, uiItem)
-}
-
-func (g *GameState) actorDropItem(holder *Actor, item foundation.Item) {
-	equipment := holder.GetInventory()
-	if equipment.IsEquipped(item) {
-		if equipment.CanUnequip(item) {
-			g.actorUnequipItem(holder, item)
-		} else {
-			g.msg(foundation.Msg("You cannot remove this item"))
-			return
-		}
-	}
-
-	g.removeItemFromInventory(holder, item)
 	g.addItemToMap(item, holder.Position())
 
-	if holder == g.Player {
-		g.msg(foundation.HiLite("You dropped %s", item.Name()))
-		if item.GetDropFlag() != "" {
-			g.gameFlags.Increment(item.GetDropFlag())
-		}
-		g.endPlayerTurn(g.Player.TimeNeededForActions() / 2)
-		g.ui.PlayCue("world/drop")
-	} else {
-		g.msg(foundation.HiLite("%s dropped %s", holder.Name(), item.Name()))
+	g.msg(foundation.HiLite("You dropped %s", item.Name()))
+	if item.GetDropFlag() != "" {
+		g.gameFlags.Increment(item.GetDropFlag())
 	}
+	g.endPlayerTurn(g.Player.TimeNeededForActions() / 2)
+	g.ui.PlayCue("world/drop")
 }
 
-func (g *GameState) inspectItem(item foundation.Item) {
+func (g *GameState) PlayerExamineItem(item foundation.Item) {
 	g.ui.OpenTextWindow(item.FullDescription(g.inventoryColorCode(item)))
 }
 
@@ -569,6 +543,9 @@ func (g *GameState) actorEquipItem(wearer *Actor, item foundation.Item) {
 }
 
 func (g *GameState) actorUnequipItem(wearer *Actor, item foundation.Item) {
+	if item == nil {
+		return
+	}
 	equipment := wearer.GetInventory()
 	equipment.UnEquip(item)
 	if wearer == g.Player {
@@ -587,12 +564,12 @@ func (g *GameState) ChooseItemForApply() {
 		return
 	}
 	if len(inventory) == 1 {
-		g.playerUseOrZapItem(inventory[0])
+		g.PlayerApplyItem(inventory[0])
 		return
 
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Use what?", func(itemStack foundation.Item) {
-		g.playerUseOrZapItem(itemStack)
+		g.PlayerApplyItem(itemStack)
 	})
 }
 
@@ -605,12 +582,12 @@ func (g *GameState) ChooseItemForDrop() {
 		return
 	}
 	if len(inventory) == 1 {
-		g.dropItemFromUI(inventory[0])
+		g.PlayerDropItem(inventory[0])
 		return
 
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Drop what?", func(itemStack foundation.Item) {
-		g.dropItemFromUI(itemStack)
+		g.PlayerDropItem(itemStack)
 	})
 }
 
@@ -623,7 +600,7 @@ func (g *GameState) OpenAmmoInventory() {
 		return
 	}
 	g.ui.OpenInventoryForSelection(inventory, "Drop what?", func(itemStack foundation.Item) {
-		g.dropItemFromUI(itemStack)
+		g.PlayerDropItem(itemStack)
 	})
 }
 
@@ -772,7 +749,7 @@ func (g *GameState) CheckTransition() {
 					g.msg(foundation.Msg("The way is blocked"))
 					return
 				}
-				g.GotoNamedLevel(transition.TargetMap, transition.TargetLocation)
+				g.transitionToMapLocation(transition.TargetMap, transition.TargetLocation)
 				g.advanceTime(5 * time.Minute)
 			}
 		})

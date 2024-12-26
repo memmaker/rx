@@ -64,11 +64,6 @@ func (g *GameState) appendLogMessage(message foundation.HiLiteString) {
 	g.logBuffer = append(g.logBuffer, message)
 }
 
-func (g *GameState) removeItemFromInventory(holder *Actor, item foundation.Item) {
-	inventory := holder.GetInventory()
-	inventory.RemoveItem(item)
-}
-
 func (g *GameState) hasPaidWithCharge(user *Actor, item foundation.Item) bool {
 	if item == nil { // no item = intrinsic effect
 		return true
@@ -81,14 +76,14 @@ func (g *GameState) hasPaidWithCharge(user *Actor, item foundation.Item) bool {
 		if item.IsMultipleStacks() {
 			item.RemoveStacks(1)
 		} else {
-			g.removeItemFromInventory(user, item)
+			user.Inventory.RemoveItem(item)
 		}
 		return true
 	}
 
 	item.ConsumeCharge()
 	if item.GetCharges() == 0 { // destroy
-		g.removeItemFromInventory(user, item)
+		user.Inventory.RemoveItem(item)
 	}
 	return true
 }
@@ -300,7 +295,7 @@ func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []
 					g.msg(foundation.HiLite("You have been detected by %s", observer.Name()))
 				}
 			} else if observer.IsGuarding(currentZone) {
-				g.reactToMinorCrime(observer, foundation.ChatterTrespassing)
+				g.onSeenTrespassing(actor, observer)
 			}
 		}
 	}
@@ -310,6 +305,14 @@ func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []
 	}
 
 	return animations
+}
+
+func (g *GameState) onSeenTrespassing(trespasser *Actor, observer *Actor) {
+	if trespasser == g.Player && observer.InitiateDialogueWithOpeningBranch != "" {
+		g.NPCStartDialogue(observer.GetDialogueFile(), observer, observer.InitiateDialogueWithOpeningBranch, false)
+	} else {
+		g.reactToMinorCrime(observer, foundation.ChatterTrespassing)
+	}
 }
 
 func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition bool) {
@@ -397,13 +400,18 @@ func (g *GameState) openCyberwareMenu(vendor *Actor, onClose func()) {
 }
 
 func (g *GameState) openVendorMenu(vendor *Actor, onClose func()) {
-	itemsForSale := vendor.GetVendorInventory().GetItems()
+	vendorInventory := vendor.GetVendorInventory()
+	if vendorInventory == nil {
+		g.msg(foundation.Msg("Nothing for sale"))
+		return
+	}
+	itemsForSale := vendorInventory.GetItems()
 	if len(itemsForSale) == 0 {
 		g.msg(foundation.Msg("Nothing for sale"))
 		return
 	}
 	title := fmt.Sprintf("Buy from %s", vendor.Name())
-	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendor(vendor, onClose), g.inspectItem, onClose)
+	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendor(vendor, onClose), g.PlayerExamineItem, onClose)
 }
 
 func (g *GameState) buyItemFromVendor(vendor *Actor, onClose func()) func(item foundation.Item, amount int, price int) {
@@ -446,7 +454,7 @@ func (g *GameState) openVendingMachineMenu(machine *Container) {
 		return
 	}
 	title := fmt.Sprintf("Buy from %s", machine.Name())
-	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendingMachine(machine), g.inspectItem, nil)
+	g.ui.OpenVendorMenu(title, itemsForSale, g.buyItemFromVendingMachine(machine), g.PlayerExamineItem, nil)
 }
 
 func (g *GameState) buyItemFromVendingMachine(machine *Container) func(item foundation.Item, amount int, price int) {
@@ -510,7 +518,6 @@ func (g *GameState) fillTemplatedText(text string) string {
 		"keys_move":      g.ui.GetKeybindingsAsString("move"),
 		"keys_wait":      g.ui.GetKeybindingsAsString("wait"),
 		"keys_look":      g.ui.GetKeybindingsAsString("look"),
-		"keys_action":    g.ui.GetKeybindingsAsString("map_interaction"),
 		"keys_inventory": g.ui.GetKeybindingsAsString("inventory"),
 	}
 

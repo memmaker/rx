@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"contractor/d100"
 	"contractor/foundation"
-	"contractor/fsmai"
 	"contractor/gridmap"
 	"fmt"
 	"github.com/Knetic/govaluate"
@@ -75,7 +74,7 @@ type GameState struct {
 	globalTeamTemplates  map[string]recfile.Record
 
 	// Temporary State
-	chatterCache map[*Actor]map[foundation.ChatterType][]EntriesWithCondition
+	chatterCache map[*Actor]map[foundation.ChatterTopic][]EntriesWithCondition
 	quips        []string
 	quipFile     string
 
@@ -84,6 +83,69 @@ type GameState struct {
 	randomCodes       map[string][]rune
 	mapContainsPlayer bool
 	actorsComputed    int
+	userFunctions     map[string]*govaluate.EvaluableExpression
+	allMapNames       []string
+}
+
+func NewGameState(config *foundation.Configuration) *GameState {
+	// stuff initialised here will stay the same between resets
+	loadD100Rules(path.Join(config.DataRootDir, "definitions"))
+
+	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
+	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
+
+	g := &GameState{
+		config:               config,
+		visionRange:          80,
+		palette:              palette,
+		globalItemTemplates:  loadItemTemplates(config.DataRootDir),
+		globalActorTemplates: loadActorTemplates(config.DataRootDir),
+		globalTeamTemplates:  loadSpawnedTeamsTemplates(config.DataRootDir),
+		allMapNames:          loadMapNames(config.DataRootDir),
+	}
+	g.userFunctions = g.loadUserFuncs(g.config.DataRootDir)
+	g.mapLoader = gridmap.NewRecMapLoader(
+		path.Join(g.config.DataRootDir, "maps"),
+		g.palette,
+		g.NewActor,
+		g.NewItem,
+		g.NewObject,
+	)
+
+	// this will initialise the volatile state, which will be reset on each new game
+	g.init()
+	return g
+}
+
+func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
+	itemTemplates := make(map[string]recfile.Record)
+	parts := []string{"weapons", "ammo", "armor", "food", "consumables", "miscItems"}
+	for _, part := range parts {
+		itemTemplateFile := path.Join(dataRootDir, "definitions", part+".rec")
+		records, _ := recfile.ReadAndClose(fxtools.MustOpen(itemTemplateFile))
+		for _, record := range records {
+			itemTemplates[record.FindValueForKeyIgnoreCase("name")] = record
+		}
+	}
+	return itemTemplates
+}
+
+func loadActorTemplates(dataRootDir string) map[string]recfile.Record {
+	actorTemplates := make(map[string]recfile.Record)
+	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dataRootDir, "definitions", "actors.rec")))
+	for _, record := range records {
+		actorTemplates[record.FindValueForKeyIgnoreCase("name")] = record
+	}
+	return actorTemplates
+}
+
+func loadSpawnedTeamsTemplates(dataRootDir string) map[string]recfile.Record {
+	actorTemplates := make(map[string]recfile.Record)
+	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dataRootDir, "definitions", "spawned_teams.rec")))
+	for _, record := range records {
+		actorTemplates[record.FindValueForKeyIgnoreCase("name")] = record
+	}
+	return actorTemplates
 }
 
 func (g *GameState) GetMapSize() geometry.Point {
@@ -121,10 +183,6 @@ func (g *GameState) InventoryColors() map[foundation.ItemCategory]color.RGBA {
 
 func (g *GameState) TurnCount() int {
 	return g.gameTime.Turns
-}
-
-func (g *GameState) GetPlayerFashionStyle() foundation.FashionStyle {
-	return g.Player.OutfitStyle()
 }
 
 func (g *GameState) OpenPerkSelection(done func()) {
@@ -345,20 +403,8 @@ func (g *GameState) PlayerInteractAtPosition(pos geometry.Point) {
 		g.ManualMovePlayer(direction.ToDirection())
 		return
 	}
-	/*
-		if g.currentMap().IsObjectAt(pos) {
-			neighbors := g.currentMap().GetFilteredCardinalNeighbors(pos, func(neighbor geometry.Point) bool {
-				return g.currentMap().IsCurrentlyPassable(neighbor)
-			})
-			if len(neighbors) == 0 {
-				return
-			}
-			pos = nearestPosition(g.Player.Position(), neighbors)
-		}
-	*/
-	if g.currentMap().IsCurrentlyPassable(pos) || g.currentMap().IsObjectAt(pos) {
-		g.Player.RemoveGoal()
 
+	if g.currentMap().IsCurrentlyPassable(pos) || g.currentMap().IsObjectAt(pos) {
 		pathTo := g.currentMap().GetJPSPath(g.Player.Position(), pos, func(point geometry.Point) bool {
 			if point != pos {
 				return g.currentMap().IsWalkableFor(point, g.Player)
@@ -368,26 +414,11 @@ func (g *GameState) PlayerInteractAtPosition(pos geometry.Point) {
 
 		if len(pathTo) > 0 {
 			g.Player.CurrentPath = pathTo
-			g.Player.CurrentPathIndex = 0
 			g.Player.CurrentPathBlockedCount = 0
-			g.Player.SetGoal(GoalWalkToLocation(pos))
 			g.RunPlayerPath()
 		}
 	}
 	// assume movement to this position..
-}
-
-func nearestPosition(origin geometry.Point, other []geometry.Point) geometry.Point {
-	nearest := other[0]
-	nearestDistance := geometry.Distance(origin, nearest)
-	for _, point := range other {
-		distance := geometry.Distance(origin, point)
-		if distance < nearestDistance {
-			nearest = point
-			nearestDistance = distance
-		}
-	}
-	return nearest
 }
 
 func (g *GameState) IsPlayerOverEncumbered() bool {
@@ -432,65 +463,26 @@ func (g *GameState) PlayerInteractInDirection(direction geometry.CompassDirectio
 	g.OpenContextMenuFor(positionOnMap)
 }
 
-func (g *GameState) IsInteractionAt(position geometry.Point) bool {
-	return g.currentMap().IsTransitionAt(position)
-}
+func (g *GameState) loadUserFuncs(dir string) map[string]*govaluate.EvaluableExpression {
+	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dir, "definitions", "userFuncs.rec")))
 
-func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
-	itemTemplates := make(map[string]recfile.Record)
-	parts := []string{"weapons", "ammo", "armor", "food", "consumables", "miscItems"}
-	for _, part := range parts {
-		itemTemplateFile := path.Join(dataRootDir, "definitions", part+".rec")
-		records, _ := recfile.ReadAndClose(fxtools.MustOpen(itemTemplateFile))
-		for _, record := range records {
-			itemTemplates[record.FindValueForKeyIgnoreCase("name")] = record
+	queries := make(map[string]*govaluate.EvaluableExpression)
+	for _, queryRecord := range records {
+		var queryName string
+		var queryExpression string
+		for _, field := range queryRecord {
+			switch strings.ToLower(field.Name) {
+			case "name":
+				queryName = field.Value
+			case "expr":
+				queryExpression = field.Value
+			}
 		}
-	}
-	return itemTemplates
-}
-
-func loadActorTemplates(dataRootDir string) map[string]recfile.Record {
-	actorTemplates := make(map[string]recfile.Record)
-	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dataRootDir, "definitions", "actors.rec")))
-	for _, record := range records {
-		actorTemplates[record.FindValueForKeyIgnoreCase("name")] = record
-	}
-	return actorTemplates
-}
-
-func loadSpawnedTeamsTemplates(dataRootDir string) map[string]recfile.Record {
-	actorTemplates := make(map[string]recfile.Record)
-	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dataRootDir, "definitions", "spawned_teams.rec")))
-	for _, record := range records {
-		actorTemplates[record.FindValueForKeyIgnoreCase("name")] = record
-	}
-	return actorTemplates
-}
-
-func NewGameState(config *foundation.Configuration) *GameState {
-	loadD100Rules(path.Join(config.DataRootDir, "definitions"))
-
-	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
-	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
-	g := &GameState{
-		config: config,
-		playerLightSource: &gridmap.LightSource{
-			Pos:          geometry.Point{},
-			Radius:       5,
-			Color:        fxtools.HDRColor{R: 1, G: 1, B: 1, A: 1},
-			MaxIntensity: 1,
-		},
-		mapContainsPlayer:    true,
-		timeTracker:          make(TimeTracker),
-		visionRange:          80,
-		palette:              palette,
-		globalItemTemplates:  loadItemTemplates(config.DataRootDir),
-		globalActorTemplates: loadActorTemplates(config.DataRootDir),
-		globalTeamTemplates:  loadSpawnedTeamsTemplates(config.DataRootDir),
+		expression, _ := govaluate.NewEvaluableExpressionWithFunctions(queryExpression, g.GetScriptFuncs())
+		queries[queryName] = expression
 	}
 
-	g.init()
-	return g
+	return queries
 }
 
 func (g *GameState) GetPlayerNameAndIcon() (string, textiles.TextIcon) {
@@ -527,11 +519,7 @@ func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
 }
 
 func (g *GameState) FSMInit(newActor *Actor) {
-	defaultState := fsmai.StateNeutral
-	if newActor.IsAggressive() {
-		defaultState = fsmai.StateAggressive
-	}
-	newActor.FSM = NewActorFSM(g, newActor, defaultState, DefaultBehaviorFactory)
+	newActor.FSM = NewActorFSM(g, newActor, DefaultBehaviorFactory)
 }
 func (g *GameState) NewItem(rec recfile.Record) (foundation.Item, geometry.Point) {
 	newItem := NewItemFromRecord(rec, g.NewItemFromString, g.iconForItem)
@@ -553,17 +541,18 @@ func (g *GameState) NewObject(rec recfile.Record, newMap *gridmap.GridMap[*Actor
 }
 
 func (g *GameState) init() {
+	g.playerLightSource = &gridmap.LightSource{
+		Pos:          geometry.Point{},
+		Radius:       5,
+		Color:        fxtools.HDRColor{R: 1, G: 1, B: 1, A: 1},
+		MaxIntensity: 1,
+	}
+	g.mapContainsPlayer = true
+	g.timeTracker = make(TimeTracker)
 	g.iconsForItems, g.inventoryColors = loadIconsForItems(path.Join(g.config.DataRootDir, "definitions"), g.palette)
 
-	g.mapLoader = gridmap.NewRecMapLoader(
-		path.Join(g.config.DataRootDir, "maps"),
-		g.palette,
-		g.NewActor,
-		g.NewItem,
-		g.NewObject,
-	)
 	g.activeMaps = make(map[string]*gridmap.GridMap[*Actor, foundation.Item, Object])
-	g.chatterCache = make(map[*Actor]map[foundation.ChatterType][]EntriesWithCondition)
+	g.chatterCache = make(map[*Actor]map[foundation.ChatterTopic][]EntriesWithCondition)
 	g.outOfGame = make(map[*Actor]bool)
 	g.knownTraps = make(map[string]bool)
 
@@ -582,6 +571,18 @@ func (g *GameState) init() {
 
 	g.scriptRunner = NewScriptRunner()
 	g.metronome = &Metronome{}
+}
+
+func loadMapNames(rootDir string) []string {
+	mapDir := path.Join(rootDir, "maps")
+	files, _ := os.ReadDir(mapDir)
+	var mapNames []string
+	for _, file := range files {
+		if file.IsDir() {
+			mapNames = append(mapNames, file.Name())
+		}
+	}
+	return mapNames
 }
 
 func (g *GameState) hookupJournalAndFlags() {
@@ -608,8 +609,8 @@ func (g *GameState) initPlayerAndMap() {
 	playerStartInfo := path.Join(g.config.DataRootDir, "definitions", "player_start.rec")
 	if fxtools.FileExists(playerStartInfo) {
 		records, _ := recfile.ReadAndClose(fxtools.MustOpen(playerStartInfo))
-		startGear := records[0]
-		for _, field := range startGear {
+		startRecord := records[0]
+		for _, field := range startRecord {
 			if field.Name == "mapName" {
 				spawnMap = field.Value
 			} else if field.Name == "mapLocation" {
@@ -622,65 +623,55 @@ func (g *GameState) initPlayerAndMap() {
 		}
 	}
 
-	loadedMapResult := g.mapLoader.LoadMap(spawnMap)
-
-	loadedMap := loadedMapResult.Map
-	if loadedMap == nil {
-		g.msg(foundation.Msg("It's impossible to move there.."))
-		return
-	}
-
-	namedLocation := loadedMap.GetNamedLocation(spawnLocation)
-	g.Player.SetPosition(namedLocation)
-
-	// TODO: ADD LIGHT SOURCE
-	//loadedMap.AddDynamicLightSource(namedLocation, g.playerLightSource)
-
-	g.setCurrentMap(loadedMap)
-
-	for flagName, flagValue := range loadedMapResult.FlagsOfMap {
-		g.gameFlags.Set(flagName, flagValue)
-	}
-
-	for _, script := range loadedMapResult.ScriptsToRun {
-		g.RunScriptByName(script)
-	}
-
-	g.journal.Update()
+	g.playerAttachHooks()
 
 	playerSheet.HealAPAndHPCompletely()
 
-	g.playerSecondaryInit()
+	g.transitionToMapLocation(spawnMap, spawnLocation)
 
-	g.afterMapLoad()
+	g.journal.Update()
 
 	g.SaveTimeNow("PlayerLastAteAt")
 }
 
-func (g *GameState) afterMapLoad() {
+func (g *GameState) transitionToMapLocation(levelName string, location string) {
+	// Remove Player from Old Map
+	if g.currentMap() != nil && g.Player != nil {
+		g.currentMap().RemoveActor(g.Player)
+		g.Player.RemoveLevelStatusEffects()
+		g.currentMap().SetLastVisited(g.gameTime.Time)
+	}
+
+	loadedMap := g.ensureMapIsLoaded(levelName)
+	g.currentMapName = loadedMap.GetName()
+
+	mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
+	g.gameFlags.Increment(mapVisited)
+
+	// Ensure correct map state
 	g.currentMap().UpdateBakedLights()
 
 	g.currentMap().UpdateDynamicLights()
 
-	g.initAllActorSchedules()
-
-	g.updateAllFoVsAndDijkstras()
+	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", g.currentMap().GetMeta().MusicFile+".ogg"))
 
 	// Spawn Player
-	g.currentMap().AddActorWithDisplacement(g.Player, g.Player.Position())
+	playerSpawnPosition := loadedMap.GetNamedLocation(location)
+	g.currentMap().AddActorWithDisplacement(g.Player, playerSpawnPosition)
 
-	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", g.currentMap().GetMeta().MusicFile+".ogg"))
+	g.afterPlayerMoved(geometry.Point{}, true)
 
 	g.advanceTime(time.Second * time.Duration(60))
 
-	g.afterPlayerMoved(geometry.Point{}, true)
+	g.updateAllFoVsAndDijkstras()
 
 	g.updateUIStatus()
 }
 
-func (g *GameState) playerSecondaryInit() {
-	g.Player.secondaryInit()
+func (g *GameState) playerAttachHooks() {
+	g.Player.attachHooks()
 
+	// additional player only hooks
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
 		g.ui.UpdateStats()
 
@@ -710,27 +701,23 @@ func (g *GameState) playerSecondaryInit() {
 	})
 }
 
-func (g *GameState) setCurrentMap(loadedMap *gridmap.GridMap[*Actor, foundation.Item, Object]) {
-	mapName := loadedMap.GetName()
-	g.activeMaps[mapName] = loadedMap
-	g.currentMapName = mapName
-}
-
 // UIReady is called by the UI when it has initialized itself
 func (g *GameState) UIReady(ui foundation.GameUI) {
 	g.ui = ui
 
 	g.moveIntoDungeon()
-	// ADD Banner
-	//g.ui.ShowTextFileFullscreen(path.Join("data","banner.txt"), g.moveIntoDungeon)
+
 	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
+}
+
+func (g *GameState) Reset() {
+	g.init()
+	g.moveIntoDungeon()
 }
 
 // moveIntoDungeon requires the UI to be available. It will request a dungeon crawl UI
 // and then moves the player into the loaded map.
 func (g *GameState) moveIntoDungeon() {
-
-	// Since the player has equipment, we need the item
 	g.initPlayerAndMap()
 
 	g.afterPlayerMoved(geometry.Point{}, true)
@@ -738,80 +725,8 @@ func (g *GameState) moveIntoDungeon() {
 	g.updateUIStatus()
 }
 
-func (g *GameState) Reset() {
-	g.init()
-	g.moveIntoDungeon()
-	g.ui.UpdateInventory()
-}
-
 func (g *GameState) QueueActionAfterAnimation(action func()) {
 	g.afterAnimationActions = append(g.afterAnimationActions, action)
-}
-
-// endPlayerTurn is called by game actions that end the player's turn.
-// It will
-// - animate the player's actions
-// - then the enemies' actions
-// - remove dead actors and apply regeneration
-// - execute any actions that were queued to be executed after animations
-// - update the UI status
-// - check if the player can act
-func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
-	// player has changed the game state..
-	g.actorsComputed = 0
-	// advancing the time will run scripts
-	g.advanceTimeAndTurn(time.Second * time.Duration(float64(playerTimeTakenForTurn)/10))
-
-	// trigger turn based events
-	g.metronome.Tick(g)
-
-	g.applyPlayerHunger()
-
-	didCancel := g.ui.AnimatePending() // animate player actions..
-
-	// AI Actions (incl. Behaviours, Goals, Schedules) and State Changes happen here
-	g.enemyMovement(playerTimeTakenForTurn)
-	g.applyTurnCounters()
-	if didCancel {
-		g.ui.SkipAnimations()
-	} else {
-		g.ui.AnimatePending() // animate enemy actions
-	}
-
-	// EXPERIMENTAL and dangerous..
-	// we simulate all actors on all loaded maps..
-	if g.config.SimulateAllLoadedMaps {
-		for mapName, _ := range g.activeMaps {
-			if mapName == g.currentMapName {
-				continue
-			}
-			g.ExecuteOnMap(mapName, func() {
-				g.updateAllSchedules()
-				g.scriptRunner.CheckAndRunFrames(mapName)
-				g.enemyMovement(playerTimeTakenForTurn)
-				g.applyTurnCounters()
-				g.ui.SkipAnimations()
-			})
-		}
-	}
-
-	// This is where level transitions are handled
-	for _, action := range g.afterAnimationActions {
-		action()
-	}
-	g.afterAnimationActions = nil
-
-	g.checkJournal()
-
-	g.checkPlayerCanAct()
-
-	if g.Player.HasFlag(foundation.FlagSneaking) {
-		g.ui.SetSneakOverlay(g.createSneakOverlay())
-	} else {
-		g.ui.SetSneakOverlay(nil)
-	}
-	g.gameFlags.Set("ActorsComputed", g.actorsComputed)
-	g.updateUIStatus()
 }
 
 func (g *GameState) checkJournal() {
@@ -848,18 +763,19 @@ func (g *GameState) gameOver(death string) {
 	g.ui.ShowGameOver(scoreInfo, highScores)
 }
 
-func (g *GameState) tryAddRandomChatter(actor *Actor, textType foundation.ChatterType) bool {
+func (g *GameState) tryAddRandomChatter(actor *Actor, textType foundation.ChatterTopic) bool {
 	chatter := g.GetRandomChatter(actor, textType)
 	if chatter == "" {
 		chatter = textType.DefaultChatter()
 	}
 	return g.tryAddChatter(actor, chatter)
 }
+
 func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
 	if text == "" || !g.MapContainsPlayer() {
 		return false
 	}
-	if actor.IsAlive() && !actor.IsSleeping() && g.canPlayerSee(actor.Position()) {
+	if actor.IsAlive() && !actor.IsSleeping() && g.Player.CanSee(actor.Position()) {
 		text = g.fillTemplatedText(text)
 		if g.ui.TryAddChatter(actor, text) {
 			g.msg(foundation.HiLite("%s: \"%s\"", actor.Name(), cview.Escape(text)))
@@ -1030,15 +946,20 @@ func (g *GameState) getShootingRangePosition(attacker *Actor, weaponRange int, v
 	}
 	return bestPos
 }
+
+// advanceTimeAndTurn will advance the time and turn, and run any active scripts on the map and also update the schedules of all actors
 func (g *GameState) advanceTimeAndTurn(duration time.Duration) {
 	g.gameTime = g.gameTime.AddDurationAndTurn(duration)
 	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
-	g.updateAllSchedules()
+	g.transitionNPCs()
 }
+
+// advanceTime will advance the time, and run any active scripts on the map and also update the schedules of all actors
+// IMPORTANT: This function will also UPDATE the FOV and Dijkstra map of the player
 func (g *GameState) advanceTime(duration time.Duration) {
 	g.gameTime = g.gameTime.AddDuration(duration)
 	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
-	g.updateAllSchedules()
+	g.transitionNPCs()
 	g.updateFoVAndDijkstraMap(g.Player)
 }
 
@@ -1088,11 +1009,11 @@ func (g *GameState) TurnsTaken() int {
 	return g.gameTime.Turns
 }
 
-func (g *GameState) GetRandomChatter(talker *Actor, chatterType foundation.ChatterType) string {
+func (g *GameState) GetRandomChatter(talker *Actor, chatterType foundation.ChatterTopic) string {
 	if talker.ChatterFile == "" {
 		return ""
 	}
-	var chatterForActor map[foundation.ChatterType][]EntriesWithCondition
+	var chatterForActor map[foundation.ChatterTopic][]EntriesWithCondition
 	if _, hasCached := g.chatterCache[talker]; !hasCached {
 		chatterFilePath := path.Join(g.config.DataRootDir, "dialogues", talker.ChatterFile+".rec")
 		if !fxtools.FileExists(chatterFilePath) {
@@ -1127,16 +1048,16 @@ type EntriesWithCondition struct {
 	Entries   []string
 }
 
-func NewChatterFromRecords(records []recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) map[foundation.ChatterType][]EntriesWithCondition {
-	chatter := make(map[foundation.ChatterType][]EntriesWithCondition)
+func NewChatterFromRecords(records []recfile.Record, condFuncs map[string]govaluate.ExpressionFunction) map[foundation.ChatterTopic][]EntriesWithCondition {
+	chatter := make(map[foundation.ChatterTopic][]EntriesWithCondition)
 	for _, record := range records {
-		var chatterType foundation.ChatterType
+		var chatterType foundation.ChatterTopic
 		var entries []string
 		var condition *govaluate.EvaluableExpression
 		for _, field := range record {
 			switch strings.ToLower(field.Name) {
 			case "s":
-				chatterType = foundation.NewChatterTypeFromString(field.Value)
+				chatterType = foundation.NewChatterTopicFromString(field.Value)
 			case "t":
 				entries = append(entries, field.Value)
 			case "c":
@@ -1177,10 +1098,6 @@ func (g *GameState) actorTransition(originMap *gridmap.GridMap[*Actor, foundatio
 
 	targetLocation := destMap.GetNamedLocation(whereTo.TargetLocation)
 	destMap.AddActorWithDisplacement(actor, targetLocation)
-
-	g.ExecuteOnMap(whereTo.TargetMap, func() {
-		g.trySetGoalFromSchedule(actor)
-	})
 }
 
 func (g *GameState) removeItemFromGame(item foundation.Item) {
@@ -1216,7 +1133,7 @@ func (g *GameState) actorConsumeDrug(actor *Actor, item *GenericItem) {
 		item.RemoveStacks(1)
 		g.ui.UpdateInventory()
 	} else {
-		g.removeItemFromInventory(actor, item)
+		actor.Inventory.RemoveItem(item)
 	}
 }
 
@@ -1258,12 +1175,6 @@ func (g *GameState) updateAllFoVsAndDijkstras() {
 
 	if g.Player.HasFlag(foundation.FlagSneaking) {
 		g.ui.SetSneakOverlay(g.createSneakOverlay())
-	}
-}
-
-func (g *GameState) initAllActorSchedules() {
-	for _, actor := range g.currentMap().Actors() {
-		g.trySetGoalFromSchedule(actor)
 	}
 }
 
@@ -1368,7 +1279,7 @@ func (g *GameState) shouldActorBark(actor *Actor) bool {
 	return nearEachOther &&
 		!g.Player.HasFlag(foundation.FlagSneaking) &&
 		!g.Player.HasFlag(foundation.FlagActiveCamouflage) &&
-		g.canPlayerSee(actor.Position()) &&
+		g.Player.CanSee(actor.Position()) &&
 		actor.ChatterFile != "" &&
 		actor.GetFlags().Get(foundation.FlagTurnsSinceLastIdleChatter) > 40 &&
 		rand.Intn(4) == 0
@@ -1393,12 +1304,9 @@ func (g *GameState) allActorsInOtherActiveMaps() map[*gridmap.GridMap[*Actor, fo
 	return actors
 }
 
-func (g *GameState) isBedNear(position geometry.Point) (*Bed, bool) {
-	neighborsWithObjects := g.currentMap().NeighborsAll(position, func(p geometry.Point) bool {
-		return g.currentMap().IsObjectAt(p)
-	})
-	for _, neighbor := range neighborsWithObjects {
-		if bed, isBed := g.currentMap().ObjectAt(neighbor).(*Bed); isBed {
+func (g *GameState) isBedAt(position geometry.Point) (*Bed, bool) {
+	if obj, isObjectAt := g.currentMap().TryGetObjectAt(position); isObjectAt {
+		if bed, isBed := obj.(*Bed); isBed {
 			return bed, true
 		}
 	}
@@ -1415,6 +1323,38 @@ func (g *GameState) getDialogueCheckMods(actor *Actor, opponent *Actor, skill d1
 
 func (g *GameState) resolveActorID(id gridmap.ActorID) *Actor {
 	return g.currentMap().GetActorByID(id)
+}
+
+func (g *GameState) OpenTeleportMenu() {
+	var menuItems []foundation.MenuItem
+	for _, mapName := range g.allMapNames {
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: mapName,
+			Action: func() {
+				g.openTeleportToLocationMenu(mapName)
+			},
+			CloseMenus: true,
+		})
+	}
+
+	g.ui.OpenMenu(menuItems)
+}
+
+func (g *GameState) openTeleportToLocationMenu(mapName string) {
+	var menuItems []foundation.MenuItem
+	loadedMap := g.ensureMapIsLoaded(mapName)
+	locations := loadedMap.GetNamedLocations()
+	for locationName, _ := range locations {
+		menuItems = append(menuItems, foundation.MenuItem{
+			Name: locationName,
+			Action: func() {
+				g.transitionToMapLocation(mapName, locationName)
+			},
+			CloseMenus: true,
+		})
+	}
+
+	g.ui.OpenMenu(menuItems)
 }
 
 func advantageForOne(one int, two int, advantage int) (int, int) {

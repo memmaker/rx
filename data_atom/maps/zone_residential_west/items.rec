@@ -1,20 +1,6 @@
 %rec: default
 
 Category: lockpicks
-Name: mechanical_lockpick
-Description: M-Pick
-Cost: 120
-LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
-Position: (41,19)
-
-Category: lockpicks
-Name: electronic_lockpick
-Description: E-Pick
-Cost: 120
-LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
-Position: (44,7)
-
-Category: lockpicks
 Name: electronic_lockpick
 Description: E-Pick
 Cost: 120
@@ -27,6 +13,27 @@ Description: E-Pick
 Cost: 120
 LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
 Position: (29,3)
+
+Category: lockpicks
+Name: mechanical_lockpick
+Description: M-Pick
+Cost: 120
+LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
+Position: (44,15)
+
+Category: lockpicks
+Name: mechanical_lockpick
+Description: M-Pick
+Cost: 120
+LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
+Position: (41,19)
+
+Category: lockpicks
+Name: electronic_lockpick
+Description: E-Pick
+Cost: 120
+LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
+Position: (44,7)
 
 Category: Notes
 Name: terra_vitae_pamphlet
@@ -58,11 +65,4 @@ Description: M-Pick
 Cost: 120
 LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
 Position: (23,19)
-
-Category: lockpicks
-Name: mechanical_lockpick
-Description: M-Pick
-Cost: 120
-LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
-Position: (44,15)
 

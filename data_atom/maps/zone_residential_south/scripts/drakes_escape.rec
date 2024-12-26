@@ -21,7 +21,7 @@ do: AddChatter(DRAKE, 'HUH?')
 %rec: frames
 
 if: true
-do: SetGoalMoveToNamedLocation(DRAKE, 'hospital_backdoor')
+do: MoveTo(DRAKE, 'hospital_backdoor')
 
 if: IsActorAtNamedLocation(DRAKE, 'hospital_backdoor')
-do: SetGoalMoveToNamedLocation(DRAKE, 'street_to_north_west', true)
+do: MoveTo(DRAKE, 'street_to_north_west', true)

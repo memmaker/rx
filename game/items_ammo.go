@@ -1,7 +1,8 @@
 package game
 
 import (
-    "contractor/foundation"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -72,7 +73,7 @@ func (i *Ammo) Split(bullets int) foundation.Item {
 	cloneGeneric := *i.GenericItem
 	clone := *i
 	clone.GenericItem = &cloneGeneric
-
+	clone.UID = gridmap.NextItemID()
 	clone.StackSize = bullets
 	i.StackSize -= bullets
 	return &clone

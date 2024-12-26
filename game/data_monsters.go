@@ -18,8 +18,6 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 	var equipment []string
 	var vendorInv []string
 	var cyberWareInstalls []string
-	fashionVendorStyle := foundation.FashionStyle(-2)
-
 	flags := foundation.NewActorFlags()
 
 	charSheet := d100.NewCharSheet()
@@ -74,8 +72,6 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			cyberWareInstalls = append(cyberWareInstalls, field.Value)
 		case "selling":
 			vendorInv = append(vendorInv, field.Value)
-		case "fashion_vendor_style":
-			fashionVendorStyle = foundation.FashionStyleFromString(field.Value)
 		case "aggressive":
 			actor.Aggressive = field.AsBool()
 		case "guarding_zone":
@@ -87,6 +83,8 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 			actor.AudioBaseName = field.Value
 		case "dialogue":
 			actor.SetDialogueFile(field.Value)
+		case "initiatedialoguewith":
+			actor.InitiateDialogueWithOpeningBranch = field.Value
 		case "chatter":
 			actor.SetChatterFile(field.Value)
 		case "faction":
@@ -170,12 +168,7 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		actor.OffersCyberWare = offers
 	}
 
-	if fashionVendorStyle != -2 {
-		actor.VendorInv = NewInventory(40)
-		actor.GetVendorInventory().AddItems(newFashionInventory(fashionVendorStyle))
-	}
-
-	actor.secondaryInit()
+	actor.attachHooks()
 
 	if actor.HasFlag(foundation.FlagSpawnDead) {
 		actor.Kill()

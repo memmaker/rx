@@ -1,6 +1,18 @@
 package game
 
-import "contractor/fsmai"
+import (
+	"contractor/fsmai"
+	"github.com/memmaker/go/geometry"
+)
+
+type LocationEvent struct {
+	Event    fsmai.TransitionEventName
+	Location geometry.Point
+}
+
+func (l LocationEvent) Name() fsmai.TransitionEventName {
+	return l.Event
+}
 
 type ActorEvent struct {
 	Event fsmai.TransitionEventName
@@ -35,6 +47,12 @@ func NewCalmedEvent(threat *Actor) fsmai.TransitionEvent {
 	return ActorEvent{Event: fsmai.EventCalmed, Actor: threat}
 }
 
+func NewLeaderJoinedEvent(leader *Actor) fsmai.TransitionEvent {
+	return ActorEvent{Event: fsmai.EventLeaderJoined, Actor: leader}
+}
+func NewLeaderLeftEvent() fsmai.TransitionEvent {
+	return fsmai.EmptyEvent{Event: fsmai.EventLeaderLeft}
+}
 func NewMinorCrimeWitnessedEvent(criminal *Actor) fsmai.TransitionEvent {
 	return ActorEvent{Event: fsmai.EventMinorCrimeWitnessed, Actor: criminal}
 }

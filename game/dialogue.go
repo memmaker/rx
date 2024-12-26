@@ -36,11 +36,24 @@ func (c *Conversation) CreateGraph() string {
 	graph += "}"
 	return graph
 }
-
-func (c *Conversation) GetRootNode(params map[string]interface{}) ConversationNode {
+func (c *Conversation) SetVariables(params map[string]interface{}) {
 	c.Variables = params
+}
+func (c *Conversation) MergeVariables(params map[string]interface{}) {
+	if c.Variables == nil {
+		c.Variables = params
+		return
+	}
+	for key, value := range params {
+		c.Variables[key] = value
+	}
+}
+func (c *Conversation) GetRootNode() ConversationNode {
 	for _, branch := range c.openingBranches {
-		evaluateResult, err := branch.BranchCondition.Evaluate(params)
+		if branch.Name != "" { // named branches are used for NPC initiated conversations
+			continue
+		}
+		evaluateResult, err := branch.BranchCondition.Evaluate(c.Variables)
 		asBool := evaluateResult.(bool)
 		if err == nil && asBool {
 			return c.nodes[branch.BranchName]
@@ -65,7 +78,17 @@ func (c *Conversation) GetAllNodes() map[string]ConversationNode {
 	return c.nodes
 }
 
+func (c *Conversation) GetOpeningBranchByName(name string) OpeningBranch {
+	for _, branch := range c.openingBranches {
+		if branch.Name == name {
+			return branch
+		}
+	}
+	return OpeningBranch{}
+}
+
 type OpeningBranch struct {
+	Name            string
 	BranchCondition *govaluate.EvaluableExpression
 	BranchName      string
 }
@@ -173,14 +196,32 @@ func ParseConversation(filename string, conditionFuncs map[string]govaluate.Expr
 	records, _ := recfile.ReadMulti(file)
 	conversation := NewConversation()
 	openingBranches := make([]OpeningBranch, 0)
+	variables := make(map[string]interface{})
+
+	if records["Variables"] != nil {
+		for _, variableRecord := range records["Variables"] {
+			for _, field := range variableRecord {
+				expression, _ := govaluate.NewEvaluableExpressionWithFunctions(field.Value, conditionFuncs)
+				variables[field.Name], _ = expression.Evaluate(nil)
+			}
+		}
+		conversation.SetVariables(variables)
+	}
+
 	for _, branchRecords := range records["OpeningBranch"] {
 		var branch OpeningBranch
 		for _, fields := range branchRecords {
 			fieldName := strings.ToLower(fields.Name)
 			if fieldName == "cond" {
-				branch.BranchCondition, _ = govaluate.NewEvaluableExpressionWithFunctions(fields.Value, conditionFuncs)
+				cond, parseErr := govaluate.NewEvaluableExpressionWithFunctions(fields.Value, conditionFuncs)
+				if parseErr != nil {
+					panic(parseErr)
+				}
+				branch.BranchCondition = cond
 			} else if fieldName == "goto" {
 				branch.BranchName = fields.Value
+			} else if fieldName == "name" {
+				branch.Name = fields.Value
 			}
 		}
 		openingBranches = append(openingBranches, branch)

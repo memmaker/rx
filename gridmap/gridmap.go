@@ -48,6 +48,7 @@ type MapActor interface {
 	Position() geometry.Point
 	SetPosition(geometry.Point)
 	IsAlive() bool
+	GetDijkstraMap() map[geometry.Point]int
 }
 type MapObjectWithProperties[ActorType interface {
 	comparable
@@ -1757,7 +1758,8 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) SetListExplored(tiles []geome
 	}
 }
 
-func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnOtherDijkstraMap(from geometry.Point, towardsMapOrigin bool, dijkstraMap map[geometry.Point]int) geometry.Point {
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnOtherDijkstraMap(mover ActorType, towardsMapOrigin bool, dijkstraMap map[geometry.Point]int) geometry.Point {
+	from := mover.Position()
 	if dijkstraMap == nil {
 		return from
 	}
@@ -1773,7 +1775,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnOtherDijkstraMap(fro
 	}
 	currentMap := m
 	neighbors := currentMap.GetFilteredNeighborsForMovement(from, func(pos geometry.Point) bool { // choose a possible next step
-		if !currentMap.IsCurrentlyPassable(pos) { // only walk on passable tiles
+		if !currentMap.IsWalkableFor(pos, mover) { // only walk on passable tiles
 			return false
 		}
 		if _, existsTransition := currentMap.GetTransitionAt(pos); existsTransition { // don't walk on transitions
@@ -1784,7 +1786,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveOnOtherDijkstraMap(fro
 			return false
 		}
 		neighborsWithTransition := currentMap.GetFilteredNeighbors(pos, func(pos geometry.Point) bool { // in fact, don't walk on tiles next to transitions either
-			if !currentMap.IsCurrentlyPassable(pos) {
+			if !currentMap.IsWalkableFor(pos, mover) {
 				return false
 			}
 			if _, existsTransition := currentMap.GetTransitionAt(pos); existsTransition {
@@ -2072,8 +2074,28 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) ZoneMetadata(zoneName string)
 	}
 }
 
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveTowardsActor(mover ActorType, other ActorType, maxDist int) geometry.Point {
+	moveDist := m.MoveDistance(mover.Position(), other.Position())
+	if moveDist <= maxDist {
+		return mover.Position()
+	}
+
+	nextStep := m.GetMoveOnOtherDijkstraMap(mover, true, other.GetDijkstraMap())
+
+	return nextStep
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetMoveAwayFromActor(mover ActorType, other ActorType) geometry.Point {
+	nextStep := m.GetMoveOnOtherDijkstraMap(mover, false, other.GetDijkstraMap())
+	return nextStep
+}
+
 func (m *GridMap[ActorType, ItemType, ObjectType]) GetActorByID(id ActorID) ActorType {
 	return m.allActors[id]
+}
+
+func (m *GridMap[ActorType, ItemType, ObjectType]) GetNamedLocations() map[string]geometry.Point {
+	return m.namedLocations
 }
 
 type JumpOverInfo struct {

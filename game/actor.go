@@ -48,16 +48,16 @@ type Actor struct {
 	StatusFlags          *foundation.ActorFlags
 	TemporaryStatChanges []*TemporaryStatChange
 
-	FSM        *ActorFSM
-	Schedule   *Schedule
-	ActiveGoal ActorGoal
+	FSM      *ActorFSM
+	Schedule *Schedule
 
 	IntrinsicZapEffects []string
 	IntrinsicUseEffects []string
 
-	DialogueFile string
-	ChatterFile  string
-	TeamName     string
+	DialogueFile                      string
+	InitiateDialogueWithOpeningBranch string
+	ChatterFile                       string
+	TeamName                          string
 
 	EnemyActors map[string]bool
 	EnemyTeams  map[string]bool
@@ -72,7 +72,6 @@ type Actor struct {
 	SpawnPosition           geometry.Point
 	CurrentPathBlockedCount int
 	CurrentPath             []geometry.Point
-	CurrentPathIndex        int
 
 	BodyAugmentations map[CyberWare]bool
 	AugmentToggled    func(CyberWare, bool)
@@ -739,7 +738,7 @@ func (a *Actor) HasKey(identifier string) bool {
 }
 
 func (a *Actor) IsInCombat() bool {
-	return a.HasActiveGoal() && a.ActiveGoal.IsCombatGoal()
+	return a.FSM.IsInCombat()
 }
 
 func (a *Actor) SetDisplayName(name string) {
@@ -864,17 +863,17 @@ func (a *Actor) AddToEnemyTeams(name string) {
 	a.EnemyTeams[name] = true
 }
 
-func (a *Actor) IsHostileTowards(attacker *Actor) bool {
-	if a.HasActiveGoal() && a.ActiveGoal.IsHostilityTowards(attacker) {
+func (a *Actor) IsHostileTowards(other *Actor) bool {
+	if a.FSM.IsHostileTowards(other) {
 		return true
 	}
-	if a.IsAggressive() && attacker.TeamName != a.TeamName {
+	if a.IsAggressive() && other.TeamName != a.TeamName {
 		return true
 	}
-	if _, exists := a.EnemyActors[attacker.GetInternalName()]; exists {
+	if _, exists := a.EnemyActors[other.GetInternalName()]; exists {
 		return true
 	}
-	if _, exists := a.EnemyTeams[attacker.GetTeam()]; exists {
+	if _, exists := a.EnemyTeams[other.GetTeam()]; exists {
 		return true
 	}
 	return false
@@ -904,11 +903,9 @@ func (a *Actor) LookInfo() string {
 }
 
 func (a *Actor) ActionDescription() string {
-	action := "just standing there"
-	if a.HasActiveGoal() {
-		action = a.ActiveGoal.Description()
-	}
-	if a.Schedule != nil && a.Schedule.LastSlotID.Index != -1 {
+	state := a.FSM.State()
+	action := state.ToString()
+	if state == fsmai.StateIdle && a.Schedule != nil {
 		action = a.Schedule.CurrentTimeSlot().Description()
 	}
 	// Activity
@@ -921,10 +918,8 @@ func (a *Actor) OutfitDescription() string {
 	armor := a.GetInventory().GetArmor()
 	helmet := a.GetInventory().GetHelmet()
 	clothes := ""
-	hasClothes := true
 	if armor == nil && helmet == nil {
 		clothes = fmt.Sprintf("nothing")
-		hasClothes = false
 	} else if armor != nil && helmet != nil {
 		clothes = fmt.Sprintf("%s and %s", armor.Name(), helmet.Name())
 	} else if armor != nil && helmet == nil {
@@ -932,12 +927,6 @@ func (a *Actor) OutfitDescription() string {
 	} else if helmet != nil && armor == nil {
 		clothes = fmt.Sprintf("%s", helmet.Name())
 	}
-	outFitStyle := foundation.FashionStyleLowLife
-	if hasClothes {
-		outFitStyle = a.OutfitStyle()
-	}
-
-	clothes = fmt.Sprintf("%s (%s)", clothes, outFitStyle.String())
 
 	hands := ""
 	item, hasItem := a.GetInventory().GetMainHandItem()
@@ -1013,34 +1002,11 @@ func (a *Actor) ToRecord() recfile.Record {
 	return actorRecord
 }
 
-func (a *Actor) ActOnGoal(g *GameState) (fsmai.TransitionEvent, int) {
-	if a.ActiveGoal == nil {
-		return fsmai.NoEvent, 0
-	}
-	if a.ActiveGoal.Achieved(g, a) {
-		a.ActiveGoal = nil
-		return fsmai.NoEvent, 0
-	}
-	event, tuSpent := a.ActiveGoal.Action(g, a)
-	if a.ActiveGoal.Achieved(g, a) {
-		a.ActiveGoal = nil
-	}
-	return event, tuSpent
-}
-
-func (a *Actor) HasActiveGoal() bool {
-	return a.ActiveGoal != nil
-}
-
 func (a *Actor) GetMeleeTUCost() int {
 	if meleeWeapon, hasWeapon := a.GetInventory().GetEquippedWeapon(); hasWeapon {
 		return meleeWeapon.GetCurrentAttackMode().TUCost
 	}
 	return a.TimeNeededForActions()
-}
-
-func (a *Actor) SetGoal(goal ActorGoal) {
-	a.ActiveGoal = goal
 }
 
 func (a *Actor) GetWeaponRange() int {
@@ -1077,53 +1043,16 @@ func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point 
 		a.calcAndSetPath(g, pos)
 	}
 
-	if a.CurrentPathIndex < 0 || a.CurrentPathIndex >= len(a.CurrentPath) {
-		return a.Position()
-	}
-
-	nextStep := a.CurrentPath[a.CurrentPathIndex]
+	nextStep := a.CurrentPath[0]
 	if !g.currentMap().IsWalkableFor(nextStep, a) {
 		a.calcAndSetPath(g, pos)
-		if a.CurrentPathIndex == -1 {
+		if a.hasNoPath() {
 			return a.Position()
 		}
-		nextStep = a.CurrentPath[a.CurrentPathIndex]
+		nextStep = a.CurrentPath[0]
 	}
 	a.CurrentPathBlockedCount = 0
-	a.CurrentPathIndex++
-	return nextStep
-
-}
-
-func (a *Actor) getMoveTowardsActor(g *GameState, other *Actor, maxDist int) geometry.Point {
-	moveDist := g.currentMap().MoveDistance(a.Position(), other.Position())
-	if moveDist <= maxDist {
-		return a.Position()
-	}
-
-	nextStep := g.currentMap().GetMoveOnOtherDijkstraMap(a.Position(), true, other.DijkstraMap)
-
-	if !g.currentMap().IsWalkableFor(nextStep, a) {
-		a.CurrentPathBlockedCount++
-		if a.CurrentPathBlockedCount <= 3 {
-			return a.Position()
-		}
-	}
-	a.CurrentPathBlockedCount = 0
-	return nextStep
-}
-
-func (a *Actor) getMoveAwayFromActor(g *GameState, other *Actor) geometry.Point {
-	nextStep := g.currentMap().GetMoveOnOtherDijkstraMap(a.Position(), false, other.DijkstraMap)
-
-	if !g.currentMap().IsWalkableFor(nextStep, a) {
-		a.CurrentPathBlockedCount++
-		if a.CurrentPathBlockedCount <= 3 {
-			return a.Position()
-		}
-	}
-	a.CurrentPathBlockedCount = 0
-	a.CurrentPathIndex++
+	a.CurrentPath = a.CurrentPath[1:]
 	return nextStep
 }
 
@@ -1134,27 +1063,27 @@ func (a *Actor) calcAndSetPath(g *GameState, pos geometry.Point) {
 		return g.currentMap().IsWalkableFor(point, a)
 	})
 	if len(calcPath) == 0 || (len(calcPath) == 1 && calcPath[0] == a.Position()) {
-		a.CurrentPathIndex = -1
+		a.CurrentPath = nil
 	} else {
-		a.CurrentPathIndex = 0
 		a.CurrentPath = calcPath
 	}
 }
-func (a *Actor) cannotFindPath() bool {
-	return a.CurrentPathIndex == -1
+func (a *Actor) hasNoPath() bool {
+	return len(a.CurrentPath) == 0
 }
 func (a *Actor) hasPathTo(pos geometry.Point) bool {
 	if a.CurrentPath == nil || len(a.CurrentPath) == 0 {
 		return false
 	}
-	if a.CurrentPathIndex < 0 || a.CurrentPathIndex >= len(a.CurrentPath) {
-		return false
-	}
+	nextStep := a.CurrentPath[0]
+	startsNearOurPos := geometry.DistanceChebyshev(a.Position(), nextStep) <= 1
 	targetOfPath := a.CurrentPath[len(a.CurrentPath)-1]
-	isNear := geometry.DistanceChebyshev(targetOfPath, pos) <= 1
-	return isNear
+	endsNearTarget := geometry.DistanceChebyshev(targetOfPath, pos) <= 1
+	return startsNearOurPos && endsNearTarget
 }
-
+func (a *Actor) GetDijkstraMap() map[geometry.Point]int {
+	return a.DijkstraMap
+}
 func (a *Actor) GetMaxThrowRange() int {
 	strength := a.GetCharSheet().GetStat(d100.Strength)
 	return strength * 2
@@ -1179,10 +1108,6 @@ func (a *Actor) IsOverEncumbered() bool {
 
 func (a *Actor) SetStance(stance ActorStance) {
 	a.Stance = stance
-}
-
-func (a *Actor) RemoveGoal() {
-	a.ActiveGoal = nil
 }
 
 func (a *Actor) IsAlliedWith(player *Actor) bool {
@@ -1243,14 +1168,10 @@ func (a *Actor) GetTemporarySkillModifiers(skill d100.Skill) []d100.Modifier {
 
 	return result
 }
-func (a *Actor) secondaryInit() {
-	a.attachHooksToActor()
 
-	a.GetInventory().SetName(fmt.Sprintf("%s's Inventory", a.Name()))
-}
-
-func (a *Actor) attachHooksToActor() {
+func (a *Actor) attachHooks() {
 	inventory := a.GetInventory()
+	inventory.SetName(fmt.Sprintf("%s's Inventory", a.Name()))
 
 	equipment := a.GetInventory()
 
@@ -1401,26 +1322,14 @@ func (a *Actor) GetAllNeighbors() []geometry.Point {
 	return neighbors
 }
 
-func (a *Actor) MoveToNextTimeSlot(time time.Time) (TimeSlot, bool) {
-	if a.Schedule == nil {
-		return TimeSlot{}, false
-	}
-	return a.Schedule.MoveToNextTimeSlot(time)
-}
-
 func (a *Actor) appendStateInfo(result []string) []string {
 	fsmState := a.FSM.currentBehavior.AssociatedState().ToString()
-	goal := "none"
-	if a.ActiveGoal != nil {
-		goal = a.ActiveGoal.Description()
-	}
 	schedule := "none"
 	if a.Schedule != nil {
 		schedule = a.Schedule.String()
 	}
 	result = append(result, fmt.Sprintf("Schedule: %s", schedule))
 	result = append(result, fmt.Sprintf("State: %s", fsmState))
-	result = append(result, fmt.Sprintf("Goal: %s", goal))
 	return result
 }
 
@@ -1459,29 +1368,12 @@ func (a *Actor) CanDetect(pos geometry.Point) bool {
 	return geometry.Distance(a.Position(), pos) <= float64(a.DetectionRange())
 }
 
-func (a *Actor) OutfitStyle() foundation.FashionStyle {
-	armor := a.GetInventory().GetArmor()
-	helmet := a.GetInventory().GetHelmet()
-	if armor == nil { // naked == low life
-		return foundation.FashionStyleLowLife
-	}
-	if helmet == nil {
-		return armor.FashionStyle
-	}
-
-	if armor.FashionStyle == helmet.FashionStyle {
-		return armor.FashionStyle
-	}
-
-	return min(armor.FashionStyle, helmet.FashionStyle)
-}
-
 func (a *Actor) GetArmorString() string {
 	if !a.GetInventory().HasArmorEquipped() {
 		return fmt.Sprintf("no clothes (low-life)")
 	}
 	armor := a.GetInventory().GetArmor()
-	return fmt.Sprintf("%s (%s)", armor.InventoryName(), a.OutfitStyle().String())
+	return armor.InventoryName()
 }
 
 func (a *Actor) HasActionPoints() bool {
@@ -1489,9 +1381,7 @@ func (a *Actor) HasActionPoints() bool {
 }
 
 func (a *Actor) IsIdle() bool {
-	idleState := a.FSM.State() == fsmai.StateNeutral || a.FSM.State() == fsmai.StateAggressive
-	noGoal := !a.HasActiveGoal()
-	return idleState && noGoal
+	return a.FSM.State() == fsmai.StateIdle
 }
 
 func (a *Actor) HasWatch() bool {
@@ -1502,13 +1392,11 @@ func (a *Actor) HasWatch() bool {
 }
 
 func (a *Actor) InitWithGameState(g *GameState) {
-	a.secondaryInit()
-	// FSM
-	defaultState := fsmai.StateNeutral
-	if a.Aggressive {
-		defaultState = fsmai.StateAggressive
-	}
-	a.FSM.RestoreState(g, a, defaultState, DefaultBehaviorFactory)
+	a.attachHooks()
+	a.Schedule.SetGetTime(func() time.Time {
+		return g.gameTime.Time
+	})
+	a.FSM.RestoreState(g, a, DefaultBehaviorFactory(fsmai.StateIdle), DefaultBehaviorFactory)
 }
 
 func (a *Actor) ID() gridmap.ActorID {

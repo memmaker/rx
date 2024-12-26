@@ -68,14 +68,10 @@ func (s TimeSlot) Description() string {
 	return s.ActionFormatString
 }
 
-type SlotID struct {
-	Day   DayOfWeek
-	Index int
-}
 type Schedule struct {
 	Slots      map[DayOfWeek][]TimeSlot
-	LastSlotID SlotID
 	SourceFile string
+	getTime    func() time.Time
 }
 
 func clockAsSeconds(t time.Time) int {
@@ -83,52 +79,44 @@ func clockAsSeconds(t time.Time) int {
 	return hour*3600 + m*60 + sec
 }
 
-func (s *Schedule) MoveToNextTimeSlot(now time.Time) (TimeSlot, bool) {
+func (s *Schedule) CurrentTimeSlot() TimeSlot {
 	// return the time slot that is in the past and the nearest time slot
 	// but is not the LastSlotID
+	now := s.getTime()
 
 	day := DayOfWeek(now.Weekday())
-	allSlots := s.slotsForDay(day)
+	allSlotsToday := s.slotsForDay(day)
 
-	if len(allSlots) == 0 {
-		return TimeSlot{}, false
+	noSlotToday := false
+	if len(allSlotsToday) == 0 {
+		noSlotToday = true
+	} else {
+		firstSlotToday := allSlotsToday[len(allSlotsToday)-1] // first in time
+		if clockAsSeconds(firstSlotToday.Time) > clockAsSeconds(now) {
+			noSlotToday = true
+		}
 	}
 
-	lastSlotID := -1
-	if s.LastSlotID.Day == day {
-		lastSlotID = s.LastSlotID.Index
-	}
-
-	lastSlot := allSlots[len(allSlots)-1] // first in time
-
-	if clockAsSeconds(lastSlot.Time) > clockAsSeconds(now) {
+	if noSlotToday {
 		var slotsBefore []TimeSlot
 		var dayBefore DayOfWeek
 		for len(slotsBefore) == 0 {
 			dayBefore = day.DayBefore()
 			slotsBefore = s.slotsForDay(dayBefore)
 		}
-		if s.LastSlotID.Day == dayBefore {
-			lastSlotID = s.LastSlotID.Index
-		}
-
-		if 0 < lastSlotID || lastSlotID == -1 {
-			// last slot of the day before
-			lastSlot = slotsBefore[0]
-			s.LastSlotID = SlotID{Day: dayBefore, Index: 0}
-			return lastSlot, true
-		}
-		return TimeSlot{}, false
-	}
-
-	for index, slot := range allSlots {
-		if clockAsSeconds(slot.Time) <= clockAsSeconds(now) && (index < lastSlotID || lastSlotID == -1) {
-			s.LastSlotID = SlotID{Day: day, Index: index}
-			return slot, true
+		if len(slotsBefore) > 0 {
+			return slotsBefore[0] // last in time of the day before
+		} else {
+			return TimeSlot{}
 		}
 	}
 
-	return TimeSlot{}, false
+	for _, slot := range allSlotsToday {
+		if clockAsSeconds(slot.Time) <= clockAsSeconds(now) {
+			return slot
+		}
+	}
+	return TimeSlot{}
 }
 
 func (s *Schedule) slotsForDay(day DayOfWeek) []TimeSlot {
@@ -144,26 +132,19 @@ func (s *Schedule) slotsForDay(day DayOfWeek) []TimeSlot {
 	return allSlots
 }
 
-func (s *Schedule) CurrentTimeSlot() TimeSlot {
-	if s.LastSlotID.Index == -1 {
-		return TimeSlot{}
-	}
-	allSlots := s.slotsForDay(s.LastSlotID.Day)
-	if len(allSlots) == 0 {
-		return TimeSlot{}
-	}
-	return allSlots[s.LastSlotID.Index]
-}
-
 func (s *Schedule) String() string {
 	return fmt.Sprintf("%s (%d)", s.SourceFile, len(s.Slots))
 }
 
-func NewScheduleFromFile(filename string) *Schedule {
+func (s *Schedule) SetGetTime(getTime func() time.Time) {
+	s.getTime = getTime
+}
+
+func NewScheduleFromFile(filename string, getTime func() time.Time) *Schedule {
 	schedule := &Schedule{
 		SourceFile: path.Base(filename),
 		Slots:      make(map[DayOfWeek][]TimeSlot),
-		LastSlotID: SlotID{Index: -1},
+		getTime:    getTime,
 	}
 	file := fxtools.MustOpen(filename)
 	defer file.Close()

@@ -28,3 +28,7 @@ item: ebi_pamphlet_2(11)
 item: ebi_pamphlet_3(11)
 Position: (61,16)
 
+Category: ClosedDoor
+Description: a door
+Position: (46,7)
+

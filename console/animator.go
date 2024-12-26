@@ -1,9 +1,9 @@
 package console
 
 import (
-    "contractor/foundation"
-    "contractor/gridmap"
 	"cmp"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"

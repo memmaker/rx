@@ -10,12 +10,14 @@ BUGS
  - Drake has no goal and no schedule after map transition
  - Schedules are broken, because of the way we determine the current time slot
  - Actors can have conflicting states (Kill), goals (Fleeing) and status effects (Sleeping)
- - Picking up two Terra Vitae leaflets registers as only one
- - Hitting someone with the tranq dart gun won't give a confirmation message for the hit
- - Dropping from the inventory doesn't ask for amount of the stack
- - Game crashes on firing the bowel disruptor, presumably when hitting
+
+
 
 //TODO
+ - Enable NPCs approaching the player for a conversation
+ - Remove either behaviors or goals, these are too similar
+ - Replace Neutral/Aggressive States with Standing/Scheduled
+ - Automated security systems
  - Guns
  - Stopping an attacker with an firearm
    - Fear, just display a weapon + the willingness to use it

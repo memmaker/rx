@@ -11,6 +11,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"maps"
 	"slices"
+	"strings"
 )
 
 type Inventory struct {
@@ -18,7 +19,7 @@ type Inventory struct {
 	maxItemStacks  int
 	displayName    string
 	onChanged      func()
-	onBeforeRemove func(equippableItem foundation.Equippable)
+	onBeforeRemove func(equippableItem foundation.Equippable) bool
 	getCarrierPos  func() geometry.Point
 
 	equipSlots map[foundation.EquipSlot]gridmap.ItemID
@@ -95,7 +96,7 @@ func (i *Inventory) EnsurePositionHandlers() {
 func (i *Inventory) SetName(name string) {
 	i.displayName = name
 }
-func (i *Inventory) SetOnBeforeRemove(onBeforeRemove func(equippable foundation.Equippable)) {
+func (i *Inventory) SetOnBeforeRemove(onBeforeRemove func(equippable foundation.Equippable) bool) {
 	i.onBeforeRemove = onBeforeRemove
 }
 func (i *Inventory) GetItems() []foundation.Item {
@@ -146,8 +147,9 @@ func (i *Inventory) RemoveItem(item foundation.Item) {
 }
 
 func (i *Inventory) removeItemInternal(item foundation.Item) {
-	i.beforeRemove(item)
-	delete(i.items, item.ID())
+	if i.beforeRemove(item) {
+		delete(i.items, item.ID())
+	}
 }
 
 func (i *Inventory) Has(item foundation.Item) bool {
@@ -194,11 +196,12 @@ func (i *Inventory) changed() {
 	}
 }
 
-func (i *Inventory) beforeRemove(item foundation.Item) {
+func (i *Inventory) beforeRemove(item foundation.Item) bool {
 	item.SetPositionHandler(nil)
 	if i.onBeforeRemove != nil {
-		i.onBeforeRemove(item)
+		return i.onBeforeRemove(item)
 	}
+	return true
 }
 
 func (i *Inventory) RemoveAndGetNextInStack(item *GenericItem) foundation.Item {
@@ -641,12 +644,12 @@ func (i *Inventory) IsEquipped(item foundation.Equippable) bool {
 	return foundItem == item
 }
 
-func (i *Inventory) CanUnequip(item foundation.Item) bool {
+func (i *Inventory) CanUnequip(item foundation.Equippable) bool {
 	return true
 }
 
-func (i *Inventory) CanEquip(item foundation.Item) bool {
-	targetSlot := slotFromItem(item.(foundation.Equippable))
+func (i *Inventory) CanEquip(item foundation.Equippable) bool {
+	targetSlot := slotFromItem(item)
 	itemInSlot, exists := i.equipSlots[targetSlot]
 	if exists && !i.CanUnequip(i.items[itemInSlot]) {
 		return false
@@ -663,17 +666,21 @@ func (i *Inventory) Equip(item foundation.Item) {
 	i.equipSlots[slot] = item.ID()
 }
 
-func (i *Inventory) UnEquip(item foundation.Equippable) {
+func (i *Inventory) UnEquip(item foundation.Equippable) bool {
 	if item == nil {
-		return
+		return false
 	}
 
+	if !i.CanUnequip(item) {
+		return false
+	}
 	slotName := slotFromItem(item)
 
 	if i.equipSlots[slotName] == item.ID() {
 		i.unEquipBySlot(slotName)
 		i.changed()
 	}
+	return true
 }
 func (i *Inventory) unEquipBySlot(hand foundation.EquipSlot) {
 	delete(i.equipSlots, hand)
@@ -846,6 +853,22 @@ func (i *Inventory) GetEncumbranceFromArmor() int {
 		encumbrance = armor.GetEncumbrance()
 	}
 	return encumbrance
+}
+
+func (i *Inventory) ItemCountByPrefix(prefix string) int {
+	count := 0
+	for _, invItem := range i.items {
+		if strings.HasPrefix(invItem.GetInternalName(), prefix) {
+			count += invItem.GetStackSize()
+		}
+	}
+	return count
+}
+
+func (i *Inventory) IterateItems(action func(foundation.Item)) {
+	for _, invItem := range i.items {
+		action(invItem)
+	}
 }
 
 func SortInventory(stacks []foundation.Item) {

@@ -11,6 +11,9 @@ BorderBackground: black
 BorderForeground: neon_green_5
 #
 BorderForegroundFocus: neon_green_3
+#
+StatusBarBackground: forest_green_14
+StatusBarForeground: neon_green_2
 
 %rec: borders
 

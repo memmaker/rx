@@ -1,5 +1,75 @@
 %rec: default
 
+Category: Bed
+Description: a bed
+Owner: quinn_rix
+Position: (6,13)
+
+Category: ClosedDoor
+Description: a door
+Position: (75,6)
+
+Category: UnknownContainer
+Name: ripperdoc_stash
+Description: doctor's stash
+flag_removal_of: gold
+lockdifficulty: easy
+lockflag: doc_stash_key
+item: gold(750)
+item: binge
+item: binge
+item: binge
+Position: (3,2)
+
+Category: BakedLight
+Name: RedLight
+Radius: 2
+Color: (3.0, 0.0, 0.0)
+Max_Intensity: 1.0
+Position: (35,20)
+
+Category: Terminal
+Description: a terminal
+Dialogue: home_terminal
+Position: (48,7)
+
+Category: Transition
+Description: downwards stairwell
+Location: home_secret_stairs
+TargetMap: zone_residential_south_underground
+TargetLocation: home_clone_cellar
+Position: (71,8)
+
+Category: Bed
+Description: a bed
+Owner: player
+Position: (50,3)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (57,20)
+
+Category: BakedLight
+Name: BlueLight
+Radius: 2
+Color: (0.1, 0.1, 5.0)
+Max_Intensity: 1.0
+Position: (30,9)
+
+Category: BakedLight
+Name: BlueLight
+Radius: 2
+Color: (0.1, 0.1, 5.0)
+Max_Intensity: 1.0
+Position: (32,9)
+
+Category: Transition
+Description: a street
+Location: street_to_east
+TargetMap: zone_residential_east
+TargetLocation: street_to_south
+Position: (79,20)
+
 Category: Transition
 Description: a street
 Location: street_to_west
@@ -11,30 +81,12 @@ Category: OpenDoor
 Description: a door
 Position: (58,3)
 
-Category: Transition
-Description: a man-hole
-Location: man_hole_west
-TargetMap: zone_residential_south_underground
-TargetLocation: man_hole_west
-Position: (9,9)
-
-Category: BakedLight
-Name: RedLight
-Radius: 2
-Color: (3.0, 0.0, 0.0)
-Max_Intensity: 1.0
-Position: (35,20)
-
 Category: UnknownContainer
 Description: filing cabinet
 item: brainz
 item: meld
 item: key('doc_stash_key', "Doc's stash key")
 Position: (33,2)
-
-Category: ClosedDoor
-Description: a door
-Position: (37,15)
 
 Category: Transition
 Description: a non-functional toilet
@@ -43,74 +95,30 @@ TargetMap: zone_residential_south_underground
 TargetLocation: secret_ladder
 Position: (19,6)
 
-Category: Transition
-Description: a street
-Location: street_to_industry
-TargetMap: zone_industry
-TargetLocation: street_to_south
-Position: (45,0)
-
-Category: NamedLocation
-Identifier: taxi_driver
-Position: (57,20)
-
-Category: NamedLocation
-Identifier: behind_counter_hospital
-Position: (31,3)
-
-Category: Terminal
-Description: a terminal
-Dialogue: home_terminal
-Position: (48,7)
-
 Category: ClosedDoor
 Description: a door
-Position: (10,5)
+Position: (37,13)
 
-Category: NamedLocation
-Identifier: quinns_bed
-Position: (7,13)
+Category: Transition
+Description: CHANGEME
+Location: street_to_wall
+TargetMap: zone_wall_south
+TargetLocation: street_to_south
+Position: (45,20)
 
-Category: LockedDoor
-Description: a door
-LockFlag: home_keys
-NumberLock: 0451
-Position: (62,9)
+Category: Transition
+Description: stairs down
+Location: gun_store_stairs
+TargetMap: zone_residential_south_underground
+TargetLocation: shooting_range_stairs
+Position: (26,16)
 
 Category: BakedLight
 Name: BlueLight
 Radius: 2
 Color: (0.1, 0.1, 5.0)
 Max_Intensity: 1.0
-Position: (30,9)
-
-Category: Bed
-Description: a bed
-Owner: quinn_rix
-Position: (6,13)
-
-Category: NamedLocation
-Identifier: dark_alley_meeting_spot_one
-Position: (3,13)
-
-Category: NamedLocation
-Identifier: taxi_stand
-Position: (59,20)
-
-Category: Transition
-Description: downwards stairwell
-Location: home_secret_stairs
-TargetMap: zone_residential_south_underground
-TargetLocation: home_clone_cellar
-Position: (71,8)
-
-Category: ClosedDoor
-Description: a door
-Position: (20,3)
-
-Category: ClosedDoor
-Description: a door
-Position: (11,13)
+Position: (28,9)
 
 Category: BakedLight
 Name: RedLight
@@ -137,60 +145,52 @@ isvendingmachine: true
 Position: (20,18)
 
 Category: NamedLocation
-Identifier: backroom_hospital
-Position: (10,3)
-
-Category: LockedDoor
-Description: a door
-LockFlag: quinns_key
-Position: (11,19)
-
-Category: NamedLocation
 Identifier: spawn
 Position: (62,14)
 
-Category: BakedLight
-Name: BlueLight
-Radius: 2
-Color: (0.1, 0.1, 5.0)
-Max_Intensity: 1.0
-Position: (32,9)
+Category: LockedDoor
+Description: a metal door
+LockFlag: hospital_key
+LockDifficulty: medium
+Position: (2,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (37,15)
+
+Category: NamedLocation
+Identifier: dark_alley_meeting_spot_one
+Position: (3,13)
+
+Category: ClosedDoor
+Description: a door
+Position: (20,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (11,13)
+
+Category: NamedLocation
+Identifier: quinns_home
+Position: (9,17)
+
+Category: UnknownContainer
+Description: filing cabinet
+item: binge
+item: meld
+Position: (36,2)
+
+Category: Transition
+Description: a street
+Location: street_to_industry
+TargetMap: zone_industry
+TargetLocation: street_to_south
+Position: (45,0)
 
 Category: UnknownContainer
 Description: medical trash
 item: lab_coat(60)
 Position: (5,9)
-
-Category: Transition
-Description: a man-hole
-Location: man_hole_east
-TargetMap: zone_residential_south_underground
-TargetLocation: man_hole_east
-Position: (47,12)
-
-Category: Bed
-Description: a bed
-Owner: player
-Position: (50,3)
-
-Category: ClosedDoor
-Description: a door
-Position: (75,6)
-
-Category: Transition
-Description: a street
-Location: street_to_east
-TargetMap: zone_residential_east
-TargetLocation: street_to_south
-Position: (79,20)
-
-Category: ClosedDoor
-Description: a door
-Position: (7,15)
-
-Category: ClosedDoor
-Description: a door
-Position: (37,13)
 
 Category: ClosedDoor
 Description: a door
@@ -198,22 +198,9 @@ LockFlag: hospital_key
 lockdifficulty: easy
 Position: (37,5)
 
-Category: Transition
-Description: CHANGEME
-Location: street_to_wall
-TargetMap: zone_wall_south
-TargetLocation: street_to_south
-Position: (45,20)
-
 Category: NamedLocation
 Identifier: dark_alley_meeting_spot_two
 Position: (3,14)
-
-Category: LockedDoor
-Description: a metal door
-LockFlag: hospital_key
-LockDifficulty: medium
-Position: (2,3)
 
 Category: ClosedDoor
 Description: a door
@@ -226,42 +213,12 @@ Color: (3.0, 0.0, 0.0)
 Max_Intensity: 1.0
 Position: (27,20)
 
-Category: NamedLocation
-Identifier: hospital_backdoor
-Position: (1,3)
-
-Category: UnknownContainer
-Name: ripperdoc_stash
-Description: doctor's stash
-flag_removal_of: gold
-lockdifficulty: easy
-lockflag: doc_stash_key
-item: gold(750)
-item: binge
-item: binge
-item: binge
-Position: (3,2)
-
-Category: Transition
-Description: stairs down
-Location: gun_store_stairs
-TargetMap: zone_residential_south_underground
-TargetLocation: shooting_range_stairs
-Position: (26,16)
-
 Category: LockedDoor
 Name: home_secret_door
 Description: a door
 LockFlag: home_secret_door_unlocked
 NumberLock: random
 Position: (69,7)
-
-Category: BakedLight
-Name: BlueLight
-Radius: 2
-Color: (0.1, 0.1, 5.0)
-Max_Intensity: 1.0
-Position: (28,9)
 
 Category: Terminal
 Name: Taxi
@@ -271,23 +228,66 @@ Dialogue: taxi
 Tags: No_Sound
 Position: (57,21)
 
-Category: ClosedDoor
-Description: a door
-Position: (58,7)
+Category: NamedLocation
+Identifier: behind_counter_hospital
+Position: (31,3)
 
 Category: NamedLocation
-Identifier: quinns_home
-Position: (16,17)
+Identifier: taxi_stand
+Position: (59,20)
 
-Category: UnknownContainer
-Description: filing cabinet
-item: binge
-item: meld
-Position: (36,2)
+Category: NamedLocation
+Identifier: backroom_hospital
+Position: (10,3)
+
+Category: Transition
+Description: a man-hole
+Location: man_hole_east
+TargetMap: zone_residential_south_underground
+TargetLocation: man_hole_east
+Position: (47,12)
 
 Category: UnknownContainer
 Name: dead_drop
 Description: CONTRACTOR dead drop
 item: 10mm_jhp
 Position: (76,17)
+
+Category: NamedLocation
+Identifier: hospital_backdoor
+Position: (1,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (10,5)
+
+Category: NamedLocation
+Identifier: quinns_bed
+Position: (7,13)
+
+Category: LockedDoor
+Description: a door
+LockFlag: home_keys
+NumberLock: 0451
+Position: (62,9)
+
+Category: ClosedDoor
+Description: a door
+Position: (7,15)
+
+Category: Transition
+Description: a man-hole
+Location: man_hole_west
+TargetMap: zone_residential_south_underground
+TargetLocation: man_hole_west
+Position: (9,9)
+
+Category: LockedDoor
+Description: a door
+LockFlag: quinns_key
+Position: (11,19)
+
+Category: ClosedDoor
+Description: a door
+Position: (58,7)
 

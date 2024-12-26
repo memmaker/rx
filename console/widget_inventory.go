@@ -1,7 +1,7 @@
 package console
 
 import (
-    "contractor/foundation"
+	"contractor/foundation"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
@@ -13,8 +13,136 @@ import (
 	"unicode"
 )
 
+func (u *UI) openInventory(items []foundation.Item) *TextInventory {
+	panelName := "inventory"
+	screenWidth, screenHeight := u.application.GetScreen().Size()
+	inventory := NewTextInventory(screenWidth, screenHeight, u.game.IsPlayerOverEncumbered)
+	fg := u.uiTheme.GetUIColorForTcell(UIColorUIForeground)
+	bg := u.uiTheme.GetUIColorForTcell(UIColorUIBackground)
+
+	borderFgFocus := u.uiTheme.GetUIColorForTcell(UIColorBorderForegroundFocus)
+
+	inventory.SetBorder(false)
+	inventory.SetPadding(1, 1, 1, 1)
+	inventory.SetWrapAround(false)
+	inventory.SetHover(true)
+	inventory.ShowSecondaryText(false)
+
+	inventory.SetScrollBarColor(fg)
+	//list.SetHighlightFullLine(true)
+
+	inventory.SetTitleColor(fg)
+	inventory.SetMainTextColor(fg)
+	inventory.SetSecondaryTextColor(fg)
+
+	inventory.SetBorderColor(fg)
+	inventory.SetBorderColorFocused(borderFgFocus)
+
+	inventory.SetBackgroundColor(bg)
+
+	inventory.SetShortcutColor(fg)
+
+	inventory.SetSelectedTextColor(bg)
+	inventory.SetSelectedBackgroundColor(fg)
+	inventory.SetForceSelectedTextColor(true)
+
+	inventory.SetLineColor(u.uiTheme.GetInventoryItemColor)
+	inventory.SetEquippedTest(u.game.IsEquipped)
+	inventory.SetStyle(u.uiTheme.defaultStyle)
+	inventory.SetContextMenu(u.game.OpenContextMenuForItem)
+	inventory.SetItems(items)
+
+	inventory.SetCloseHandler(func() {
+		u.popPanel(panelName)
+	})
+	u.pages.AddPanel(panelName, inventory, false, true)
+	u.pages.ShowPanel(panelName)
+
+	u.lockFocusToPrimitive(inventory)
+
+	originalInputCapture := inventory.GetInputCapture()
+	inventory.SetInputCapture(u.directionalWrapperWithoutAlphabet(originalInputCapture))
+
+	//u.makeTopRightModal(panelName, list, len(inventoryItems), longestItem)
+	return inventory
+}
+func (u *UI) dropItemWithAmountSelection(item foundation.Item, after func()) {
+	if item.IsMultipleStacks() {
+		u.openAmountWidget(item.Name(), item.GetStackSize(), func(amount int) {
+			if amount <= 0 || amount > item.GetStackSize() {
+				return
+			}
+			if amount == item.GetStackSize() {
+				u.game.PlayerDropItem(item)
+				return
+			}
+			splitItem := item.Split(amount)
+			u.game.PlayerDropItem(splitItem)
+			if after != nil {
+				after()
+			}
+		})
+	} else {
+		u.game.PlayerDropItem(item)
+		if after != nil {
+			after()
+		}
+	}
+}
+func (u *UI) OpenInventoryForManagement() {
+	getInventory := u.game.GetNonAmmoPlayerInventory
+
+	inv := u.openInventory(getInventory())
+	inv.SetTitle("Inventory")
+	inv.SetDefaultSelection(func(item foundation.Item) {
+		// inventory won't close when doing this
+		if item.IsEquippable() {
+			u.game.EquipToggle(item)
+		} else {
+			//inv.Close()
+			u.game.PlayerApplyItem(item) // PROBLEM: When consuming the last item, the list won't update correctly
+			inv.SetItems(getInventory())
+		}
+	})
+
+	inv.SetShiftSelection(func(item foundation.Item) {
+		// inventory is closed beforehand
+		u.dropItemWithAmountSelection(item, func() {
+			inv.SetItems(getInventory())
+		})
+	})
+	inv.SetControlSelection(u.game.PlayerExamineItem)
+
+	inv.SetCloseOnControlSelection(false)
+	inv.SetCloseOnShiftSelection(false)
+}
+func (u *UI) OpenInventoryForSelection(itemStacks []foundation.Item, prompt string, onSelected func(item foundation.Item)) {
+	u.rightPanel.Clear()
+	inv := u.openInventory(itemStacks)
+	inv.SetSelectionMode()
+	inv.SetTitle(prompt)
+	inv.SetDefaultSelection(onSelected)
+	inv.SetCloseOnSelection(true)
+	inv.SetAfterClose(func() {
+		u.UpdateInventory()
+	})
+}
+
+func (u *UI) OpenInventoryForSelectionWithClose(itemStacks []foundation.Item, prompt string, onSelected func(item foundation.Item), afterClose func()) {
+	u.rightPanel.Clear()
+	inv := u.openInventory(itemStacks)
+	inv.SetSelectionMode()
+	inv.SetTitle(prompt)
+	inv.SetDefaultSelection(onSelected)
+	inv.SetCloseOnSelection(true)
+	inv.SetAfterClose(func() {
+		u.UpdateInventory()
+		afterClose()
+	})
+}
+
 type TextInventory struct {
-	*cview.Box
+	*cview.List
 	items                  []foundation.Item
 	defaultSelection       func(item foundation.Item)
 	shiftSelection         func(item foundation.Item)
@@ -31,10 +159,12 @@ type TextInventory struct {
 	ourTitle               string
 	selectionOnly          bool
 	lineColor              func(foundation.ItemCategory) color.RGBA
-	cursorAtIndex          int
 	stringLabelsWithWeight []string
 	isOverEncumbered       func() bool
 	afterClose             func()
+	infoLines              []string
+	screenHeight           int
+	screenWidth            int
 }
 
 func (i *TextInventory) SetContextMenu(contextMenu func(item foundation.Item, done func())) {
@@ -43,9 +173,14 @@ func (i *TextInventory) SetContextMenu(contextMenu func(item foundation.Item, do
 func (i *TextInventory) SetLineColor(lineColor func(foundation.ItemCategory) color.RGBA) {
 	i.lineColor = lineColor
 }
-func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int, height int) (int, int, int, int) {
+func (i *TextInventory) Draw(screen tcell.Screen) {
+	x, y, w, h := i.GetRect()
+	i.drawOutside(screen, x, y, w, h)
+	i.List.Draw(screen)
+}
+func (i *TextInventory) drawOutside(screen tcell.Screen, x int, y int, width int, height int) {
 	// align top right
-	startX := x + width - i.listWidth - 2
+	startX := x
 	startY := y
 	fg, _, _ := i.style.Decompose()
 	//cview.Borders.Cross
@@ -53,74 +188,10 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 	drawBackgroundAndBorderWithTitleForInventory(screen, startX, startY, i.listWidth+2, i.listHeight+2, i.ourTitle, i.style, runes)
 
 	listOffset := geometry.Point{X: 2, Y: 1}
-	var equipAndUseRunes []rune
-	var inspectRunes []rune
-	var dropRunes []rune
-	var totalWeight int
-	for lineIndex, invItem := range i.items {
-		totalWeight += invItem.GetCarryWeight()
-		item := invItem
-		shortcut := invItem.Shortcut()
-		line := i.stringLabelsWithWeight[lineIndex]
-		taggedStringWidth := cview.TaggedStringWidth(line)
-		if taggedStringWidth < i.listWidth {
-			line = RightPadColored(line, i.listWidth)
-		}
-		if i.isEquipped != nil && i.isEquipped(item) {
-			line = line[:2] + "+" + line[3:]
-		}
-		drawX := startX + listOffset.X
-		drawY := startY + listOffset.Y + lineIndex
-		drawStyle := i.style.Foreground(fg)
-		if i.cursorAtIndex == lineIndex {
-			drawStyle = drawStyle.Reverse(true)
-		}
-		cview.PrintStyle(screen, []byte(line), drawX, drawY, width, cview.AlignLeft, drawStyle)
-
-		if item.IsEquippable() || item.IsUsableOrZappable() || item.IsConsumable() || item.IsReadable() {
-			equipAndUseRunes = append(equipAndUseRunes, shortcut)
-		}
-		inspectRunes = append(inspectRunes, shortcut)
-		dropRunes = append(dropRunes, shortcut)
-	}
 
 	lineAfterList := startY + listOffset.Y + i.listHeight + 1
 
-	getWeightLine := func() string {
-		weightLeft := "Weight:"
-		weightColor := "[#00FF00]"
-		if i.isOverEncumbered() {
-			weightColor = "[#FF0000]"
-		}
-		weightRight := fmt.Sprintf("%s%d[-]lbs", weightColor, totalWeight)
-		centerSpaceCount := (i.listWidth + 2) - len(weightLeft) - cview.TaggedStringWidth(weightRight)
-		weightLine := fmt.Sprintf("%s%s%s", weightLeft, strings.Repeat(" ", centerSpaceCount), weightRight)
-
-		return weightLine
-	}
-
-	if i.selectionOnly {
-		for lineX := 0; lineX < i.listWidth+2; lineX++ {
-			screen.SetContent(startX+lineX, lineAfterList, ' ', nil, i.style)
-		}
-		cview.Print(screen, []byte(getWeightLine()), startX, lineAfterList, width, cview.AlignLeft, fg)
-		return x, y, width, height
-	}
-	var infoLines []string
-
-	infoLines = append(infoLines, getWeightLine())
-
-	if len(equipAndUseRunes) > 0 {
-		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[%s] (Un)Equip / Use", string(equipAndUseRunes))))
-	}
-	if len(inspectRunes) > 0 {
-		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[<CTRL> + letter] Examine")))
-	}
-	if len(dropRunes) > 0 {
-		infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[<SHFT> + letter] Drop")))
-	}
-
-	additionalLines := len(infoLines)
+	additionalLines := len(i.infoLines)
 
 	for lineY := 0; lineY < additionalLines; lineY++ {
 		for lineX := 0; lineX < i.listWidth+2; lineX++ {
@@ -128,28 +199,27 @@ func (i *TextInventory) drawInside(screen tcell.Screen, x int, y int, width int,
 		}
 	}
 
-	for idx, line := range infoLines {
+	for idx, line := range i.infoLines {
 		cview.Print(screen, []byte(line), startX, lineAfterList+idx, width, cview.AlignLeft, fg)
 	}
-
-	return x, y, width, height
 }
 
-func NewTextInventory(isOverEncumbered func() bool) *TextInventory {
-	box := cview.NewBox()
-	//box.SetBorder(true)
+func NewTextInventory(screenWidth int, screenHeight int, isOverEncumbered func() bool) *TextInventory {
+	list := cview.NewList()
+	list.SetBorder(false)
 	t := &TextInventory{
-		Box:   box,
+		List:  list,
 		items: []foundation.Item{},
 		lineColor: func(category foundation.ItemCategory) color.RGBA {
 			return color.RGBA{R: 170, G: 170, B: 170, A: 255}
 		},
-		cursorAtIndex:    -1,
 		isOverEncumbered: isOverEncumbered,
+		screenWidth:      screenWidth,
+		screenHeight:     screenHeight,
 	}
-	box.SetDrawFunc(t.drawInside)
-	box.SetBackgroundTransparent(true)
-	box.SetInputCapture(t.handleInput)
+	list.SetBackgroundTransparent(true)
+	list.SetInputCapture(t.handleInput)
+	//list.SetMouseCapture(t.handleMouse)
 	return t
 }
 func (i *TextInventory) SetStyle(style tcell.Style) {
@@ -173,10 +243,11 @@ func (i *TextInventory) SetControlSelection(onSelect func(item foundation.Item))
 
 func (i *TextInventory) SetItems(invItem []foundation.Item) {
 	i.items = invItem
-	i.updateListBounds()
+	i.updateListItems()
 }
 
-func (i *TextInventory) updateListBounds() {
+func (i *TextInventory) updateListItems() {
+	currentItem := i.GetCurrentItemIndex()
 	labels := make([]fxtools.TableRow, len(i.items))
 	for lineIndex, invItem := range i.items {
 		namePart := invItem.InventoryNameWithColorsAndShortcut(textiles.RGBAToFgColorCode(i.lineColor(invItem.GetCategory())))
@@ -196,6 +267,82 @@ func (i *TextInventory) updateListBounds() {
 	height := len(i.items)
 	i.listWidth = max(i.listWidth, width)
 	i.listHeight = height
+
+	i.SetRect(0, 0, i.listWidth+2, i.listHeight+2)
+
+	i.Clear()
+
+	var totalWeight int
+	var equipAndUseRunes []rune
+	var inspectRunes []rune
+	var dropRunes []rune
+
+	for lineIndex, invItem := range i.items {
+		totalWeight += invItem.GetCarryWeight()
+		item := invItem
+		shortcut := invItem.Shortcut()
+		line := i.stringLabelsWithWeight[lineIndex]
+		taggedStringWidth := cview.TaggedStringWidth(line)
+		if taggedStringWidth < i.listWidth {
+			line = RightPadColored(line, i.listWidth)
+		}
+		if i.isEquipped != nil && i.isEquipped(item) {
+			line = line[:2] + "+" + line[3:]
+		}
+
+		//cview.PrintStyle(screen, []byte(line), drawX, drawY, width, cview.AlignLeft, drawStyle)
+
+		listItem := cview.NewListItem(line)
+		//listItem.SetShortcut(shortcut)
+		i.AddItem(listItem)
+
+		if item.IsEquippable() || item.IsUsableOrZappable() || item.IsConsumable() || item.IsReadable() {
+			equipAndUseRunes = append(equipAndUseRunes, shortcut)
+		}
+		inspectRunes = append(inspectRunes, shortcut)
+		dropRunes = append(dropRunes, shortcut)
+	}
+
+	getWeightLine := func() string {
+		weightLeft := "Weight:"
+		weightColor := "[#00FF00]"
+		if i.isOverEncumbered() {
+			weightColor = "[#FF0000]"
+		}
+		weightRight := fmt.Sprintf("%s%d[-]lbs", weightColor, totalWeight)
+		centerSpaceCount := (i.listWidth + 2) - len(weightLeft) - cview.TaggedStringWidth(weightRight)
+		weightLine := fmt.Sprintf("%s%s%s", weightLeft, strings.Repeat(" ", centerSpaceCount), weightRight)
+
+		return weightLine
+	}
+
+	var infoLines []string
+
+	infoLines = append(infoLines, getWeightLine())
+
+	if !i.selectionOnly {
+		if len(equipAndUseRunes) > 0 {
+			infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[%s] (Un)Equip / Use", string(equipAndUseRunes))))
+		}
+		if len(inspectRunes) > 0 {
+			infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[<CTRL> + letter] Examine")))
+		}
+		if len(dropRunes) > 0 {
+			infoLines = append(infoLines, cview.Escape(fmt.Sprintf("[<SHFT> + letter] Drop")))
+		}
+	}
+
+	i.infoLines = infoLines
+	widthNeeded := i.listWidth + 2
+
+	heightNeeded := i.listHeight + len(infoLines) + 2
+
+	rightX := i.screenWidth - widthNeeded
+	i.SetRect(rightX, 0, widthNeeded, heightNeeded)
+
+	if currentItem >= 0 && currentItem < len(i.items) {
+		i.SetCurrentItem(currentItem)
+	}
 }
 
 func (i *TextInventory) SetEquippedTest(isEquipped func(item foundation.Item) bool) {
@@ -205,7 +352,15 @@ func (i *TextInventory) SetEquippedTest(isEquipped func(item foundation.Item) bo
 func (i *TextInventory) SetCloseHandler(escapeHandler func()) {
 	i.closeHandler = escapeHandler
 }
+func (i *TextInventory) previousItem() {
+	itemIndex := i.GetCurrentItemIndex()
+	i.SetCurrentItem(itemIndex - 1)
+}
 
+func (i *TextInventory) nextItem() {
+	itemIndex := i.GetCurrentItemIndex()
+	i.SetCurrentItem(itemIndex + 1)
+}
 func (i *TextInventory) handleInput(event *tcell.EventKey) *tcell.EventKey {
 	if i.closeHandler != nil && event.Key() == tcell.KeyEscape {
 		i.Close()
@@ -213,33 +368,31 @@ func (i *TextInventory) handleInput(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	if event.Key() == tcell.KeyUp {
-		i.cursorAtIndex = i.cursorAtIndex - 1
-		if i.cursorAtIndex < 0 {
-			i.cursorAtIndex = len(i.items) - 1
-		}
+		i.previousItem()
 		return nil
 	} else if event.Key() == tcell.KeyDown {
-		i.cursorAtIndex = i.cursorAtIndex + 1
-		if i.cursorAtIndex >= len(i.items) {
-			i.cursorAtIndex = 0
-		}
+		i.nextItem()
 		return nil
 	}
 
 	if event.Key() == tcell.KeyEnter {
-		if i.defaultSelection != nil && i.cursorAtIndex >= 0 && i.cursorAtIndex < len(i.items) {
+		currentIndex := i.GetCurrentItemIndex()
+		if i.defaultSelection != nil && currentIndex >= 0 && currentIndex < len(i.items) {
 			if i.closeOnSelect {
 				i.Close()
 			}
-			i.defaultSelection(i.items[i.cursorAtIndex])
-			i.updateListBounds()
+			i.defaultSelection(i.items[currentIndex])
+			i.updateListItems()
 			return nil
 		}
 	}
 
 	if event.Key() == tcell.KeyRune && event.Rune() == ' ' {
-		if i.defaultSelection != nil && i.cursorAtIndex >= 0 && i.cursorAtIndex < len(i.items) {
-			i.contextMenu(i.items[i.cursorAtIndex], i.updateListBounds)
+		currentIndex := i.GetCurrentItemIndex()
+		if i.defaultSelection != nil && currentIndex >= 0 && currentIndex < len(i.items) {
+			i.contextMenu(i.items[currentIndex], func() {
+				i.updateListItems()
+			})
 			return nil
 		}
 	}
@@ -282,7 +435,7 @@ func (i *TextInventory) handleInput(event *tcell.EventKey) *tcell.EventKey {
 				}
 				i.defaultSelection(invItem)
 			}
-			i.updateListBounds()
+			i.updateListItems()
 			return nil
 		}
 	}
@@ -373,4 +526,28 @@ func (i *TextInventory) Close() {
 
 func (i *TextInventory) SetAfterClose(afterClose func()) {
 	i.afterClose = afterClose
+}
+
+func (i *TextInventory) handleMouse(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
+	x, y := event.Position()
+	xOffset, yOffset, w, h := i.GetInnerRect()
+	relativeX := x - xOffset
+	relativeY := y - yOffset
+	isOverList := relativeX > 1 && relativeX < w-1 && relativeY > 1 && relativeY < h-1
+	if action == cview.MouseLeftClick {
+		if isOverList {
+			clickedIndex := relativeY - 1
+			if clickedIndex >= 0 && clickedIndex < len(i.items) {
+				if i.defaultSelection != nil {
+					if i.closeOnSelect {
+						i.Close()
+					}
+					i.defaultSelection(i.items[clickedIndex])
+					i.updateListItems()
+				}
+			}
+			return action, nil
+		}
+	}
+	return action, event
 }

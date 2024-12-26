@@ -1,8 +1,8 @@
 package console
 
 import (
-    "contractor/foundation"
-    "contractor/gridmap"
+	"contractor/foundation"
+	"contractor/gridmap"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 )
@@ -16,6 +16,9 @@ type BaseAnimation struct {
 	audioCue            string
 }
 
+func (p *BaseAnimation) SetDoneCallback(done func()) {
+	p.done = done
+}
 func (p *BaseAnimation) GetLights() []*gridmap.LightSource {
 	return nil
 }

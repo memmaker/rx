@@ -16,7 +16,7 @@ func (g *GameState) animatedActionFromMenu(action func()) func() {
 
 func (g *GameState) canPlayerTalkToActor(actor *Actor) bool {
 	distance := g.currentMap().MoveDistance(g.Player.Position(), actor.Position())
-	return g.canPlayerSee(actor.Position()) && actor.HasDialogue() && !actor.IsSleeping() && distance <= 6
+	return g.Player.CanSee(actor.Position()) && actor.HasDialogue() && !actor.IsSleeping() && distance <= 6
 }
 
 func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, actor *Actor) []foundation.MenuItem {
@@ -25,7 +25,7 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 	if g.canPlayerTalkToActor(actor) {
 		buffer = append(buffer, foundation.MenuItem{
 			Name:       "[white]Talk To[-]",
-			Action:     func() { g.StartDialogue(actor.GetDialogueFile(), actor, false) },
+			Action:     func() { g.PlayerStartDialogue(actor.GetDialogueFile(), actor, false) },
 			CloseMenus: true,
 		})
 	}
@@ -145,7 +145,7 @@ func (g *GameState) OpenContextMenuForItem(uiItem foundation.Item, done func()) 
 	item := uiItem
 	contextActions := []foundation.MenuItem{
 		{Name: "Inspect", Action: func() {
-			g.inspectItem(item)
+			g.PlayerExamineItem(item)
 		}},
 	}
 

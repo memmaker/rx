@@ -16,6 +16,7 @@ type Skill int
 var customSkills = make([]SkillDef, 0)
 
 // THESE NEED TO BE SET WHILE LOADING
+// LoadSkillMap will take care of this
 var SkillForUnarmed Skill = -1
 var SkillForRepairs Skill = -1
 var SkillForPickLocks Skill = -1

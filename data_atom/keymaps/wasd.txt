@@ -9,7 +9,6 @@ S -> run_south
 A -> run_west
 D -> run_east
 
-e -> map_interaction
 q -> wait
 g -> pickup
 

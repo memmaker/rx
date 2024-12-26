@@ -2,6 +2,7 @@ package game
 
 import (
 	"contractor/foundation"
+	"contractor/fsmai"
 	"contractor/gridmap"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -27,12 +28,9 @@ func (g *GameState) SpawnTeamForHelping(victim *Actor, aggressor *Actor, teamNam
 	// if the aggressor is found, the team should attack the aggressor
 	for transPos, _ := range g.currentMap().Transitions() {
 		if !g.Player.CanSee(transPos) {
-			leader, members := g.SpawnTeam(teamName, transPos)
+			leader, _ := g.SpawnTeam(teamName, transPos)
 			if leader != nil {
-				leader.SetGoal(GoalKillActor(aggressor))
-				for _, member := range members {
-					member.SetGoal(GoalKillActor(aggressor))
-				}
+				leader.FSM.SetState(fsmai.StateKill, NewProvokedEvent(aggressor))
 			}
 			break
 		}
@@ -64,7 +62,7 @@ func (g *GameState) SpawnTeam(teamName string, teamPos geometry.Point) (*Actor, 
 	for _, member := range members {
 		g.currentMap().AddActorWithDisplacement(member, teamPos)
 		member.SpawnPosition = member.Position()
-		member.SetGoal(GoalFollowLeader(leader))
+		member.FSM.SetState(fsmai.StateFollow, NewLeaderJoinedEvent(leader))
 	}
 
 	return leader, members

@@ -107,15 +107,15 @@ func (u *UI) SelectTarget(getAttackInfo func(target foundation.ActorForUI) found
 }
 
 func (u *UI) beginTargeting(onSelected func(targetPos geometry.Point, hitZone int)) {
-	listOfVisibleEnemies := u.game.GetVisibleActors()
+	listOfVisibleActors := u.game.GetVisibleActors()
 	preselected := u.game.GetPlayerPosition()
 	if u.lastTarget != [2]geometry.Point{} && u.game.GetPlayerPosition() == u.lastTarget[0] {
 		preselected = u.lastTarget[1]
-	} else if len(listOfVisibleEnemies) > 0 {
-		preselected = listOfVisibleEnemies[0].Position()
+	} else if len(listOfVisibleActors) > 0 {
+		preselected = listOfVisibleActors[0].Position()
 	}
 	u.updateTarget(preselected)
-	u.mapWindow.SetInputCapture(u.handleAdvancedTargetingInput(listOfVisibleEnemies, onSelected))
+	u.mapWindow.SetInputCapture(u.handleAdvancedTargetingInput(listOfVisibleActors, onSelected))
 	u.application.SetMouseCapture(func(event *tcell.EventMouse, action cview.MouseAction) (*tcell.EventMouse, cview.MouseAction) {
 		if action == cview.MouseMove {
 			newX, newY := event.Position()

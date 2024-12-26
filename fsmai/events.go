@@ -12,6 +12,8 @@ const (
 	EventCalmed
 	EventHeavilyInjured
 	EventEnemySighted
+	EventLeaderJoined
+	EventLeaderLeft
 	EventTargetDied
 	EventTargetLost
 	EventThreatNeutralized
@@ -49,11 +51,11 @@ type TransitionEvent interface {
 var NoEvent EmptyEvent = EmptyEvent{EventNone}
 
 type EmptyEvent struct {
-	name TransitionEventName
+	Event TransitionEventName
 }
 
 func (e EmptyEvent) Name() TransitionEventName {
-	return e.name
+	return e.Event
 }
 
 type DirectionalEvent struct {

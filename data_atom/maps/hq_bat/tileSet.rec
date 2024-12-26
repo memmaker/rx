@@ -56,6 +56,126 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
+Name: B
+Char: B
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: u
+Char: u
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: s
+Char: s
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: h
+Char: h
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: i
+Char: i
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: d
+Char: d
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: o
+Char: o
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: 
+Char:  
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: A
+Char: A
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: r
+Char: r
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: m
+Char: m
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: a
+Char: a
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: T
+Char: T
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: e
+Char: e
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: c
+Char: c
+Foreground: steel_blue_10
+Background: light_blue_16
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
 Name: interior floor
 Char: ░
 Foreground: dark_gray_4

@@ -68,10 +68,7 @@ func main() {
 	gameState := game.NewGameState(config)
 
 	// create the game UI and link it to the game state
-	gameUI := console.NewTextUI(graphicsMode, config)
-	gameUI.Init(gameState)
-
-	gameState.UIReady(gameUI)
+	gameUI := console.NewTextUI(gameState, graphicsMode, config)
 
 	if devStart {
 		gameUI.StartGameLoop()

@@ -17,8 +17,8 @@ func (g *GameState) Save(directory string) error {
 	globalRecord := recfile.Record{
 		recfile.Field{Name: "CurrentMap", Value: g.currentMapName},
 		recfile.Field{Name: "TurnsTaken", Value: recfile.IntStr(g.TurnsTaken())},
-		recfile.Field{Name: "ActorID", Value: recfile.UInt64Str(uint64(gridmap.CurrentActorID()))},
-		recfile.Field{Name: "ItemID", Value: recfile.UInt64Str(uint64(gridmap.CurrentItemID()))},
+		recfile.Field{Name: "ActorID", Value: recfile.UInt64Str(uint64(gridmap.PeekAtNextActorID()))},
+		recfile.Field{Name: "ItemID", Value: recfile.UInt64Str(uint64(gridmap.PeekAtNextItemID()))},
 		recfile.Field{Name: "GameTime", Value: recfile.TimeStr(g.gameTime.Time)},
 		recfile.Field{Name: "ShowEverything", Value: recfile.BoolStr(g.showEverything)},
 	}
@@ -80,9 +80,9 @@ func (g *GameState) Load(directory string) {
 		case "showeverything":
 			g.showEverything = recfile.StrBool(field.Value)
 		case "actorid":
-			gridmap.SetCurrentActorID(gridmap.ActorID(recfile.StrUInt64(field.Value)))
+			gridmap.SetNextActorID(gridmap.ActorID(recfile.StrUInt64(field.Value)))
 		case "itemid":
-			gridmap.SetCurrentItemID(gridmap.ItemID(recfile.StrUInt64(field.Value)))
+			gridmap.SetNextItemID(gridmap.ItemID(recfile.StrUInt64(field.Value)))
 		}
 	}
 
@@ -127,7 +127,7 @@ func (g *GameState) Load(directory string) {
 
 	// Restore missing glue
 	g.hookupJournalAndFlags()
-	g.playerSecondaryInit()
+	g.playerAttachHooks()
 
 	// CheckAndRunFrames lights & player position
 	g.currentMap().UpdateBakedLights()

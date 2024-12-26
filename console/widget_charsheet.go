@@ -1,7 +1,7 @@
 package console
 
 import (
-    "contractor/d100"
+	"contractor/d100"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
@@ -11,6 +11,19 @@ import (
 	"strconv"
 	"strings"
 )
+
+func (u *UI) openCharSheet() {
+	panelName := "charSheet"
+	closeCharSheet := func() {
+		u.popPanel(panelName)
+	}
+	charSheet := NewCharsheetViewer(u.game.GetPlayerName(), u.game.GetPlayerCharSheet(), closeCharSheet, u.game.OpenPerkSelection)
+	charSheet.SetConfirmer(u)
+	originalInputCapture := charSheet.GetInputCapture()
+	charSheet.SetInputCapture(u.directionalWrapper(originalInputCapture))
+
+	u.makeCenteredModal(panelName, charSheet, 80, 25)
+}
 
 type SheetMode int
 

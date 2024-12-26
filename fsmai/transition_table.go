@@ -1,36 +1,10 @@
 package fsmai
 
-func NewDefaultTransitionTable(defaultState StateName) *TransitionTable {
-	t := NewTransitionTable()
-
-	// leaving neutral
-	t.AddTransition(defaultState, EventHeavilyInjured, StatePanic)
-	t.AddTransition(defaultState, EventProvoked, StateKill)
-	t.AddTransition(defaultState, EventMajorCrimeWitnessed, StateKill)
-
-	// aggressive only
-	t.AddTransition(StateAggressive, EventEnemySighted, StateKill)
-
-	// killing
-	t.AddTransition(StateKill, EventHeavilyInjured, StatePanic)
-	t.AddTransition(StateKill, EventTargetLost, defaultState)
-	t.AddTransition(StateKill, EventTargetDied, defaultState)
-	t.AddTransition(StateKill, EventCalmed, defaultState)
-
-	// panic
-	t.AddTransition(StatePanic, EventThreatNeutralized, defaultState)
-
-	return t
-}
-
-var NeutralActorTransitionTable = NewDefaultTransitionTable(StateNeutral)
-var AggressiveActorTransitionTable = NewDefaultTransitionTable(StateAggressive)
-
 type TransitionTable map[StateName]map[TransitionEventName]StateName
 
 func NewTransitionTable() *TransitionTable {
 	t := make(TransitionTable)
-	for state := StateNeutral; state < StateCount; state++ {
+	for state := StateIdle; state < StateCount; state++ {
 		t[state] = make(map[TransitionEventName]StateName)
 	}
 	return &t

@@ -10,10 +10,10 @@ import (
 
 func DefaultBehaviorFactory(state fsmai.StateName) ActorBehavior {
 	var BehaviorTable = map[fsmai.StateName]ActorBehavior{
-		fsmai.StateNeutral:    NeutralBehaviour{},
-		fsmai.StateAggressive: AggressiveBehaviour{},
-		fsmai.StateKill:       KillBehaviour{},
-		fsmai.StatePanic:      PanicBehaviour{},
+		fsmai.StateIdle: IdleBehaviour{},
+		//fsmai.StateSearch: Se{},
+		fsmai.StateKill:  KillBehaviour{},
+		fsmai.StatePanic: PanicBehaviour{},
 	}
 	return BehaviorTable[state]
 }
@@ -36,8 +36,17 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 		}
 	}
 
-	if bed, isBedNear := g.isBedNear(enemy.Position()); isBedNear && g.isAtScheduledLocation(enemy) && enemy.IsIdle() {
-		enemy.SetGoal(GoalSleepAt(bed.Position()))
+	if enemy.HasFlag(foundation.FlagHeld) {
+		if rand.Intn(10) == 0 {
+			enemy.GetFlags().Unset(foundation.FlagHeld)
+			g.msg(foundation.HiLite("%s breaks free", enemy.Name()))
+		} else {
+			return enemy.RawTimeEnergy
+		}
+	}
+
+	if _, isBedNear := g.isBedAt(enemy.Position()); isBedNear && g.isAtScheduledLocation(enemy) && enemy.IsIdle() {
+		enemy.SetSleeping()
 		return enemy.RawTimeEnergy
 	}
 
@@ -56,15 +65,6 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 				return enemy.RawTimeEnergy
 			}
 			g.msg(foundation.HiLite("%s clears its mind", enemy.Name()))
-		}
-	}
-
-	if enemy.HasFlag(foundation.FlagHeld) {
-		if rand.Intn(10) == 0 {
-			enemy.GetFlags().Unset(foundation.FlagHeld)
-			g.msg(foundation.HiLite("%s breaks free", enemy.Name()))
-		} else {
-			return enemy.RawTimeEnergy
 		}
 	}
 
@@ -94,7 +94,7 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 	if !inCombat {
 
 		// IDLE STUFF HERE
-		if nearEachOther && g.canPlayerSee(enemy.Position()) && enemy.ChatterFile != "" && enemy.GetFlags().Get(foundation.FlagTurnsSinceLastIdleChatter) > 40 && rand.Intn(4) == 0 {
+		if nearEachOther && g.Player.CanSee(enemy.Position()) && enemy.ChatterFile != "" && enemy.GetFlags().Get(foundation.FlagTurnsSinceLastIdleChatter) > 40 && rand.Intn(4) == 0 {
 			if g.tryAddRandomChatter(enemy, foundation.ChatterBeingAroundPlayer) {
 				enemy.GetFlags().Unset(foundation.FlagTurnsSinceLastIdleChatter)
 			}
@@ -106,12 +106,6 @@ func (g *GameState) TryAIAction(enemy *Actor) int {
 				g.ui.AddAnimations(consequencesOfConfusion)
 				return enemy.maximalTimeNeededForActions()
 			}
-		}
-
-		if slot, move := enemy.MoveToNextTimeSlot(g.gameTime.Time); move {
-			loc := g.currentMap().GetNamedLocation(slot.Location)
-			g.msg(foundation.HiLite("%s moves to %s", enemy.Name(), slot.Location))
-			enemy.SetGoal(GoalRunToLocation(loc))
 		}
 
 		return enemy.RawTimeEnergy // just wait and spend all time energy

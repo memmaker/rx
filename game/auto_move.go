@@ -1,7 +1,7 @@
 package game
 
 import (
-    "contractor/foundation"
+	"contractor/foundation"
 	"github.com/memmaker/go/geometry"
 )
 
@@ -67,24 +67,27 @@ func (g *GameState) RunPlayer(direction geometry.CompassDirection, isStarting bo
 func (g *GameState) RunPlayerPath() bool {
 	player := g.Player
 	if player.HasFlag(foundation.FlagConfused) {
-		g.Player.RemoveGoal()
 		g.msg(foundation.Msg("You cannot run while confused"))
 		return false
 	}
 
 	if len(g.GetVisibleEnemies()) > 0 {
-		g.Player.RemoveGoal()
 		g.msg(foundation.Msg("You cannot run while enemies are near"))
 
 		return false
 	}
 
-	if !g.Player.HasActiveGoal() || g.Player.cannotFindPath() {
+	if g.Player.hasNoPath() {
 		return false
 	}
 
 	oldPos := g.Player.Position()
-	g.Player.ActOnGoal(g)
+
+	nextStep := g.Player.CurrentPath[0]
+	g.Player.CurrentPath = g.Player.CurrentPath[1:]
+
+	g.actorMove(g.Player, nextStep)
+
 	newPos := g.Player.Position()
 
 	if oldPos == newPos {

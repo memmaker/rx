@@ -10,7 +10,6 @@
 3 -> southeast
 5 -> run_direction
 
-Enter -> map_interaction
 0 -> wait
 , -> pickup
 
@@ -29,7 +28,7 @@ r -> reload_weapon
 
 q -> quip
 
-x -> look
+Enter -> look
 v -> throw
 
 c -> character

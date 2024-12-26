@@ -1,8 +1,8 @@
 package foundation
 
 import (
-    "contractor/d100"
-    "contractor/fsmai"
+	"contractor/d100"
+	"contractor/fsmai"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/textiles"
 	"image/color"
@@ -33,10 +33,10 @@ type ActorForUI interface {
 	GetArmorProtectionString() string
 }
 
-type ChatterType int
+type ChatterTopic int
 
 const (
-	ChatterOnTheWayToAKill ChatterType = iota
+	ChatterOnTheWayToAKill ChatterTopic = iota
 	ChatterKillOneLiner
 	ChatterBeingDamaged
 	ChatterBeingAroundPlayer
@@ -45,7 +45,7 @@ const (
 	ChatterTrespassing
 )
 
-func NewChatterTypeFromString(str string) ChatterType {
+func NewChatterTopicFromString(str string) ChatterTopic {
 	str = strings.ToLower(str)
 	switch str {
 	case "way_to_kill":
@@ -65,7 +65,7 @@ func NewChatterTypeFromString(str string) ChatterType {
 	}
 	return ChatterOnTheWayToAKill
 }
-func (t ChatterType) DefaultChatter() string {
+func (t ChatterTopic) DefaultChatter() string {
 	switch t {
 	case ChatterOnTheWayToAKill:
 		return "On my way.."

@@ -3,11 +3,12 @@ package fsmai
 type StateName int
 
 const (
-	StateNeutral StateName = iota
-	StateAggressive
+	StateIdle StateName = iota
 	StatePanic
 	StateKill
+	StateFollow
 	StateSearch
+	StateScripted
 	StateDead
 	StateCount
 	// Also change NewTransitionTable() below, if you add new states at the end or the beginning
@@ -15,14 +16,16 @@ const (
 
 func (s StateName) ToString() string {
 	switch s {
-	case StateNeutral:
-		return "Neutral"
-	case StateAggressive:
-		return "Aggressive"
+	case StateIdle:
+		return "Idle"
 	case StatePanic:
 		return "Panic"
 	case StateSearch:
 		return "Search"
+	case StateFollow:
+		return "Follow"
+	case StateScripted:
+		return "Scripted"
 	case StateKill:
 		return "Kill"
 	case StateDead:

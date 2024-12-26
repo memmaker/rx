@@ -2,57 +2,57 @@
 
 Category: ClosedDoor
 Description: a door
-Position: (38,15)
+Position: (33,5)
 
 Category: ClosedDoor
 Description: a door
-Position: (64,6)
-
-Category: UnknownContainer
-Description: brochure holder
-item: bat_pamphlet_1(9)
-item: bat_pamphlet_2(6)
-item: bat_pamphlet_3(5)
-Position: (26,14)
-
-Category: ClosedDoor
-Description: a door
-Position: (57,4)
-
-Category: ClosedDoor
-Description: a door
-Position: (53,17)
+Position: (46,6)
 
 Category: Terminal
 Description: a terminal
 Dialogue: CHANGEME
-Position: (74,5)
+Position: (67,15)
 
 Category: Terminal
 Description: a terminal
 Dialogue: CHANGEME
-Position: (72,15)
+Position: (69,5)
+
+Category: ClosedDoor
+Description: a door
+Position: (52,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (48,17)
 
 Category: Transition
 Description: a street
 Location: street_to_corporate
 TargetMap: zone_corporate
 TargetLocation: street_to_bat
-Position: (79,12)
+Position: (74,12)
+
+Category: UnknownContainer
+Description: brochure holder
+item: bat_pamphlet_1(9)
+item: bat_pamphlet_2(6)
+item: bat_pamphlet_3(5)
+Position: (21,14)
 
 Category: ClosedDoor
 Description: a door
-Position: (40,10)
+Position: (59,14)
 
 Category: ClosedDoor
 Description: a door
-Position: (51,6)
+Position: (59,6)
 
 Category: ClosedDoor
 Description: a door
-Position: (38,5)
+Position: (35,10)
 
 Category: ClosedDoor
 Description: a door
-Position: (64,14)
+Position: (33,15)
 

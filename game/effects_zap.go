@@ -29,7 +29,7 @@ func GetAllZapEffects() map[string]func(g *GameState, zapper *Actor, aimPos geom
 		"heroic_charge": heroicCharge,
 		//"magic_dart":           magicDart,
 		//"magic_arrow":          magicArrow,
-		//"hold_target":          holdTarget,
+		"disrupt_bowels": holdTarget,
 	}
 	return zapEffects
 }
@@ -133,8 +133,9 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 					DamageType:      DamageTypePoison,
 					DamageAmount:    damage,
 				}
-				damageAnim := g.damageActorWithFollowUp(damageWithSource, actor, freeze, nil)
-				return damageAnim
+				damageAnim := g.damageActor(damageWithSource, actor)
+				damageAnim.SetDoneCallback(freeze)
+				return OneAnimation(damageAnim)
 			}
 		}
 		return nil
@@ -446,7 +447,7 @@ func cancelTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []found
 
 	return animations
 }
-func holdTarget(g *GameState, zapper *Actor, targetPos geometry.Point) []foundation.Animation {
+func holdTarget(g *GameState, zapper *Actor, targetPos geometry.Point, params foundation.Params) []foundation.Animation {
 	var animations []foundation.Animation
 
 	origin := originFromZapperOrWall(g, zapper, targetPos)
@@ -607,7 +608,7 @@ func (g *GameState) damageLocation(damage SourcedDamage, targetPos geometry.Poin
 
 	if g.currentMap().IsActorAt(targetPos) {
 		defender := g.currentMap().ActorAt(targetPos)
-		return g.damageActor(damage, defender)
+		return OneAnimation(g.damageActor(damage, defender))
 	} else if g.currentMap().IsObjectAt(targetPos) {
 		object := g.currentMap().ObjectAt(targetPos)
 		return object.OnDamage(damage)
@@ -972,74 +973,6 @@ func (d SourcedDamage) WithOverkill() SourcedDamage {
 	return d
 }
 
-func (g *GameState) damageActorWithFollowUp(
-	damage SourcedDamage,
-	victim *Actor,
-	done func(),
-	followUps []foundation.Animation,
-) []foundation.Animation {
-
-	didCripple := victim.TakeDamage(damage)
-
-	if !victim.IsAlive() {
-		damage = damage.WithKillingBlow()
-	}
-	if didCripple {
-		damage = damage.WithCrippling()
-	}
-	if damage.IsObviousAttack {
-		g.trySetHostile(victim, damage.Attacker)
-	}
-	isOverKill := victim.GetHitPoints() <= (-victim.GetHitPointsMax() / 2)
-	if isOverKill {
-		damage = damage.WithOverkill()
-	}
-	var damageAnim foundation.Animation
-	var damageAudioCue string
-
-	hurtFlag := fmt.Sprintf("WasHurt(%s)", victim.GetInternalName())
-	g.gameFlags.SetFlag(hurtFlag)
-
-	if damage.Attacker == g.Player {
-		hurtByPlayerFlag := fmt.Sprintf("WasHurtByPlayer(%s)", victim.GetInternalName())
-		g.gameFlags.SetFlag(hurtByPlayerFlag)
-	}
-
-	g.actorHitMessage(victim, damage)
-
-	if damage.IsKillingBlow {
-		g.actorKilled(damage, victim)
-		if damage.IsCritical {
-			damageAudioCue = victim.GetDeathCriticalAudioCue(damage.TargetingMode, damage.DamageType)
-		} else {
-			damageAudioCue = victim.GetDeathAudioCue()
-		}
-		// TODO: replace this with cool matching death animations
-		g.makeMapBloody(victim.Position())
-		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, 4, done)
-		//damageAnim.SetVictimSizeModifier(victim.GetSizeModifier())
-		damageAnim.SetFollowUp(followUps)
-	} else { // only a flesh wound
-		damageAudioCue = victim.GetHitAudioCue(damage.TargetingMode.IsMelee())
-
-		//
-		bullets := 1
-		if damage.TargetingMode.IsBurstOrFullAuto() {
-			bullets = 3
-		}
-		damageAnim = g.ui.GetAnimDamage(g.spreadBloodAround, victim.Position(), damage.DamageAmount, bullets, done)
-		//damageAnim.SetVictimSizeModifier(victim.GetSizeModifier())
-		damageAnim.SetFollowUp(followUps)
-
-		if victim != g.Player && rand.Intn(5) == 0 {
-			g.tryAddRandomChatter(victim, foundation.ChatterBeingDamaged)
-		}
-	}
-
-	damageAnim.SetAudioCue(damageAudioCue)
-	return []foundation.Animation{damageAnim}
-}
-
 func (g *GameState) trySetHostile(affected *Actor, sourceOfTrouble *Actor) {
 	if affected == g.Player ||
 		affected == sourceOfTrouble ||
@@ -1058,10 +991,6 @@ func (g *GameState) trySetHostile(affected *Actor, sourceOfTrouble *Actor) {
 	}
 
 	return
-}
-
-func (g *GameState) damageActor(damage SourcedDamage, victim *Actor) []foundation.Animation {
-	return g.damageActorWithFollowUp(damage, victim, nil, nil)
 }
 
 func (g *GameState) getLineOfFire(origin geometry.Point, targetPos geometry.Point) []geometry.Point {

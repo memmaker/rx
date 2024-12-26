@@ -2,6 +2,7 @@ package console
 
 import (
 	"contractor/foundation"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -52,6 +53,20 @@ func (t Theme) GetUIColorForTcell(foreground UIColor) tcell.Color {
 	return toTcellColor(t.uiColors[foreground])
 }
 
+func (t Theme) menuLabelsFor(items []foundation.Item) []string {
+	tablerows := make([]fxtools.TableRow, len(items))
+	for index, i := range items {
+		item := i
+
+		itemName := item.InventoryNameWithColors(t.GetInventoryItemColorCode(item.GetCategory()))
+		itemWeight := fmt.Sprintf("%dlbs", item.GetCarryWeight())
+
+		tablerows[index] = fxtools.NewTableRow(itemName, itemWeight)
+	}
+	return fxtools.TableLayoutLastRight(tablerows)
+
+}
+
 func loadUIColors(record recfile.Record, palette textiles.ColorPalette) map[UIColor]color.RGBA {
 	uiColors := make(map[UIColor]color.RGBA)
 	for _, field := range record {
@@ -82,6 +97,8 @@ const (
 	UIColorBorderForeground
 	UIColorBorderForegroundFocus
 	UIColorTextForegroundHighlighted
+	UIColorStatusBarBackground
+	UIColorStatusBarForeground
 )
 
 func UIColorFromString(s string) UIColor {
@@ -99,6 +116,10 @@ func UIColorFromString(s string) UIColor {
 		return UIColorBorderForeground
 	case "borderforegroundfocus":
 		return UIColorBorderForegroundFocus
+	case "statusbarbackground":
+		return UIColorStatusBarBackground
+	case "statusbarforeground":
+		return UIColorStatusBarForeground
 	}
 	println("WARNING: Unknown color: ", s)
 	return UIColorUIForeground

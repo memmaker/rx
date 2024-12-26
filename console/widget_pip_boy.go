@@ -5,6 +5,17 @@ import (
 	"github.com/memmaker/go/cview"
 )
 
+func (u *UI) openPipBoy() {
+	pip := NewPipBoy()
+	u.pages.AddPanel("PipBoy", pip, true, true)
+	u.application.SetFocus(pip)
+	pip.SetOnClose(func() {
+		u.pages.HidePanel("PipBoy")
+		u.pages.SetCurrentPanel("main")
+		u.application.SetFocus(u.mapWindow)
+	})
+}
+
 type PipBoy struct {
 	*cview.Grid
 	statusBar *cview.TextView

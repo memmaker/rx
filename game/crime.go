@@ -22,7 +22,7 @@ func (g *GameState) playerMinorCrimeIsDenied() bool {
 	return false
 }
 
-func (g *GameState) reactToMinorCrime(observer *Actor, warning foundation.ChatterType) {
+func (g *GameState) reactToMinorCrime(observer *Actor, warning foundation.ChatterTopic) {
 	if observer.GetFlags().Get(foundation.FlagMinorCrimeWarningsGiven) >= 2 {
 		g.tryAddRandomChatter(observer, foundation.ChatterIWarnedYou)
 		g.trySetHostile(observer, g.Player)

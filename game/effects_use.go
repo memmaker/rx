@@ -110,7 +110,8 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 		DamageAmount:    damageDone,
 		BodyPart:        d100.Body,
 	}
-	userDamageAnim := g.damageActorWithFollowUp(damage, user, nil, []foundation.Animation{flyFromUserAnim})
+	userDamageAnim := g.damageActor(damage, user)
+	userDamageAnim.SetFollowUp([]foundation.Animation{flyFromUserAnim})
 
 	var enemyAnims []foundation.Animation
 
@@ -126,13 +127,13 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 	for _, actor := range affectedActors {
 		flyToEnemyAnim, _ := g.ui.GetAnimProjectile('☼', "LightRed", ballPos, actor.Position(), nil)
 		damageAnims := g.damageActor(damage, actor)
-		flyToEnemyAnim.SetFollowUp(damageAnims)
+		flyToEnemyAnim.SetFollowUp(OneAnimation(damageAnims))
 		enemyAnims = append(enemyAnims, flyToEnemyAnim)
 	}
 
 	flyFromUserAnim.SetFollowUp(enemyAnims)
 
-	return userDamageAnim
+	return OneAnimation(userDamageAnim)
 }
 
 func noAnim(h func(g *GameState, user *Actor)) func(*GameState, *Actor) []foundation.Animation {

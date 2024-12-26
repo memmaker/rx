@@ -24,6 +24,126 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
+Name: E
+Char: E
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: s
+Char: s
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: c
+Char: c
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: h
+Char: h
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: a
+Char: a
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: t
+Char: t
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: o
+Char: o
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: n
+Char: n
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name:  
+Char:  
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: B
+Char: B
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: i
+Char: i
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: e
+Char: e
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: I
+Char: I
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: r
+Char: r
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: l
+Char: l
+Foreground: brown_10
+Background: brown_12
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
 Name: street
 Char:  
 Foreground: light_gray_4
@@ -44,6 +164,14 @@ Name: a street sign (transition)
 Char: ≤
 Foreground: light_blue_3
 Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: street
+Char: |
+Foreground: light_gray_4
+Background: dark_gray_7
 IsWalkable: true
 IsTransparent: true
 Flags: 0

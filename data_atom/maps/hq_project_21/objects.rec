@@ -1,2 +1,20 @@
 %rec: default
 
+Category: Terminal
+Description: Project 21
+Dialogue: project_21
+Position: (41,10)
+
+Category: Transition
+Description: CHANGEME
+Location: stairs_to_east
+TargetMap: zone_residential_east
+TargetLocation: stairs_to_project_21
+Position: (6,9)
+
+Category: BakedLight
+Radius: 12
+Color: (1.0, 1.0, 0.7)
+Max_Intensity: 3.0
+Position: (41,9)
+

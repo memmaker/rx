@@ -14,15 +14,11 @@ import (
 	"time"
 )
 
-func (g *GameState) OpenInventory() {
+func (g *GameState) GetNonAmmoPlayerInventory() []foundation.Item {
 	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
 		return !item.IsAmmo()
 	})
-	if len(inventory) == 0 {
-		g.ui.OpenTextWindow("You are not carrying anything.")
-		return
-	}
-	g.ui.OpenInventoryForManagement(inventory)
+	return inventory
 }
 func (g *GameState) ChooseItemForThrow() {
 	inventory := g.GetFilteredInventory(func(item foundation.Item) bool {
@@ -42,7 +38,7 @@ func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) bool {
 	var menuItems []foundation.MenuItem
 	distance := g.currentMap().MoveDistance(g.Player.Position(), mapPos)
 	if distance > 1 {
-		if g.canPlayerSee(mapPos) && g.currentMap().IsActorAt(mapPos) {
+		if g.Player.CanSee(mapPos) && g.currentMap().IsActorAt(mapPos) {
 			actorAt := g.currentMap().ActorAt(mapPos)
 			menuItems = g.appendContextActionsForActor(menuItems, actorAt)
 			if len(menuItems) > 0 {
@@ -277,7 +273,7 @@ func (g *GameState) OpenWizardMenu() {
 		{
 			Name: "Load Test Map",
 			Action: func() {
-				g.GotoNamedLevel("v84_cave", "vault_84")
+				g.transitionToMapLocation("v84_cave", "vault_84")
 			},
 			CloseMenus: true,
 		},
@@ -286,6 +282,11 @@ func (g *GameState) OpenWizardMenu() {
 			Action: func() {
 				g.Player.GetCharSheet().AddSkillPoints(10)
 			},
+		},
+		{
+			Name:       "Teleport",
+			Action:     g.OpenTeleportMenu,
+			CloseMenus: true,
 		},
 		{
 			Name:       "Test Team Spawn",
@@ -395,43 +396,8 @@ func (g *GameState) OpenWizardMenu() {
 		},
 	})
 }
-
-func (g *GameState) RunScriptByName(scriptName string) {
-	if fxtools.LooksLikeAFunction(scriptName) {
-		name, args := fxtools.GetNameAndArgs(scriptName)
-		switch name {
-		case "LeaveMapAt":
-			actorName := args.Get(0)
-			locationName := args.Get(1)
-			running := false
-			if len(args) > 2 {
-				running = args.GetBool(2)
-			}
-			actor := g.actorWithName(actorName)
-			leaveMapAtLocation := g.NewScriptLeaveMapAtLocation(actor, running, locationName)
-			g.RunScript(leaveMapAtLocation)
-		}
-	} else {
-		mapName := g.currentMap().GetName()
-
-		g.RunScriptOnMap(mapName, scriptName)
-	}
-}
-
-func (g *GameState) RunScriptOnMap(mapName string, scriptName string) {
-	pathToMaps := path.Join(g.config.DataRootDir, "maps")
-	g.ExecuteOnMap(mapName, func() {
-		g.scriptRunner.RunScriptByName(pathToMaps, mapName, scriptName, g.GetScriptFuncs())
-	})
-}
-
-func (g *GameState) RunScript(script ActionScript) {
-	mapName := g.currentMap().GetName()
-	g.scriptRunner.RunScript(mapName, script)
-}
-
-func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource, isTerminal bool) {
-	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", name+".rec")
+func (g *GameState) PlayerStartDialogue(dialogueFile string, partner foundation.ChatterSource, isTerminal bool) {
+	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", dialogueFile+".rec")
 	if !fxtools.FileExists(conversationFilename) {
 		g.msg(foundation.HiLite("%s has nothing to say.", partner.Name()))
 		return
@@ -454,8 +420,53 @@ func (g *GameState) StartDialogue(name string, partner foundation.ChatterSource,
 	}
 	params["NPC_NAME"] = npcName
 
-	rootNode := conversation.GetRootNode(params)
+	conversation.MergeVariables(params)
+	rootNode := conversation.GetRootNode()
+
 	g.OpenDialogueNode(conversation, ConversationNode{}, rootNode, partner, isTerminal)
+}
+func (g *GameState) NPCStartDialogue(dialogueFile string, partner foundation.ChatterSource, tryInitiateWith string, isTerminal bool) bool {
+	conversationFilename := path.Join(g.config.DataRootDir, "dialogues", dialogueFile+".rec")
+	if !fxtools.FileExists(conversationFilename) {
+		g.msg(foundation.HiLite("%s has nothing to say.", partner.Name()))
+		return false
+	}
+	conversation, err := ParseConversation(conversationFilename, g.GetScriptFuncs())
+	if err != nil {
+		panic(err)
+		return false
+	}
+
+	var npcName string
+	params := make(map[string]interface{})
+	if actor, isActor := partner.(*Actor); isActor {
+		npcName = actor.GetInternalName()
+		talkedFlagName := fmt.Sprintf("TalkedTo(%s)", npcName)
+		g.gameFlags.Increment(talkedFlagName)
+		params["NPC"] = actor
+	} else {
+		npcName = partner.Name()
+	}
+	params["NPC_NAME"] = npcName
+
+	conversation.MergeVariables(params)
+
+	opening := conversation.GetOpeningBranchByName(tryInitiateWith)
+
+	openingCondition, openingErr := opening.BranchCondition.Evaluate(conversation.Variables)
+	asBool, isBool := openingCondition.(bool)
+	if asBool && isBool && openingErr == nil {
+		rootNode := conversation.GetNodeByName(opening.BranchName)
+		g.QueueActionAfterAnimation(func() {
+			g.msg(foundation.HiLite("%s is addressing you.", partner.Name()))
+			g.ui.IndicateConversationStartByNPC(partner, func() {
+				g.OpenDialogueNode(conversation, ConversationNode{}, rootNode, partner, isTerminal)
+			})
+		})
+		return true
+	}
+
+	return false
 }
 
 func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode ConversationNode, currentNode ConversationNode, conversationPartner foundation.ChatterSource, isTerminal bool) {
@@ -505,7 +516,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 						g.currentMap().RemoveActor(taxiDriver)
 					}
 
-					g.GotoNamedLevel(mapName, locationName)
+					g.transitionToMapLocation(mapName, locationName)
 
 					tdLoc := g.currentMap().GetNamedLocation("taxi_driver")
 					g.currentMap().AddActor(taxiDriver, tdLoc)
@@ -516,7 +527,7 @@ func (g *GameState) OpenDialogueNode(conversation *Conversation, prevNode Conver
 					mapName := args.Get(0)
 					locationName := args.Get(1)
 					g.ui.FadeToBlack()
-					g.GotoNamedLevel(mapName, locationName)
+					g.transitionToMapLocation(mapName, locationName)
 					g.ui.FadeFromBlack()
 					instantEndWithChatter = true
 				case "TakeItemFromPlayer":

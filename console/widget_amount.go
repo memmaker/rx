@@ -19,6 +19,37 @@ type AmountWidget struct {
 	setFocus               func(p cview.Primitive)
 }
 
+func (u *UI) openAmountWidget(itemName string, maxAmount int, onAmountSelected func(amount int)) {
+	u.pushFocus()
+
+	closeAmount := func() {
+		u.pages.RemovePanel("amountWidget")
+		u.popFocus()
+	}
+	amountWidget := NewAmountWidget(itemName, maxAmount, func(amount int) {
+		closeAmount()
+		onAmountSelected(amount)
+	}, u.application.SetFocus)
+
+	screenWidth, _ := u.application.GetScreen().Size()
+	amountWidget.SetRect(screenWidth/2-12, 4, 24, 7)
+
+	originalCapture := amountWidget.GetInputCapture()
+	amountWidget.SetInputCapture(u.directionalWrapperWithoutNumbers(originalCapture))
+
+	u.pages.AddPanel("amountWidget", amountWidget, false, true)
+
+	u.application.SetBeforeFocusFunc(nil)
+	u.application.SetFocus(amountWidget)
+	u.application.SetBeforeFocusFunc(func(p cview.Primitive) bool {
+		if p == amountWidget || p == amountWidget.cancelButton || p == amountWidget.doneButton {
+			return true
+		}
+		return false
+	})
+
+}
+
 func NewAmountWidget(itemName string, maxAmount int, close func(amount int), setFocus func(p cview.Primitive)) *AmountWidget {
 	box := cview.NewBox()
 

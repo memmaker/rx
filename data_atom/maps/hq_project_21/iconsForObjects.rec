@@ -34,7 +34,7 @@ Foreground: yellow_5
 
 Name: Terminal
 Icon: ■
-Foreground: green_1
+Foreground: yellow_7
 Background: light_gray_5
 
 Name: Elevator
@@ -64,4 +64,9 @@ Name: Taxi
 Icon: ⌂
 Foreground: dark_gray_7
 Background: yellow_3
+
+Name: BakedLight
+Icon: ☼
+Foreground: yellow_2
+Background: black
 

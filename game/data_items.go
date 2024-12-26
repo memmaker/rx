@@ -209,8 +209,6 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 		// ARMOR FIELDS
 		case "armor_encumbrance":
 			itemArmor.Encumbrance = field.AsInt()
-		case "armor_style":
-			itemArmor.FashionStyle = foundation.FashionStyleFromString(field.Value)
 		case "armor_conceal_slot":
 			itemArmor.ConcealSlots = append(itemArmor.ConcealSlots, WeaponSizeFromString(field.Value))
 		case "armor_radiation_reduction":

@@ -1,8 +1,112 @@
 %rec: default
 
-Name: sidewalk
-Char: ·
-Foreground: dark_gray_3
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
+Flags: 0
+
+Name: interior floor
+Char: ░
+Foreground: dark_gray_4
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: └
+Foreground: yellow_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: ┐
+Foreground: yellow_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: sub system
+Char: |
+Foreground: light_red_1
+Background: light_gray_2
+IsWalkable: false
+IsTransparent: false
+Flags: 32
+
+Name: wiring
+Char: ┌
+Foreground: neon_green_1
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: ┘
+Foreground: neon_green_1
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: man-hole
+Char: Θ
+Foreground: light_gray_6
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: ├
+Foreground: yellow_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: ┤
+Foreground: neon_green_1
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: ┌
+Foreground: yellow_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: ┘
+Foreground: yellow_2
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: └
+Foreground: neon_green_1
+Background: dark_gray_5
+IsWalkable: true
+IsTransparent: true
+Flags: 0
+
+Name: wiring
+Char: ┐
+Foreground: neon_green_1
 Background: dark_gray_5
 IsWalkable: true
 IsTransparent: true

@@ -1,9 +1,9 @@
 package game
 
 import (
+	"cmp"
 	"contractor/d100"
 	"contractor/foundation"
-	"cmp"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -291,7 +291,7 @@ func (g *GameState) IsVisibleToPlayer(loc geometry.Point) bool {
 	if !g.currentMap().IsExplored(loc) {
 		return false
 	}
-	isVisibleToPlayer := g.canPlayerSee(loc)
+	isVisibleToPlayer := g.Player.CanSee(loc)
 
 	return isVisibleToPlayer
 }
@@ -316,7 +316,7 @@ func (g *GameState) IsSomethingBlockingTargetingAtLoc(point geometry.Point) bool
 func (g *GameState) IsSomethingInterestingAtLoc(loc geometry.Point) bool {
 	gridMap := g.currentMap()
 
-	if !g.canPlayerSee(loc) {
+	if !g.Player.CanSee(loc) {
 		return false
 	}
 
@@ -369,7 +369,7 @@ func (g *GameState) GetHudStats() foundation.HudValueMap {
 	uiStats[foundation.HudActionPoints] = g.Player.GetCharSheet().GetActionPoints()
 	uiStats[foundation.HudActionPointsMax] = g.Player.GetCharSheet().GetActionPointsMax()
 
-	uiStats[foundation.HudArmorString] = g.Player.OutfitStyle().String()
+	uiStats[foundation.HudArmorString] = g.Player.GetArmorString()
 
 	return uiStats
 }
@@ -378,7 +378,7 @@ func (g *GameState) GetLog() []foundation.HiLiteString {
 	return g.logBuffer
 }
 func (g *GameState) GetMapInfo(pos geometry.Point) foundation.HiLiteString {
-	if g.canPlayerSee(pos) {
+	if g.Player.CanSee(pos) {
 		return g.QueryMap(pos, false)
 	}
 	return foundation.NoMsg()
@@ -422,14 +422,14 @@ func (g *GameState) GetInventoryForUI() []foundation.Item {
 	return g.Player.GetInventory().StackedItemsWithFilter(func(item foundation.Item) bool { return !item.IsAmmo() })
 }
 
-func (g *GameState) MapAt(loc geometry.Point) textiles.TextIcon {
+func (g *GameState) MapTileAt(loc geometry.Point) textiles.TextIcon {
 	if !g.currentMap().Contains(loc) {
 		return textiles.TextIcon{}
 	}
 	mapCell := g.currentMap().GetCell(loc)
 	return mapCell.TileType.Icon
 }
-func (g *GameState) TopEntityAt(mapPos geometry.Point) foundation.EntityType {
+func (g *GameState) PlayerViewAt(mapPos geometry.Point) foundation.EntityType {
 	if !g.currentMap().Contains(mapPos) {
 		return foundation.EntityTypeOther
 	}
@@ -477,7 +477,7 @@ func (g *GameState) playerVisibleActorsByDistance() []*Actor {
 		if actor == g.Player {
 			continue
 		}
-		if g.canPlayerSee(actor.Position()) && g.couldPlayerSeeActor(actor) {
+		if g.Player.CanSee(actor.Position()) && g.couldPlayerSeeActor(actor) {
 			enemies = append(enemies, actor)
 		}
 	}
@@ -495,7 +495,7 @@ func (g *GameState) playerVisibleItemsByDistance() []foundation.Item {
 	playerPos := g.Player.Position()
 	var visibleItems []foundation.Item
 	for _, item := range g.currentMap().Items() {
-		if g.canPlayerSee(item.Position()) {
+		if g.Player.CanSee(item.Position()) {
 			visibleItems = append(visibleItems, item)
 		}
 	}
@@ -505,10 +505,6 @@ func (g *GameState) playerVisibleItemsByDistance() []foundation.Item {
 		return cmp.Compare(distI, distJ)
 	})
 	return visibleItems
-}
-
-func (g *GameState) canPlayerSee(pos geometry.Point) bool {
-	return g.Player.CanSee(pos)
 }
 
 func (g *GameState) GetFilteredInventory(filter func(item foundation.Item) bool) []foundation.Item {

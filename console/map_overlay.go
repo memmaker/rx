@@ -6,6 +6,13 @@ import (
 	"image/color"
 )
 
+type OverlayDrawInfo struct {
+	Text       string
+	Pos        geometry.Point
+	Connectors []geometry.Point
+	SourcePos  geometry.Point
+}
+
 type Overlay struct {
 	width             int
 	height            int

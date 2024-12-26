@@ -20,7 +20,7 @@ func (g *GameState) playerMove(newPos geometry.Point) {
 func (g *GameState) actorMoveAnimated(actor *Actor, newPos geometry.Point) []foundation.Animation {
 	oldPos := actor.Position()
 	var moveAnims []foundation.Animation
-	if g.couldPlayerSeeActor(actor) && (g.canPlayerSee(newPos) || g.canPlayerSee(oldPos)) && actor != g.Player {
+	if g.couldPlayerSeeActor(actor) && (g.Player.CanSee(newPos) || g.Player.CanSee(oldPos)) && actor != g.Player {
 		move := g.ui.GetAnimMove(actor, oldPos, newPos)
 		if move != nil {
 			move.RequestMapUpdateOnFinish()

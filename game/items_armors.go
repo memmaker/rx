@@ -1,9 +1,9 @@
 package game
 
 import (
-    "contractor/d100"
-    "contractor/foundation"
 	"cmp"
+	"contractor/d100"
+	"contractor/foundation"
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
@@ -17,8 +17,6 @@ type Armor struct {
 	Protection         map[DamageType]Protection
 	Encumbrance        int
 	RadiationReduction int
-
-	FashionStyle foundation.FashionStyle
 
 	ConcealSlots []WeaponSize
 }
@@ -69,14 +67,12 @@ func (i *Armor) IsRepairable() bool {
 func (i *Armor) FullDescription(colorCode string) string {
 	basicRows := i.GenericItem.fullDescriptionRows()
 
-	basicRows = append([]fxtools.TableRow{fxtools.NewTableRow("Style", i.FashionStyle.String())}, basicRows...)
-
 	appendIfNotZero := func(value int, name string) {
 		if value != 0 {
 			basicRows = append(basicRows, fxtools.NewTableRow(name, fmt.Sprintf("%+d", value)))
 		}
 	}
-	basicRows = append(basicRows, fxtools.NewTableRow("GetQuality", fmt.Sprintf("%d%%", int(i.QualityInPercent))))
+	basicRows = append(basicRows, fxtools.NewTableRow("Quality", fmt.Sprintf("%d%%", int(i.QualityInPercent))))
 	appendIfNotZero(i.GetEncumbrance(), "Encumbrance")
 
 	for dType := DamageType(0); dType < DamageTypeCount; dType++ {
@@ -296,9 +292,8 @@ func DefaultRandomizedArmorFromType(armorType ArmorWeight, quality ArmorConditio
 			Cost:             cost,
 			Alive:            true,
 		},
-		Protection:   prot,
-		Encumbrance:  encumbrance,
-		FashionStyle: foundation.FashionStyleCombatGear,
+		Protection:  prot,
+		Encumbrance: encumbrance,
 	}
 	return newArmor
 }
