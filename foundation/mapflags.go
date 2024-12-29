@@ -41,7 +41,6 @@ const (
 	FlagConcentratedAiming
 	FlagTurnsSinceLastIdleChatter
 	FlagMinorCrimeWarningsGiven
-	FlagWantsToTransition
 
 	// Permanent Status Flags
 	FlagZombie
@@ -338,8 +337,6 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagConcentratedAiming
 	case "running":
 		return FlagRunning
-	case "wants_to_transition":
-		return FlagWantsToTransition
 	case "spawn_dead":
 		return FlagSpawnDead
 	}

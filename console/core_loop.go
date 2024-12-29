@@ -161,17 +161,18 @@ func (u *UI) SkipAnimations() {
 func (u *UI) updateUntilDone() bool {
 	duration := 2 * time.Millisecond
 
+	//
 	screen := u.application.GetScreen()
-
-	u.application.Lock()
-	defer u.application.Unlock()
+	//u.application.Unlock()
 
 	u.isAnimationFrame = true
 	var breakingKey *tcell.EventKey
 outerLoop:
 	for len(u.animator.runningAnimations) > 0 {
+		u.application.Lock()
 		u.mapWindow.Draw(screen)
 		screen.Show()
+		u.application.Unlock()
 
 		var waited time.Duration
 		for waited < u.settings.AnimationDelay {
@@ -201,8 +202,10 @@ outerLoop:
 		return true
 	}
 
+	u.application.Lock()
 	u.mapWindow.Draw(screen)
 	screen.Show()
+	u.application.Unlock()
 
 	return false
 }

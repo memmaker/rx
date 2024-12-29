@@ -7,16 +7,9 @@ BUGS
    - Sandbox Behaviours
  - Cannot pickup mines
  - Buying 1 bullet from Bob doesn't work
- - Drake has no goal and no schedule after map transition
- - Schedules are broken, because of the way we determine the current time slot
- - Actors can have conflicting states (Kill), goals (Fleeing) and status effects (Sleeping)
-
-
+ - Sleeping Enemy still moves
 
 //TODO
- - Enable NPCs approaching the player for a conversation
- - Remove either behaviors or goals, these are too similar
- - Replace Neutral/Aggressive States with Standing/Scheduled
  - Automated security systems
  - Guns
  - Stopping an attacker with an firearm
@@ -34,17 +27,13 @@ BUGS
    -> List one random line from different situations in the current one. When the player selects the matching line to this situation, the bonus is doubled.
  - Perk actions in dialogue (quick draw as an intimidation action)
  - Weapon Spread (hitting multiple targets)
- - Let NPCs initiate Dialogues
  - Let NPCs fight each other
  - Chem effects bound to their quality
- - Police Force (EHPD)
- - no way to repair items without skill investment
  - Disguises
  - Sound Propagation
  - Vents or Windows for breaking and entering
  - Ownership of Items / Doors
  - Weapon Concealment / Reliability
- - Jams
  - Criticals
  - Concealment of Weapons
  - Unified Item Naming according to Lore

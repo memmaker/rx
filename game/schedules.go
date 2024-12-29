@@ -61,7 +61,6 @@ type TimeSlot struct {
 	Location           string
 	ActionFormatString string
 	ObservationFlag    string
-	UseTransition      string
 }
 
 func (s TimeSlot) Description() string {
@@ -171,8 +170,6 @@ func NewTimeSlotFromRecord(slot recfile.Record) TimeSlot {
 			timeSlot.Location = field.Value
 		case "map":
 			timeSlot.MapName = field.Value
-		case "transition":
-			timeSlot.UseTransition = field.Value
 		case "description":
 			timeSlot.ActionFormatString = field.Value
 		case "observation_flag":

@@ -70,43 +70,6 @@ func (g *GameState) OpenContextMenuFor(mapPos geometry.Point) bool {
 	g.ui.OpenMenu(menuItems)
 	return true
 }
-
-func (g *GameState) OpenHitLocationMenu() {
-	var menuItems []foundation.MenuItem
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Torso (0)",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Vitals (-3) -> 3x DMG w/ piercing",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Skull (-7, +2 DR) -> 4x DMG w/ criticals against head",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Eye (-9) -> Like skull hit without +2DR",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Legs (-2) -> limb loss at 1/2 MAX HP DMG",
-		Action:     nil,
-		CloseMenus: true,
-	})
-	menuItems = append(menuItems, foundation.MenuItem{
-		Name:       "Whatever location presents itself",
-		Action:     nil,
-		CloseMenus: true,
-	})
-
-	g.ui.OpenMenu(menuItems)
-}
-
 func (g *GameState) PlayerRest(isHealing bool, duration time.Duration) {
 	g.ui.FadeToBlack()
 	g.advanceTime(duration)
@@ -294,6 +257,15 @@ func (g *GameState) OpenWizardMenu() {
 			CloseMenus: true,
 		},
 		{
+			Name: "Test Pathfinder",
+			Action: func() {
+				pf := NewPathfinder(g.ensureMapIsLoaded)
+				mapPath := pf.FindPath(g.Player, g.currentMapName, MapPosition{MapName: "zone_corporate", LocationName: "street_to_ebi", Position: g.ensureMapIsLoaded("zone_corporate").GetNamedLocation("street_to_ebi")})
+				g.msg(foundation.Msg(fmt.Sprintf("Path: %v", mapPath)))
+			},
+			CloseMenus: true,
+		},
+		{
 			Name: "All the lockpicks",
 			Action: func() {
 				for i := 0; i < 200; i++ {
@@ -361,7 +333,7 @@ func (g *GameState) OpenWizardMenu() {
 		{
 			Name: "Show Scripts",
 			Action: func() {
-				g.ui.OpenTextWindow(g.scriptRunner.String())
+				g.ui.OpenTextWindow(g.Scripts.String())
 			},
 		},
 		{

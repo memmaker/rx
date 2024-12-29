@@ -24,7 +24,11 @@ func (b FollowBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEv
 	actorEvent := b.InitEvent.(ActorEvent)
 	leader := actorEvent.Actor
 
-	return moveTowardsActor(g, actor, leader, 2)
+	if leader.IsInCombat() {
+		return NewProvokedEvent(leader.GetOpponent()), actor.TimeNeededForActions()
+	}
+
+	return g.actorTakeStepTowardsOther(actor, leader, 2)
 }
 
 func (b FollowBehaviour) Init(state *GameState, actor *Actor) {

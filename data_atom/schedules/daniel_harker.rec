@@ -23,7 +23,6 @@ location: behind_counter_hospital
 map: zone_residential_south
 description: busy looking through some medical records
 
-
 day: every_day
 time: 18:00
 map: zone_residential_south
@@ -34,7 +33,6 @@ description: working on some cyberware
 day: every_day
 time: 22:30
 map: zone_residential_south_underground
-transition: ripperdoc_toilet
 location: next_to_the_cage
 description: walking slowly
 
@@ -42,6 +40,5 @@ description: walking slowly
 day: every_day
 time: 23:00
 location: backroom_hospital
-transition: secret_ladder
 map: zone_residential_south
 description: walking slowly, with a grin on his face

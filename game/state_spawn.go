@@ -26,18 +26,28 @@ func (g *GameState) SpawnTeamForHelping(victim *Actor, aggressor *Actor, teamNam
 	// and then searching for the aggressor
 	// if the aggressor is not found, the team should return to their spawn position and despawn
 	// if the aggressor is found, the team should attack the aggressor
-	for transPos, _ := range g.currentMap().Transitions() {
-		if !g.Player.CanSee(transPos) {
-			leader, _ := g.SpawnTeam(teamName, transPos)
+	gMap := g.currentMap()
+	for transPos, _ := range gMap.Transitions() {
+
+		_, isReachable := aggressor.GetDijkstraMap()[transPos]
+
+		if isReachable && !aggressor.CanSee(transPos) {
+			locationName := gMap.GetNamedLocationByPos(transPos)
+			leader, _ := g.SpawnTeam(teamName, MapPosition{MapName: gMap.GetName(), LocationName: locationName, Position: transPos})
 			if leader != nil {
-				leader.FSM.SetState(fsmai.StateKill, NewProvokedEvent(aggressor))
+				leader.FSM.SetState(fsmai.StateSearch, ActorEvent{
+					Event: fsmai.EventMajorCrimeWitnessed,
+					Actor: aggressor,
+				})
 			}
 			break
 		}
 	}
 }
 
-func (g *GameState) SpawnTeam(teamName string, teamPos geometry.Point) (*Actor, []*Actor) {
+func (g *GameState) SpawnTeam(teamName string, teamPos MapPosition) (*Actor, []*Actor) {
+	targetMap := g.ensureMapIsLoaded(teamPos.MapName)
+	targetPos := teamPos.Position
 	template, exists := g.globalTeamTemplates[teamName]
 	if !exists {
 		return nil, nil
@@ -47,20 +57,21 @@ func (g *GameState) SpawnTeam(teamName string, teamPos geometry.Point) (*Actor, 
 	for _, field := range template {
 		switch strings.ToLower(field.Name) {
 		case "leader":
-			leader = g.NewActorFromName(field.Value)
+			leader = g.NewActorFromName(field.Value, teamPos.MapName)
 		case "member":
-			members = append(members, g.NewActorFromName(field.Value))
+			members = append(members, g.NewActorFromName(field.Value, teamPos.MapName))
 		}
 	}
 	if leader == nil {
 		return nil, nil
 	}
 
-	g.currentMap().AddActorWithDisplacement(leader, teamPos)
+	targetMap.AddActorWithDisplacement(leader, targetPos)
+
 	leader.SpawnPosition = leader.Position()
 
 	for _, member := range members {
-		g.currentMap().AddActorWithDisplacement(member, teamPos)
+		targetMap.AddActorWithDisplacement(member, targetPos)
 		member.SpawnPosition = member.Position()
 		member.FSM.SetState(fsmai.StateFollow, NewLeaderJoinedEvent(leader))
 	}

@@ -245,7 +245,11 @@ func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []
 	newPos := actor.Position()
 	isPlayer := actor == g.Player
 
-	g.updateFoVAndDijkstraMap(actor)
+	if isPlayer {
+		g.afterPlayerMoved(oldPos, false)
+	} else {
+		actor.consumePathStep()
+	}
 
 	var animations []foundation.Animation
 
@@ -256,53 +260,26 @@ func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []
 		}
 	}
 
-	neighbors := actor.GetAllNeighbors()
-	for _, neighbor := range neighbors {
-		if objectAt, hasObj := g.currentMap().TryGetObjectAt(neighbor); hasObj {
-			if objectAt.IsProximityTriggered() {
-				triggeredEffectAnimations := objectAt.OnProximity(actor)
-				animations = append(animations, triggeredEffectAnimations...)
-			}
+	/* Mines should instead scan their neighbors for actors..
+	   neighbors := actor.GetAllNeighbors()
+	   for _, neighbor := range neighbors {
+	   	if objectAt, hasObj := g.currentMap().TryGetObjectAt(neighbor); hasObj {
+	   		if objectAt.IsProximityTriggered() {
+	   			triggeredEffectAnimations := objectAt.OnProximity(actor)
+	   			animations = append(animations, triggeredEffectAnimations...)
+	   		}
 
-			if isPlayer && objectAt.IsHidden() && g.Player.GetCharSheet().GetStat(d100.Perception) > 1 {
-				objectAt.SetHidden(false)
-				g.msg(foundation.HiLite("You notice %s", objectAt.Name()))
-			}
-		}
-		if itemAt, hasItem := g.currentMap().TryGetItemAt(neighbor); isPlayer && hasItem && itemAt.IsHidden() && g.Player.GetCharSheet().GetStat(d100.Perception) > 1 {
-			itemAt.SetHidden(false)
-			g.msg(foundation.HiLite("You notice %s", itemAt.Name()))
-		}
-	}
-
-	currentZone := g.currentMap().FirstZoneAt(newPos)
-	observers := g.getObservers(newPos)
-	isSneaking := actor.HasFlag(foundation.FlagSneaking)
-
-	if len(observers) > 0 {
-		for _, observer := range observers {
-			if observer.TeamName == actor.TeamName {
-				continue
-			}
-
-			if !g.isDetectedByObserver(actor, observer) {
-				continue
-			}
-
-			if observer.IsAggressive() {
-				observer.FSM.SendEvent(NewEnemySightedEvent(actor))
-				if isSneaking {
-					g.msg(foundation.HiLite("You have been detected by %s", observer.Name()))
-				}
-			} else if observer.IsGuarding(currentZone) {
-				g.onSeenTrespassing(actor, observer)
-			}
-		}
-	}
-
-	if isPlayer {
-		g.afterPlayerMoved(oldPos, false)
-	}
+	   		if isPlayer && objectAt.IsHidden() && g.Player.GetCharSheet().GetStat(d100.Perception) > 1 {
+	   			objectAt.SetHidden(false)
+	   			g.msg(foundation.HiLite("You notice %s", objectAt.Name()))
+	   		}
+	   	}
+	   	if itemAt, hasItem := g.currentMap().TryGetItemAt(neighbor); isPlayer && hasItem && itemAt.IsHidden() && g.Player.GetCharSheet().GetStat(d100.Perception) > 1 {
+	   		itemAt.SetHidden(false)
+	   		g.msg(foundation.HiLite("You notice %s", itemAt.Name()))
+	   	}
+	   }
+	*/
 
 	return animations
 }
@@ -316,6 +293,35 @@ func (g *GameState) onSeenTrespassing(trespasser *Actor, observer *Actor) {
 }
 
 func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition bool) {
+	newPos := g.Player.Position()
+	currentZone := g.currentMap().FirstZoneAt(newPos)
+	observers := g.getObservers(newPos)
+
+	isSneaking := g.Player.HasFlag(foundation.FlagSneaking)
+
+	if len(observers) > 0 {
+		for _, observer := range observers {
+			if observer.TeamName == g.Player.TeamName {
+				continue
+			}
+
+			if !g.isDetectedByObserver(g.Player, observer) {
+				continue
+			}
+
+			if observer.IsAggressive() {
+				observer.FSM.SendEvent(NewEnemySightedEvent(g.Player))
+				if isSneaking {
+					g.msg(foundation.HiLite("You have been detected by %s", observer.Name()))
+				}
+			} else if observer.IsGuarding(currentZone) {
+				g.onSeenTrespassing(g.Player, observer)
+			}
+		}
+	}
+
+	g.updateFoVAndDijkstraMap(g.Player)
+
 	// explore the map
 	// print "You see.." message
 	if g.currentMap().IsItemAt(g.Player.Position()) && g.config.AutoPickup {

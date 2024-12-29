@@ -27,13 +27,11 @@ day: every_day
 time: 18:00
 map: zone_commerce
 location: quinns_place
-transition: street_to_north_west
 description: he looks thirsty
 
 day: every_day
 time: 23:55
 map: zone_residential_south
-transition: street_to_north
 location: quinns_bed
 description: sleeping
 sleep: true

@@ -50,7 +50,7 @@ func (b KillBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEven
 	}
 
 	if !g.IsInShootingRange(actor, victim) { // ensure shooting range
-		return moveTowardsActor(g, actor, victim, 1)
+		return g.actorTakeStepTowardsOther(actor, victim, 1)
 	}
 
 	mainHandItem, hasMainHandItem := actor.GetInventory().GetEquippedWeapon()
@@ -85,7 +85,7 @@ func (b KillBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEven
 	}
 
 	if distanceToTarget > 1 { // ensure melee range
-		return moveTowardsActor(g, actor, victim, 1)
+		return g.actorTakeStepTowardsOther(actor, victim, 1)
 	}
 
 	// melee attack

@@ -70,17 +70,22 @@ type Actor struct {
 	XP int
 
 	SpawnPosition           geometry.Point
+	SpawnMapName            string
 	CurrentPathBlockedCount int
 	CurrentPath             []geometry.Point
+	CurrentMapPath          []MapPosition
 
 	BodyAugmentations map[CyberWare]bool
 	AugmentToggled    func(CyberWare, bool)
 
-	DijkstraMap map[geometry.Point]int
-	FoV         map[geometry.Point]bool
+	dijkstraMap map[geometry.Point]int
+	foV         map[geometry.Point]bool
 
-	OffersCyberWare []fxtools.Tuple[CyberWare, int]
-	VendorInv       *Inventory
+	OffersCyberWare   []fxtools.Tuple[CyberWare, int]
+	VendorInv         *Inventory
+	FoVOrigin         geometry.Point
+	updateFoV         func()
+	updateDijkstraMap func()
 }
 
 func (a *Actor) SetAugmentToggledHandler(f func(CyberWare, bool)) {
@@ -184,7 +189,7 @@ func NewActor() *Actor {
 		EnemyActors:       make(map[string]bool),
 		EnemyTeams:        make(map[string]bool),
 		AudioBaseName:     "human_male",
-		FoV:               make(map[geometry.Point]bool),
+		foV:               make(map[geometry.Point]bool),
 	}
 	a.Inventory = NewInventory(23)
 
@@ -1034,33 +1039,59 @@ func (a *Actor) GetRepairQuality(qualityOne, qualityTwo d100.Percentage) d100.Pe
 	return min(a.GetMaxRepairQuality(), d100.Percentage(newQuality))
 }
 
-func (a *Actor) getMoveTowards(g *GameState, pos geometry.Point) geometry.Point {
-	if a.Position() == pos {
+func (a *Actor) getMoveTowardsLocation(pf *Pathfinder, gMap GameMap, location MapPosition) (moveHere geometry.Point, isTransition bool) {
+	sameMap := location.MapName == gMap.GetName()
+	locationPos := location.Position
+	_, reachable := a.GetDijkstraMap()[locationPos]
+
+	if sameMap && reachable {
+		return a.getMoveTowards(gMap, locationPos), false
+	} else {
+		if !a.hasTransitionsTo(location) {
+			a.CurrentMapPath = pf.FindPath(a, gMap.GetName(), location)
+		}
+
+		if !a.hasTransitionsTo(location) {
+			return a.Position(), false
+		}
+
+		currentTransitionTarget := a.CurrentMapPath[0]
+		locationPos = currentTransitionTarget.Position
+		if a.Position() == locationPos { // we are at the transition
+			return a.Position(), true
+		}
+
+		return a.getMoveTowards(gMap, locationPos), false
+	}
+}
+
+// used by: scripts, schedules, return to spawn
+func (a *Actor) getMoveTowards(gMap GameMap, destination geometry.Point) geometry.Point {
+	if a.Position() == destination {
 		return a.Position()
 	}
 
-	if !a.hasPathTo(pos) {
-		a.calcAndSetPath(g, pos)
+	if gMap.MoveDistance(a.Position(), destination) == 1 {
+		return destination
+	}
+
+	if !a.hasPathTo(destination) {
+		a.calcAndSetPath(gMap, destination)
+	}
+	if a.hasNoPath() {
+		return a.Position()
 	}
 
 	nextStep := a.CurrentPath[0]
-	if !g.currentMap().IsWalkableFor(nextStep, a) {
-		a.calcAndSetPath(g, pos)
-		if a.hasNoPath() {
-			return a.Position()
-		}
-		nextStep = a.CurrentPath[0]
-	}
 	a.CurrentPathBlockedCount = 0
-	a.CurrentPath = a.CurrentPath[1:]
 	return nextStep
 }
 
-func (a *Actor) calcAndSetPath(g *GameState, pos geometry.Point) {
+func (a *Actor) calcAndSetPath(g GameMap, pos geometry.Point) {
 	a.CurrentPath = nil
 	a.CurrentPathBlockedCount = 0
-	calcPath := g.currentMap().GetJPSPath(a.Position(), pos, func(point geometry.Point) bool {
-		return g.currentMap().IsWalkableFor(point, a)
+	calcPath := g.GetJPSPath(a.Position(), pos, func(point geometry.Point) bool {
+		return g.IsWalkableIgnoringActors(point, a)
 	})
 	if len(calcPath) == 0 || (len(calcPath) == 1 && calcPath[0] == a.Position()) {
 		a.CurrentPath = nil
@@ -1082,7 +1113,10 @@ func (a *Actor) hasPathTo(pos geometry.Point) bool {
 	return startsNearOurPos && endsNearTarget
 }
 func (a *Actor) GetDijkstraMap() map[geometry.Point]int {
-	return a.DijkstraMap
+	if distToOrigin, exists := a.dijkstraMap[a.Position()]; !exists || distToOrigin != 0 {
+		a.updateDijkstraMap()
+	}
+	return a.dijkstraMap
 }
 func (a *Actor) GetMaxThrowRange() int {
 	strength := a.GetCharSheet().GetStat(d100.Strength)
@@ -1289,17 +1323,23 @@ func (a *Actor) CanSee(pos geometry.Point) bool {
 }
 
 func (a *Actor) ResetFov() {
-	clear(a.FoV)
+	clear(a.foV)
 }
 func (a *Actor) inFov(pos geometry.Point) bool {
-	value, exists := a.FoV[pos]
+	if a.FoVOrigin != a.Position() && a.updateFoV != nil {
+		a.updateFoV()
+	}
+	value, exists := a.foV[pos]
 	return exists && value // new
 
 }
 
 func (a *Actor) Visibles() []geometry.Point {
+	if a.FoVOrigin != a.Position() && a.updateFoV != nil {
+		a.updateFoV()
+	}
 	var visibles []geometry.Point
-	for pos, value := range a.FoV {
+	for pos, value := range a.foV {
 		if value {
 			visibles = append(visibles, pos)
 		}
@@ -1309,12 +1349,12 @@ func (a *Actor) Visibles() []geometry.Point {
 }
 
 func (a *Actor) SetVisible(point geometry.Point) {
-	a.FoV[point] = true
+	a.foV[point] = true
 }
 
 func (a *Actor) GetAllNeighbors() []geometry.Point {
 	var neighbors []geometry.Point
-	for pos, dist := range a.DijkstraMap {
+	for pos, dist := range a.GetDijkstraMap() {
 		if dist == 10 || dist == 14 {
 			neighbors = append(neighbors, pos)
 		}
@@ -1393,14 +1433,49 @@ func (a *Actor) HasWatch() bool {
 
 func (a *Actor) InitWithGameState(g *GameState) {
 	a.attachHooks()
-	a.Schedule.SetGetTime(func() time.Time {
-		return g.gameTime.Time
-	})
+	if a.Schedule != nil {
+		a.Schedule.SetGetTime(func() time.Time {
+			return g.gameTime.Time
+		})
+	}
+
 	a.FSM.RestoreState(g, a, DefaultBehaviorFactory(fsmai.StateIdle), DefaultBehaviorFactory)
+
+	a.updateFoV = func() {
+		g.updateFoV(a)
+	}
+	a.updateDijkstraMap = func() {
+		a.dijkstraMap = g.currentMap().GetDijkstraMapWithActorsNotBlocking(a, 2000)
+	}
 }
 
 func (a *Actor) ID() gridmap.ActorID {
 	return a.UID
+}
+
+func (a *Actor) hasTransitionsTo(location MapPosition) bool {
+	if a.CurrentMapPath == nil {
+		return false
+	}
+	lastStep := a.CurrentMapPath[len(a.CurrentMapPath)-1]
+	return lastStep == location
+}
+
+func (a *Actor) GetOpponent() *Actor {
+
+	killBehaviour, hasOpponent := a.FSM.currentBehavior.(KillBehaviour)
+	if !hasOpponent {
+		return nil
+	}
+	actorEvent := killBehaviour.InitEvent.(ActorEvent)
+
+	return actorEvent.Actor
+}
+
+func (a *Actor) consumePathStep() {
+	if len(a.CurrentPath) > 0 && a.CurrentPath[0] == a.Position() {
+		a.CurrentPath = a.CurrentPath[1:]
+	}
 }
 
 type StatChange struct {

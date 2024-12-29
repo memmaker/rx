@@ -32,8 +32,6 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	// we simulate all actors on all loaded maps..
 	if g.config.SimulateAllLoadedMaps {
 		g.onOtherMaps(func(mapName string) {
-			g.transitionNPCs()
-			g.scriptRunner.CheckAndRunFrames(mapName)
 			g.enemyMovement(playerTimeTakenForTurn)
 			g.ui.SkipAnimations()
 		})
@@ -186,31 +184,8 @@ func (g *GameState) afterTurnEffectsForActors() {
 	}
 }
 
-// transitionNPCs is called whenever time advances.
-// It will also make an actor transition to another map, if applicable.
-func (g *GameState) transitionNPCs() {
-	gridmap := g.currentMap()
-	allActorsOnThisMap := gridmap.Actors()
-
-	for i := len(allActorsOnThisMap) - 1; i >= 0; i-- {
-		actor := allActorsOnThisMap[i]
-
-		if actor.Schedule == nil || actor == g.Player {
-			continue
-		}
-		if transition, isTransition := gridmap.GetTransitionAt(actor.Position()); isTransition && actor.HasFlag(foundation.FlagWantsToTransition) {
-			g.actorTransition(gridmap, actor, transition)
-			actor.UnsetFlag(foundation.FlagWantsToTransition)
-			continue
-		}
-	}
-}
-
-func (g *GameState) isAtScheduledLocation(actor *Actor) bool {
-	if actor.Schedule == nil {
-		return false
-	}
-	location := actor.Schedule.CurrentTimeSlot().Location
+func (g *GameState) isAtScheduledLocation(actor *Actor, slot TimeSlot) bool {
+	location := slot.Location
 	if location == "" {
 		return false
 	}

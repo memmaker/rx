@@ -5,7 +5,7 @@ import (
 	"contractor/gridmap"
 )
 
-func (g *GameState) ensureMapIsLoaded(levelName string) *gridmap.GridMap[*Actor, foundation.Item, Object] {
+func (g *GameState) ensureMapIsLoaded(levelName string) (loadedMap *gridmap.GridMap[*Actor, foundation.Item, Object]) {
 	if _, ok := g.activeMaps[levelName]; !ok {
 
 		// actually load a map
@@ -31,6 +31,6 @@ func (g *GameState) setFlagsAndRunScripts(result gridmap.MapLoadResult[*Actor, f
 
 	scripts := result.ScriptsToRun
 	for _, script := range scripts {
-		g.RunScriptOnMap(result.Map.GetName(), script)
+		g.Scripts.RunScriptByName(g.config.DataRootDir, script, g.GetScriptFuncs())
 	}
 }

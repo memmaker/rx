@@ -22,6 +22,8 @@ import (
 	"time"
 )
 
+type GameMap = *gridmap.GridMap[*Actor, foundation.Item, Object]
+
 type TimedTransition struct {
 	Destination gridmap.Transition
 	Time        time.Time
@@ -46,11 +48,13 @@ type GameState struct {
 	mapLoader MapLoader
 
 	// Scripts
-	scriptRunner *ScriptRunner
-	metronome    *Metronome
+	Scripts   *ScriptRunner
+	metronome *Metronome
+
+	pathfinder *Pathfinder
 
 	// Maps (Needs to be saved)
-	activeMaps     map[string]*gridmap.GridMap[*Actor, foundation.Item, Object]
+	activeMaps     map[string]GameMap
 	currentMapName string
 
 	// outOfGame is a set of actors that have been removed from the game
@@ -111,7 +115,7 @@ func NewGameState(config *foundation.Configuration) *GameState {
 		g.NewItem,
 		g.NewObject,
 	)
-
+	g.pathfinder = NewPathfinder(g.ensureMapIsLoaded)
 	// this will initialise the volatile state, which will be reset on each new game
 	g.init()
 	return g
@@ -385,28 +389,28 @@ func (g *GameState) IsActorAlliedWithPlayer(ally foundation.ActorForUI) bool {
 	return actor.IsAlliedWith(g.Player)
 }
 
-func (g *GameState) PlayerInteractAtPosition(pos geometry.Point) {
-	if g.OpenContextMenuFor(pos) {
+func (g *GameState) PlayerInteractAtPosition(interactionPoint geometry.Point) {
+	if g.OpenContextMenuFor(interactionPoint) {
 		return
 	}
 
-	if g.currentMap().IsActorAt(pos) {
-		actor := g.currentMap().ActorAt(pos)
+	if g.currentMap().IsActorAt(interactionPoint) {
+		actor := g.currentMap().ActorAt(interactionPoint)
 		g.ui.OpenTextWindow(actor.GetDetailInfo())
 		return
 	}
-	// Move..
 
-	moveDistance := g.currentMap().MoveDistance(g.Player.Position(), pos)
+	// Move..
+	moveDistance := g.currentMap().MoveDistance(g.Player.Position(), interactionPoint)
 	if moveDistance == 1 {
-		direction := pos.Sub(g.Player.Position())
+		direction := interactionPoint.Sub(g.Player.Position())
 		g.ManualMovePlayer(direction.ToDirection())
 		return
 	}
 
-	if g.currentMap().IsCurrentlyPassable(pos) || g.currentMap().IsObjectAt(pos) {
-		pathTo := g.currentMap().GetJPSPath(g.Player.Position(), pos, func(point geometry.Point) bool {
-			if point != pos {
+	if g.currentMap().IsCurrentlyPassable(interactionPoint) || g.currentMap().IsObjectAt(interactionPoint) {
+		pathTo := g.currentMap().GetJPSPath(g.Player.Position(), interactionPoint, func(point geometry.Point) bool {
+			if point != interactionPoint {
 				return g.currentMap().IsWalkableFor(point, g.Player)
 			}
 			return g.currentMap().IsWalkableFor(point, g.Player) || g.currentMap().IsObjectAt(point)
@@ -494,24 +498,26 @@ func (g *GameState) GetPlayerNameAndIcon() (string, textiles.TextIcon) {
 
 // NewActorFromName creates a new actor from a template name
 // NOTE: These actors won't have a valid SpawnPosition set
-func (g *GameState) NewActorFromName(actorName string) *Actor {
+func (g *GameState) NewActorFromName(actorName string, spawnMapName string) *Actor {
 	actorRec, exists := g.globalActorTemplates[actorName]
 	if !exists {
 		return nil
 	}
-	actor, _ := g.NewActor(actorRec)
+	actor, _ := g.NewActor(actorRec, spawnMapName)
 	return actor
 }
 
 // NewActor creates a new actor from a record
 // It will also load the schedule for the actor, initialize the FSM and set and return the spawn position
-func (g *GameState) NewActor(rec recfile.Record) (*Actor, geometry.Point) {
+func (g *GameState) NewActor(rec recfile.Record, mapName string) (*Actor, geometry.Point) {
 	newActor := NewActorFromRecord(rec, g.palette, g.NewItemFromString)
 	if newActor != nil {
 		g.loadSchedule(newActor)
 		g.FSMInit(newActor)
+		newActor.InitWithGameState(g)
 		spawnPos := newActor.Position()
 		newActor.SpawnPosition = spawnPos
+		newActor.SpawnMapName = mapName
 		return newActor, spawnPos
 	}
 	panic(fmt.Sprintf("Could not create actor from record: %v", rec))
@@ -551,7 +557,7 @@ func (g *GameState) init() {
 	g.timeTracker = make(TimeTracker)
 	g.iconsForItems, g.inventoryColors = loadIconsForItems(path.Join(g.config.DataRootDir, "definitions"), g.palette)
 
-	g.activeMaps = make(map[string]*gridmap.GridMap[*Actor, foundation.Item, Object])
+	g.activeMaps = make(map[string]GameMap)
 	g.chatterCache = make(map[*Actor]map[foundation.ChatterTopic][]EntriesWithCondition)
 	g.outOfGame = make(map[*Actor]bool)
 	g.knownTraps = make(map[string]bool)
@@ -569,7 +575,7 @@ func (g *GameState) init() {
 	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.GetScriptFuncs())
 	g.hookupJournalAndFlags()
 
-	g.scriptRunner = NewScriptRunner()
+	g.Scripts = NewScriptRunner()
 	g.metronome = &Metronome{}
 }
 
@@ -663,13 +669,11 @@ func (g *GameState) transitionToMapLocation(levelName string, location string) {
 
 	g.advanceTime(time.Second * time.Duration(60))
 
-	g.updateAllFoVsAndDijkstras()
-
 	g.updateUIStatus()
 }
 
 func (g *GameState) playerAttachHooks() {
-	g.Player.attachHooks()
+	g.Player.InitWithGameState(g)
 
 	// additional player only hooks
 	g.Player.GetFlags().SetOnChangeHandler(func(flag foundation.ActorFlag, value int) {
@@ -707,7 +711,7 @@ func (g *GameState) UIReady(ui foundation.GameUI) {
 
 	g.moveIntoDungeon()
 
-	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
+	g.Scripts.CheckAndRunFrames()
 }
 
 func (g *GameState) Reset() {
@@ -950,16 +954,14 @@ func (g *GameState) getShootingRangePosition(attacker *Actor, weaponRange int, v
 // advanceTimeAndTurn will advance the time and turn, and run any active scripts on the map and also update the schedules of all actors
 func (g *GameState) advanceTimeAndTurn(duration time.Duration) {
 	g.gameTime = g.gameTime.AddDurationAndTurn(duration)
-	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
-	g.transitionNPCs()
+	g.Scripts.CheckAndRunFrames()
 }
 
 // advanceTime will advance the time, and run any active scripts on the map and also update the schedules of all actors
 // IMPORTANT: This function will also UPDATE the FOV and Dijkstra map of the player
 func (g *GameState) advanceTime(duration time.Duration) {
 	g.gameTime = g.gameTime.AddDuration(duration)
-	g.scriptRunner.CheckAndRunFrames(g.currentMap().GetName())
-	g.transitionNPCs()
+	g.Scripts.CheckAndRunFrames()
 	g.updateFoVAndDijkstraMap(g.Player)
 }
 
@@ -1094,10 +1096,11 @@ func (g *GameState) actorTransition(originMap *gridmap.GridMap[*Actor, foundatio
 		return
 	}
 
-	originMap.RemoveActor(actor)
-
-	targetLocation := destMap.GetNamedLocation(whereTo.TargetLocation)
-	destMap.AddActorWithDisplacement(actor, targetLocation)
+	didRemove := originMap.RemoveActor(actor)
+	if didRemove {
+		targetLocation := destMap.GetNamedLocation(whereTo.TargetLocation)
+		destMap.AddActorWithDisplacement(actor, targetLocation)
+	}
 }
 
 func (g *GameState) removeItemFromGame(item foundation.Item) {
@@ -1166,16 +1169,6 @@ func (g *GameState) createSneakOverlay() map[geometry.Point]fxtools.HDRColor {
 		}
 	}
 	return marked
-}
-
-func (g *GameState) updateAllFoVsAndDijkstras() {
-	for _, actor := range g.currentMap().Actors() {
-		g.updateFoVAndDijkstraMap(actor)
-	}
-
-	if g.Player.HasFlag(foundation.FlagSneaking) {
-		g.ui.SetSneakOverlay(g.createSneakOverlay())
-	}
 }
 
 type TimedSpawn struct {
@@ -1289,19 +1282,24 @@ func (g *GameState) setGameTime(start time.Time) {
 	g.gameTime = g.gameTime.WithTime(start)
 }
 
-func (g *GameState) allActorsInOtherActiveMaps() map[*gridmap.GridMap[*Actor, foundation.Item, Object]][]*Actor {
-	actors := make(map[*gridmap.GridMap[*Actor, foundation.Item, Object]][]*Actor)
-
+func (g *GameState) IterateAllActors(iterator func(mapName string, actor *Actor) bool) {
 	for _, activeMap := range g.activeMaps {
-		if activeMap == g.currentMap() {
-			continue
-		}
 		for _, actor := range activeMap.Actors() {
-			actors[activeMap] = append(actors[activeMap], actor)
+			if !iterator(activeMap.GetName(), actor) {
+				return
+			}
 		}
 	}
+}
 
-	return actors
+func (g *GameState) IterateAllObjects(iterator func(mapName string, object Object) bool) {
+	for _, activeMap := range g.activeMaps {
+		for _, object := range activeMap.Objects() {
+			if !iterator(activeMap.GetName(), object) {
+				return
+			}
+		}
+	}
 }
 
 func (g *GameState) isBedAt(position geometry.Point) (*Bed, bool) {

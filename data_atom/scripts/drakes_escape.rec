@@ -5,16 +5,14 @@ set: ActorWithName('drake_gallows')
 
 %rec: outcomes
 
+if: IsActorAtNamedLocation(DRAKE, 'zone_commerce', 'drakes_place')
+do: AddChatter(DRAKE, 'Give me some of the good stuff!')
+
 if: IsActorDead(DRAKE)
 do: AddChatter(DRAKE, 'No! No! No!')
 
-if: IsActorAtNamedLocation(DRAKE, 'secret_ladder')
-do: ActorTransition(DRAKE)
-do: RunScriptOnMap('zone_residential_south', 'drakes_escape')
-
 %rec: cancel
 
-if: true
 do: AddChatter(DRAKE, 'HUH?')
 
 %rec: frames
@@ -22,4 +20,5 @@ do: AddChatter(DRAKE, 'HUH?')
 if: IsActorAbleToReach(DRAKE, 'secret_ladder')
 do: AddChatter(DRAKE, 'About time!')
 do: SetFlag('drake_freed')
-do: MoveTo(DRAKE, 'secret_ladder', true)
+do: MoveTo(DRAKE, 'zone_commerce', 'drakes_place')
+

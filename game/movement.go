@@ -4,6 +4,7 @@ import (
 	"contractor/d100"
 	"contractor/foundation"
 	"contractor/fov"
+	"contractor/fsmai"
 	"contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/geometry"
@@ -290,24 +291,10 @@ func (g *GameState) getObservers(mapPos geometry.Point) []*Actor {
 }
 
 func (g *GameState) updateFoVAndDijkstraMap(actor *Actor) {
-	actor.DijkstraMap = g.currentMap().GetDijkstraMapWithActorsNotBlocking(actor.Position(), 2000)
-
-	fovRange := g.visionRange
-
-	fovRangeRangeSquared := fovRange * fovRange
+	actor.dijkstraMap = g.currentMap().GetDijkstraMapWithActorsNotBlocking(actor, 2000)
 
 	// new fov
-	actor.ResetFov()
-	fov.ComputeFov([2]int{actor.Position().X, actor.Position().Y}, func(x, y int) bool {
-		p := geometry.Point{X: x, Y: y}
-		if !g.currentMap().Contains(p) || !g.currentMap().IsTransparent(p) {
-			return true
-		}
-		return geometry.DistanceSquared(p, actor.Position()) > fovRangeRangeSquared
-	}, func(x, y int) {
-		point := geometry.Point{X: x, Y: y}
-		actor.SetVisible(point)
-	})
+	g.updateFoV(actor)
 
 	// old fov
 
@@ -323,4 +310,101 @@ func (g *GameState) updateFoVAndDijkstraMap(actor *Actor) {
 			g.currentMap().SetExplored(pos)
 		}
 	}
+}
+
+func (g *GameState) updateFoV(actor *Actor) {
+	fovRange := g.visionRange
+
+	fovRangeRangeSquared := fovRange * fovRange
+	actor.ResetFov()
+	actor.FoVOrigin = actor.Position()
+	fov.ComputeFov([2]int{actor.Position().X, actor.Position().Y}, func(x, y int) bool {
+		p := geometry.Point{X: x, Y: y}
+		if !g.currentMap().Contains(p) || !g.currentMap().IsTransparent(p) {
+			return true
+		}
+		return geometry.DistanceSquared(p, actor.Position()) > fovRangeRangeSquared
+	}, func(x, y int) {
+		point := geometry.Point{X: x, Y: y}
+		actor.SetVisible(point)
+	})
+}
+
+func (g *GameState) actOnTimeSlot(actor *Actor, slot TimeSlot) (fsmai.TransitionEvent, int) {
+	if g.isAtScheduledLocation(actor, slot) {
+		if _, isBedNear := g.isBedAt(actor.Position()); isBedNear {
+			actor.SetSleeping()
+		}
+		return fsmai.NoEvent, actor.RawTimeEnergy
+	}
+
+	slotPosition := MapPosition{
+		MapName:      slot.MapName,
+		Position:     g.ensureMapIsLoaded(slot.MapName).GetNamedLocation(slot.Location),
+		LocationName: slot.Location,
+	}
+
+	return g.actorTakeStepToMapPosition(actor, slotPosition, false)
+}
+
+func (g *GameState) actorTakeStepToMapPosition(actor *Actor, location MapPosition, isRunning bool) (fsmai.TransitionEvent, int) {
+	nextMove, transitionNow := actor.getMoveTowardsLocation(g.pathfinder, g.currentMap(), location)
+
+	if transitionNow {
+		transition, isTransition := g.currentMap().GetTransitionAt(actor.Position())
+		if isTransition {
+			actor.CurrentMapPath = actor.CurrentMapPath[1:]
+			originMap := g.currentMap()
+			g.QueueActionAfterAnimation(func() {
+				g.actorTransition(originMap, actor, transition)
+			})
+		}
+		return fsmai.NoEvent, actor.RawTimeEnergy
+	}
+
+	if actor.Position() != nextMove {
+		// walk to location on current map
+		return g.actorMakeMove(actor, actor.getMoveTowards(g.currentMap(), nextMove), isRunning)
+	}
+
+	return fsmai.NoEvent, actor.RawTimeEnergy
+}
+
+func (g *GameState) actorTakeStepTowardsOther(a *Actor, target *Actor, maxDist int) (fsmai.TransitionEvent, int) {
+	if target == nil {
+		return fsmai.NoEvent, a.TimeNeededForMovement()
+	}
+
+	nextMovePos := g.currentMap().GetMoveTowardsActor(a, target, maxDist)
+
+	return g.actorMakeMove(a, nextMovePos, true)
+}
+
+func (g *GameState) actorMakeMove(a *Actor, nextMovePos geometry.Point, isRunning bool) (fsmai.TransitionEvent, int) {
+	timeForMove := a.TimeNeededForMovement()
+
+	if !isRunning && timeForMove < 10 {
+		timeForMove = 10
+	}
+
+	if nextMovePos == a.Position() {
+		return fsmai.NoEvent, timeForMove
+	}
+
+	if actorAt, isActorBlocking := g.currentMap().TryGetActorAt(nextMovePos); isActorBlocking && !actorAt.IsHostileTowards(a) {
+		actorAt.SpendTimeEnergy(actorAt.TimeNeededForMovement())
+		g.currentMap().SwapPositions(a, actorAt)
+		//g.updateFoVAndDijkstraMap(actorAt)
+		g.afterActorMovedOnMap(actorAt, a.Position())
+		g.afterActorMovedOnMap(a, nextMovePos)
+		return fsmai.NoEvent, timeForMove
+	}
+
+	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
+		return fsmai.NoEvent, timeForMove
+	}
+
+	g.ui.AddAnimations(g.actorMove(a, nextMovePos))
+
+	return fsmai.NoEvent, timeForMove
 }

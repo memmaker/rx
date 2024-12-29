@@ -44,30 +44,11 @@ func (b IdleBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEven
 
 	// run schedule
 	if actor.Schedule != nil {
-		return b.actOnTimeSlot(g, actor, actor.Schedule.CurrentTimeSlot())
+		return g.actOnTimeSlot(actor, actor.Schedule.CurrentTimeSlot())
 	}
 
 	// just go back to spawn
-	return runTowards(g, actor, actor.SpawnPosition)
-}
+	spawnPos := MapPosition{MapName: actor.SpawnMapName, Position: actor.SpawnPosition}
 
-func (b IdleBehaviour) actOnTimeSlot(g *GameState, actor *Actor, slot TimeSlot) (fsmai.TransitionEvent, int) {
-	if slot.MapName != g.currentMapName {
-		transitionLoc := g.currentMap().GetNamedLocation(slot.UseTransition)
-		if actor.Position() == transitionLoc {
-			actor.SetFlag(foundation.FlagWantsToTransition)
-			return fsmai.NoEvent, actor.RawTimeEnergy
-		} else {
-			return walkTowards(g, actor, transitionLoc)
-		}
-	}
-
-	loc := g.currentMap().GetNamedLocation(slot.Location)
-	if actor.Position() != loc {
-		// walk to location
-		return walkTowards(g, actor, loc)
-	}
-
-	// we are at the scheduled location
-	return fsmai.NoEvent, actor.RawTimeEnergy
+	return g.actorTakeStepToMapPosition(actor, spawnPos, false)
 }

@@ -212,6 +212,16 @@ func (u *UI) openSimpleMenu(menuItems []foundation.MenuItem, onClose func()) *cv
 		}
 		return event
 	}))
+	list.SetMouseCapture(func(action cview.MouseAction, event *tcell.EventMouse) (cview.MouseAction, *tcell.EventMouse) {
+		if action == cview.MouseRightClick {
+			u.popPanel(panelName)
+			if onClose != nil {
+				onClose()
+			}
+			return action, nil
+		}
+		return action, event
+	})
 	return list
 }
 

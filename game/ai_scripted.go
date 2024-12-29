@@ -24,7 +24,7 @@ func (b ScriptedBehaviour) Execute(g *GameState, actor *Actor) (fsmai.Transition
 	switch b.InitEvent.(type) {
 	case LocationEvent:
 		locationEvent := b.InitEvent.(LocationEvent)
-		return runTowards(g, actor, locationEvent.Location)
+		return g.actorTakeStepToMapPosition(actor, locationEvent.NamedLocation, false)
 	}
 
 	return fsmai.NoEvent, actor.maximalTimeNeededForActions()

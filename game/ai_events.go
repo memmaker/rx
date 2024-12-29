@@ -2,12 +2,11 @@ package game
 
 import (
 	"contractor/fsmai"
-	"github.com/memmaker/go/geometry"
 )
 
 type LocationEvent struct {
-	Event    fsmai.TransitionEventName
-	Location geometry.Point
+	Event         fsmai.TransitionEventName
+	NamedLocation MapPosition
 }
 
 func (l LocationEvent) Name() fsmai.TransitionEventName {

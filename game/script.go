@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
-	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"math"
 	"path"
@@ -30,7 +29,7 @@ type UserScriptFrame struct {
 
 func (f UserScriptFrame) String() string {
 	if f.condition == nil {
-		return "Empty{}"
+		return "<no condition>"
 	}
 	return f.condition.String()
 }
@@ -149,64 +148,7 @@ func (g *GameState) playerAddCyberware(cyberware CyberWare) {
 
 func moveAwayFromActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int) {
 	nextMovePos := g.currentMap().GetMoveAwayFromActor(a, target)
-
-	if nextMovePos == a.Position() {
-		return fsmai.NoEvent, a.TimeNeededForMovement()
-	}
-
-	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
-
-	return fsmai.NoEvent, a.TimeNeededForMovement()
-}
-func moveTowardsActor(g *GameState, a *Actor, target *Actor, maxDist int) (fsmai.TransitionEvent, int) {
-	if target == nil {
-		return fsmai.NoEvent, a.TimeNeededForMovement()
-	}
-
-	nextMovePos := g.currentMap().GetMoveTowardsActor(a, target, maxDist)
-
-	if nextMovePos == a.Position() {
-		return fsmai.NoEvent, a.TimeNeededForMovement()
-	}
-
-	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
-
-	return fsmai.NoEvent, a.TimeNeededForMovement()
-}
-func runTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
-	nextMovePos := a.getMoveTowards(g, targetPos)
-	if nextMovePos == a.Position() {
-		return fsmai.NoEvent, a.TimeNeededForMovement()
-	}
-
-	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
-
-	return fsmai.NoEvent, a.TimeNeededForMovement()
-}
-func walkTowards(g *GameState, a *Actor, targetPos geometry.Point) (fsmai.TransitionEvent, int) {
-	timeForMove := max(a.TimeNeededForMovement(), 10)
-
-	if a == g.Player &&
-		g.currentMap().MoveDistance(a.Position(), targetPos) == 1 &&
-		g.currentMap().IsObjectAt(targetPos) &&
-		!g.currentMap().IsCurrentlyPassable(targetPos) { // hacky way to allow for auto walking and interacting in one UI interaction
-		g.currentMap().ObjectAt(targetPos).OnBump(a)
-		return fsmai.NoEvent, timeForMove
-	}
-
-	nextMovePos := a.getMoveTowards(g, targetPos)
-
-	if nextMovePos == a.Position() {
-		return fsmai.NoEvent, timeForMove
-	}
-
-	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
-		return fsmai.NoEvent, timeForMove
-	}
-
-	g.ui.AddAnimations(g.actorMoveAnimated(a, nextMovePos))
-
-	return fsmai.NoEvent, timeForMove
+	return g.actorMakeMove(a, nextMovePos, true)
 }
 
 func LoadScript(dataDir string, name string, condFuncs map[string]govaluate.ExpressionFunction) ActionScript {
@@ -254,11 +196,14 @@ func NewActionScript(name string, records map[string][]recfile.Record, condFuncs
 				}
 			}
 			if varName != "" && varValue != nil {
-				var evalErr error
-				script.Variables[varName], evalErr = varValue.Evaluate(nil)
+				evaledVarValue, evalErr := varValue.Evaluate(nil)
 				if evalErr != nil {
 					panic(evalErr)
 				}
+				if evaledVarValue == nil {
+					return ActionScript{} // could not evaluate the required variable
+				}
+				script.Variables[varName] = evaledVarValue
 			}
 		}
 
@@ -325,19 +270,17 @@ func (g *GameState) NewScriptLeaveMap(leaver *Actor, running bool) ActionScript 
 		g.msg(foundation.HiLite("NewScriptLeaveMap: leaver is nil"))
 		return ActionScript{}
 	}
-	transitionPos := leaver.Position()
-
-	g.updateFoVAndDijkstraMap(leaver)
+	transitionPos := ""
 
 	minDist := math.MaxInt
-	for reachablePos, dist := range leaver.DijkstraMap {
+	for reachablePos, dist := range leaver.GetDijkstraMap() {
 		if g.currentMap().IsTransitionAt(reachablePos) && dist < minDist {
-			transitionPos = reachablePos
+			transitionPos = g.currentMap().GetNamedLocationByPos(reachablePos)
 			minDist = dist
 		}
 	}
 
-	if transitionPos == leaver.Position() && !g.currentMap().IsTransitionAt(transitionPos) {
+	if transitionPos == "" {
 		g.msg(foundation.Msg("No transition found"))
 		return ActionScript{}
 	}
@@ -346,27 +289,35 @@ func (g *GameState) NewScriptLeaveMap(leaver *Actor, running bool) ActionScript 
 }
 
 func (g *GameState) NewScriptLeaveMapAtLocation(leaver *Actor, running bool, location string) ActionScript {
-	transitionPos := g.currentMap().GetNamedLocation(location)
-	return g.NewScriptLeaveMapAt(leaver, running, transitionPos)
+	return g.NewScriptLeaveMapAt(leaver, running, location)
 }
 
-func (g *GameState) NewScriptLeaveMapAt(leaver *Actor, running bool, transitionPos geometry.Point) ActionScript {
-	transition, _ := g.currentMap().GetTransitionAt(transitionPos)
-
+func (g *GameState) NewScriptLeaveMapAt(leaver *Actor, running bool, locationName string) ActionScript {
+	gMap := g.currentMap()
 	return ActionScript{
 		Name: fmt.Sprintf("leaves_map_%s", leaver.GetInternalName()),
 		Frames: []ScriptFrame{
-			FrameSetState(fsmai.StateScripted, LocationEvent{Event: fsmai.EventNone, Location: transitionPos}, leaver),
+			FrameSetState(fsmai.StateScripted, LocationEvent{Event: fsmai.EventNone, NamedLocation: MapPosition{
+				MapName:      gMap.GetName(),
+				LocationName: locationName,
+				Position:     gMap.GetNamedLocation(locationName),
+			}}, leaver),
 			FrameRemoveFromMap(leaver, func(actor *Actor) {
-				g.actorTransition(g.currentMap(), actor, transition)
+				transitionPos := gMap.GetNamedLocation(locationName)
+				transitionTarget, exists := gMap.GetTransitionAt(transitionPos)
+				if exists {
+					g.actorTransition(gMap, actor, transitionTarget)
+				}
 			}).WithCondition(func() bool {
+				transitionPos := gMap.GetNamedLocation(locationName)
 				return leaver.Position() == transitionPos
 			}),
 		},
 		Outcomes: []ScriptFrame{
 			BasicScriptFrame{
 				condition: func() bool {
-					return leaver.Position() == transitionPos && leaver.HasFlag(foundation.FlagWantsToTransition)
+					transitionPos := gMap.GetNamedLocation(locationName)
+					return leaver.Position() == transitionPos
 				},
 			},
 			BasicScriptFrame{
@@ -374,7 +325,11 @@ func (g *GameState) NewScriptLeaveMapAt(leaver *Actor, running bool, transitionP
 			},
 		},
 		CancelFrame: FrameRemoveFromMap(leaver, func(actor *Actor) {
-			g.actorTransition(g.currentMap(), actor, transition)
+			transitionPos := gMap.GetNamedLocation(locationName)
+			transitionTarget, exists := gMap.GetTransitionAt(transitionPos)
+			if exists {
+				g.actorTransition(gMap, actor, transitionTarget)
+			}
 		}),
 	}
 }
@@ -384,7 +339,7 @@ func (g *GameState) NewScriptKill(killer, victim *Actor) ActionScript {
 		g.msg(foundation.HiLite("NewScriptKill: killer or victim is nil"))
 		return ActionScript{}
 	}
-	g.updateFoVAndDijkstraMap(victim)
+
 	killer.TryEquipRangedWeaponFirst()
 
 	return ActionScript{
@@ -430,25 +385,11 @@ func (g *GameState) RunScriptByName(scriptName string) {
 			}
 			actor := g.actorWithName(actorName)
 			leaveMapAtLocation := g.NewScriptLeaveMapAtLocation(actor, running, locationName)
-			g.RunScript(leaveMapAtLocation)
+			g.Scripts.Run(leaveMapAtLocation)
 		}
 	} else {
-		mapName := g.currentMap().GetName()
-
-		g.RunScriptOnMap(mapName, scriptName)
+		g.Scripts.RunScriptByName(g.config.DataRootDir, scriptName, g.GetScriptFuncs())
 	}
-}
-
-func (g *GameState) RunScriptOnMap(mapName string, scriptName string) {
-	pathToMaps := path.Join(g.config.DataRootDir, "maps")
-	g.ExecuteOnMap(mapName, func() {
-		g.scriptRunner.RunScriptByName(pathToMaps, mapName, scriptName, g.GetScriptFuncs())
-	})
-}
-
-func (g *GameState) RunScript(script ActionScript) {
-	mapName := g.currentMap().GetName()
-	g.scriptRunner.RunScript(mapName, script)
 }
 
 type SetStateFrame struct {

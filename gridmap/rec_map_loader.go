@@ -23,7 +23,7 @@ type RecMapLoader[ActorType interface {
 }] struct {
 	random        *rand.Rand
 	palette       textiles.ColorPalette
-	actorFactory  func(rec recfile.Record) (ActorType, geometry.Point)
+	actorFactory  func(rec recfile.Record, mapName string) (ActorType, geometry.Point)
 	itemFactory   func(rec recfile.Record) (ItemType, geometry.Point)
 	objectFactory func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType], iconResolver func(objType string) textiles.TextIcon) (ObjectType, geometry.Point)
 	mapBaseDir    string
@@ -42,7 +42,7 @@ func NewRecMapLoader[ActorType interface {
 }](
 	mapBaseDir string,
 	palette textiles.ColorPalette,
-	actorFactory func(rec recfile.Record) (ActorType, geometry.Point),
+	actorFactory func(rec recfile.Record, mapName string) (ActorType, geometry.Point),
 	itemFactory func(rec recfile.Record) (ItemType, geometry.Point),
 	objectFactory func(rec recfile.Record, newMap *GridMap[ActorType, ItemType, ObjectType], iconsForObjects func(objType string) textiles.TextIcon) (ObjectType, geometry.Point),
 ) *RecMapLoader[ActorType, ItemType, ObjectType] {
@@ -142,7 +142,7 @@ func (t *RecMapLoader[ActorType, ItemType, ObjectType]) LoadMap(mapName string) 
 
 	// Set Actors
 	for _, record := range actorRecords {
-		spawnedActor, spawnPos := t.actorFactory(record)
+		spawnedActor, spawnPos := t.actorFactory(record, mapName)
 		if spawnedActor.IsAlive() {
 			newMap.AddActor(spawnedActor, spawnPos)
 		} else {

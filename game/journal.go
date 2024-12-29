@@ -276,6 +276,11 @@ func (j *Journal) SetChangeHandler(onJournalChanged func()) {
 	j.onJournalChanged = onJournalChanged
 }
 
+type Reward struct {
+	XP   int
+	Text string
+}
+
 func (j *Journal) Update() []Reward {
 	sawChanges := false
 	var rewards []Reward

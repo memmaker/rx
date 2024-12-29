@@ -86,7 +86,16 @@ func (g *GameState) RunPlayerPath() bool {
 	nextStep := g.Player.CurrentPath[0]
 	g.Player.CurrentPath = g.Player.CurrentPath[1:]
 
-	g.actorMove(g.Player, nextStep)
+	//targetPos := g.Player.CurrentPath[len(g.Player.CurrentPath)-1]
+
+	if g.currentMap().MoveDistance(g.Player.Position(), nextStep) == 1 &&
+		g.currentMap().IsObjectAt(nextStep) &&
+		!g.currentMap().IsCurrentlyPassable(nextStep) { // hacky way to allow for auto walking and interacting in one UI interaction
+		g.currentMap().ObjectAt(nextStep).OnBump(g.Player)
+		return false
+	} else {
+		g.actorMove(g.Player, nextStep)
+	}
 
 	newPos := g.Player.Position()
 

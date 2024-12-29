@@ -22,7 +22,7 @@ type Door struct {
 	AudioCueBaseName string
 	player           foundation.AudioCuePlayer
 	onBump           func(actor *Actor)
-	updateAllFoVs    func()
+	updatePlayerFoV  func()
 	setUnlockedFlag  func()
 }
 
@@ -32,11 +32,13 @@ func (b *Door) RemainingStrength() int {
 
 func (b *Door) InitWithGameState(g *GameState) {
 	b.player = g.ui
-	b.updateAllFoVs = func() {
-		g.updateAllFoVsAndDijkstras()
+
+	b.updatePlayerFoV = func() {
+		g.updateFoVAndDijkstraMap(g.Player)
 	}
 	b.setUnlockedFlag = func() {
 		g.gameFlags.SetFlag(fmt.Sprintf("DoorUnlocked(%s)", b.InternalName))
+		g.updateFoVAndDijkstraMap(g.Player)
 	}
 	b.onBump = func(actor *Actor) {
 		if actor == g.Player && b.GetCategory() == foundation.ObjectLockedDoor {
@@ -216,7 +218,7 @@ func (b *Door) Close() {
 	}
 	b.Category = foundation.ObjectClosedDoor
 	b.PlayCloseSfx()
-	b.updateAllFoVs()
+	b.updatePlayerFoV()
 }
 
 func (b *Door) PlayCloseSfx() {
@@ -229,7 +231,7 @@ func (b *Door) Open() {
 	}
 	b.Category = foundation.ObjectOpenDoor
 	b.PlayOpenSfx()
-	b.updateAllFoVs()
+	b.updatePlayerFoV()
 }
 
 func (b *Door) PlayOpenSfx() {

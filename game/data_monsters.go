@@ -168,8 +168,6 @@ func NewActorFromRecord(record recfile.Record, palette textiles.ColorPalette, ne
 		actor.OffersCyberWare = offers
 	}
 
-	actor.attachHooks()
-
 	if actor.HasFlag(foundation.FlagSpawnDead) {
 		actor.Kill()
 	}
