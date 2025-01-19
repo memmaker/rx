@@ -25,7 +25,7 @@ func (g *GameState) appendContextActionsForActor(buffer []foundation.MenuItem, a
 	if g.canPlayerTalkToActor(actor) {
 		buffer = append(buffer, foundation.MenuItem{
 			Name:       "[white]Talk To[-]",
-			Action:     func() { g.PlayerStartDialogue(actor.GetDialogueFile(), actor, false) },
+			Action:     func() { g.PlayerStartDialogue(actor.GetDialogueFile(), actor) },
 			CloseMenus: true,
 		})
 	}

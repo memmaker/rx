@@ -2,7 +2,6 @@ package game
 
 import (
 	"contractor/foundation"
-	"contractor/fsmai"
 	"contractor/gridmap"
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
@@ -35,8 +34,8 @@ func (g *GameState) SpawnTeamForHelping(victim *Actor, aggressor *Actor, teamNam
 			locationName := gMap.GetNamedLocationByPos(transPos)
 			leader, _ := g.SpawnTeam(teamName, MapPosition{MapName: gMap.GetName(), LocationName: locationName, Position: transPos})
 			if leader != nil {
-				leader.FSM.SetState(fsmai.StateSearch, ActorEvent{
-					Event: fsmai.EventMajorCrimeWitnessed,
+				leader.FSM.SetState(StateHunt, ActorEvent{
+					Event: EventProvoked,
 					Actor: aggressor,
 				})
 			}
@@ -73,7 +72,7 @@ func (g *GameState) SpawnTeam(teamName string, teamPos MapPosition) (*Actor, []*
 	for _, member := range members {
 		targetMap.AddActorWithDisplacement(member, targetPos)
 		member.SpawnPosition = member.Position()
-		member.FSM.SetState(fsmai.StateFollow, NewLeaderJoinedEvent(leader))
+		member.FSM.SetState(StateFollow, NewLeaderJoinedEvent(leader))
 	}
 
 	return leader, members
@@ -89,6 +88,8 @@ func (g *GameState) NewObjectFromRecord(record recfile.Record, newMap *gridmap.G
 		return box
 	case "pushbox":
 		return g.NewPushBox(record, iconResolver)
+	case "statechanger":
+		return g.NewStateChanger(record, iconResolver)
 	case "elevator":
 		elevator := g.NewElevator(record, iconResolver)
 		newMap.AddNamedLocation(elevator.GetIdentifier(), elevator.Position())

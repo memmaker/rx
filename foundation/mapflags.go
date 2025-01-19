@@ -41,6 +41,7 @@ const (
 	FlagConcentratedAiming
 	FlagTurnsSinceLastIdleChatter
 	FlagMinorCrimeWarningsGiven
+	FlagTurnsHunting
 
 	// Permanent Status Flags
 	FlagZombie
@@ -48,6 +49,7 @@ const (
 	FlagRobot
 	FlagChase
 	FlagSpawnDead
+	FlagProhibitsOpenCarry
 
 	// Perks
 	FlagSlowDigestion
@@ -339,6 +341,8 @@ func ActorFlagFromString(flag string) ActorFlag {
 		return FlagRunning
 	case "spawn_dead":
 		return FlagSpawnDead
+	case "prohibits_open_carry":
+		return FlagProhibitsOpenCarry
 	}
 	panic("Invalid actor flag: " + flag)
 	return 0
@@ -374,16 +378,18 @@ func (m *ActorFlags) Increment(flag ActorFlag) {
 	m.onChange(flag, m.Values[flag])
 }
 
-func (m *ActorFlags) Decrement(flag ActorFlag) {
+func (m *ActorFlags) Decrement(flag ActorFlag) bool {
 	if !m.IsSet(flag) {
-		return
+		return false
 	}
 	m.Values[flag]--
 	if m.Values[flag] <= 0 {
 		delete(m.Values, flag)
 		m.onChange(flag, 0)
+		return false
 	} else {
 		m.onChange(flag, m.Values[flag])
+		return true
 	}
 }
 

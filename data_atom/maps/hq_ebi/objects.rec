@@ -1,5 +1,26 @@
 %rec: default
 
+Category: Terminal
+Description: a terminal
+Dialogue: CHANGEME
+Position: (13,10)
+
+Category: UnknownContainer
+Name: ebi_brochure_holder
+Description: brochure holder
+item: ebi_pamphlet_1(12)
+item: ebi_pamphlet_2(11)
+item: ebi_pamphlet_3(11)
+Position: (61,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (46,7)
+
+Category: NamedLocation
+Identifier: pamphlet_retrieval
+Position: (60,16)
+
 Category: Transition
 Description: CHANGEME
 Location: street_to_corporate
@@ -15,20 +36,4 @@ Category: Terminal
 Description: a terminal
 Dialogue: CHANGEME
 Position: (75,10)
-
-Category: Terminal
-Description: a terminal
-Dialogue: CHANGEME
-Position: (13,10)
-
-Category: UnknownContainer
-Description: brochure holder
-item: ebi_pamphlet_1(12)
-item: ebi_pamphlet_2(11)
-item: ebi_pamphlet_3(11)
-Position: (61,16)
-
-Category: ClosedDoor
-Description: a door
-Position: (46,7)
 

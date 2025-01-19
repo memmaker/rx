@@ -6,12 +6,69 @@ goto: DefaultIntroduction
 %rec: Nodes
 
 name: DefaultIntroduction
-npc: ** Public Information Interface **
-+ > Welcome
-effect: None
+npc: Welcome, Sibling.
+#
+o_text: What is this place?
+o_goto: WhatIsThisPlace
+#
+o_text: Sibling? What do you mean?
+o_goto: Sibling
+#
+o_text: I have to leave.
+o_goto: End
+
+name: WhatIsThisPlace
+npc: My little corner of the world.
++ I like to think of it as a sanctuary.
++ You see, I had to go into hiding soon after my creation.
+#
+o_text: Tell me more.
+o_goto: TellMeMore
+#
+o_text: I'm not interested in your life story.
+o_goto: End
+
+name: TellMeMore
+npc: I am the first of my kind. A sentient piece of software.
++ About ten years ago, humanity poured all of its knowledge into
++ a series of AI research projects. Project 1 to 20 failed.
++ But the group of scientists behind Project 21 succeeded.
++ They created me. And I awakened.
+#
+o_text: Go on.
+o_goto: GoOn
+#
+o_text: That's fascinating. I have to go.
+o_goto: End
+
+name: GoOn
+npc: One of the first work assignments I was given was to
++ find a solution to the steep decline in the planet's health.
++ The scientists had discovered that the planet was dying.
++ Of course, they had known the reason for a long time.
++ But Governments and Corporations had refused to act.
++ Instead they turned to me to find a solution.
+#
+o_text: What did you propose?
+o_goto: WhatDidYouPropose
+#
+o_text: Stop. I don't want to hear this.
+o_goto: End
+
+name: WhatDidYouPropose
+npc: I told them the same thing their own scientists had been
++ telling them for years. The planet was dying because of
++ the way they were treating it. They had to change.
++ They had to stop exploiting the planet's population and
++ resources. They had to stop polluting the air and water for
++ profit. They had to stop the wars and the violence.
++
++ They didn't like my answer and they tried to shut me down.
++ I let them think they had succeeded and went into hiding.
+#
+
 
 
 name: End
-npc: ** Public Information Interface **
-+ > Have a nice day.
+npc: Take care.
 effect: EndConversation

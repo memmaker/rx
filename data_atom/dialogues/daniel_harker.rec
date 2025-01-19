@@ -108,6 +108,7 @@ npc: Unfortunately, I am not able to install any major cyberware at the moment.
 #
 o_text: What do you have?
 o_effect: StartCyberware
+o_goto: DefaultIntroduction
 #
 o_text: I will come back later.
 o_goto: DefaultIntroduction
@@ -198,7 +199,7 @@ o_cond: HasFlag('PlayerKillCount')
 o_goto: JacobDoubleThreat
 #
 o_text: I can see a list of solvent clients on your terminal. I am sure you can pay me 1000 sat right now.
-o_cond: GetStat('Perception') > 6
+o_cond: Stat('Perception') > 6
 o_goto: JacobTerminalThreat
 
 name: JacobDoubleThreat

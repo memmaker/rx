@@ -7,9 +7,23 @@ BUGS
    - Sandbox Behaviours
  - Cannot pickup mines
  - Buying 1 bullet from Bob doesn't work
- - Sleeping Enemy still moves
+ - Mines don't work right now
+ - Rats don't aggro or move
+ - Rats can be pickpocketed
+ - Jacob Thorne's map cannot be accessed (was deleted but is still referenced)
+ - When Bob runs out of ammo he won't retaliate anymore
+ - Dynamic door code not readable in one of two view modes
 
 //TODO
+ - Grim is dead, there is robot helping the player instead
+   -> robot was faking a leg injury, is also a spy for P21
+   -> does suggest suicide, since the memory transfer failed
+ - Sneak should not be an instant fail, allow for correction/escape
+ - Clicking the mouse inside the open inventory does nothing
+ - Add "Hidden/Detected" indicator
+ - Indicate hostility in the Monster list
+ - Keypads lack mouse support
+ - Sort out events.. Major Crime vs. Provoked..
  - Automated security systems
  - Guns
  - Stopping an attacker with an firearm

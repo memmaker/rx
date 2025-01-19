@@ -316,6 +316,16 @@ func (b *Container) IterateItems(action func(foundation.Item)) {
 	}
 }
 
+func (b *Container) ItemCount(name string) int {
+	count := 0
+	for _, item := range b.ContainedItems {
+		if item.GetInternalName() == name {
+			count += item.GetStackSize()
+		}
+	}
+	return count
+}
+
 func (g *GameState) openContainer(container ItemContainer) {
 	containerItems := StackedFilteredAndSortedItems(container.GetItems(), func(item foundation.Item) bool { return true })
 	playerItems := StackedFilteredAndSortedItems(g.Player.GetInventory().GetItems(), func(item foundation.Item) bool { return true })

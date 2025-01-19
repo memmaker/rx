@@ -8,12 +8,12 @@ IsWalkable: true
 IsTransparent: true
 Flags: 0
 
-Name: street
-Char:  
-Foreground: light_gray_4
-Background: dark_gray_7
-IsWalkable: true
-IsTransparent: true
+Name: wall
+Char: █
+Foreground: light_gray_5
+Background: dark_gray_5
+IsWalkable: false
+IsTransparent: false
 Flags: 0
 
 Name: a street sign (transition)
@@ -25,7 +25,7 @@ IsTransparent: true
 Flags: 0
 
 Name: street
-Char: |
+Char:  
 Foreground: light_gray_4
 Background: dark_gray_7
 IsWalkable: true
@@ -38,13 +38,5 @@ Foreground: light_gray_4
 Background: dark_gray_7
 IsWalkable: true
 IsTransparent: true
-Flags: 0
-
-Name: wall
-Char: █
-Foreground: light_gray_5
-Background: dark_gray_5
-IsWalkable: false
-IsTransparent: false
 Flags: 0
 

@@ -4,7 +4,6 @@ import (
 	"contractor/d100"
 	"contractor/foundation"
 	"contractor/fov"
-	"contractor/fsmai"
 	"contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/geometry"
@@ -283,6 +282,9 @@ func (g *GameState) openInventoryOf(actor *Actor) {
 func (g *GameState) getObservers(mapPos geometry.Point) []*Actor {
 	var watchers []*Actor
 	for _, actor := range g.currentMap().Actors() {
+		if !actor.IsAlive() || actor.IsSleeping() || actor == g.Player {
+			continue
+		}
 		if actor.CanSee(mapPos) {
 			watchers = append(watchers, actor)
 		}
@@ -330,12 +332,12 @@ func (g *GameState) updateFoV(actor *Actor) {
 	})
 }
 
-func (g *GameState) actOnTimeSlot(actor *Actor, slot TimeSlot) (fsmai.TransitionEvent, int) {
+func (g *GameState) actOnTimeSlot(actor *Actor, slot TimeSlot) (TransitionEvent, int) {
 	if g.isAtScheduledLocation(actor, slot) {
 		if _, isBedNear := g.isBedAt(actor.Position()); isBedNear {
 			actor.SetSleeping()
 		}
-		return fsmai.NoEvent, actor.RawTimeEnergy
+		return NoEvent, actor.RawTimeEnergy
 	}
 
 	slotPosition := MapPosition{
@@ -347,7 +349,7 @@ func (g *GameState) actOnTimeSlot(actor *Actor, slot TimeSlot) (fsmai.Transition
 	return g.actorTakeStepToMapPosition(actor, slotPosition, false)
 }
 
-func (g *GameState) actorTakeStepToMapPosition(actor *Actor, location MapPosition, isRunning bool) (fsmai.TransitionEvent, int) {
+func (g *GameState) actorTakeStepToMapPosition(actor *Actor, location MapPosition, isRunning bool) (TransitionEvent, int) {
 	nextMove, transitionNow := actor.getMoveTowardsLocation(g.pathfinder, g.currentMap(), location)
 
 	if transitionNow {
@@ -359,7 +361,7 @@ func (g *GameState) actorTakeStepToMapPosition(actor *Actor, location MapPositio
 				g.actorTransition(originMap, actor, transition)
 			})
 		}
-		return fsmai.NoEvent, actor.RawTimeEnergy
+		return NoEvent, actor.RawTimeEnergy
 	}
 
 	if actor.Position() != nextMove {
@@ -367,12 +369,19 @@ func (g *GameState) actorTakeStepToMapPosition(actor *Actor, location MapPositio
 		return g.actorMakeMove(actor, actor.getMoveTowards(g.currentMap(), nextMove), isRunning)
 	}
 
-	return fsmai.NoEvent, actor.RawTimeEnergy
+	return NoEvent, actor.RawTimeEnergy
 }
 
-func (g *GameState) actorTakeStepTowardsOther(a *Actor, target *Actor, maxDist int) (fsmai.TransitionEvent, int) {
+func (g *GameState) actorTakeStepTowardsOther(a *Actor, target *Actor, maxDist int) (TransitionEvent, int) {
 	if target == nil {
-		return fsmai.NoEvent, a.TimeNeededForMovement()
+		return NoEvent, a.TimeNeededForMovement()
+	}
+
+	if a.currentMapName != target.currentMapName {
+		return g.actorTakeStepToMapPosition(a, MapPosition{
+			MapName:  target.currentMapName,
+			Position: target.Position(),
+		}, true)
 	}
 
 	nextMovePos := g.currentMap().GetMoveTowardsActor(a, target, maxDist)
@@ -380,7 +389,7 @@ func (g *GameState) actorTakeStepTowardsOther(a *Actor, target *Actor, maxDist i
 	return g.actorMakeMove(a, nextMovePos, true)
 }
 
-func (g *GameState) actorMakeMove(a *Actor, nextMovePos geometry.Point, isRunning bool) (fsmai.TransitionEvent, int) {
+func (g *GameState) actorMakeMove(a *Actor, nextMovePos geometry.Point, isRunning bool) (TransitionEvent, int) {
 	timeForMove := a.TimeNeededForMovement()
 
 	if !isRunning && timeForMove < 10 {
@@ -388,7 +397,7 @@ func (g *GameState) actorMakeMove(a *Actor, nextMovePos geometry.Point, isRunnin
 	}
 
 	if nextMovePos == a.Position() {
-		return fsmai.NoEvent, timeForMove
+		return NoEvent, timeForMove
 	}
 
 	if actorAt, isActorBlocking := g.currentMap().TryGetActorAt(nextMovePos); isActorBlocking && !actorAt.IsHostileTowards(a) {
@@ -397,14 +406,14 @@ func (g *GameState) actorMakeMove(a *Actor, nextMovePos geometry.Point, isRunnin
 		//g.updateFoVAndDijkstraMap(actorAt)
 		g.afterActorMovedOnMap(actorAt, a.Position())
 		g.afterActorMovedOnMap(a, nextMovePos)
-		return fsmai.NoEvent, timeForMove
+		return NoEvent, timeForMove
 	}
 
 	if !g.currentMap().IsWalkableFor(nextMovePos, a) {
-		return fsmai.NoEvent, timeForMove
+		return NoEvent, timeForMove
 	}
 
 	g.ui.AddAnimations(g.actorMove(a, nextMovePos))
 
-	return fsmai.NoEvent, timeForMove
+	return NoEvent, timeForMove
 }

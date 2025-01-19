@@ -3,12 +3,11 @@ package game
 import (
 	"contractor/d100"
 	"contractor/foundation"
-	"contractor/fsmai"
 	"fmt"
 )
 
 type KillBehaviour struct {
-	InitEvent fsmai.TransitionEvent // state that needs saving..
+	InitEvent TransitionEvent // state that needs saving..
 }
 
 func (b KillBehaviour) IsCombatBehavior() bool {
@@ -20,19 +19,28 @@ func (b KillBehaviour) IsHostilityTowards(other *Actor) bool {
 	return other == actorEvent.Actor
 }
 
-func (b KillBehaviour) WithInitEvent(event fsmai.TransitionEvent) ActorBehavior {
+func (b KillBehaviour) WithInitEvent(event TransitionEvent) ActorBehavior {
 	return KillBehaviour{InitEvent: event}
 }
 
-func (b KillBehaviour) AssociatedState() fsmai.StateName { return fsmai.StateKill }
+func (b KillBehaviour) AssociatedState() StateName { return StateKill }
 
-func (b KillBehaviour) Init(state *GameState, actor *Actor) {
-
+func (b KillBehaviour) Init(g *GameState, actor *Actor) {
+	g.ui.AddAnimations(OneAnimation(g.ui.GetAnimEnterCombat(actor, nil)))
 }
 
-func (b KillBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
+func (b KillBehaviour) Execute(g *GameState, actor *Actor) (TransitionEvent, int) {
 	actorEvent := b.InitEvent.(ActorEvent)
 	victim := actorEvent.Actor
+
+	if !victim.IsAlive() {
+		return NewTargetDiedEvent(victim), actor.TimeNeededForActions()
+	}
+
+	if victim.HasFlag(foundation.FlagActiveCamouflage) && !g.isDetectedByObserver(victim, actor) {
+		g.tryAddRandomChatter(actor, foundation.ChatterTargetLost)
+		return NewTargetLostEvent(victim), actor.TimeNeededForMovement()
+	}
 
 	distanceToTarget := g.currentMap().MoveDistance(actor.Position(), victim.Position())
 	if !actor.CanSee(victim.Position()) { // ensure visibility, else -> target lost
@@ -61,18 +69,18 @@ func (b KillBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEven
 		doesntNeedAmmo := !mainHandItem.NeedsAmmo()
 		if !isLoaded && canBeReloaded { // reload
 			g.actorReloadMainHandWeapon(actor)
-			return fsmai.NoEvent, actor.TimeNeededForActions()
+			return NoEvent, actor.TimeNeededForActions()
 		}
 
 		if mainHandItem.IsJammed() {
 			mainHandItem.Unjam()
 			g.msg(foundation.Msg(fmt.Sprintf("%s unjams %s", actor.Name(), mainHandItem.Name())))
-			return fsmai.NoEvent, actor.TimeNeededForActions()
+			return NoEvent, actor.TimeNeededForActions()
 		}
 
 		if isLoaded || doesntNeedAmmo { // ranged attack
 			g.ui.AddAnimations(g.actorRangedAttack(actor, mainHandItem, mainHandItem.GetCurrentAttackMode(), victim, d100.Body, d100.NoCombatModifier))
-			event := fsmai.TransitionEvent(fsmai.NoEvent)
+			event := TransitionEvent(NoEvent)
 			if !victim.IsAlive() {
 				event = NewTargetDiedEvent(victim)
 			}
@@ -91,9 +99,7 @@ func (b KillBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEven
 	// melee attack
 	consequencesOfMonsterAttack := g.actorMeleeAttack(actor, victim, d100.Body, d100.NoCombatModifier)
 	g.ui.AddAnimations(consequencesOfMonsterAttack)
-	event := fsmai.TransitionEvent(fsmai.NoEvent)
-	if !victim.IsAlive() {
-		event = NewTargetDiedEvent(victim)
-	}
+	event := TransitionEvent(NoEvent)
+
 	return event, actor.GetMeleeTUCost()
 }

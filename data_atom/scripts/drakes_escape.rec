@@ -17,7 +17,7 @@ do: AddChatter(DRAKE, 'HUH?')
 
 %rec: frames
 
-if: IsActorAbleToReach(DRAKE, 'secret_ladder')
+if: IsActorAbleToReach(DRAKE, 'zone_residential_south_underground', 'secret_ladder')
 do: AddChatter(DRAKE, 'About time!')
 do: SetFlag('drake_freed')
 do: MoveTo(DRAKE, 'zone_commerce', 'drakes_place')

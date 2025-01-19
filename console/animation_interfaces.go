@@ -54,6 +54,20 @@ func (u *UI) GetAnimCover(loc geometry.Point, icon textiles.TextIcon, turns int,
 	return nil
 }
 
+func (u *UI) GetAnimEnterCombat(actor foundation.ActorForUI, done func()) foundation.Animation {
+	if !u.settings.AnimationsEnabled {
+		return nil
+	}
+	return NewCoverAnimation(actor.Position(), u.getIconForActor(actor).WithBg(u.uiTheme.GetColorByName("red_8")).WithFg(u.uiTheme.GetColorByName("white")).WithRune('!'), 2, done)
+}
+
+func (u *UI) GetAnimSuspicious(actor foundation.ActorForUI, done func()) foundation.Animation {
+	if !u.settings.AnimationsEnabled {
+		return nil
+	}
+	return NewCoverAnimation(actor.Position(), u.getIconForActor(actor).WithBg(u.uiTheme.GetColorByName("white")).WithFg(u.uiTheme.GetColorByName("orange_1")).WithRune('?'), 2, done)
+}
+
 func (u *UI) GetAnimAttack(attacker, defender foundation.ActorForUI) foundation.Animation {
 	return nil
 }

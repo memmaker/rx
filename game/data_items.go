@@ -20,10 +20,9 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 		Alive:            true,
 		EffectParameters: make(foundation.Params),
 		StatChanges:      StatChange{},
+		Charges:          1,
 		Hidden:           false,
 	}
-
-	charges := 1
 
 	itemAmmo := &Ammo{
 		CaliberIndex:                    -1,
@@ -52,8 +51,8 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 			item.RawPosition = spawnPos
 		case "description":
 			item.DisplayName = field.Value
-		case "longdescription":
-			item.Text = field.Value
+		case "long_description":
+			item.LongDescription = field.Value
 		case "category":
 			item.Category = foundation.ItemCategoryFromString(field.Value)
 			item.Icon = icon(item.Category)
@@ -90,7 +89,7 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 		case "effect_radius":
 			item.EffectParameters["radius"] = field.AsInt()
 		case "charges":
-			charges = fxtools.ParseInterval(field.Value).Roll()
+			item.Charges = fxtools.ParseInterval(field.Value).Roll()
 		case "stat_bonus":
 			if fxtools.LooksLikeAFunction(field.Value) {
 				name, args := fxtools.GetNameAndArgs(field.Value)
@@ -125,8 +124,6 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 			item.EquipFlag = foundation.ActorFlagFromString(field.Value)
 		case "textfile":
 			item.TextFile = field.Value
-		case "text":
-			item.Text = field.Value
 		case "textvar":
 			item.TextVar = field.Value
 		case "textvalue":
@@ -171,7 +168,7 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 		case "weapon_uses_ammo":
 			itemWeapon.CaliberName = field.Value
 		case "weapon_sound_id":
-			itemWeapon.SoundID = field.AsInt32()
+			itemWeapon.SoundID = field.Value
 		case "weapon_skill_used":
 			itemWeapon.SkillUsed = d100.SkillFromString(field.Value)
 		case "weapon_damage":
@@ -206,6 +203,7 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 			itemWeapon.DegradeFactor = field.AsFloat()
 		case "weapon_always_load":
 			preLoadedAmmoName = field.Value
+
 		// ARMOR FIELDS
 		case "armor_encumbrance":
 			itemArmor.Encumbrance = field.AsInt()
@@ -251,8 +249,6 @@ func NewItemFromRecord(record recfile.Record, itemFromString func(name string) f
 			itemArmor.Protection[DamageTypeEnergy] = itemArmor.Protection[DamageTypeEnergy].WithThreshold(protectionValue)
 		}
 	}
-
-	item.Charges = charges
 
 	if item.QualityInPercent == NoQualityDefined {
 		item.QualityInPercent = max(10, d100.Percentage(rand.Intn(100)+1))

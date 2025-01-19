@@ -30,15 +30,15 @@ type GenericItem struct {
 	UID gridmap.ItemID
 
 	// Configuration
-	DisplayName   string
-	InternalName  string
-	UseEffectName string
-	ZapEffectName string
-	StatChanges   StatChange
-	EquipFlag     foundation.ActorFlag
-	ThrownDamage  fxtools.Interval
-	TextFile      string
-	Text          string
+	DisplayName     string
+	InternalName    string
+	UseEffectName   string
+	ZapEffectName   string
+	StatChanges     StatChange
+	EquipFlag       foundation.ActorFlag
+	ThrownDamage    fxtools.Interval
+	TextFile        string
+	LongDescription string
 
 	TextValue string
 	TextVar   string
@@ -246,7 +246,9 @@ func (i *GenericItem) LongNameWithColors(colorCode string) string {
 
 	return colorCode + line + "[-]"
 }
-
+func (i *GenericItem) ShortNameWithColors(colorCode string) string {
+	return colorCode + cview.Escape(i.Name()) + "[-]"
+}
 func (i *GenericItem) InventoryNameWithColors(colorCode string) string {
 	line := cview.Escape(i.Name())
 
@@ -404,7 +406,7 @@ func (i *GenericItem) TextVariables(scriptFuncs map[string]govaluate.ExpressionF
 }
 
 func (i *GenericItem) IsBook() bool {
-	return i.Category == foundation.ItemCategoryReadables && (i.TextFile != "" || i.Text != "")
+	return i.Category == foundation.ItemCategoryReadables && (i.TextFile != "" || i.LongDescription != "")
 }
 
 func (i *GenericItem) IsSkillBook() bool {
@@ -595,7 +597,7 @@ func (i *GenericItem) GetDropFlag() string {
 }
 
 func (i *GenericItem) GetText() string {
-	return i.Text
+	return i.LongDescription
 }
 
 func (i *GenericItem) IsLightSource() bool {
@@ -671,9 +673,9 @@ func (i *GenericItem) GetSkillBookValues() (d100.Skill, int) {
 
 func (i *GenericItem) appendText(lines []string) []string {
 	width := max(longestLine(lines), 26)
-	if i.Text != "" {
+	if i.LongDescription != "" {
 		lines = append(lines, "")
-		lines = append(lines, util.WrapString(i.Text, uint(width)))
+		lines = append(lines, util.WrapString(i.LongDescription, uint(width)))
 	}
 	return lines
 }

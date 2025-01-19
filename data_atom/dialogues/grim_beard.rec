@@ -7,6 +7,7 @@ cond: true
 goto: SmallTalk
 
 %rec: Nodes
+%type: npc multiline
 
 name: DuringTutorial
 npc: I am trying to teach you something here. Pay attention.
@@ -40,7 +41,7 @@ npc: In a rush? Fine, here you go.
 + (Grim hands you the keys to the apartment.)
 effect: SetFlag('grimKeysGiven')
 effect: StopScript('tutorial')
-effect: GiveItemToPlayer('home_keys')
+effect: StackTransferFrom(NPC, 'home_keys')
 effect: EndConversation
 
 name: GoodbyeGoOn

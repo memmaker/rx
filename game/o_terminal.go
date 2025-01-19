@@ -55,7 +55,7 @@ func (t *Terminal) AppendContextActions(actions []foundation.MenuItem, g *GameSt
 }
 func (t *Terminal) InitWithGameState(g *GameState) {
 	t.isPlayer = func(actor *Actor) bool { return actor == g.Player }
-	t.startDialogue = func() { g.PlayerStartDialogue(t.InternalName, t, t.DeclareAsTerminal) }
+	t.startDialogue = func() { g.PlayerStartDialogue(t.InternalName, t) }
 }
 
 func (t *Terminal) OnBump(actor *Actor) {

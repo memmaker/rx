@@ -66,6 +66,7 @@ const (
 	TagNoSound
 	TagLightSource
 	TagNoReload
+	TagStealthy
 	TagTimed
 )
 
@@ -82,6 +83,8 @@ func ItemTagFromString(s string) ItemTags {
 		return TagNoReload
 	case "light_source":
 		return TagLightSource
+	case "stealthy":
+		return TagStealthy
 	case "timed":
 		return TagTimed
 	}

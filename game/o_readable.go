@@ -63,11 +63,11 @@ func (g *GameState) NewReadable(rec recfile.Record, resolver func(objType string
 func (r *ReadableObject) InitWithGameState(g *GameState) {
 	r.isPlayer = func(actor *Actor) bool { return actor == g.Player }
 	r.showText = func(shown string) {
-		g.ui.OpenTextWindow(g.fillTemplatedText(shown))
+		g.ui.OpenTextWindow(g.FillTemplatedText(shown))
 	}
 	r.showTextFile = func(file string) {
 		shown := fxtools.ReadFile(path.Join(g.config.DataRootDir, "text", file+".txt"))
-		g.ui.OpenTextWindow(g.fillTemplatedText(shown))
+		g.ui.OpenTextWindow(g.FillTemplatedText(shown))
 	}
 }
 func (r *ReadableObject) AppendContextActions(actions []foundation.MenuItem, g *GameState) []foundation.MenuItem {

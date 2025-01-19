@@ -1,8 +1,8 @@
 package game
 
 import (
-    "contractor/d100"
-    "contractor/foundation"
+	"contractor/d100"
+	"contractor/foundation"
 	"math/rand"
 )
 
@@ -113,12 +113,21 @@ func (g *GameState) calculateRangedDamage(attacker *Actor, weaponItem *Weapon, a
 		dtMod = weapon.GetTargetDTModifier()
 	}
 
+	damageType := DamageTypeNormal
+	if weapon != nil {
+		damageType = weapon.GetDamageType()
+	}
+	obviousAttack := true
+	if weaponItem != nil && weaponItem.HasTag(foundation.TagStealthy) {
+		obviousAttack = false
+	}
 	damageWithSource := SourcedDamage{
 		NameOfThing:      "ranged_weapon_damage",
 		Attacker:         attacker,
-		IsObviousAttack:  true,
+		WeaponItem:       weaponItem,
+		IsObviousAttack:  obviousAttack,
 		TargetingMode:    attackMode.Mode,
-		DamageType:       weapon.GetDamageType(),
+		DamageType:       damageType,
 		DamageAmount:     baseDamage,
 		BodyPart:         bodyPart,
 		DamagePerBullet:  damagePerBullet,

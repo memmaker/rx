@@ -360,7 +360,7 @@ func (g *GameState) PlayerToggleRun() {
 func (g *GameState) PlayerToggleSneak() {
 	if g.Player.HasFlag(foundation.FlagSneaking) {
 		g.Player.UnsetFlag(foundation.FlagSneaking)
-	} else if g.Player.GetCharSheet().GetActionPoints() > 0 {
+	} else {
 		g.Player.UnsetFlag(foundation.FlagRunning)
 		g.Player.SetFlag(foundation.FlagSneaking)
 	}
@@ -451,10 +451,10 @@ func (g *GameState) currentMap() *gridmap.GridMap[*Actor, foundation.Item, Objec
 
 func (g *GameState) WizardAdvanceTime() {
 	g.advanceTime(time.Minute * 30)
-	g.printTime()
+	g.ShowDateTime()
 }
 
-func (g *GameState) printTime() {
+func (g *GameState) ShowDateTime() {
 	g.msg(foundation.Msg(fmt.Sprintf("Time is now %s", g.gameTime.Time.Format("Monday 15:04, 2006-01-02"))))
 }
 
@@ -652,6 +652,9 @@ func (g *GameState) transitionToMapLocation(levelName string, location string) {
 	g.currentMapName = loadedMap.GetName()
 
 	mapVisited := fmt.Sprintf("PlayerVisited(%s)", levelName)
+	if !g.gameFlags.HasFlag(mapVisited) {
+		g.awardXP(100, fmt.Sprintf("Discovered '%s'", loadedMap.GetDisplayName()))
+	}
 	g.gameFlags.Increment(mapVisited)
 
 	// Ensure correct map state
@@ -776,11 +779,11 @@ func (g *GameState) tryAddRandomChatter(actor *Actor, textType foundation.Chatte
 }
 
 func (g *GameState) tryAddChatter(actor *Actor, text string) bool {
-	if text == "" || !g.MapContainsPlayer() {
+	if text == "" || actor.currentMapName != g.Player.currentMapName {
 		return false
 	}
 	if actor.IsAlive() && !actor.IsSleeping() && g.Player.CanSee(actor.Position()) {
-		text = g.fillTemplatedText(text)
+		text = g.FillTemplatedText(text)
 		if g.ui.TryAddChatter(actor, text) {
 			g.msg(foundation.HiLite("%s: \"%s\"", actor.Name(), cview.Escape(text)))
 			return true
@@ -875,15 +878,11 @@ func (g *GameState) PlayerStealOrPlantItem(victim *Actor, item foundation.Item, 
 		if victim.IsSleeping() {
 			victim.WakeUp()
 		}
-		g.trySetHostile(victim, g.Player)
+		g.onActorCriminalActivity(g.Player, victim, foundation.ChatterMinorCrimeNoticed)
 		return false
 	}
 }
 
-func (g *GameState) ShowDateTime() {
-	// full date
-	g.printTime()
-}
 func (g *GameState) getItemTemplateByName(shortString string) recfile.Record {
 	if record, ok := g.globalItemTemplates[shortString]; ok {
 		return record
@@ -892,6 +891,9 @@ func (g *GameState) getItemTemplateByName(shortString string) recfile.Record {
 }
 
 func (g *GameState) IsInShootingRange(attacker *Actor, defender *Actor) bool {
+	if attacker.currentMapName != defender.currentMapName {
+		return false
+	}
 	attackerPos := attacker.Position()
 	defenderPos := defender.Position()
 	moveDistance := geometry.Distance(attackerPos, defenderPos)
@@ -910,6 +912,9 @@ func (g *GameState) IsInShootingRange(attacker *Actor, defender *Actor) bool {
 }
 
 func (g *GameState) IsInTalkingRange(one *Actor, two *Actor) bool {
+	if one.currentMapName != two.currentMapName {
+		return false
+	}
 	onePos := one.Position()
 	twoPos := two.Position()
 	moveDistance := geometry.Distance(onePos, twoPos)
@@ -1149,6 +1154,9 @@ func (g *GameState) NewAmmo(name string, bullets int) *Ammo {
 func (g *GameState) createSneakOverlay() map[geometry.Point]fxtools.HDRColor {
 	canBeDetectedHere := func(pos geometry.Point) bool {
 		for _, actor := range g.currentMap().Actors() {
+			if actor.HasFlag(foundation.FlagSleep) || !actor.IsAlive() {
+				continue
+			}
 			if actor != g.Player && actor.CanSee(pos) && actor.CanDetect(pos) {
 				return true
 			}
@@ -1181,29 +1189,24 @@ func (g *GameState) inventoryColorCode(item foundation.Item) string {
 	return textiles.RGBAToFgColorCode(g.inventoryColors[item.GetCategory()])
 }
 
-func (g *GameState) SetNeutral(actor *Actor) {
-	actor.SetNeutral()
-	g.FSMInit(actor)
-}
-
-func (g *GameState) SetAggressive(actor *Actor) {
-	actor.SetAggressive()
-	g.FSMInit(actor)
-}
-
 func (g *GameState) isDetectedByObserver(actor *Actor, observer *Actor) bool {
 	outsideDetectionRange := !observer.CanDetect(actor.Position())
+
 	if outsideDetectionRange {
 		return false
 	}
-	//SLEEPING?
 
+	if !actor.IsSneaky() {
+		return true
+	}
+
+	//SLEEPING?
 	if observer.IsSleeping() {
-		wakeMod := actor.GetCharSheet().GetSkill(d100.SkillForSneak)
-		if !actor.HasFlag(foundation.FlagSneaking) {
-			wakeMod -= 50
+		if actor.IsSneaky() {
+			return false
 		}
-		chanceToWake := (observer.GetCharSheet().GetStat(d100.Perception) * 10) - wakeMod
+		wakeMod := actor.GetCharSheet().GetSkill(d100.SkillForSneak)
+		chanceToWake := (observer.GetCharSheet().GetStat(d100.Perception) * 5) - wakeMod
 		awakened := d100.SuccessRoll(d100.Percentage(chanceToWake), 0)
 		if awakened.Success {
 			observer.GetFlags().Unset(foundation.FlagSleep)
@@ -1213,12 +1216,7 @@ func (g *GameState) isDetectedByObserver(actor *Actor, observer *Actor) bool {
 		}
 	}
 
-	if !actor.HasFlag(foundation.FlagSneaking) && !actor.HasFlag(foundation.FlagActiveCamouflage) {
-		return true
-	}
-
 	// sneaking inside the detection range..
-
 	actorPos := actor.Position()
 	forcedDelta := 0
 	lightAtActorPos := g.LightAt(actorPos).Brightness()
@@ -1353,6 +1351,17 @@ func (g *GameState) openTeleportToLocationMenu(mapName string) {
 	}
 
 	g.ui.OpenMenu(menuItems)
+}
+
+func (g *GameState) updateFoVAndDijkstraMapForAllActors() {
+	if g.currentMapName == "" || g.Player == nil {
+		return
+	}
+	g.updateFoVAndDijkstraMap(g.Player)
+	for _, actor := range g.currentMap().Actors() {
+		actor.SetDijkstraMapDirty()
+		actor.SetFoVDirty()
+	}
 }
 
 func advantageForOne(one int, two int, advantage int) (int, int) {

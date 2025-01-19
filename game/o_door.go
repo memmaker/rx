@@ -17,13 +17,13 @@ type Door struct {
 	LockStrengthRemaining int
 	NumberLock            []rune
 
-	HitPoints        int
-	DamageThreshold  int
-	AudioCueBaseName string
-	player           foundation.AudioCuePlayer
-	onBump           func(actor *Actor)
-	updatePlayerFoV  func()
-	setUnlockedFlag  func()
+	HitPoints                int
+	DamageThreshold          int
+	AudioCueBaseName         string
+	player                   foundation.AudioCuePlayer
+	onBump                   func(actor *Actor)
+	updateActorSensoryInputs func()
+	IsFlagControlled         bool
 }
 
 func (b *Door) RemainingStrength() int {
@@ -32,13 +32,23 @@ func (b *Door) RemainingStrength() int {
 
 func (b *Door) InitWithGameState(g *GameState) {
 	b.player = g.ui
+	if b.LockedFlag != "" {
+		if b.IsLocked() {
+			g.gameFlags.Set(b.LockedFlag, 1)
+		} else {
+			g.gameFlags.Set(b.LockedFlag, 0)
+		}
 
-	b.updatePlayerFoV = func() {
-		g.updateFoVAndDijkstraMap(g.Player)
+		g.gameFlags.AddFlagListener(b.LockedFlag, func(flagValue int) {
+			if flagValue > 0 {
+				b.Lock()
+			} else if flagValue == 0 {
+				b.Unlock()
+			}
+		})
 	}
-	b.setUnlockedFlag = func() {
-		g.gameFlags.SetFlag(fmt.Sprintf("DoorUnlocked(%s)", b.InternalName))
-		g.updateFoVAndDijkstraMap(g.Player)
+	b.updateActorSensoryInputs = func() {
+		g.updateFoVAndDijkstraMapForAllActors()
 	}
 	b.onBump = func(actor *Actor) {
 		if actor == g.Player && b.GetCategory() == foundation.ObjectLockedDoor {
@@ -66,7 +76,7 @@ func (b *Door) InitWithGameState(g *GameState) {
 						g.endPlayerTurn(g.Player.TimeNeededForActions())
 					}
 				})
-			} else {
+			} else if !b.IsFlagControlled {
 				// lockpicking
 				if g.Player.GetInventory().GetLockpickCount(LockTypeMechanical) == 0 {
 					g.msg(foundation.Msg("You don't have any lockpicks"))
@@ -81,6 +91,8 @@ func (b *Door) InitWithGameState(g *GameState) {
 				} else {
 					g.playerTryPickLock(b)
 				}
+			} else {
+				g.msg(foundation.Msg("There is no obvious way to unlock this door"))
 			}
 		}
 	}
@@ -209,7 +221,15 @@ func (b *Door) Unlock() {
 		return
 	}
 	b.Category = foundation.ObjectClosedDoor
-	b.setUnlockedFlag()
+	b.updateActorSensoryInputs()
+}
+
+func (b *Door) Lock() {
+	if b.IsBroken() {
+		return
+	}
+	b.Category = foundation.ObjectLockedDoor
+	b.updateActorSensoryInputs()
 }
 
 func (b *Door) Close() {
@@ -218,7 +238,7 @@ func (b *Door) Close() {
 	}
 	b.Category = foundation.ObjectClosedDoor
 	b.PlayCloseSfx()
-	b.updatePlayerFoV()
+	b.updateActorSensoryInputs()
 }
 
 func (b *Door) PlayCloseSfx() {
@@ -231,7 +251,7 @@ func (b *Door) Open() {
 	}
 	b.Category = foundation.ObjectOpenDoor
 	b.PlayOpenSfx()
-	b.updatePlayerFoV()
+	b.updateActorSensoryInputs()
 }
 
 func (b *Door) PlayOpenSfx() {
@@ -271,6 +291,8 @@ func (g *GameState) NewDoor(rec recfile.Record, resolver func(objType string) te
 			case "brokendoor":
 				door.Category = foundation.ObjectBrokenDoor
 			}
+		case "isflagcontrolled":
+			door.IsFlagControlled = field.AsBool()
 		case "description":
 			door.DisplayName = field.Value
 		case "lockflag":
@@ -314,6 +336,7 @@ func (b *Door) OnDamage(dmg SourcedDamage) []foundation.Animation {
 	if reducedDamage > 0 {
 		b.HitPoints -= reducedDamage
 		if b.HitPoints <= 0 {
+			b.HitPoints = 0
 			b.Category = foundation.ObjectBrokenDoor
 		}
 	}
@@ -332,13 +355,15 @@ func (b *Door) Name() string {
 
 	if b.IsLocked() {
 		var lockedWith string
-		if b.LockedFlag != "" && len(b.NumberLock) == 0 {
-			lockedWith = fmt.Sprintf("a %s mechanical lock", b.LockDiff.String())
-		} else if len(b.NumberLock) > 0 {
-			lockedWith = "a numeric keypad"
+		if len(b.NumberLock) > 0 {
+			lockedWith = "locked with a numeric keypad"
+		} else if b.IsFlagControlled {
+			lockedWith = "locked by unknown means"
+		} else {
+			lockedWith = fmt.Sprintf("locked with a %s mechanical lock", b.LockDiff.String())
 		}
 		strengthString := fmt.Sprintf("DT: %d HP: %d", b.DamageThreshold, b.HitPoints)
-		return fmt.Sprintf("%s (locked with %s, %s)", b.DisplayName, lockedWith, strengthString)
+		return fmt.Sprintf("%s (%s, %s)", b.DisplayName, lockedWith, strengthString)
 	}
 
 	return fmt.Sprintf("%s (closed)", b.DisplayName)
@@ -391,6 +416,7 @@ func (b *Door) ReduceStrength(reduction int) (int, bool) {
 	realReduction := int(float64(reduction) * b.LockDiff.LockReductionFactor())
 	b.LockStrengthRemaining -= realReduction
 	if b.LockStrengthRemaining <= 0 {
+		b.LockStrengthRemaining = 0
 		b.Unlock()
 		return realReduction, true
 	}

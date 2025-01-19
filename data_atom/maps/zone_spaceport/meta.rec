@@ -1,0 +1,7 @@
+%rec: default
+
+Name: zone_spaceport
+MusicFile: 
+IsOutdoor: false
+IndoorAmbientLight: (1.0, 1.0, 1.0)
+RunScript: import_export

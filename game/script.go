@@ -2,7 +2,6 @@ package game
 
 import (
 	"contractor/foundation"
-	"contractor/fsmai"
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
@@ -138,7 +137,7 @@ func (g *GameState) playerAddCyberware(cyberware CyberWare) {
 	g.ui.FadeToBlack()
 	g.advanceTime(time.Hour * 24)
 	if g.Player.HasWatch() {
-		g.printTime()
+		g.ShowDateTime()
 	}
 	g.ui.FadeFromBlack()
 
@@ -146,7 +145,7 @@ func (g *GameState) playerAddCyberware(cyberware CyberWare) {
 	g.msg(foundation.HiLite("%s installed.", cyberware.String()))
 }
 
-func moveAwayFromActor(g *GameState, a *Actor, target *Actor) (fsmai.TransitionEvent, int) {
+func moveAwayFromActor(g *GameState, a *Actor, target *Actor) (TransitionEvent, int) {
 	nextMovePos := g.currentMap().GetMoveAwayFromActor(a, target)
 	return g.actorMakeMove(a, nextMovePos, true)
 }
@@ -297,7 +296,7 @@ func (g *GameState) NewScriptLeaveMapAt(leaver *Actor, running bool, locationNam
 	return ActionScript{
 		Name: fmt.Sprintf("leaves_map_%s", leaver.GetInternalName()),
 		Frames: []ScriptFrame{
-			FrameSetState(fsmai.StateScripted, LocationEvent{Event: fsmai.EventNone, NamedLocation: MapPosition{
+			FrameSetState(StateScripted, LocationEvent{Event: EventNone, Location: MapPosition{
 				MapName:      gMap.GetName(),
 				LocationName: locationName,
 				Position:     gMap.GetNamedLocation(locationName),
@@ -345,10 +344,10 @@ func (g *GameState) NewScriptKill(killer, victim *Actor) ActionScript {
 	return ActionScript{
 		Name: fmt.Sprintf("%s_kills_%s", killer.GetInternalName(), victim.GetInternalName()),
 		Frames: []ScriptFrame{
-			FrameSetState(fsmai.StateKill, ActorEvent{Event: fsmai.EventProvoked, Actor: victim}, killer).WithAction(func() {
+			FrameSetState(StateKill, ActorEvent{Event: EventProvoked, Actor: victim}, killer).WithAction(func() {
 				g.tryAddRandomChatter(killer, foundation.ChatterOnTheWayToAKill)
 			}),
-			FrameSetState(fsmai.StateKill, ActorEvent{Event: fsmai.EventProvoked, Actor: victim}, killer).
+			FrameSetState(StateKill, ActorEvent{Event: EventProvoked, Actor: victim}, killer).
 				WithCondition(func() bool {
 					return g.IsInShootingRange(killer, victim)
 				}).
@@ -358,17 +357,17 @@ func (g *GameState) NewScriptKill(killer, victim *Actor) ActionScript {
 		},
 
 		Outcomes: []ScriptFrame{
-			FrameSetState(fsmai.StateIdle, fsmai.NoEvent, killer).WithCondition(func() bool {
+			FrameSetState(StateIdle, NoEvent, killer).WithCondition(func() bool {
 				return killer.IsAlive() && !victim.IsAlive()
 			}),
-			FrameSetState(fsmai.StateIdle, fsmai.NoEvent, victim).WithCondition(func() bool {
+			FrameSetState(StateIdle, NoEvent, victim).WithCondition(func() bool {
 				return !killer.IsAlive() && victim.IsAlive()
 			}),
-			FrameSetState(fsmai.StateIdle, fsmai.NoEvent, victim).WithCondition(func() bool {
+			FrameSetState(StateIdle, NoEvent, victim).WithCondition(func() bool {
 				return !killer.IsAlive() && !victim.IsAlive()
 			}),
 		},
-		CancelFrame: FrameSetState(fsmai.StateIdle, fsmai.NoEvent, killer, victim),
+		CancelFrame: FrameSetState(StateIdle, NoEvent, killer, victim),
 	}
 }
 
@@ -396,8 +395,8 @@ type SetStateFrame struct {
 	actors      []*Actor
 	cond        func() bool
 	moreActions []func()
-	state       fsmai.StateName
-	initEvent   fsmai.TransitionEvent
+	state       StateName
+	initEvent   TransitionEvent
 }
 
 func (m SetStateFrame) IsEmpty() bool {
@@ -437,7 +436,7 @@ func (m SetStateFrame) WithCondition(cond func() bool) SetStateFrame {
 	return m
 }
 
-func FrameSetState(state fsmai.StateName, initEvent fsmai.TransitionEvent, actors ...*Actor) SetStateFrame {
+func FrameSetState(state StateName, initEvent TransitionEvent, actors ...*Actor) SetStateFrame {
 	return SetStateFrame{actors: actors, state: state, initEvent: initEvent}
 }
 

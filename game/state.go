@@ -107,6 +107,12 @@ func (g *GameState) actorKilled(causeOfDeath SourcedDamage, victim *Actor) {
 		g.gameFlags.Increment("PlayerKillCount")
 	}
 
+	if causeOfDeath.IsObviousAttack {
+		g.onActorCriminalActivity(causeOfDeath.Attacker, victim, foundation.ChatterAttackNoticed)
+	} else {
+		g.onActorCriminalActivity(causeOfDeath.Attacker, victim, foundation.ChatterSneakyAttackNoticed)
+	}
+
 	//g.dropInventory(victim)
 	g.currentMap().SetActorToDowned(victim)
 
@@ -280,45 +286,49 @@ func (g *GameState) afterActorMovedOnMap(actor *Actor, oldPos geometry.Point) []
 	   	}
 	   }
 	*/
+	currentZone := g.currentMap().FirstZoneAt(newPos)
+
+	g.forDetectingOtherFactionObserversOf(actor, func(observer *Actor) (continueIteration bool) {
+		if actor.IsOpenCarryWeapon() && observer.HasFlag(foundation.FlagProhibitsOpenCarry) {
+			g.onSeenWithWeapon(actor, observer)
+			return false
+		} else if observer.IsGuarding(currentZone) {
+			g.onSeenTrespassing(actor, observer)
+			return false
+		}
+		return true
+	})
 
 	return animations
 }
+func (g *GameState) forDetectingOtherFactionObserversOf(actor *Actor, action func(observer *Actor) (continueIteration bool)) {
+	observers := g.getObservers(actor.Position())
+	for _, observer := range observers {
+		if observer.Faction == actor.Faction {
+			continue
+		}
 
+		if !g.isDetectedByObserver(actor, observer) {
+			continue
+		}
+		continueIteration := action(observer)
+		if !continueIteration {
+			break
+		}
+	}
+}
+func (g *GameState) onSeenWithWeapon(carrier *Actor, observer *Actor) {
+	g.onActorCriminalActivity(carrier, observer, foundation.ChatterOpenCarryNoticed)
+}
 func (g *GameState) onSeenTrespassing(trespasser *Actor, observer *Actor) {
 	if trespasser == g.Player && observer.InitiateDialogueWithOpeningBranch != "" {
 		g.NPCStartDialogue(observer.GetDialogueFile(), observer, observer.InitiateDialogueWithOpeningBranch, false)
 	} else {
-		g.reactToMinorCrime(observer, foundation.ChatterTrespassing)
+		g.onActorCriminalActivity(trespasser, observer, foundation.ChatterTrespassing)
 	}
 }
 
 func (g *GameState) afterPlayerMoved(oldPos geometry.Point, wasMapTransition bool) {
-	newPos := g.Player.Position()
-	currentZone := g.currentMap().FirstZoneAt(newPos)
-	observers := g.getObservers(newPos)
-
-	isSneaking := g.Player.HasFlag(foundation.FlagSneaking)
-
-	if len(observers) > 0 {
-		for _, observer := range observers {
-			if observer.TeamName == g.Player.TeamName {
-				continue
-			}
-
-			if !g.isDetectedByObserver(g.Player, observer) {
-				continue
-			}
-
-			if observer.IsAggressive() {
-				observer.FSM.SendEvent(NewEnemySightedEvent(g.Player))
-				if isSneaking {
-					g.msg(foundation.HiLite("You have been detected by %s", observer.Name()))
-				}
-			} else if observer.IsGuarding(currentZone) {
-				g.onSeenTrespassing(g.Player, observer)
-			}
-		}
-	}
 
 	g.updateFoVAndDijkstraMap(g.Player)
 
@@ -514,7 +524,7 @@ func (g *GameState) fillTemplatedTextCustom(text string, vars map[string]string)
 	}
 	return filledText.String()
 }
-func (g *GameState) fillTemplatedText(text string) string {
+func (g *GameState) FillTemplatedText(text string) string {
 	parsedTemplate, err := template.New("text").Parse(text)
 	if err != nil {
 		panic(err)

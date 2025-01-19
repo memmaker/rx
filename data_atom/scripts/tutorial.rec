@@ -22,30 +22,40 @@ do: AddChatter(OLDMAN, 'Whatever.')
 
 %rec: frames
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'Can you move? Try {{ .keys_move }} to move in any direction.')
 
-if: HasFlag('playerSteps')
+if: PlayerInTalkRange(OLDMAN) && HasFlag('playerSteps')
 do: AddChatter(OLDMAN, 'Looks good. I guess you can put some clothes on now.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'Here take these. It\'s {{ .keys_inventory }} to open your inventory.')
 do: ActorDropItem(OLDMAN, 'street_wear')
 
+if: PlayerInTalkRange(OLDMAN)
 if: HasItem('street_wear')
 do: AddChatter(OLDMAN, 'Then type the letter in front of the item to equip it.')
 
-if: HasArmorEquipped('street_wear')
+if: PlayerInTalkRange(OLDMAN) && HasArmorEquipped('street_wear')
 do: AddChatter(OLDMAN, 'Nice. Wait a second, use {{ .keys_wait }}.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'This will also cancel most actions.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'Try looking around with {{ .keys_look }} and then moving.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'Perfect. Now, let\'s talk about combat.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'There is the old dead drop at the side of the that tree.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'I have left a bit of ammo there for you.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'I also kept a mint condition 10mm by my bedside.')
 
+if: PlayerInTalkRange(OLDMAN)
 do: AddChatter(OLDMAN, 'It\'s yours.')

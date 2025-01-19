@@ -21,6 +21,7 @@ npc: Welcome to Big Bob's Supplies!
 #
 o_text: Show me what you have.
 o_effect: StartTrading
+o_goto: BasicSupply
 #
 o_text: I'll need exactly 1 round of ammo.
 o_cond: !HasFlag('took_single_round')

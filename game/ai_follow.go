@@ -2,20 +2,19 @@ package game
 
 import (
 	"contractor/foundation"
-	"contractor/fsmai"
 )
 
 type FollowBehaviour struct {
-	InitEvent fsmai.TransitionEvent
+	InitEvent TransitionEvent
 }
 
-func (b FollowBehaviour) WithInitEvent(event fsmai.TransitionEvent) ActorBehavior {
+func (b FollowBehaviour) WithInitEvent(event TransitionEvent) ActorBehavior {
 	return FollowBehaviour{InitEvent: event}
 }
 
-func (b FollowBehaviour) AssociatedState() fsmai.StateName { return fsmai.StateFollow }
+func (b FollowBehaviour) AssociatedState() StateName { return StateFollow }
 
-func (b FollowBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
+func (b FollowBehaviour) Execute(g *GameState, actor *Actor) (TransitionEvent, int) {
 	// barks
 	if g.shouldActorBark(actor) && g.tryAddRandomChatter(actor, foundation.ChatterBeingAroundPlayer) {
 		actor.GetFlags().Unset(foundation.FlagTurnsSinceLastIdleChatter)

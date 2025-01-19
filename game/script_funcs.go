@@ -3,7 +3,6 @@ package game
 import (
 	"contractor/d100"
 	"contractor/foundation"
-	"contractor/fsmai"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/geometry"
 	"strconv"
@@ -21,6 +20,11 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			skillName := args[0].(string)
 			skillValue := g.Player.GetCharSheet().GetSkill(d100.SkillFromString(skillName))
 			return (float64)(skillValue), nil
+		},
+		"Stat": func(args ...interface{}) (interface{}, error) {
+			statName := args[0].(string)
+			statValue := g.Player.GetCharSheet().GetStat(d100.StatFromString(statName))
+			return (float64)(statValue), nil
 		},
 		"RollSkill": func(args ...interface{}) (interface{}, error) {
 			skillName := args[0].(string)
@@ -57,6 +61,25 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			return nil, nil
 		},
 		// eg. StackTransForTo(NPC, 'gold', 500)
+		"ContainerStackTransferTo": func(args ...interface{}) (interface{}, error) {
+			count := 1
+			sourceContainer := args[0].(*Container)
+			targetActor := args[1].(*Actor)
+			itemName := args[2].(string)
+			if len(args) > 3 {
+				count = int(args[3].(float64))
+			}
+			removedItem := sourceContainer.RemoveItemsWithName(itemName, count)
+			if len(removedItem) > 0 {
+				targetActor.GetInventory().AddItems(removedItem)
+				if targetActor == g.Player {
+					g.msg(foundation.HiLite("%s received.", removedItem[0].Name()))
+				} else if g.Player.CanSee(targetActor.Position()) && g.Player.CanSee(sourceContainer.Position()) {
+					g.msg(foundation.HiLite("%s took something from %s.", targetActor.Name(), sourceContainer.Name()))
+				}
+			}
+			return nil, nil
+		},
 		"StackTransferTo": func(args ...interface{}) (interface{}, error) {
 			count := 1
 			targetActor := args[0].(*Actor)
@@ -68,6 +91,20 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			if len(removedItem) > 0 {
 				targetActor.GetInventory().AddItems(removedItem)
 				g.msg(foundation.HiLite("%s removed.", removedItem[0].Name()))
+			}
+			return nil, nil
+		},
+		"StackTransferFrom": func(args ...interface{}) (interface{}, error) {
+			count := 1
+			sourceActor := args[0].(*Actor)
+			itemName := args[1].(string)
+			if len(args) > 2 {
+				count = int(args[2].(float64))
+			}
+			removedItem := sourceActor.GetInventory().RemoveItemsByNameAndCount(itemName, count)
+			if len(removedItem) > 0 {
+				g.Player.GetInventory().AddItems(removedItem)
+				g.msg(foundation.HiLite("%s received.", removedItem[0].Name()))
 			}
 			return nil, nil
 		},
@@ -136,6 +173,14 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			nameOfDoor := args[0].(string)
 			code := g.getRandomNumberCode(nameOfDoor)
 			return string(code), nil
+		},
+		"LocationInZone": func(args ...interface{}) (interface{}, error) {
+			mapName := args[0].(string)
+			zoneName := args[1].(string)
+			locIndex := int(args[2].(float64))
+			gMap := g.ensureMapIsLoaded(mapName)
+			loc := gMap.GetZoneLocationByIndex(zoneName, locIndex)
+			return loc, nil
 		},
 		// Time / Turns
 		"Turns": func(args ...interface{}) (interface{}, error) {
@@ -319,6 +364,14 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			defender := args[1].(*Actor)
 			return g.IsInShootingRange(attacker, defender), nil
 		},
+		"IsActorNextTo": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			mapName := args[1].(string)
+			target := args[2].(geometry.Point)
+			gMap := g.ensureMapIsLoaded(mapName)
+			moveDist := gMap.MoveDistance(actor.Position(), target)
+			return moveDist <= 1, nil
+		},
 		"IsActorAtNamedLocation": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
 			mapName := args[1].(string)
@@ -329,13 +382,15 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 		},
 		"IsActorAbleToReach": func(args ...interface{}) (interface{}, error) {
 			actor := args[0].(*Actor)
-			locName := args[1].(string)
-			loc := g.currentMap().GetNamedLocation(locName)
-			if loc == actor.Position() {
+			mapName := args[1].(string)
+			locName := args[2].(string)
+			gMap := g.ensureMapIsLoaded(mapName)
+			loc := gMap.GetNamedLocation(locName)
+			if loc == actor.Position() { // TODO: check for the actor being on the right map..
 				return true, nil
 			}
-			pathToDest := g.currentMap().GetJPSPath(actor.Position(), loc, func(point geometry.Point) bool {
-				return g.currentMap().IsWalkableFor(point, actor)
+			pathToDest := gMap.GetJPSPath(actor.Position(), loc, func(point geometry.Point) bool {
+				return gMap.IsWalkableFor(point, actor)
 			})
 			if len(pathToDest) == 0 {
 				return false, nil
@@ -377,12 +432,33 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			}
 			removedItems := actor.GetInventory().RemoveItemsByNameAndCount(itemName, count)
 			for _, item := range removedItems {
-				g.addItemToMap(item, actor.Position())
+				g.ensureMapIsLoaded(actor.currentMapName).AddItemWithDisplacement(item, actor.Position())
 			}
 			if len(removedItems) > 0 {
 				first := removedItems[0]
 				displayName := first.Name()
 				g.msg(foundation.HiLite("%s dropped %s.", actor.Name(), displayName))
+			}
+			return nil, nil
+		},
+		"ActorDropItemAt": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			count := 1
+			targetPos := args[1].(geometry.Point)
+			itemName := args[2].(string)
+			if len(args) > 3 {
+				count = int(args[3].(float64))
+			}
+			removedItems := actor.GetInventory().RemoveItemsByNameAndCount(itemName, count)
+			for _, item := range removedItems {
+				g.ensureMapIsLoaded(actor.currentMapName).AddItemWithDisplacement(item, targetPos)
+			}
+			if len(removedItems) > 0 {
+				first := removedItems[0]
+				displayName := first.Name()
+				if actor != g.Player && g.Player.CanSee(actor.Position()) {
+					g.msg(foundation.HiLite("%s dropped %s.", actor.Name(), displayName))
+				}
 			}
 			return nil, nil
 		},
@@ -431,14 +507,40 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			locName := args[2].(string)
 			gMap := g.ensureMapIsLoaded(mapName)
 			pos := gMap.GetNamedLocation(locName)
-			actor.FSM.SetState(fsmai.StateScripted, LocationEvent{Event: fsmai.EventNone, NamedLocation: MapPosition{
+			actor.FSM.SetState(StateScripted, LocationEvent{Event: EventNone, Location: MapPosition{
 				MapName:      mapName,
 				LocationName: locName,
 				Position:     pos,
 			}})
 			return nil, nil
 		},
-
+		"MoveNextTo": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			mapName := args[1].(string)
+			location := args[2].(geometry.Point)
+			targetMap := g.ensureMapIsLoaded(mapName)
+			targetLocation := location
+			neighbors := targetMap.GetFreeCardinalNeighbors(location)
+			if len(neighbors) > 0 {
+				targetLocation = neighbors[0]
+			}
+			actor.FSM.SetState(StateScripted, LocationEvent{Event: EventNone, Location: MapPosition{
+				MapName:  mapName,
+				Position: targetLocation,
+			}})
+			return nil, nil
+		},
+		"Approach": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			target := args[1].(*Actor)
+			actor.FSM.SetState(StateScripted, ActorEvent{Event: EventApproach, Actor: target})
+			return nil, nil
+		},
+		"SetIdle": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			actor.FSM.SetState(StateIdle, NoEvent)
+			return nil, nil
+		},
 		// Container Actions
 		"ContainerRemoveItem": func(args ...interface{}) (interface{}, error) {
 			container := args[0].(*Container)
@@ -459,6 +561,22 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 				return nil, nil
 			}
 			newItem := g.NewItemFromString(args[1].(string))
+			container.AddItem(newItem)
+			return nil, nil
+		},
+		"ContainerEnsure": func(args ...interface{}) (interface{}, error) {
+			container := args[0].(*Container)
+			itemName := args[1].(string)
+			itemCount := int(args[2].(float64))
+
+			itemCountInContainer := container.ItemCount(itemName)
+
+			if itemCountInContainer >= itemCount {
+				return nil, nil
+			}
+			diff := itemCount - itemCountInContainer
+			newItem := g.NewItemFromString(itemName)
+			newItem.SetStackSize(diff)
 			container.AddItem(newItem)
 			return nil, nil
 		},
@@ -484,6 +602,10 @@ func (g *GameState) GetScriptFuncs() map[string]govaluate.ExpressionFunction {
 			newItem := g.NewItemFromString(args[1].(string))
 			actor.GetInventory().AddItem(newItem)
 			return nil, nil
+		},
+		"PlayerInTalkRange": func(args ...interface{}) (interface{}, error) {
+			actor := args[0].(*Actor)
+			return g.IsInTalkingRange(g.Player, actor), nil
 		},
 		"PlayerAddItem": func(args ...interface{}) (interface{}, error) {
 			newItem := g.NewItemFromString(args[1].(string))

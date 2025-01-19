@@ -97,7 +97,7 @@ func (t Tile) WithIsTransparent(value bool) Tile {
 
 func (t Tile) ToRecord() recfile.Record {
 	return recfile.Record{
-		recfile.Field{Name: "GetIcon", Value: string(t.Icon.Char)},
+		recfile.Field{Name: "Icon", Value: string(t.Icon.Char)},
 		recfile.Field{Name: "Fg", Value: recfile.RGBStr(t.Icon.Fg)},
 		recfile.Field{Name: "Bg", Value: recfile.RGBStr(t.Icon.Bg)},
 		recfile.Field{Name: "IsWalkable", Value: recfile.BoolStr(t.IsWalkable)},
@@ -110,7 +110,7 @@ func NewTileFromRecord(record recfile.Record) Tile {
 	tile := Tile{}
 	for _, field := range record {
 		switch field.Name {
-		case "GetIcon":
+		case "Icon":
 			tile.Icon.Char = []rune(field.Value)[0]
 		case "Fg":
 			tile.Icon.Fg = field.AsRGB(",")

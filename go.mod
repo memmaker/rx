@@ -1,21 +1,19 @@
 module contractor
 
-go 1.23.1
-
-toolchain go1.23.2
+go 1.23.4
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
-	github.com/gdamore/tcell/v2 v2.7.4
+	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/hajimehoshi/ebiten/v2 v2.8.6
 	github.com/kelindar/binary v1.0.19
-	github.com/memmaker/go v0.0.0-20241228064122-56c68e0f751d
+	github.com/memmaker/go v0.0.0-20250118080557-8fc427b4c87b
 	golang.org/x/image v0.23.0
 )
 
 require (
 	github.com/ebitengine/oto/v3 v3.3.2 // indirect
-	github.com/ebitengine/purego v0.8.1 // indirect
+	github.com/ebitengine/purego v0.8.2 // indirect
 )
 
 require (
@@ -33,7 +31,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 )

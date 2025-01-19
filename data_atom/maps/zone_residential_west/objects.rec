@@ -1,8 +1,34 @@
 %rec: default
 
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (23,20)
+
 Category: ClosedDoor
 Description: a door
-Position: (25,16)
+Position: (43,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (13,18)
+
+Category: ClosedDoor
+Description: a door
+Position: (68,5)
+
+Category: ClosedDoor
+Description: a door
+Position: (46,6)
+
+Category: ClosedDoor
+Description: a door
+Position: (22,16)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (23,3)
 
 Category: Bed
 Description: a bed
@@ -11,81 +37,22 @@ Position: (41,7)
 
 Category: ClosedDoor
 Description: a door
-Position: (22,18)
+Position: (19,18)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (11,15)
+Position: (11,7)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (35,20)
+Position: (14,20)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (41,20)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (26,20)
-
-Category: ClosedDoor
-Description: a door
-Position: (66,7)
-
-Category: ClosedDoor
-Description: a door
-Position: (47,19)
-
-Category: ClosedDoor
-Description: a door
-Position: (34,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (22,16)
-
-Category: ClosedDoor
-Description: a door
-Position: (16,4)
-
-Category: ClosedDoor
-Description: a door
-Position: (16,16)
-
-Category: NamedLocation
-Identifier: taxi_stand
-Position: (78,18)
-
-Category: ClosedDoor
-Description: a door
-Position: (40,4)
-
-Category: ClosedDoor
-Description: a door
-Position: (68,5)
-
-Category: ClosedDoor
-Description: a door
-Position: (31,18)
-
-Category: LockedDoor
-Description: a door
-LockFlag: residential_locked_key
-Position: (60,3)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (32,3)
-
-Category: ClosedDoor
-Description: a door
-Position: (66,22)
+Position: (26,3)
 
 Category: Terminal
 Name: Taxi
@@ -97,26 +64,257 @@ Position: (77,20)
 
 Category: ClosedDoor
 Description: a door
-Position: (46,6)
+Position: (34,18)
+
+Category: ClosedDoor
+Description: a door
+Position: (65,18)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
 Position: (17,7)
 
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (20,3)
+
 Category: ClosedDoor
 Description: a door
-Position: (40,16)
+Position: (19,6)
+
+Category: ClosedDoor
+Description: a door
+Position: (37,6)
+
+Category: ClosedDoor
+Description: a door
+Position: (16,18)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (29,15)
+
+Category: ClosedDoor
+Description: a door
+Position: (28,4)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (20,20)
+
+Category: ClosedDoor
+Description: a door
+Position: (9,5)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (38,15)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (11,15)
+
+Category: ClosedDoor
+Description: a door
+Position: (66,22)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (41,20)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (29,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (16,4)
+
+Category: NamedLocation
+Identifier: at_the_street
+Position: (72,11)
+
+Category: ClosedDoor
+Description: a door
+Position: (19,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (16,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (43,16)
+
+Category: LockedDoor
+Description: a door
+LockFlag: terra_vitae_entrance_key
+Position: (67,2)
+
+Category: ClosedDoor
+Description: a door
+Position: (47,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (31,6)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (32,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (13,6)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (23,15)
+
+Category: ClosedDoor
+Description: a door
+Position: (10,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (16,6)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (38,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (28,18)
+
+Category: ClosedDoor
+Description: a door
+Position: (28,6)
+
+Category: ClosedDoor
+Description: a door
+Position: (63,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (9,17)
+
+Category: ClosedDoor
+Description: a door
+Position: (22,18)
+
+Category: ClosedDoor
+Description: a door
+Position: (49,17)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (35,20)
+
+Category: ClosedDoor
+Description: a door
+Position: (25,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (25,6)
+
+Category: ClosedDoor
+Description: a door
+Position: (22,6)
+
+Category: ClosedDoor
+Description: a door
+Position: (48,5)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
 Position: (17,3)
 
+Category: ClosedDoor
+Description: a door
+Position: (13,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (66,7)
+
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (35,15)
+Position: (41,3)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (11,20)
+
+Category: NamedLocation
+Identifier: taxi_stand
+Position: (78,18)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (41,15)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (14,7)
+
+Category: LockedDoor
+Description: a door
+LockFlag: resident_key_1
+Position: (25,18)
+
+Category: ClosedDoor
+Description: a door
+Position: (31,4)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (17,15)
+
+Category: ClosedDoor
+Description: a door
+Position: (47,19)
+
+Category: BrokenDoor
+Description: a broken door
+Position: (37,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (10,18)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (20,7)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (26,20)
+
+Category: ClosedDoor
+Description: a door
+Position: (60,19)
 
 Category: Transition
 Description: CHANGEME
@@ -127,70 +325,12 @@ Position: (78,22)
 
 Category: ClosedDoor
 Description: a door
-Position: (49,17)
+Position: (31,16)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (23,15)
-
-Category: NamedLocation
-Identifier: taxi_driver
-Position: (78,20)
-
-Category: ClosedDoor
-Description: a door
-Position: (43,16)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (20,20)
-
-Category: ClosedDoor
-Description: a door
-Position: (10,18)
-
-Category: ClosedDoor
-Description: a door
-Position: (43,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (10,6)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (41,15)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (20,3)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (32,7)
-
-Category: ClosedDoor
-Description: a door
-Position: (19,18)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (29,20)
-
-Category: ClosedDoor
-Description: a door
-Position: (46,4)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (11,7)
+Position: (38,20)
 
 Category: Bed
 Description: a bed
@@ -199,125 +339,7 @@ Position: (20,15)
 
 Category: ClosedDoor
 Description: a door
-Position: (22,4)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (14,20)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (26,7)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (11,3)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (17,20)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (20,7)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (38,15)
-
-Category: ClosedDoor
-Description: a door
-Position: (13,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (13,4)
-
-Category: LockedDoor
-Description: a door
-LockFlag: terra_vitae_entrance_key
-Position: (67,2)
-
-Category: ClosedDoor
-Description: a door
-Position: (31,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (28,18)
-
-Category: ClosedDoor
-Description: a door
-Position: (10,16)
-
-Category: ClosedDoor
-Description: a door
-Position: (19,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (13,18)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (32,20)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (41,3)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (38,3)
-
-Category: ClosedDoor
-Description: a door
-Position: (10,4)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (23,3)
-
-Category: ClosedDoor
-Description: a door
-Position: (63,4)
-
-Category: ClosedDoor
-Description: a door
-Position: (28,16)
-
-Category: ClosedDoor
-Description: a door
-Position: (37,18)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (29,15)
-
-Category: ClosedDoor
-Description: a door
-Position: (31,16)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (29,3)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (35,3)
+Position: (40,6)
 
 Category: Bed
 Description: a bed
@@ -326,77 +348,24 @@ Position: (35,7)
 
 Category: ClosedDoor
 Description: a door
-Position: (37,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (37,16)
-
-Category: ClosedDoor
-Description: a door
-Position: (16,6)
+Position: (31,18)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (14,3)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (11,20)
+Position: (26,15)
 
 Category: ClosedDoor
 Description: a door
-Position: (19,16)
+Position: (34,4)
 
 Category: ClosedDoor
 Description: a door
-Position: (25,6)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (14,15)
-
-Category: BrokenDoor
-Description: a broken door
-Position: (37,4)
-
-Category: ClosedDoor
-Description: a door
-Position: (43,4)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (29,7)
+Position: (40,4)
 
 Category: ClosedDoor
 Description: a door
 Position: (34,16)
-
-Category: LockedDoor
-Description: a door
-LockFlag: resident_key_1
-Position: (25,18)
-
-Category: ClosedDoor
-Description: a door
-Position: (28,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (9,5)
-
-Category: ClosedDoor
-Description: a door
-Position: (43,19)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (38,20)
 
 Category: ClosedDoor
 Description: a door
@@ -405,67 +374,16 @@ Position: (25,4)
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (23,20)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (38,7)
-
-Category: ClosedDoor
-Description: a door
-Position: (40,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (28,4)
-
-Category: ClosedDoor
-Description: a door
-Position: (60,19)
-
-Category: ClosedDoor
-Description: a door
-Position: (16,18)
-
-Category: ClosedDoor
-Description: a door
-Position: (13,16)
-
-Category: ClosedDoor
-Description: a door
-Position: (19,4)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (17,15)
-
-Category: ClosedDoor
-Description: a door
-Position: (34,18)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
 Position: (23,7)
 
-Category: ClosedDoor
-Description: a door
-Position: (22,6)
-
-Category: ClosedDoor
-Description: a door
-Position: (31,4)
-
-Category: ClosedDoor
-Description: a door
-Position: (65,18)
-
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (14,7)
+Position: (32,15)
+
+Category: ClosedDoor
+Description: a door
+Position: (43,6)
 
 Category: Transition
 Description: CHANGEME
@@ -476,36 +394,122 @@ Position: (67,1)
 
 Category: ClosedDoor
 Description: a door
+Position: (22,4)
+
+Category: ClosedDoor
+Description: a door
+Position: (10,6)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (14,3)
+
+Category: NamedLocation
+Identifier: taxi_driver
+Position: (78,20)
+
+Category: ClosedDoor
+Description: a door
+Position: (37,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (10,16)
+
+Category: ClosedDoor
+Description: a door
+Position: (13,4)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (35,15)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (17,20)
+
+Category: LockedDoor
+Description: a door
+LockFlag: residential_locked_key
+Position: (60,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (34,6)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (29,20)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (32,20)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (29,3)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (26,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (37,18)
+
+Category: ClosedDoor
+Description: a door
+Position: (19,16)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (38,3)
+
+Category: ClosedDoor
+Description: a door
+Position: (43,19)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (32,7)
+
+Category: ClosedDoor
+Description: a door
+Position: (40,16)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (14,15)
+
+Category: ClosedDoor
+Description: a door
+Position: (28,16)
+
+Category: Bed
+Description: a bed
+Owner: CHANGEME
+Position: (35,3)
+
+Category: ClosedDoor
+Description: a door
 Position: (40,18)
 
 Category: ClosedDoor
 Description: a door
-Position: (48,5)
-
-Category: ClosedDoor
-Description: a door
-Position: (9,17)
-
-Category: ClosedDoor
-Description: a door
-Position: (47,16)
-
-Category: ClosedDoor
-Description: a door
-Position: (34,4)
+Position: (46,4)
 
 Category: Bed
 Description: a bed
 Owner: CHANGEME
-Position: (26,3)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (32,15)
-
-Category: Bed
-Description: a bed
-Owner: CHANGEME
-Position: (26,15)
+Position: (11,3)
 

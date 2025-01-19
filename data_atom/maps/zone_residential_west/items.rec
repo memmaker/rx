@@ -1,27 +1,6 @@
 %rec: default
 
 Category: lockpicks
-Name: electronic_lockpick
-Description: E-Pick
-Cost: 120
-LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
-Position: (16,7)
-
-Category: lockpicks
-Name: electronic_lockpick
-Description: E-Pick
-Cost: 120
-LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
-Position: (29,3)
-
-Category: lockpicks
-Name: mechanical_lockpick
-Description: M-Pick
-Cost: 120
-LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
-Position: (44,15)
-
-Category: lockpicks
 Name: mechanical_lockpick
 Description: M-Pick
 Cost: 120
@@ -35,14 +14,25 @@ Cost: 120
 LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
 Position: (44,7)
 
-Category: Notes
-Name: terra_vitae_pamphlet
-Description: Terra Vitae leaflet
-TextFile: terra_vitae_pamphlet
-Weight: 1
-Cost: 1
-pickupflag: KnowsAboutTerraVitae
-Position: (26,19)
+Category: Books
+Name: skillbook_
+Description: Killing: From a Distance
+skill_bonus: ranged_combat(5)
+Position: (25,7)
+
+Category: lockpicks
+Name: electronic_lockpick
+Description: E-Pick
+Cost: 120
+LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
+Position: (16,7)
+
+Category: lockpicks
+Name: electronic_lockpick
+Description: E-Pick
+Cost: 120
+LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
+Position: (29,3)
 
 Category: Notes
 Name: terra_vitae_pamphlet
@@ -53,16 +43,26 @@ Cost: 1
 pickupflag: KnowsAboutTerraVitae
 Position: (37,3)
 
-Category: Books
-Name: skillbook_
-Description: Killing: From a Distance
-skill_bonus: ranged_combat(5)
-Position: (25,7)
-
 Category: lockpicks
 Name: mechanical_lockpick
 Description: M-Pick
 Cost: 120
 LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
 Position: (23,19)
+
+Category: lockpicks
+Name: mechanical_lockpick
+Description: M-Pick
+Cost: 120
+LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
+Position: (44,15)
+
+Category: Notes
+Name: terra_vitae_pamphlet
+Description: Terra Vitae leaflet
+TextFile: terra_vitae_pamphlet
+Weight: 1
+Cost: 1
+pickupflag: KnowsAboutTerraVitae
+Position: (26,19)
 

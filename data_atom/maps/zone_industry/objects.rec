@@ -14,3 +14,10 @@ TargetMap: zone_residential_south
 TargetLocation: street_to_industry
 Position: (43,22)
 
+Category: Transition
+Description: a street sign (transition)
+Location: street_to_spaceport
+TargetMap: zone_spaceport
+TargetLocation: street_to_industry
+Position: (79,7)
+

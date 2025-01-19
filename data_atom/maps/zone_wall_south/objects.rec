@@ -1,8 +1,14 @@
 %rec: default
 
+Category: Terminal
+Description: a terminal
+Dialogue: CHANGEME
+Position: (50,12)
+
 Category: LockedDoor
 Description: a door
-LockFlag: CHANGEME
+LockFlag: exterior_airlock_closed
+IsFlagControlled: true
 Position: (41,16)
 
 Category: Terminal
@@ -17,7 +23,8 @@ Position: (41,10)
 
 Category: LockedDoor
 Description: a door
-LockFlag: CHANGEME
+LockFlag: interior_airlock_closed
+IsFlagControlled: true
 Position: (41,14)
 
 Category: Transition
@@ -27,8 +34,23 @@ TargetMap: zone_residential_south
 TargetLocation: street_to_wall
 Position: (42,0)
 
-Category: Terminal
-Description: a terminal
-Dialogue: CHANGEME
-Position: (50,12)
+Category: StateChanger
+Description: a switch
+#
+state_0_label: Airlock sealed
+state_0_change: SetFlag('interior_airlock_closed') && SetFlag('exterior_airlock_closed')
+state_0_rune: S
+#
+state_1_label: Airlock open (*DANGER*)
+state_1_change: ClearFlag('interior_airlock_closed') && ClearFlag('exterior_airlock_closed')
+state_1_rune: X
+#
+state_2_label: Airlock Interior Door Open
+state_2_change: ClearFlag('interior_airlock_closed') && SetFlag('exterior_airlock_closed')
+state_2_rune: I
+#
+state_3_label: Airlock Exterior Door Open
+state_3_change: ClearFlag('exterior_airlock_closed') && SetFlag('interior_airlock_closed')
+state_3_rune: E
+Position: (42,14)
 

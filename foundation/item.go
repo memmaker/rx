@@ -1,8 +1,8 @@
 package foundation
 
 import (
-    "contractor/d100"
-    "contractor/gridmap"
+	"contractor/d100"
+	"contractor/gridmap"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
@@ -77,6 +77,7 @@ type Item interface {
 	InventoryNameWithColors(lineColorCode string) string
 	InventoryNameWithColorsAndShortcut(invItemColorCode string) string
 	LongNameWithColors(colorCode string) string
+	ShortNameWithColors(colorCode string) string
 	FullDescription(colorCode string) string
 	Shortcut() rune
 	DisplayLength() int

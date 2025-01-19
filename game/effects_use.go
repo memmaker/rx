@@ -47,7 +47,7 @@ func showTime(g *GameState, user *Actor) []foundation.Animation {
 
 func uncloak(g *GameState, user *Actor) []foundation.Animation {
 	user.GetFlags().Unset(foundation.FlagActiveCamouflage)
-	user.GetFlags().Unset(foundation.FlagSleep)
+	user.WakeUp()
 	uncloakAnim, _ := g.ui.GetAnimUncloakAtPosition(user, user.Position())
 	return []foundation.Animation{uncloakAnim}
 }
@@ -110,8 +110,8 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 		DamageAmount:    damageDone,
 		BodyPart:        d100.Body,
 	}
-	userDamageAnim := g.damageActor(damage, user)
-	userDamageAnim.SetFollowUp([]foundation.Animation{flyFromUserAnim})
+	userDamageAnims := g.applyDamageToActorAnimated(damage, user)
+	userDamageAnims[0].SetFollowUp([]foundation.Animation{flyFromUserAnim})
 
 	var enemyAnims []foundation.Animation
 
@@ -126,14 +126,14 @@ func drainLife(g *GameState, user *Actor) []foundation.Animation {
 	}
 	for _, actor := range affectedActors {
 		flyToEnemyAnim, _ := g.ui.GetAnimProjectile('☼', "LightRed", ballPos, actor.Position(), nil)
-		damageAnims := g.damageActor(damage, actor)
-		flyToEnemyAnim.SetFollowUp(OneAnimation(damageAnims))
+		damageAnims := g.applyDamageToActorAnimated(damage, actor)
+		flyToEnemyAnim.SetFollowUp(damageAnims)
 		enemyAnims = append(enemyAnims, flyToEnemyAnim)
 	}
 
 	flyFromUserAnim.SetFollowUp(enemyAnims)
 
-	return OneAnimation(userDamageAnim)
+	return userDamageAnims
 }
 
 func noAnim(h func(g *GameState, user *Actor)) func(*GameState, *Actor) []foundation.Animation {
@@ -279,7 +279,7 @@ func aggroMonsters(g *GameState, actor *Actor) []foundation.Animation {
 		if monster == g.Player {
 			continue
 		}
-		monster.GetFlags().Unset(foundation.FlagSleep)
+		monster.WakeUp()
 	}
 	g.msg(foundation.Msg("You hear a loud noise"))
 	return []foundation.Animation{waveEffect}

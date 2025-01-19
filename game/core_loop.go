@@ -28,6 +28,12 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 	// AI Actions (incl. Behaviours, Goals, Schedules) and State Changes happen here
 	g.enemyMovement(playerTimeTakenForTurn)
 
+	if didCancel {
+		g.ui.SkipAnimations()
+	} else {
+		didCancel = g.ui.AnimatePending() // animate enemy actions
+	}
+
 	// EXPERIMENTAL and dangerous..
 	// we simulate all actors on all loaded maps..
 	if g.config.SimulateAllLoadedMaps {
@@ -46,13 +52,15 @@ func (g *GameState) endPlayerTurn(playerTimeTakenForTurn int) {
 		g.onOtherMaps(func(mapName string) { g.afterTurnEffectsForActors() })
 	}
 
+	g.ui.SkipAnimations()
+
 	// trigger turn based events
 	g.afterTurn()
 
 	if didCancel {
 		g.ui.SkipAnimations()
 	} else {
-		g.ui.AnimatePending() // animate enemy actions
+		g.ui.AnimatePending() // animate afterTurn effects
 	}
 
 	// This is where level transitions are handled

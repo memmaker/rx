@@ -370,6 +370,7 @@ func (g *GameState) GetHudStats() foundation.HudValueMap {
 	uiStats[foundation.HudActionPointsMax] = g.Player.GetCharSheet().GetActionPointsMax()
 
 	uiStats[foundation.HudArmorString] = g.Player.GetArmorString()
+	uiStats[foundation.HudArmorRating] = g.Player.GetArmorRating()
 
 	return uiStats
 }

@@ -27,6 +27,7 @@ const (
 	ObjectBed
 	ObjectElevator
 	ObjectPushBox
+	ObjectStateChanger
 	ObjectExplodingPushBox
 )
 
@@ -60,6 +61,8 @@ func (o ObjectCategory) String() string {
 		return "Push Box"
 	case ObjectExplodingPushBox:
 		return "Exploding Push Box"
+	case ObjectStateChanger:
+		return "A lever or switch"
 	default:
 		return "Unknown"
 	}
@@ -96,13 +99,15 @@ func ObjectCategoryFromString(s string) ObjectCategory {
 		return ObjectPushBox
 	case "explodingpushbox":
 		return ObjectExplodingPushBox
+	case "statechanger":
+		return ObjectStateChanger
 	default:
 		return -1
 	}
 }
 
 func (o ObjectCategory) IsTrap() bool {
-	return o >= ObjectTrap && o <= ObjectTrap
+	return o == ObjectTrap
 }
 
 func (o ObjectCategory) LowerString() string {
@@ -134,6 +139,8 @@ func (o ObjectCategory) LowerString() string {
 		return "pushbox"
 	case ObjectExplodingPushBox:
 		return "explodingpushbox"
+	case ObjectStateChanger:
+		return "statechanger"
 	case ObjectBed:
 		return "bed"
 	default:

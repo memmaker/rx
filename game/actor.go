@@ -3,7 +3,6 @@ package game
 import (
 	"contractor/d100"
 	"contractor/foundation"
-	"contractor/fsmai"
 	"contractor/gridmap"
 	"fmt"
 	"github.com/memmaker/go/fxtools"
@@ -57,12 +56,8 @@ type Actor struct {
 	DialogueFile                      string
 	InitiateDialogueWithOpeningBranch string
 	ChatterFile                       string
-	TeamName                          string
+	Faction                           string
 
-	EnemyActors map[string]bool
-	EnemyTeams  map[string]bool
-
-	Aggressive   bool
 	GuardingZone string
 
 	AudioBaseName string
@@ -86,6 +81,7 @@ type Actor struct {
 	FoVOrigin         geometry.Point
 	updateFoV         func()
 	updateDijkstraMap func()
+	currentMapName    string
 }
 
 func (a *Actor) SetAugmentToggledHandler(f func(CyberWare, bool)) {
@@ -138,7 +134,7 @@ func (a *Actor) SetCyberWareActive(ware CyberWare, active bool) {
 	}
 }
 
-func (a *Actor) GetState() fsmai.StateName {
+func (a *Actor) GetState() StateName {
 	return a.FSM.State()
 }
 
@@ -166,7 +162,7 @@ func NewPlayer(name string, icon textiles.TextIcon, character *d100.CharSheet) *
 	player.SetDisplayName(name)
 	player.SetIcon(icon)
 	player.SetInternalName("player")
-	player.TeamName = "player"
+	player.Faction = "player"
 	return player
 }
 
@@ -186,8 +182,6 @@ func NewActor() *Actor {
 		Body:              d100.HumanBodyParts,
 		BodyDamage:        make(map[d100.BodyPart]int),
 		StatusFlags:       foundation.NewActorFlags(),
-		EnemyActors:       make(map[string]bool),
-		EnemyTeams:        make(map[string]bool),
 		AudioBaseName:     "human_male",
 		foV:               make(map[geometry.Point]bool),
 	}
@@ -367,6 +361,14 @@ func (a *Actor) Position() geometry.Point {
 }
 func (a *Actor) SetPosition(pos geometry.Point) {
 	a.RawPosition = pos
+}
+
+func (a *Actor) SetMapName(name string) {
+	a.currentMapName = name
+}
+
+func (a *Actor) GetMapName() string {
+	return a.currentMapName
 }
 
 func (a *Actor) Name() string {
@@ -605,7 +607,7 @@ func (a *Actor) IsWounded() bool {
 
 func (a *Actor) SetSleeping() {
 	flags := a.GetFlags()
-	flags.Set(foundation.FlagSleep)
+	flags.SetFlagTo(foundation.FlagSleep, 10)
 }
 
 func (a *Actor) IsBlind() bool {
@@ -642,7 +644,7 @@ func (a *Actor) MovementSpeed() int {
 	speed := a.GetBasicSpeed()
 
 	if a.HasFlag(foundation.FlagRunning) {
-		speed *= 6
+		speed *= 4
 	}
 
 	if a.IsCrippled(d100.Legs) {
@@ -851,41 +853,18 @@ func (a *Actor) getAudioName() string {
 }
 
 func (a *Actor) GetTeam() string {
-	return a.TeamName
-}
-
-func (a *Actor) AddToEnemyActors(name string) {
-	if a.InternalName == name {
-		return
-	}
-	a.EnemyActors[name] = true
-}
-
-func (a *Actor) AddToEnemyTeams(name string) {
-	if a.TeamName == name {
-		return
-	}
-	a.EnemyTeams[name] = true
+	return a.Faction
 }
 
 func (a *Actor) IsHostileTowards(other *Actor) bool {
 	if a.FSM.IsHostileTowards(other) {
 		return true
 	}
-	if a.IsAggressive() && other.TeamName != a.TeamName {
-		return true
-	}
-	if _, exists := a.EnemyActors[other.GetInternalName()]; exists {
-		return true
-	}
-	if _, exists := a.EnemyTeams[other.GetTeam()]; exists {
-		return true
-	}
 	return false
 }
 
 func (a *Actor) IsPanicking() bool {
-	return a.FSM.State() == fsmai.StatePanic
+	return a.FSM.State() == StatePanic
 }
 
 func (a *Actor) LookInfo() string {
@@ -910,7 +889,7 @@ func (a *Actor) LookInfo() string {
 func (a *Actor) ActionDescription() string {
 	state := a.FSM.State()
 	action := state.ToString()
-	if state == fsmai.StateIdle && a.Schedule != nil {
+	if state == StateIdle && a.Schedule != nil {
 		action = a.Schedule.CurrentTimeSlot().Description()
 	}
 	// Activity
@@ -977,10 +956,6 @@ func (a *Actor) injuredString() string {
 	return "scratched"
 }
 
-func (a *Actor) RemoveEnemy(other *Actor) {
-	delete(a.EnemyActors, other.GetInternalName())
-}
-
 func (a *Actor) SetIcon(icon textiles.TextIcon) {
 	a.Icon = icon
 }
@@ -996,12 +971,12 @@ func (a *Actor) SetXP(xp int) {
 func (a *Actor) ToRecord() recfile.Record {
 	actorRecord := append(recfile.Record{
 		recfile.Field{Name: "Name", Value: a.DisplayName},
-		recfile.Field{Name: "GetInternalName", Value: a.InternalName},
-		recfile.Field{Name: "GetIcon", Value: string(a.Icon.Char)},
+		recfile.Field{Name: "InternalName", Value: a.InternalName},
+		recfile.Field{Name: "Icon", Value: string(a.Icon.Char)},
 		recfile.Field{Name: "Fg", Value: recfile.RGBStr(a.Icon.Fg)},
 		recfile.Field{Name: "Bg", Value: recfile.RGBStr(a.Icon.Bg)},
 		recfile.Field{Name: "DialogueFile", Value: a.DialogueFile},
-		recfile.Field{Name: "Team", Value: a.TeamName},
+		recfile.Field{Name: "Faction", Value: a.Faction},
 		recfile.Field{Name: "XP", Value: recfile.IntStr(a.XP)},
 	}, a.CharSheet.ToRecord()...)
 	return actorRecord
@@ -1118,6 +1093,12 @@ func (a *Actor) GetDijkstraMap() map[geometry.Point]int {
 	}
 	return a.dijkstraMap
 }
+func (a *Actor) SetDijkstraMapDirty() {
+	a.dijkstraMap = nil
+}
+func (a *Actor) SetFoVDirty() {
+	a.FoVOrigin = geometry.Point{-1, -1}
+}
 func (a *Actor) GetMaxThrowRange() int {
 	strength := a.GetCharSheet().GetStat(d100.Strength)
 	return strength * 2
@@ -1145,7 +1126,7 @@ func (a *Actor) SetStance(stance ActorStance) {
 }
 
 func (a *Actor) IsAlliedWith(player *Actor) bool {
-	return a.TeamName == player.TeamName
+	return a.Faction == player.Faction
 }
 
 func (a *Actor) SetChatterFile(value string) {
@@ -1377,18 +1358,6 @@ func (a *Actor) IsHeavilyInjured() bool {
 	return a.GetHitPoints() < a.GetHitPointsMax()/3
 }
 
-func (a *Actor) IsAggressive() bool {
-	return a.Aggressive
-}
-
-func (a *Actor) SetNeutral() {
-	a.Aggressive = false
-}
-
-func (a *Actor) SetAggressive() {
-	a.Aggressive = true
-}
-
 func (a *Actor) HasPerk(perk d100.Perk) bool {
 	return a.CharSheet.HasPerk(perk)
 }
@@ -1421,7 +1390,7 @@ func (a *Actor) HasActionPoints() bool {
 }
 
 func (a *Actor) IsIdle() bool {
-	return a.FSM.State() == fsmai.StateIdle
+	return a.FSM.State() == StateIdle
 }
 
 func (a *Actor) HasWatch() bool {
@@ -1439,7 +1408,7 @@ func (a *Actor) InitWithGameState(g *GameState) {
 		})
 	}
 
-	a.FSM.RestoreState(g, a, DefaultBehaviorFactory(fsmai.StateIdle), DefaultBehaviorFactory)
+	a.FSM.RestoreState(g, a, DefaultBehaviorFactory(StateIdle), DefaultBehaviorFactory)
 
 	a.updateFoV = func() {
 		g.updateFoV(a)
@@ -1476,6 +1445,17 @@ func (a *Actor) consumePathStep() {
 	if len(a.CurrentPath) > 0 && a.CurrentPath[0] == a.Position() {
 		a.CurrentPath = a.CurrentPath[1:]
 	}
+}
+
+func (a *Actor) GetArmorRating() int {
+	if !a.GetInventory().HasArmorEquipped() {
+		return 0
+	}
+	return a.GetInventory().GetArmor().GetProtectionRating()
+}
+
+func (a *Actor) IsSneaky() bool {
+	return a.HasFlag(foundation.FlagSneaking) || a.HasFlag(foundation.FlagActiveCamouflage)
 }
 
 type StatChange struct {

@@ -20,6 +20,9 @@ Body Load
 Exploder
  - All attacks on explosives trigger them, instead of only incendiary bullets and lasers
 
+Perfect Shot
+ - Cap for hit chance is 100% instead of 95%
+
 Gun Kata
  - You can activate this perk to shoot at multiple enemies in a single turn, while also gaining 50% dodge chance.
  - Requires Pistol, Rifle, SMG, or Shotgun equipped.

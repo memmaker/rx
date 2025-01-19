@@ -242,6 +242,8 @@ type GameUI interface {
 	GetAnimEnchantWeapon(actor ActorForUI, position geometry.Point, done func()) Animation
 	GetAnimVorpalizeWeapon(origin geometry.Point, done func()) []Animation
 	GetAnimConfuse(position geometry.Point, done func()) Animation
+	GetAnimEnterCombat(actor ActorForUI, done func()) Animation
+	GetAnimSuspicious(actor ActorForUI, done func()) Animation
 	GetAnimBreath(flight []geometry.Point, done func()) []Animation
 	GetAnimBackgroundColor(position geometry.Point, colorName string, frameCount int, done func()) Animation
 	GetAnimAppearance(actor ActorForUI, position geometry.Point, done func()) Animation

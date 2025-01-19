@@ -105,7 +105,8 @@ func (u *UI) initUI(palette textiles.ColorPalette, invColors map[foundation.Item
 	u.rightPanel.SetWordWrap(false)
 
 	u.lowerRightPanel = cview.NewTextView()
-	u.lowerRightPanel.SetScrollable(false)
+	u.lowerRightPanel.SetScrollable(true)
+	u.lowerRightPanel.SetScrollBarVisibility(cview.ScrollBarNever)
 	u.lowerRightPanel.SetDynamicColors(true)
 	u.lowerRightPanel.SetWrap(false)
 	u.lowerRightPanel.SetWordWrap(false)

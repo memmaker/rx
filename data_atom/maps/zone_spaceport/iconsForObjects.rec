@@ -65,23 +65,3 @@ Icon: ⌂
 Foreground: dark_gray_7
 Background: yellow_3
 
-Name: RedLight
-Icon: ☼
-Foreground: yellow_2
-Background: black
-
-Name: frag_mine
-Icon: ☼
-Foreground: yellow_2
-Background: black
-
-Name: Readable
-Icon: ≡
-Foreground: gray_3
-Background: light_blue_2
-
-Name: StateChanger
-Icon: ±
-Foreground: neon_purple_2
-Background: gray_8
-

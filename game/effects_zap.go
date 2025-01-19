@@ -121,10 +121,13 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 		if g.currentMap().IsActorAt(hitPos) {
 			actor := g.currentMap().ActorAt(hitPos)
 			if actor.IsAlive() {
-				freeze := func() {
-					g.msg(foundation.HiLite("%s is frozen", actor.Name()))
-					actor.GetFlags().Set(foundation.FlagHeld)
-				}
+				/*
+					freeze := func() {
+						g.msg(foundation.HiLite("%s is frozen", actor.Name()))
+						actor.GetFlags().Set(foundation.FlagHeld)
+					}
+
+				*/
 				damageWithSource := SourcedDamage{
 					NameOfThing:     "ice ray",
 					Attacker:        zapper,
@@ -133,9 +136,9 @@ func coldRay(g *GameState, zapper *Actor, aimPos geometry.Point) []foundation.An
 					DamageType:      DamageTypePoison,
 					DamageAmount:    damage,
 				}
-				damageAnim := g.damageActor(damageWithSource, actor)
-				damageAnim.SetDoneCallback(freeze)
-				return OneAnimation(damageAnim)
+				damageAnim := g.applyDamageToActorAnimated(damageWithSource, actor)
+				//damageAnim.SetDoneCallback(freeze)
+				return damageAnim
 			}
 		}
 		return nil
@@ -466,18 +469,22 @@ func holdTarget(g *GameState, zapper *Actor, targetPos geometry.Point, params fo
 
 	return animations
 }
+
 func delayedSleepTarget(g *GameState, zapper *Actor, targetPos geometry.Point, params foundation.Params) []foundation.Animation {
 	turnsUntilActivation := params.GetIntOrDefault("turns_until_activation", 3)
-	sleepTurns := params.GetIntOrDefault("sleep_turns", 10)
+	sleepTurns := params.GetIntOrDefault("sleep_turns", 20)
 
 	var animations []foundation.Animation
 
 	if g.currentMap().IsActorAt(targetPos) {
 		targetActor := g.currentMap().ActorAt(targetPos)
 
+		g.onActorCriminalActivity(zapper, targetActor, foundation.ChatterSneakyAttackNoticed)
+
 		g.metronome.AddTimed(NewDelayedEffect(turnsUntilActivation, "Sleep", func() {
 			targetActor.GetFlags().SetFlagTo(foundation.FlagSleep, sleepTurns)
 			g.msg(foundation.HiLite("%s falls asleep", targetActor.Name()))
+			g.onActorCriminalActivity(nil, targetActor, foundation.ChatterInvestigating)
 		}))
 	}
 
@@ -608,7 +615,7 @@ func (g *GameState) damageLocation(damage SourcedDamage, targetPos geometry.Poin
 
 	if g.currentMap().IsActorAt(targetPos) {
 		defender := g.currentMap().ActorAt(targetPos)
-		return OneAnimation(g.damageActor(damage, defender))
+		return g.applyDamageToActorAnimated(damage, defender)
 	} else if g.currentMap().IsObjectAt(targetPos) {
 		object := g.currentMap().ObjectAt(targetPos)
 		return object.OnDamage(damage)
@@ -646,6 +653,7 @@ func (g *GameState) damageItem(damage SourcedDamage, item foundation.Item) {
 type SourcedDamage struct {
 	NameOfThing      string
 	Attacker         *Actor
+	WeaponItem       *Weapon
 	IsObviousAttack  bool
 	TargetingMode    TargetingMode
 	DamageType       DamageType
@@ -973,24 +981,9 @@ func (d SourcedDamage) WithOverkill() SourcedDamage {
 	return d
 }
 
-func (g *GameState) trySetHostile(affected *Actor, sourceOfTrouble *Actor) {
-	if affected == g.Player ||
-		affected == sourceOfTrouble ||
-		sourceOfTrouble == nil ||
-		affected == nil ||
-		!affected.IsAlive() ||
-		affected.IsPanicking() ||
-		!affected.CanSee(sourceOfTrouble.Position()) {
-		return
-	}
-
-	affected.FSM.SendEvent(NewProvokedEvent(sourceOfTrouble))
-
-	if sourceOfTrouble == g.Player {
-		g.ui.UpdateVisibleActors()
-	}
-
-	return
+func (d SourcedDamage) WithWeaponUsed(item *Weapon) SourcedDamage {
+	d.WeaponItem = item
+	return d
 }
 
 func (g *GameState) getLineOfFire(origin geometry.Point, targetPos geometry.Point) []geometry.Point {

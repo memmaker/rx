@@ -176,7 +176,7 @@ func (g *GameState) playerDrown(defender *Actor) {
 			BodyPart:        d100.Body,
 		}
 		g.msg(foundation.HiLite("You drown %s", defender.Name()))
-		g.ui.AddAnimations(OneAnimation(g.damageActor(sourcedDamage, defender)))
+		g.ui.AddAnimations(g.applyDamageToActorAnimated(sourcedDamage, defender))
 		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	} else {
 		g.msg(foundation.HiLite("You fail to sneak up on %s", defender.Name()))
@@ -204,7 +204,7 @@ func (g *GameState) playerBackstab(defender *Actor) {
 			BodyPart:        d100.Body,
 		}
 		g.msg(foundation.HiLite("You stab %s in the back", defender.Name()))
-		g.ui.AddAnimations(OneAnimation(g.damageActor(sourcedDamage, defender)))
+		g.ui.AddAnimations(g.applyDamageToActorAnimated(sourcedDamage, defender))
 		g.endPlayerTurn(g.Player.timeNeededForMeleeAttack())
 	} else {
 		g.msg(foundation.HiLite("You fail to sneak up on %s", defender.Name()))
@@ -233,27 +233,25 @@ func (g *GameState) actorDisarm(attacker, victim *Actor) {
 		attacker.GetInventory().Equip(weaponTaken)
 
 		if attacker == g.Player {
-			g.trySetHostile(victim, attacker)
 			g.msg(foundation.HiLite("You take the %s from %s", weaponTaken.Name(), victim.Name()))
 			g.endPlayerTurn(attacker.timeNeededForMeleeAttack())
 		} else if victim == g.Player {
 			g.msg(foundation.HiLite("%s takes the %s from you", attacker.Name(), weaponTaken.Name()))
 		} else {
-			g.trySetHostile(victim, attacker)
 			g.msg(foundation.HiLite("%s takes the %s from %s", attacker.Name(), weaponTaken.Name(), victim.Name()))
 		}
 	} else {
 		if attacker == g.Player {
-			g.trySetHostile(victim, attacker)
 			g.msg(foundation.HiLite("%s is able to resist your attempt", victim.Name()))
 			g.endPlayerTurn(attacker.timeNeededForMeleeAttack())
 		} else if victim == g.Player {
 			g.msg(foundation.HiLite("You defend against %s's disarm attempt", attacker.Name()))
 		} else {
-			g.trySetHostile(victim, attacker)
 			g.msg(foundation.HiLite("%s is resisting %s's disarm attempt", victim.Name(), attacker.Name()))
 		}
 	}
+
+	g.onActorCriminalActivity(attacker, victim, foundation.ChatterSneakyAttackNoticed)
 }
 func (g *GameState) playerNonLethalTakedown(victim *Actor) {
 	attackerLuckChance := d100.Percentage(g.Player.GetCharSheet().GetDerivedStat(d100.CriticalChance))
@@ -272,7 +270,10 @@ func (g *GameState) playerNonLethalTakedown(victim *Actor) {
 		g.msg(foundation.HiLite("%s is able to resist your attempt", victim.Name()))
 		g.playerMeleeAttack(victim)
 	}
+
+	g.onActorCriminalActivity(g.Player, victim, foundation.ChatterSneakyAttackNoticed)
 }
+
 func (g *GameState) playerMeleeAttackLocation(targetPos geometry.Point) {
 	if g.currentMap().IsActorAt(targetPos) {
 		defender := g.currentMap().ActorAt(targetPos)
@@ -317,6 +318,7 @@ func (g *GameState) playerMeleeAttack(defender *Actor) {
 	} else {
 		doMeleeAttack(d100.Body)
 	}
+
 }
 
 func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100.BodyPart, mods d100.CombatModifiers) []foundation.Animation {
@@ -336,6 +338,7 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100
 	if hasMeleeWeapon {
 		mainHandItem.Degrade(0.1)
 		attackAudioCue = mainHandItem.GetFireAudioCue(damageWithSource.TargetingMode)
+		damageWithSource = damageWithSource.WithWeaponUsed(mainHandItem)
 	} else {
 		attackAudioCue = attacker.GetMeleeAudioCue(damageWithSource.TargetingMode == TargetingModeKick)
 	}
@@ -345,7 +348,7 @@ func (g *GameState) actorMeleeAttack(attacker *Actor, defender *Actor, part d100
 
 	afterAttackAnimations = append(afterAttackAnimations, animAttackerIndicator)
 
-	damageAnims := g.applyDamageToActorAnimated(attacker, mainHandItem, damageWithSource, defender)
+	damageAnims := g.applyDamageToActorAnimated(damageWithSource, defender)
 	afterAttackAnimations = append(afterAttackAnimations, damageAnims...)
 
 	attacker.GetFlags().Unset(foundation.FlagConcentratedAiming)
@@ -399,7 +402,7 @@ func (g *GameState) actorRangedAttack(attacker *Actor, weaponItem *Weapon, attac
 		if normalRollResult.IsCriticalFailure() {
 			// TODO: Apply critical fail effect..
 		}
-		hitAnimations = g.applyDamageToActorAnimated(attacker, weaponItem, damageWithSource, defender)
+		hitAnimations = g.applyDamageToActorAnimated(damageWithSource, defender)
 	}
 
 	// Reset aiming flag
@@ -480,11 +483,14 @@ func (g *GameState) removeBulletsFromWeapon(weaponItem *Weapon, attackMode Attac
 	return bulletsRemoved, weapon
 }
 
-func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weapon, damageWithSource SourcedDamage, defender *Actor) []foundation.Animation {
+func (g *GameState) applyDamageToActorAnimated(damageWithSource SourcedDamage, defender *Actor) []foundation.Animation {
 	var damageAnims []foundation.Animation
 
 	attackedFlag := fmt.Sprintf("WasAttacked(%s)", defender.GetInternalName())
 	g.gameFlags.Increment(attackedFlag)
+
+	attacker := damageWithSource.Attacker
+	weaponItem := damageWithSource.WeaponItem
 
 	if attacker == g.Player {
 		attackedByPlayer := fmt.Sprintf("WasAttackedByPlayer(%s)", defender.GetInternalName())
@@ -511,9 +517,6 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weap
 			damageAnims = OneAnimation(g.damageActor(damageWithSource, defender))
 		}
 	} else {
-		if damageWithSource.IsObviousAttack {
-			g.trySetHostile(defender, damageWithSource.Attacker)
-		}
 		var playMissSound func() = nil
 		if weaponItem != nil && weaponItem.IsWeapon() {
 			playMissSound = func() {
@@ -530,6 +533,13 @@ func (g *GameState) applyDamageToActorAnimated(attacker *Actor, weaponItem *Weap
 			g.msg(foundation.Msg(fmt.Sprintf("%s misses", attacker.Name())))
 		}
 	}
+
+	if damageWithSource.IsObviousAttack {
+		g.onActorCriminalActivity(attacker, defender, foundation.ChatterAttackNoticed)
+	} else {
+		g.onActorCriminalActivity(attacker, defender, foundation.ChatterSneakyAttackNoticed)
+	}
+
 	return damageAnims
 }
 
@@ -550,9 +560,7 @@ func (g *GameState) damageActor(damage SourcedDamage, victim *Actor) foundation.
 	if didCripple {
 		damage = damage.WithCrippling()
 	}
-	if damage.IsObviousAttack {
-		g.trySetHostile(victim, damage.Attacker)
-	}
+
 	isOverKill := victim.GetHitPoints() <= (-victim.GetHitPointsMax() / 2)
 	if isOverKill {
 		damage = damage.WithOverkill()

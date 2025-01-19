@@ -17,6 +17,7 @@ npc: Hello, I'm Anna Whitaker. I'm a fashion expert here to help you out.
 #
 o_text: I'm looking for some new clothes.
 o_effect: StartTrading
+o_goto: DefaultIntroduction
 #
 o_text: Nothing, I'm good.
 o_effect: Exit

@@ -54,13 +54,26 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 		u.currentMouseX = newX
 		u.currentMouseY = newY
 		if !u.autoRun && action == cview.MouseMove {
+			if u.currentMouseX >= u.settings.MapWidth {
+				// hovered over right panel
+				u.onRightPanelHovered(mousePos)
+				return nil, -1
+			}
 			mapPos := u.ScreenToMap(mousePos)
 			mapInfo := u.game.GetMapInfo(mapPos)
+
+			hoveredActor := u.game.ActorAt(mapPos)
+			if hoveredActor != u.hoveredActor {
+				u.hoveredActor = hoveredActor
+				u.UpdateVisibleActors()
+			}
+
 			if mapInfo.IsEmpty() {
 				u.application.QueueUpdateDraw(u.UpdateLogWindow)
 			} else {
 				u.Print(mapInfo)
 			}
+			return nil, -1
 		}
 	}
 	mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})

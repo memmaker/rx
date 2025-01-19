@@ -1,0 +1,29 @@
+%rec: definitions
+
+var: IMPORT_CONTAINER_FOOD
+set: ContainerWithName('import_container_food')
+
+var: IMPORT_CONTAINER_PARTS
+set: ContainerWithName('import_container_parts')
+
+var: IMPORT_CONTAINER_MILITARY
+set: ContainerWithName('import_container_military')
+
+var: IMPORT_CONTAINER_MEDICAL
+set: ContainerWithName('import_container_medical')
+
+%rec: outcomes
+
+%rec: cancel
+
+%rec: frames
+
+if: true
+do: SaveTimeNow('cargo_imported')
+do: ContainerEnsure(IMPORT_CONTAINER_FOOD, 'binge', 10)
+do: ContainerEnsure(IMPORT_CONTAINER_PARTS, 'binge', 10)
+do: ContainerEnsure(IMPORT_CONTAINER_MILITARY, 'binge', 10)
+do: ContainerEnsure(IMPORT_CONTAINER_MEDICAL, 'binge', 10)
+
+if: IsHoursAfter('cargo_imported', 36)
+do: RestartScript('import_export')

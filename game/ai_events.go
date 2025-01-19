@@ -1,61 +1,59 @@
 package game
 
 import (
-	"contractor/fsmai"
+	"github.com/memmaker/go/geometry"
 )
 
 type LocationEvent struct {
-	Event         fsmai.TransitionEventName
-	NamedLocation MapPosition
+	Event    TransitionEventName
+	Location MapPosition
 }
 
-func (l LocationEvent) Name() fsmai.TransitionEventName {
+func (l LocationEvent) Name() TransitionEventName {
 	return l.Event
 }
 
 type ActorEvent struct {
-	Event fsmai.TransitionEventName
+	Event TransitionEventName
 	Actor *Actor
 }
 
-func (a ActorEvent) Name() fsmai.TransitionEventName {
+func (a ActorEvent) Name() TransitionEventName {
 	return a.Event
 }
-
-func NewProvokedEvent(provoker *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventProvoked, Actor: provoker}
+func NewSuspiciousActivityEvent(mapName string, pos geometry.Point) TransitionEvent {
+	return LocationEvent{Event: EventSuspiciousActivity, Location: MapPosition{
+		MapName:  mapName,
+		Position: pos,
+	}}
+}
+func NewProvokedEvent(provoker *Actor) TransitionEvent {
+	return ActorEvent{Event: EventProvoked, Actor: provoker}
 }
 
-func NewTargetDiedEvent(target *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventTargetDied, Actor: target}
+func NewTargetDiedEvent(target *Actor) TransitionEvent {
+	return ActorEvent{Event: EventTargetDied, Actor: target}
 }
 
-func NewTargetLostEvent(target *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventTargetLost, Actor: target}
+func NewTargetLostEvent(target *Actor) TransitionEvent {
+	return ActorEvent{Event: EventTargetLost, Actor: target}
 }
 
-func NewHeavilyInjuredEvent(threat *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventHeavilyInjured, Actor: threat}
+func NewHeavilyInjuredEvent(threat *Actor) TransitionEvent {
+	return ActorEvent{Event: EventHeavilyInjured, Actor: threat}
 }
 
-func NewEnemySightedEvent(threat *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventEnemySighted, Actor: threat}
+func NewEnemySightedEvent(threat *Actor) TransitionEvent {
+	return ActorEvent{Event: EventEnemySighted, Actor: threat}
 }
 
-func NewCalmedEvent(threat *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventCalmed, Actor: threat}
+func NewCalmedEvent(threat *Actor) TransitionEvent {
+	return ActorEvent{Event: EventCalmed, Actor: threat}
 }
 
-func NewLeaderJoinedEvent(leader *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventLeaderJoined, Actor: leader}
+func NewLeaderJoinedEvent(leader *Actor) TransitionEvent {
+	return ActorEvent{Event: EventLeaderJoined, Actor: leader}
 }
-func NewLeaderLeftEvent() fsmai.TransitionEvent {
-	return fsmai.EmptyEvent{Event: fsmai.EventLeaderLeft}
-}
-func NewMinorCrimeWitnessedEvent(criminal *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventMinorCrimeWitnessed, Actor: criminal}
-}
-
-func NewMajorCrimeWitnessedEvent(criminal *Actor) fsmai.TransitionEvent {
-	return ActorEvent{Event: fsmai.EventMajorCrimeWitnessed, Actor: criminal}
+func NewLeaderLeftEvent() TransitionEvent {
+	return EmptyEvent{Event: EventLeaderLeft}
 }

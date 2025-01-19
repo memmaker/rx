@@ -14,8 +14,13 @@ const nbsp = 0xA0
 // pathological cases can dramatically reach past the limit, such as a very
 // long word.
 func WrapString(s string, lim uint) string {
-	// Initialize a buffer with a slightly larger size to account for breaks
-	init := make([]byte, 0, len(s))
+	if s == "" {
+		return s
+	}
+	if len(s) <= int(lim) {
+		return s
+	}
+	init := make([]byte, 0, len(s)+len(s)/10)
 	buf := bytes.NewBuffer(init)
 
 	var current uint

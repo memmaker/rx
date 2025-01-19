@@ -1,22 +1,118 @@
 
 %rec: definitions
 
-var: DD
-set: ContainerWithName('dead_drop')
+var: ADRIAN
+set: ActorWithName('adrian_voss')
+
+var: BROCHURE_HOLDER
+set: ContainerWithName('ebi_brochure_holder')
+
+var: WORKER
+set: ActorWithName('ebi_worker')
+
+var: DL1
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 1)
+
+var: DL2
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 2)
+
+var: DL3
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 3)
+
+var: DL4
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 4)
+
+var: DL5
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 5)
+
+var: DL6
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 6)
+
+var: DL7
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 7)
+
+var: DL8
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 8)
+
+var: DL9
+set: LocationInZone('zone_residential_west', 'ebi_pamphlet_dropoff', 9)
 
 %rec: outcomes
 
-if: HasFlag('ClientRewardReceived(starter)')
-do: Hilite('>>> You have mail <<<')
+# EBI Worker is dead
+if: IsActorDead(WORKER)
+
+# EBI Worker finished distributing pamphlets
+if: HasFlag('ebi_pamphlets_distributed')
+
+# Player has accepted the job
+if: HasFlag('job_ebi1_accepted')
 
 %rec: cancel
 
+
 %rec: frames
 
-if: IsItemInContainer(DD, 'gold', 250)
-do: SaveTimeNow('dd_01_deposited')
+if: !HasFlag('job_ebi1_accepted') && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_1', 3) && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_2', 3) && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_3', 3)
+do: SaveTimeNow('ebi_pamphlets_received')
 
-if: IsHoursAfter('dd_01_deposited', 6) && IsItemInContainer(DD, 'gold', 250)
-do: ContainerRemoveItem(DD, 'gold', 250)
-do: ContainerAddItem(DD, 'binge', 3)
-do: SetFlag('ClientRewardReceived(starter)')
+if: !HasFlag('job_ebi1_accepted') && IsHoursAfter('ebi_pamphlets_received', 24) && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_1', 3) && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_2', 3) && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_3', 3)
+do: Approach(ADRIAN, WORKER)
+
+if: IsActorInTalkingRange(ADRIAN, WORKER)
+do: SetIdle(ADRIAN)
+do: AddChatter(ADRIAN, 'I need you to spread the word.')
+
+if: true
+do: AddChatter(WORKER, 'I\'ll get right on it.')
+
+if: true
+do: MoveTo(WORKER, 'hq_ebi', 'pamphlet_retrieval')
+
+if: IsActorAtNamedLocation(WORKER, 'hq_ebi', 'pamphlet_retrieval') && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_2', 3) && IsItemInContainer(BROCHURE_HOLDER, 'ebi_pamphlet_3', 3)
+do: ContainerStackTransferTo(BROCHURE_HOLDER, WORKER, 'ebi_pamphlet_1', 3)
+do: ContainerStackTransferTo(BROCHURE_HOLDER, WORKER, 'ebi_pamphlet_2', 3)
+do: ContainerStackTransferTo(BROCHURE_HOLDER, WORKER, 'ebi_pamphlet_3', 3)
+
+if: true
+do: MoveTo(WORKER, 'zone_residential_west', 'at_the_street')
+
+if: IsActorAtNamedLocation(WORKER, 'zone_residential_west', 'at_the_street')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL1)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL1)
+do: ActorDropItemAt(WORKER, DL1, 'ebi_pamphlet_1')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL2)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL2)
+do: ActorDropItemAt(WORKER, DL2, 'ebi_pamphlet_2')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL3)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL3)
+do: ActorDropItemAt(WORKER, DL3, 'ebi_pamphlet_3')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL4)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL4)
+do: ActorDropItemAt(WORKER, DL4, 'ebi_pamphlet_1')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL5)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL5)
+do: ActorDropItemAt(WORKER, DL5, 'ebi_pamphlet_2')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL6)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL6)
+do: ActorDropItemAt(WORKER, DL6, 'ebi_pamphlet_3')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL7)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL7)
+do: ActorDropItemAt(WORKER, DL7, 'ebi_pamphlet_1')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL8)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL8)
+do: ActorDropItemAt(WORKER, DL8, 'ebi_pamphlet_2')
+do: MoveNextTo(WORKER, 'zone_residential_west', DL9)
+
+if: IsActorNextTo(WORKER, 'zone_residential_west', DL9)
+do: ActorDropItemAt(WORKER, DL9, 'ebi_pamphlet_3')
+do: SetIdle(WORKER)
+do: SetFlag('ebi_pamphlets_distributed')

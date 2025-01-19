@@ -1,52 +1,59 @@
 package game
 
 import (
-	"contractor/fsmai"
 	"github.com/kelindar/binary"
 )
 
-func NewDefaultTransitionTable() *fsmai.TransitionTable {
-	t := fsmai.NewTransitionTable()
+func NewDefaultTransitionTable() *TransitionTable {
+	t := NewTransitionTable()
 
 	// how to leave idle
-	t.AddTransition(fsmai.StateIdle, fsmai.EventHeavilyInjured, fsmai.StatePanic)
-	t.AddTransition(fsmai.StateIdle, fsmai.EventProvoked, fsmai.StateKill)
-	t.AddTransition(fsmai.StateIdle, fsmai.EventMajorCrimeWitnessed, fsmai.StateKill)
-	t.AddTransition(fsmai.StateIdle, fsmai.EventEnemySighted, fsmai.StateKill)
-	t.AddTransition(fsmai.StateIdle, fsmai.EventLeaderJoined, fsmai.StateFollow)
+	t.AddTransition(StateIdle, EventHeavilyInjured, StatePanic)
+	t.AddTransition(StateIdle, EventProvoked, StateKill)
+	t.AddTransition(StateIdle, EventEnemySighted, StateKill)
+	t.AddTransition(StateIdle, EventLeaderJoined, StateFollow)
+	t.AddTransition(StateIdle, EventSuspiciousActivity, StateInvestigate)
+
+	// investigating
+	t.AddTransition(StateInvestigate, EventEnemySighted, StateKill)
+	t.AddTransition(StateInvestigate, EventProvoked, StateKill)
+	t.AddTransition(StateInvestigate, EventCalmed, StateIdle)
 
 	// how to leave follow
-	t.AddTransition(fsmai.StateFollow, fsmai.EventLeaderLeft, fsmai.StateIdle)
-	t.AddTransition(fsmai.StateFollow, fsmai.EventProvoked, fsmai.StateKill)
+	t.AddTransition(StateFollow, EventLeaderLeft, StateIdle)
+	t.AddTransition(StateFollow, EventEnemySighted, StateKill)
+	t.AddTransition(StateFollow, EventProvoked, StateKill)
 
-	// searching
-	t.AddTransition(fsmai.StateSearch, fsmai.EventEnemySighted, fsmai.StateKill)
+	// hunting
+	t.AddTransition(StateHunt, EventEnemySighted, StateKill)
+	t.AddTransition(StateHunt, EventProvoked, StateKill)
+	t.AddTransition(StateHunt, EventCalmed, StateIdle)
 
 	// killing
-	t.AddTransition(fsmai.StateKill, fsmai.EventHeavilyInjured, fsmai.StatePanic)
-	t.AddTransition(fsmai.StateKill, fsmai.EventTargetLost, fsmai.StateSearch)
-	t.AddTransition(fsmai.StateKill, fsmai.EventTargetDied, fsmai.StateIdle)
-	t.AddTransition(fsmai.StateKill, fsmai.EventCalmed, fsmai.StateIdle)
+	t.AddTransition(StateKill, EventHeavilyInjured, StatePanic)
+	t.AddTransition(StateKill, EventTargetLost, StateHunt)
+	t.AddTransition(StateKill, EventTargetDied, StateIdle)
+	t.AddTransition(StateKill, EventCalmed, StateIdle)
 
 	// panic
-	t.AddTransition(fsmai.StatePanic, fsmai.EventThreatNeutralized, fsmai.StateIdle)
+	t.AddTransition(StatePanic, EventCalmed, StateIdle)
 
 	return t
 }
 
 type ActorBehavior interface {
-	AssociatedState() fsmai.StateName
-	WithInitEvent(event fsmai.TransitionEvent) ActorBehavior
+	AssociatedState() StateName
+	WithInitEvent(event TransitionEvent) ActorBehavior
 	Init(state *GameState, actor *Actor)
-	Execute(state *GameState, actor *Actor) (fsmai.TransitionEvent, int)
+	Execute(state *GameState, actor *Actor) (TransitionEvent, int)
 	IsCombatBehavior() bool
 	IsHostilityTowards(other *Actor) bool
 }
 
-type BehaviorFactory func(state fsmai.StateName) ActorBehavior
+type BehaviorFactory func(state StateName) ActorBehavior
 
 type ActorFSM struct {
-	transition      *fsmai.TransitionTable
+	transition      *TransitionTable
 	behaviorFactory BehaviorFactory
 	gameState       *GameState
 	actor           *Actor
@@ -57,7 +64,7 @@ func NewActorFSM(state *GameState, actor *Actor, behaviorFactory BehaviorFactory
 	return &ActorFSM{
 		transition:      NewDefaultTransitionTable(),
 		behaviorFactory: behaviorFactory,
-		currentBehavior: behaviorFactory(fsmai.StateIdle),
+		currentBehavior: behaviorFactory(StateIdle),
 		gameState:       state,
 		actor:           actor,
 	}
@@ -68,7 +75,7 @@ func (p *ActorFSM) GobEncode() ([]byte, error) {
 }
 
 func (p *ActorFSM) GobDecode(data []byte) error {
-	var state fsmai.StateName
+	var state StateName
 	if err := binary.Unmarshal(data, &state); err != nil {
 		return err
 	}
@@ -89,7 +96,7 @@ func (p *ActorFSM) ExecuteBehavior() int {
 	return timeUsed
 }
 
-func (p *ActorFSM) SendEvent(eventFromCurrentState fsmai.TransitionEvent) {
+func (p *ActorFSM) SendEvent(eventFromCurrentState TransitionEvent) {
 	currentState := p.currentBehavior.AssociatedState()
 	if p.transition.Exists(currentState, eventFromCurrentState.Name()) {
 		nextState := p.transition.GetNextState(currentState, eventFromCurrentState.Name())
@@ -97,12 +104,12 @@ func (p *ActorFSM) SendEvent(eventFromCurrentState fsmai.TransitionEvent) {
 	}
 }
 
-func (p *ActorFSM) SetState(nextState fsmai.StateName, event fsmai.TransitionEvent) {
+func (p *ActorFSM) SetState(nextState StateName, event TransitionEvent) {
 	p.currentBehavior = p.behaviorFactory(nextState).WithInitEvent(event)
 	p.currentBehavior.Init(p.gameState, p.actor)
 }
 
-func (p *ActorFSM) State() fsmai.StateName {
+func (p *ActorFSM) State() StateName {
 	return p.currentBehavior.AssociatedState()
 }
 

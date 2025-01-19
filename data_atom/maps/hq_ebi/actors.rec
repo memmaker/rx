@@ -33,7 +33,72 @@ equipment: 9mm(36)
 equipment: pacifier_baton
 equipment: ebi_guard_cap
 equipment: ebi_guard_uniform
-Position: (61,18)
+Position: (45,20)
+
+Name: ebi_security_officer
+Icon: E
+Foreground: green_1
+Description: EBI Security Officer
+LongDescription: An EBI Security Officer tasked with patrolling urban zones and enforcing Eschaton’s policies in Edge Haven. As the corporate police force, they project authority while maintaining a visible presence to deter criminal activity. Equipped for both lethal and non-lethal engagement, their role is to maintain public order and corporate compliance.
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 30
+ActionPoints: 7
+MeleeDamage: 1
+CarryWeight: 125
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 5
+Perception: 7
+Endurance: 4
+Cool: 8
+Intelligence: 4
+Agility: 4
+aggressive: false
+SkillBonusRangedCombat: 40
+SkillBonusMeleeCombat: 40
+equipment: binge(2)
+equipment: eb8_service_pistol
+equipment: 9mm(36)
+equipment: pacifier_baton
+equipment: ebi_officer_cap
+equipment: ebi_officer_uniform
+Position: (60,13)
+
+Name: dr_iris_kwan
+Icon: I
+Foreground: green_2
+Description: Dr. Iris Kwan
+LongDescription: Dr. Iris Kwan, Chief Biologist and Leader of the New World Program at Eschaton Biotech International (EBI). Once an idealistic ecologist, Dr. Kwan became disillusioned by humanity’s environmental destruction and turned to radical eugenics. She believes in creating a pure and sustainable humanity through strict genetic control, using bioengineering as a means to rebuild society according to her vision of perfection.
+Dialogue: dr_iris_kwan
+Chatter: dr_iris_kwan_chatter
+Age: 42
+BodyType: 1
+XP: 95
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 30
+ActionPoints: 6
+MeleeDamage: 1
+CarryWeight: 115
+Sequence: 11
+HealingRate: 1
+CriticalChance: 5
+Strength: 3
+Perception: 6
+Endurance: 4
+Cool: 7
+Intelligence: 10
+Agility: 3
+SkillBonusBioChemistry: 100
+equipment: lab_coat_ebi
+Position: (51,4)
 
 Name: ebi_security_guard
 Icon: E
@@ -69,41 +134,6 @@ equipment: pacifier_baton
 equipment: ebi_guard_cap
 equipment: ebi_guard_uniform
 Position: (47,20)
-
-Name: ebi_security_guard
-Icon: E
-Foreground: light_gray_2
-Description: EBI Security Guard
-LongDescription: An EBI Security Guard tasked with patrolling urban zones and enforcing Eschaton’s policies in Edge Haven. As the corporate police force, they project authority while maintaining a visible presence to deter criminal activity. Equipped for both lethal and non-lethal engagement, their role is to maintain public order and corporate compliance.
-aggressive: false
-Age: 25
-BodyType: 0
-XP: 85
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 35
-ActionPoints: 5
-MeleeDamage: 1
-CarryWeight: 175
-Sequence: 12
-HealingRate: 1
-CriticalChance: 4
-Strength: 6
-Perception: 6
-Endurance: 6
-Cool: 6
-Intelligence: 3
-Agility: 6
-SkillBonusRangedCombat: 30
-SkillBonusMeleeCombat: 30
-equipment: binge(2)
-equipment: eb8_service_pistol
-equipment: 9mm(36)
-equipment: pacifier_baton
-equipment: ebi_guard_cap
-equipment: ebi_guard_uniform
-Position: (45,20)
 
 Name: adrian_voss
 Icon: A
@@ -172,41 +202,6 @@ equipment: ebi_officer_cap
 equipment: ebi_officer_uniform
 Position: (32,13)
 
-Name: ebi_security_officer
-Icon: E
-Foreground: green_1
-Description: EBI Security Officer
-LongDescription: An EBI Security Officer tasked with patrolling urban zones and enforcing Eschaton’s policies in Edge Haven. As the corporate police force, they project authority while maintaining a visible presence to deter criminal activity. Equipped for both lethal and non-lethal engagement, their role is to maintain public order and corporate compliance.
-Age: 25
-BodyType: 0
-XP: 85
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 30
-ActionPoints: 7
-MeleeDamage: 1
-CarryWeight: 125
-Sequence: 12
-HealingRate: 1
-CriticalChance: 6
-Strength: 5
-Perception: 7
-Endurance: 4
-Cool: 8
-Intelligence: 4
-Agility: 4
-aggressive: false
-SkillBonusRangedCombat: 40
-SkillBonusMeleeCombat: 40
-equipment: binge(2)
-equipment: eb8_service_pistol
-equipment: 9mm(36)
-equipment: pacifier_baton
-equipment: ebi_officer_cap
-equipment: ebi_officer_uniform
-Position: (60,13)
-
 Name: ebi_security_guard
 Icon: E
 Foreground: light_gray_2
@@ -242,36 +237,6 @@ equipment: ebi_guard_cap
 equipment: ebi_guard_uniform
 Position: (31,18)
 
-Name: dr_iris_kwan
-Icon: I
-Foreground: green_2
-Description: Dr. Iris Kwan
-LongDescription: Dr. Iris Kwan, Chief Biologist and Leader of the New World Program at Eschaton Biotech International (EBI). Once an idealistic ecologist, Dr. Kwan became disillusioned by humanity’s environmental destruction and turned to radical eugenics. She believes in creating a pure and sustainable humanity through strict genetic control, using bioengineering as a means to rebuild society according to her vision of perfection.
-Dialogue: dr_iris_kwan
-Chatter: dr_iris_kwan_chatter
-Age: 42
-BodyType: 1
-XP: 95
-KillType: 0
-DamageType: 0
-TeamNum: 1
-HitPoints: 30
-ActionPoints: 6
-MeleeDamage: 1
-CarryWeight: 115
-Sequence: 11
-HealingRate: 1
-CriticalChance: 5
-Strength: 3
-Perception: 6
-Endurance: 4
-Cool: 7
-Intelligence: 10
-Agility: 3
-SkillBonusBioChemistry: 100
-equipment: lab_coat_ebi
-Position: (51,4)
-
 Name: shop_owner
 Icon: S
 Foreground: light_gray_2
@@ -306,4 +271,80 @@ DRRadiation: 8
 DRPoison: 20
 SourceFile: 00000150.pro
 Position: (46,15)
+
+Name: ebi_worker
+Icon: W
+Foreground: light_gray_2
+Description: An employee of EBI
+Long_Description: 
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 50
+ActionPoints: 7
+ArmorClass: 13
+MeleeDamage: 1
+CarryWeight: 175
+Sequence: 12
+HealingRate: 1
+CriticalChance: 6
+Strength: 6
+Perception: 6
+Endurance: 5
+Cool: 3
+Intelligence: 4
+Agility: 5
+Luck: 6
+SkillBonusRangedCombat: 16
+SkillBonusMeleeCombat: 5
+SkillBonusMeleeCombat: 10
+DRNormal: 20
+DRLaser: 20
+DRFire: 10
+DRPlasma: 10
+DRElectrical: 30
+DREMP: 500
+DRExplosive: 20
+DRRadiation: 10
+DRPoison: 25
+SourceFile: 00000036.pro
+Position: (74,10)
+
+Name: ebi_security_guard
+Icon: E
+Foreground: light_gray_2
+Description: EBI Security Guard
+LongDescription: An EBI Security Guard tasked with patrolling urban zones and enforcing Eschaton’s policies in Edge Haven. As the corporate police force, they project authority while maintaining a visible presence to deter criminal activity. Equipped for both lethal and non-lethal engagement, their role is to maintain public order and corporate compliance.
+aggressive: false
+Age: 25
+BodyType: 0
+XP: 85
+KillType: 0
+DamageType: 0
+TeamNum: 1
+HitPoints: 35
+ActionPoints: 5
+MeleeDamage: 1
+CarryWeight: 175
+Sequence: 12
+HealingRate: 1
+CriticalChance: 4
+Strength: 6
+Perception: 6
+Endurance: 6
+Cool: 6
+Intelligence: 3
+Agility: 6
+SkillBonusRangedCombat: 30
+SkillBonusMeleeCombat: 30
+equipment: binge(2)
+equipment: eb8_service_pistol
+equipment: 9mm(36)
+equipment: pacifier_baton
+equipment: ebi_guard_cap
+equipment: ebi_guard_uniform
+Position: (61,18)
 

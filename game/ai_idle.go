@@ -2,11 +2,10 @@ package game
 
 import (
 	"contractor/foundation"
-	"contractor/fsmai"
 )
 
 type IdleBehaviour struct {
-	InitEvent fsmai.TransitionEvent
+	InitEvent TransitionEvent
 }
 
 func (b IdleBehaviour) IsCombatBehavior() bool {
@@ -17,17 +16,17 @@ func (b IdleBehaviour) IsHostilityTowards(other *Actor) bool {
 	return false
 }
 
-func (b IdleBehaviour) WithInitEvent(event fsmai.TransitionEvent) ActorBehavior {
+func (b IdleBehaviour) WithInitEvent(event TransitionEvent) ActorBehavior {
 	return IdleBehaviour{InitEvent: event}
 }
 
-func (b IdleBehaviour) AssociatedState() fsmai.StateName { return fsmai.StateIdle }
+func (b IdleBehaviour) AssociatedState() StateName { return StateIdle }
 
 func (b IdleBehaviour) Init(state *GameState, actor *Actor) {
 
 }
 
-func (b IdleBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEvent, int) {
+func (b IdleBehaviour) Execute(g *GameState, actor *Actor) (TransitionEvent, int) {
 	// barks
 	if g.shouldActorBark(actor) && g.tryAddRandomChatter(actor, foundation.ChatterBeingAroundPlayer) {
 		actor.GetFlags().Unset(foundation.FlagTurnsSinceLastIdleChatter)
@@ -38,7 +37,15 @@ func (b IdleBehaviour) Execute(g *GameState, actor *Actor) (fsmai.TransitionEven
 		consequencesOfConfusion := g.actConfused(actor)
 		if len(consequencesOfConfusion) > 0 {
 			g.ui.AddAnimations(consequencesOfConfusion)
-			return fsmai.NoEvent, actor.maximalTimeNeededForActions()
+			return NoEvent, actor.maximalTimeNeededForActions()
+		}
+	}
+
+	for _, visPos := range actor.Visibles() {
+		if visibleActor, existsHere := g.currentMap().TryGetActorAt(visPos); existsHere && visibleActor.Faction == actor.Faction {
+			if visibleActor.IsSleeping() {
+				return NewSuspiciousActivityEvent(g.currentMapName, visPos), actor.TimeNeededForMovement()
+			}
 		}
 	}
 

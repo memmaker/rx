@@ -102,7 +102,7 @@ func (g *GameState) OpenCyberWareMenu() {
 			if c == CyberWareClock { // clock handles its own activation
 				menuItems = append(menuItems, foundation.MenuItem{
 					Name:       fmt.Sprintf("Activate %s", c.String()),
-					Action:     g.printTime,
+					Action:     g.ShowDateTime,
 					CloseMenus: true,
 				})
 				continue
@@ -539,6 +539,14 @@ func (g *GameState) actorEquipItem(wearer *Actor, item foundation.Item) {
 	equipment.Equip(item)
 	if wearer == g.Player {
 		g.msg(foundation.HiLite("You equipped %s", item.Name()))
+		g.forDetectingOtherFactionObserversOf(wearer, func(observer *Actor) (continueIteration bool) {
+			if wearer.IsOpenCarryWeapon() && observer.HasFlag(foundation.FlagProhibitsOpenCarry) {
+				g.onSeenWithWeapon(wearer, observer)
+				return false
+			}
+			return true
+		})
+		g.endPlayerTurn(10)
 	}
 }
 
@@ -550,6 +558,7 @@ func (g *GameState) actorUnequipItem(wearer *Actor, item foundation.Item) {
 	equipment.UnEquip(item)
 	if wearer == g.Player {
 		g.msg(foundation.HiLite("You unequipped %s", item.Name()))
+		g.endPlayerTurn(10)
 	}
 }
 

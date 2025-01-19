@@ -108,6 +108,7 @@ npc: I can do that. For a price.
 #
 o_text: Cool, let's talk about the details.
 o_effect: StartRepair
+o_goto: DefaultIntroduction
 #
 o_text: Let's talk about something else.
 o_goto: DefaultIntroduction

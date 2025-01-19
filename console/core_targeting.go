@@ -24,6 +24,10 @@ func (u *UI) SelectBodyPart(previousAim d100.BodyPart, onSelected func(victim fo
 	u.onTargetUpdated = func(targetPos geometry.Point) {
 		actorAt := u.game.ActorAt(targetPos)
 		if actorAt != nil {
+			if u.hoveredActor != actorAt {
+				u.hoveredActor = actorAt
+				u.UpdateVisibleActors()
+			}
 			hitZones := u.game.GetBodyPartsAndHitChances(actorAt)
 			var text string
 			for i, hitZone := range hitZones {
@@ -69,6 +73,10 @@ func (u *UI) SelectTarget(getAttackInfo func(target foundation.ActorForUI) found
 	u.onTargetUpdated = func(targetPos geometry.Point) {
 		actorAt := u.game.ActorAt(targetPos)
 		if actorAt != nil {
+			if u.hoveredActor != actorAt {
+				u.hoveredActor = actorAt
+				u.UpdateVisibleActors()
+			}
 			attackInfo := getAttackInfo(actorAt)
 			hitChance := attackInfo.SuccessChance()
 			cthString := fmt.Sprintf("%d%%", hitChance)
@@ -151,6 +159,11 @@ func (u *UI) LookTargeting() {
 	u.onTargetUpdated = func(targetPos geometry.Point) {
 		mapInfo := u.game.GetMapInfo(targetPos)
 		u.Print(mapInfo)
+		actorAt := u.game.ActorAt(targetPos)
+		if u.hoveredActor != actorAt {
+			u.hoveredActor = actorAt
+			u.UpdateVisibleActors()
+		}
 	}
 
 	u.beginTargeting(func(targetPos geometry.Point, hitZone int) {

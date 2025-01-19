@@ -75,7 +75,7 @@ type Weapon struct {
 	CaliberName  string
 
 	AttackModes []AttackMode
-	SoundID     int32
+	SoundID     string
 	DamageType  DamageType
 	MinSTR      int
 
@@ -153,7 +153,19 @@ func (i *Weapon) LongNameWithColors(colorCode string) string {
 	}
 	bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
 	ammoShortString := weapon.GetAmmoTypeShortString()
-	line := cview.Escape(fmt.Sprintf("%s - %s - %s%s", i.Name(), targetMode, bullets, ammoShortString))
+	line := cview.Escape(fmt.Sprintf("%s [%s] - %s - %s%s", i.Name(), i.GetWeaponDamageForCurrentAttackMode().ShortString(), targetMode, bullets, ammoShortString))
+	return colorCode + line + "[-]"
+}
+
+func (i *Weapon) ShortNameWithColors(colorCode string) string {
+	weapon := i
+	bullets := fmt.Sprintf("%d/%d", weapon.GetLoadedBullets(), weapon.GetMagazineSize())
+	ammoShortString := weapon.GetAmmoTypeShortString()
+	damageString := i.GetWeaponDamageForCurrentAttackMode().ShortString()
+	if i.Jammed {
+		damageString = "*JAMMED*"
+	}
+	line := cview.Escape(fmt.Sprintf("WP: %s (%s%s)", damageString, bullets, ammoShortString))
 	return colorCode + line + "[-]"
 }
 func (i *Weapon) DisplayLength() int {
@@ -337,17 +349,17 @@ func (i *Weapon) GetFireAudioCue(mode TargetingMode) string {
 		len(i.AttackModes) > 1 {
 		strMode = "burst"
 	}
-	return fmt.Sprintf("weapons/%d_%s", i.SoundID, strMode)
+	return fmt.Sprintf("weapons/%s_%s", i.SoundID, strMode)
 }
 
 func (i *Weapon) GetReloadAudioCue() string {
-	return fmt.Sprintf("weapons/%d_reload", i.SoundID)
+	return fmt.Sprintf("weapons/%s_reload", i.SoundID)
 }
 func (i *Weapon) GetOutOfAmmoAudioCue() string {
-	return fmt.Sprintf("weapons/%d_out_of_ammo", i.SoundID)
+	return fmt.Sprintf("weapons/%s_out_of_ammo", i.SoundID)
 }
 func (i *Weapon) GetMissAudioCue() string {
-	return fmt.Sprintf("weapons/%d_hit_surface", i.SoundID)
+	return fmt.Sprintf("weapons/%s_hit_surface", i.SoundID)
 }
 
 func (i *Weapon) GetDamageType() DamageType {

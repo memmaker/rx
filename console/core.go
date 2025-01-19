@@ -71,6 +71,8 @@ type UI struct {
 	graphicsMode bool
 
 	onAnyKey func()
+
+	hoveredActor foundation.ActorForUI
 }
 
 func (u *UI) IndicateConversationStartByNPC(partner foundation.ChatterSource, done func()) {
@@ -233,7 +235,19 @@ func (u *UI) onTerminalResized(width int, height int) {
 		u.UpdateStats()
 	})
 }
+func (u *UI) onRightPanelHovered(clickPos geometry.Point) {
+	itemIndex := clickPos.Y - 1
 
+	inv := u.game.GetInventoryForUI()
+
+	if itemIndex < 0 || itemIndex >= len(inv) {
+		return
+	}
+
+	item := inv[itemIndex]
+
+	u.Print(foundation.HiLite(item.Name()))
+}
 func (u *UI) onRightPanelClicked(clickPos geometry.Point, isRightClick bool, modified bool) {
 	itemIndex := clickPos.Y - 1
 
@@ -269,12 +283,14 @@ func (u *UI) saveGamesExist() bool {
 	return fxtools.DirExists(u.settings.SaveGameDir) && fxtools.DirHasSubDirs(u.settings.SaveGameDir)
 }
 
-func (u *UI) getSingleLineStatus(statusValues foundation.HudValueMap, flags map[foundation.ActorFlag]int, multiLine bool, equippedItem string) string {
-	armorStr := statusValues.GetString(foundation.HudArmorString)
-	armorStr = u.colorIfDiff(armorStr, foundation.HudArmorString, armorStr)
-
+func (u *UI) getLowerStatusBar(statusValues foundation.HudValueMap, flags map[foundation.ActorFlag]int, multiLine bool, equippedItem string) string {
 	var statusStr string
-	if !multiLine {
+	if multiLine {
+		armorStr := statusValues.GetString(foundation.HudArmorString)
+		armorStr = u.colorIfDiff(armorStr, foundation.HudArmorString, armorStr)
+
+		statusStr = fmt.Sprintf("%s %s", armorStr, equippedItem)
+	} else {
 		hp := statusValues.GetInt(foundation.HudHitPoints)
 		hpMax := statusValues.GetInt(foundation.HudHitPointsMax)
 		hpValString := fmt.Sprintf("%d/%d", hp, hpMax)
@@ -289,9 +305,11 @@ func (u *UI) getSingleLineStatus(statusValues foundation.HudValueMap, flags map[
 
 		flagString := PlayerFlagStringShort(flags)
 
+		currentRating := statusValues.GetInt(foundation.HudArmorRating)
+		armorStr := fmt.Sprintf("AR: %d", currentRating)
+		armorStr = u.colorIfDiff(armorStr, foundation.HudArmorRating, currentRating)
+
 		statusStr = fmt.Sprintf("%s %s %s %s %s", hpStr, fpStr, armorStr, equippedItem, flagString)
-	} else {
-		statusStr = fmt.Sprintf("%s %s", armorStr, equippedItem)
 	}
 
 	width, _ := u.application.GetScreenSize()
