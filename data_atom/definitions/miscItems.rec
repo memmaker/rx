@@ -1,6 +1,5 @@
 %rec: Misc
 %key: Name
-## Generic Fields ##
 %type: Name line
 %type: Long_Description multiline
 %type: Weight int
@@ -27,79 +26,6 @@
 %typedef: Tags enum no_loot no_aim no_sound no_reload light_source stealthy timed
 %list: Tags
 
-Description: a note
-Name: note
-Category: Notes
-Text_File: CHANGEME
-
-Description: access to clone cellar
-Name: note_access_to_random_code
-Category: Notes
-TextVar: code
-TextValue: RandomNumberCode('home_secret_door')
-Long_Description: The code for the clone cellar is {{ .code }}.
-
-Description: a key
-Name: key
-Category: Keys
-LockFlag: CHANGEME
-
-Description: loose money
-Name: gold
-Category: Gold
-Charges: CHANGEME
-
-Description: Killing: From a Distance
-Name: skillbook_ranged
-Category: Books
-Skill_Bonus: ranged_combat(5)
-
-Description: Killing: Up Close
-Name: skillbook_melee
-Category: Books
-Skill_Bonus: melee_combat(5)
-
-Description: The Hydraulic Press and You
-Name: skillbook_mechanics
-Category: Books
-Skill_Bonus: mechanics(5)
-
-Description: The Art of the Deal
-Name: skillbook_social
-Category: Books
-Skill_Bonus: social(5)
-
-Description: The Ghost in the Machine
-Name: skillbook_technology
-Category: Books
-Skill_Bonus: technology(5)
-
-
-
-Description: JUNK
-Name: junk
-Category: Other
-Weight: 1
-Cost: 1
-
-Description: a digital watch
-Name: watch
-Category: Other
-Cost: 25
-Use_Effect: show_time
-Charges: -1
-
-Description: M-Pick
-Name: mechanical_lockpick
-Category: lockpicks
-Cost: 120
-Long_Description: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
-
-Description: E-Pick
-Name: electronic_lockpick
-Category: lockpicks
-Cost: 120
-Long_Description: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
 
 Description: Aviator sunglasses
 Name: aviator_sunglasses
@@ -111,25 +37,26 @@ Long_Description: These make you look ridiculously cool.
 chance_to_break_on_throw: 95
 armor_style: generic_chic
 
-Description: Mirrorshades
-Name: mirrorshades
+Name: bat_pamphlet_1
+Description: BAT Pamphlet #1
+Category: Notes
+Text_File: bat_meld_pamphlet_1
 Weight: 1
-Category: Headgear
-Cost: 2500
-Skill_Bonus: intimidate(10)
-Long_Description: A pair of fine mirrored shades from Cellar Door. It's like solid chrome, but for your face.
-chance_to_break_on_throw: 95
-armor_style: edgerunner
+Cost: 1
 
-Description: red-green glasses
-Name: red_green_glasses
-Category: Headgear
+Name: bat_pamphlet_2
+Description: BAT Pamphlet #2
+Category: Notes
+Text_File: bat_meld_pamphlet_2
 Weight: 1
-Skill_Bonus: social(10)
-Cost: 2500
-armor_style: generic_chic
-Long_Description: This is a pair of red-green glasses. The green lens on the left side is rectangular, while the red lens on the right side is circular.
-chance_to_break_on_throw: 95
+Cost: 1
+
+Name: bat_pamphlet_3
+Description: BAT Pamphlet #3
+Category: Notes
+Text_File: bat_meld_pamphlet_3
+Weight: 1
+Cost: 1
 
 Name: dynamite
 Description: a stick of dynamite
@@ -162,26 +89,65 @@ Text_File: ebi_pamphlet_3
 Weight: 1
 Cost: 1
 
-Name: bat_pamphlet_1
-Description: BAT Pamphlet #1
-Category: Notes
-Text_File: bat_meld_pamphlet_1
+Description: E-Pick
+Name: electronic_lockpick
+Category: lockpicks
+Cost: 120
+Long_Description: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
+
+Description: loose money
+Name: gold
+Category: Gold
+Charges: CHANGEME
+
+Description: JUNK
+Name: junk
+Category: Other
 Weight: 1
 Cost: 1
 
-Name: bat_pamphlet_2
-Description: BAT Pamphlet #2
-Category: Notes
-Text_File: bat_meld_pamphlet_2
-Weight: 1
-Cost: 1
+Description: a key
+Name: key
+Category: Keys
+LockFlag: CHANGEME
 
-Name: bat_pamphlet_3
-Description: BAT Pamphlet #3
-Category: Notes
-Text_File: bat_meld_pamphlet_3
+Description: M-Pick
+Name: mechanical_lockpick
+Category: lockpicks
+Cost: 120
+Long_Description: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
+
+Description: Mirrorshades
+Name: mirrorshades
 Weight: 1
-Cost: 1
+Category: Headgear
+Cost: 2500
+Skill_Bonus: intimidate(10)
+Long_Description: A pair of fine mirrored shades from Cellar Door. It's like solid chrome, but for your face.
+chance_to_break_on_throw: 95
+armor_style: edgerunner
+
+Description: a note
+Name: note
+Category: Notes
+Text_File: CHANGEME
+
+Description: access to clone cellar
+Name: note_access_to_random_code
+Category: Notes
+TextVar: code
+TextValue: RandomNumberCode('home_secret_door')
+Long_Description: The code for the clone cellar is {{ .code }}.
+
+Description: red-green glasses
+Name: red_green_glasses
+Category: Headgear
+Weight: 1
+Skill_Bonus: social(10)
+Cost: 2500
+armor_style: generic_chic
+Long_Description: This is a pair of red-green glasses. The green lens on the left side is rectangular, while the red lens on the right side is circular.
+chance_to_break_on_throw: 95
 
 Name: robot_pamphlet
 Description: "Home Companion" Advertisement
@@ -191,6 +157,31 @@ Weight: 1
 Cost: 1
 pickupflag: KnowsAboutHomeCompanion
 
+Description: The Hydraulic Press and You
+Name: skillbook_mechanics
+Category: Books
+Skill_Bonus: mechanics(5)
+
+Description: Killing: Up Close
+Name: skillbook_melee
+Category: Books
+Skill_Bonus: melee_combat(5)
+
+Description: Killing: From a Distance
+Name: skillbook_ranged
+Category: Books
+Skill_Bonus: ranged_combat(5)
+
+Description: The Art of the Deal
+Name: skillbook_social
+Category: Books
+Skill_Bonus: social(5)
+
+Description: The Ghost in the Machine
+Name: skillbook_technology
+Category: Books
+Skill_Bonus: technology(5)
+
 Name: terra_vitae_pamphlet
 Description: Terra Vitae leaflet
 Category: Notes
@@ -198,3 +189,18 @@ Text_File: terra_vitae_pamphlet
 Weight: 1
 Cost: 1
 pickupflag: KnowsAboutTerraVitae
+
+Description: a digital watch
+Name: watch
+Category: Other
+Cost: 25
+Use_Effect: show_time
+Charges: -1
+
+Name: water_ration
+Long_Description: Rationed water, prepackaged for easy distribution across the colony
+Weight: 1
+Cost: 10
+Category: Food
+Chance_to_break_on_throw: 50
+
