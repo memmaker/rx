@@ -1,5 +1,8 @@
-%rec: armor
+%rec: Armor
 %key: Name
+%type: Long_Description multiline
+%type: Weight int
+%type: Cost int
 
 ## Very generic clothing
 
@@ -22,7 +25,7 @@ armor_conceal_slot: hand
 
 ## EBI Security ##
 
-name: ebi_officer_cap
+Name: ebi_officer_cap
 Description: EBI Officer Cap
 Category: Headgear
 armor_physical_threshold: 0
@@ -32,7 +35,7 @@ weight: 1
 cost: 85
 LongDescription: A dark green cap with the EBI logo prominently embroidered on the front. The hat is simple yet symbolic, marking the wearer as an officer of Eschaton’s security division.
 
-name: ebi_guard_cap
+Name: ebi_guard_cap
 Description: EBI Guard Cap
 Category: Headgear
 armor_physical_threshold: 0
@@ -42,7 +45,7 @@ weight: 1
 cost: 50
 LongDescription: A dark green cap with the EBI logo prominently embroidered on the front. The hat is simple yet symbolic, marking the wearer as a guard of Eschaton’s security division.
 
-name: ebi_officer_uniform
+Name: ebi_officer_uniform
 Description: EBI Officer Uniform
 Category: Armor
 armor_physical_threshold: 2
@@ -54,7 +57,7 @@ LongDescription: A dark green and black uniform with high-visibility yellow acce
 armor_conceal_slot: hand
 armor_conceal_slot: hand
 
-name: ebi_guard_uniform
+Name: ebi_guard_uniform
 Description: EBI Guard Uniform
 Category: Armor
 armor_physical_threshold: 2

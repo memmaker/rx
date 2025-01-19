@@ -1,5 +1,6 @@
-%rec: ammo
+%rec: Ammo
 %key: Name
+%type: Name line
 
 Name: explosive_rocket
 Description: Explosive Rocket

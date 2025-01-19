@@ -1,0 +1,22 @@
+
+%rec: definitions
+
+var: DD
+set: ContainerWithName('dead_drop')
+
+%rec: outcomes
+
+if: HasFlag('ClientRewardReceived(starter)')
+do: Hilite('>>> You have mail <<<')
+
+%rec: cancel
+
+%rec: frames
+
+if: IsItemInContainer(DD, 'gold', 250)
+do: SaveTimeNow('dd_01_deposited')
+
+if: IsHoursAfter('dd_01_deposited', 6) && IsItemInContainer(DD, 'gold', 250)
+do: ContainerRemoveItem(DD, 'gold', 250)
+do: ContainerAddItem(DD, 'binge', 3)
+do: SetFlag('ClientRewardReceived(starter)')

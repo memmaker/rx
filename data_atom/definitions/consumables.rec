@@ -1,4 +1,4 @@
-%rec: item
+%rec: Consumable
 %key: Name
 
 Description: Binge

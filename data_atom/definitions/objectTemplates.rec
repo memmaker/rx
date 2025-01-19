@@ -26,6 +26,15 @@ Category: Bed
 Description: a bed
 Owner: CHANGEME
 
+Category: StateChanger
+Description: a switch
+state_0_label: CHANGEME
+state_0_change: SetFlag('OffFlag')
+state_0_rune: 0
+state_1_label: CHANGEME
+state_1_change: SetFlag('OnFlag')
+state_1_rune: 1
+
 Category: PushBox
 Description: a box
 

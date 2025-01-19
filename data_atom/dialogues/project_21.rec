@@ -1,0 +1,17 @@
+%rec: OpeningBranch
+
+cond: true
+goto: DefaultIntroduction
+
+%rec: Nodes
+
+name: DefaultIntroduction
+npc: ** Public Information Interface **
++ > Welcome
+effect: None
+
+
+name: End
+npc: ** Public Information Interface **
++ > Have a nice day.
+effect: EndConversation

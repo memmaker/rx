@@ -1,4 +1,4 @@
-%rec: blueprints
+%rec: Blueprint
 %key: name
 
 name: meld_production

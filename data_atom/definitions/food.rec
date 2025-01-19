@@ -1,4 +1,4 @@
-%rec: item
+%rec: Food
 %key: Name
 
 Description: ration of food

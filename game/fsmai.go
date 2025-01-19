@@ -7,7 +7,8 @@ const (
 	StatePanic
 	StateKill
 	StateFollow
-	StateSearch
+	StateHunt
+	StateInvestigate
 	StateScripted
 	StateDead
 	StateCount
@@ -20,8 +21,10 @@ func (s StateName) ToString() string {
 		return "Idle"
 	case StatePanic:
 		return "Panic"
-	case StateSearch:
-		return "Search"
+	case StateHunt:
+		return "Hunt"
+	case StateInvestigate:
+		return "Investigate"
 	case StateFollow:
 		return "Follow"
 	case StateScripted:

@@ -1,17 +1,43 @@
-%rec: item
+%rec: Misc
 %key: Name
+## Generic Fields ##
+%type: Name line
+%type: Long_Description multiline
+%type: Weight int
+%type: Cost int
+%typedef: Category enum Gold Food Weapons Armor Ammo Lockpicks Notes Readables Consumables Headgear Consumables Keys Readables Other
+%type: Chance_to_break_on_throw int
+%typedef: Use_Effect enum heal show_time
+%typedef: Zap_Effect enum explode plasma_explode delayed_sleep_target
+%type: Effect_Damage int
+%type: Effect_Damage_Interval line
+%type: Effect_Radius int
+%type: Charges int
+%type: Stat_Bonus line
+%list: Stat_Bonus
+%type: Skill_Bonus line
+%list: Skill_Bonus
+%type: Derived_Stat_Bonus line
+%list: Derived_Stat_Bonus
+%type: Text_File line
+%type: TextVar line
+%type: TextValue line
+%type: Pickupflag line
+%type: Dropflag line
+%typedef: Tags enum no_loot no_aim no_sound no_reload light_source stealthy timed
+%list: Tags
 
 Description: a note
 Name: note
 Category: Notes
-TextFile: CHANGEME
+Text_File: CHANGEME
 
 Description: access to clone cellar
 Name: note_access_to_random_code
 Category: Notes
 TextVar: code
 TextValue: RandomNumberCode('home_secret_door')
-Text: The code for the clone cellar is {{ .code }}.
+Long_Description: The code for the clone cellar is {{ .code }}.
 
 Description: a key
 Name: key
@@ -26,27 +52,27 @@ Charges: CHANGEME
 Description: Killing: From a Distance
 Name: skillbook_ranged
 Category: Books
-skill_bonus: ranged_combat(5)
+Skill_Bonus: ranged_combat(5)
 
 Description: Killing: Up Close
 Name: skillbook_melee
 Category: Books
-skill_bonus: melee_combat(5)
+Skill_Bonus: melee_combat(5)
 
 Description: The Hydraulic Press and You
 Name: skillbook_mechanics
 Category: Books
-skill_bonus: mechanics(5)
+Skill_Bonus: mechanics(5)
 
 Description: The Art of the Deal
 Name: skillbook_social
 Category: Books
-skill_bonus: social(5)
+Skill_Bonus: social(5)
 
 Description: The Ghost in the Machine
 Name: skillbook_technology
 Category: Books
-skill_bonus: technology(5)
+Skill_Bonus: technology(5)
 
 
 
@@ -67,13 +93,13 @@ Description: M-Pick
 Name: mechanical_lockpick
 Category: lockpicks
 Cost: 120
-LongDescription: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
+Long_Description: One-time use mechanical lockpicks. Blunt Ware is not responsible for any injuries sustained while using this product.
 
 Description: E-Pick
 Name: electronic_lockpick
 Category: lockpicks
 Cost: 120
-LongDescription: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
+Long_Description: One-time use electronic intrusion aid. Please inquire with your lawyer before using this product. Another fine product brought to you by the electronic warfare division of Blunt Ware.
 
 Description: Aviator sunglasses
 Name: aviator_sunglasses
@@ -81,7 +107,7 @@ Weight: 1
 Category: Headgear
 stat_bonus: cool(1)
 Cost: 1200
-Text: These make you look ridiculously cool.
+Long_Description: These make you look ridiculously cool.
 chance_to_break_on_throw: 95
 armor_style: generic_chic
 
@@ -90,8 +116,8 @@ Name: mirrorshades
 Weight: 1
 Category: Headgear
 Cost: 2500
-skill_bonus: intimidate(10)
-Text: A pair of fine mirrored shades from Cellar Door. It's like solid chrome, but for your face.
+Skill_Bonus: intimidate(10)
+Long_Description: A pair of fine mirrored shades from Cellar Door. It's like solid chrome, but for your face.
 chance_to_break_on_throw: 95
 armor_style: edgerunner
 
@@ -99,15 +125,15 @@ Description: red-green glasses
 Name: red_green_glasses
 Category: Headgear
 Weight: 1
-skill_bonus: social(10)
+Skill_Bonus: social(10)
 Cost: 2500
 armor_style: generic_chic
-Text: This is a pair of red-green glasses. The green lens on the left side is rectangular, while the red lens on the right side is circular.
+Long_Description: This is a pair of red-green glasses. The green lens on the left side is rectangular, while the red lens on the right side is circular.
 chance_to_break_on_throw: 95
 
 Name: dynamite
 Description: a stick of dynamite
-LongDescription: A stick of dynamite. It's a powerful explosive, but it's also very unstable. Handle with care.
+Long_Description: A stick of dynamite. It's a powerful explosive, but it's also very unstable. Handle with care.
 Category: Other
 Weight: 1
 Cost: 350
@@ -118,49 +144,49 @@ chance_to_break_on_throw: 10
 Name: ebi_pamphlet_1
 Description: EBI Pamphlet #1
 Category: Notes
-TextFile: ebi_pamphlet_1
+Text_File: ebi_pamphlet_1
 Weight: 1
 Cost: 1
 
 Name: ebi_pamphlet_2
 Description: EBI Pamphlet #2
 Category: Notes
-TextFile: ebi_pamphlet_2
+Text_File: ebi_pamphlet_2
 Weight: 1
 Cost: 1
 
 Name: ebi_pamphlet_3
 Description: EBI Pamphlet #3
 Category: Notes
-TextFile: ebi_pamphlet_3
+Text_File: ebi_pamphlet_3
 Weight: 1
 Cost: 1
 
 Name: bat_pamphlet_1
 Description: BAT Pamphlet #1
 Category: Notes
-TextFile: bat_meld_pamphlet_1
+Text_File: bat_meld_pamphlet_1
 Weight: 1
 Cost: 1
 
 Name: bat_pamphlet_2
 Description: BAT Pamphlet #2
 Category: Notes
-TextFile: bat_meld_pamphlet_2
+Text_File: bat_meld_pamphlet_2
 Weight: 1
 Cost: 1
 
 Name: bat_pamphlet_3
 Description: BAT Pamphlet #3
 Category: Notes
-TextFile: bat_meld_pamphlet_3
+Text_File: bat_meld_pamphlet_3
 Weight: 1
 Cost: 1
 
 Name: robot_pamphlet
 Description: "Home Companion" Advertisement
 Category: Notes
-TextFile: project21_pamphlet
+Text_File: project21_pamphlet
 Weight: 1
 Cost: 1
 pickupflag: KnowsAboutHomeCompanion
@@ -168,7 +194,7 @@ pickupflag: KnowsAboutHomeCompanion
 Name: terra_vitae_pamphlet
 Description: Terra Vitae leaflet
 Category: Notes
-TextFile: terra_vitae_pamphlet
+Text_File: terra_vitae_pamphlet
 Weight: 1
 Cost: 1
 pickupflag: KnowsAboutTerraVitae
