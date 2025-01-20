@@ -7,7 +7,7 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
 	"math"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -151,7 +151,7 @@ func moveAwayFromActor(g *GameState, a *Actor, target *Actor) (TransitionEvent, 
 }
 
 func LoadScript(dataDir string, name string, condFuncs map[string]govaluate.ExpressionFunction) ActionScript {
-	filePath := path.Join(dataDir, "scripts", name+".rec")
+	filePath := filepath.Join(dataDir, "scripts", name+".rec")
 	records, _ := recfile.ReadMultiAndClose(fxtools.MustOpen(filePath))
 	return NewActionScript(name, records, condFuncs)
 }

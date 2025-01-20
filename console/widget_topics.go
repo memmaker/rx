@@ -6,6 +6,7 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,7 +16,7 @@ type TextTopic struct {
 }
 
 func (u *UI) openDirectoryAsTopics(dirname string) {
-	directoryName := path.Join(u.settings.DataRootDir, dirname)
+	directoryName := filepath.Join(u.settings.DataRootDir, dirname)
 	entries, err := os.ReadDir(directoryName)
 	if err != nil {
 		return
@@ -26,7 +27,7 @@ func (u *UI) openDirectoryAsTopics(dirname string) {
 		if entry.IsDir() {
 			continue
 		}
-		fileName := path.Join(directoryName, entry.Name())
+		fileName := filepath.Join(directoryName, entry.Name())
 		lines := fxtools.ReadFileAsLines(fileName)
 
 		topicName := path.Base(entry.Name())

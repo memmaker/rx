@@ -8,7 +8,7 @@ import (
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
 	"image/color"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -24,7 +24,7 @@ type TileDataOnDisk struct {
 }
 
 func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error {
-	metaData := fxtools.MustCreate(path.Join(directory, "metaData.rec"))
+	metaData := fxtools.MustCreate(filepath.Join(directory, "metaData.rec"))
 	defer metaData.Close()
 
 	metaRecord := recfile.Record{
@@ -76,7 +76,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error 
 		}
 	}
 
-	cellFile := fxtools.MustCreate(path.Join(directory, "cells.bin"))
+	cellFile := fxtools.MustCreate(filepath.Join(directory, "cells.bin"))
 	gobber := gob.NewEncoder(cellFile)
 	err = gobber.Encode(tilesOnDisk)
 	cellFile.Close()
@@ -85,7 +85,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error 
 	}
 
 	if len(m.allItems) > 0 {
-		itemFile := fxtools.MustCreate(path.Join(directory, "items.bin"))
+		itemFile := fxtools.MustCreate(filepath.Join(directory, "items.bin"))
 		binEncoder := gob.NewEncoder(itemFile)
 		err = binEncoder.Encode(util.MapValues(m.allItems))
 		itemFile.Close()
@@ -95,7 +95,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error 
 	}
 
 	if len(m.allObjects) > 0 {
-		objectFile := fxtools.MustCreate(path.Join(directory, "objects.bin"))
+		objectFile := fxtools.MustCreate(filepath.Join(directory, "objects.bin"))
 		binEncoder := gob.NewEncoder(objectFile)
 		err = binEncoder.Encode(m.allObjects)
 		objectFile.Close()
@@ -106,7 +106,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error 
 	}
 
 	if len(m.allActors) > 0 {
-		actorFile := fxtools.MustCreate(path.Join(directory, "actors.bin"))
+		actorFile := fxtools.MustCreate(filepath.Join(directory, "actors.bin"))
 		binEncoder := gob.NewEncoder(actorFile)
 		err = binEncoder.Encode(util.MapValues(m.allActors))
 		actorFile.Close()
@@ -116,7 +116,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error 
 	}
 
 	if len(m.allDownedActors) > 0 {
-		downedActorFile := fxtools.MustCreate(path.Join(directory, "downedActors.bin"))
+		downedActorFile := fxtools.MustCreate(filepath.Join(directory, "downedActors.bin"))
 		binEncoder := gob.NewEncoder(downedActorFile)
 		err = binEncoder.Encode(m.allDownedActors)
 		downedActorFile.Close()
@@ -126,7 +126,7 @@ func (m *GridMap[ActorType, ItemType, ObjectType]) Save(directory string) error 
 	}
 
 	if len(m.BakedLights) > 0 {
-		lightFile := fxtools.MustCreate(path.Join(directory, "bakedLights.bin"))
+		lightFile := fxtools.MustCreate(filepath.Join(directory, "bakedLights.bin"))
 
 		binEncoder := gob.NewEncoder(lightFile)
 		err = binEncoder.Encode(m.BakedLights)
@@ -150,9 +150,9 @@ func Load[ActorType interface {
 	MapObjectWithProperties[ActorType]
 }](mapDirectory, mapName string) *GridMap[ActorType, ItemType, ObjectType] {
 
-	directory := path.Join(mapDirectory, "maps", mapName)
+	directory := filepath.Join(mapDirectory, "maps", mapName)
 
-	metaData := fxtools.MustOpen(path.Join(directory, "metaData.rec"))
+	metaData := fxtools.MustOpen(filepath.Join(directory, "metaData.rec"))
 	defer metaData.Close()
 	metaRecords, _ := recfile.ReadMulti(metaData)
 	metaRecord := metaRecords["meta"][0]
@@ -176,7 +176,7 @@ func Load[ActorType interface {
 		}
 	}
 
-	cellFile := fxtools.MustOpen(path.Join(directory, "cells.bin"))
+	cellFile := fxtools.MustOpen(filepath.Join(directory, "cells.bin"))
 	gobber := gob.NewDecoder(cellFile)
 	var cells []TileDataOnDisk
 	err := gobber.Decode(&cells)
@@ -240,8 +240,8 @@ func Load[ActorType interface {
 		restoredMap.transitionMap[pos] = transition
 	}
 
-	if fxtools.FileExists(path.Join(directory, "items.bin")) {
-		itemFile := fxtools.MustOpen(path.Join(directory, "items.bin"))
+	if fxtools.FileExists(filepath.Join(directory, "items.bin")) {
+		itemFile := fxtools.MustOpen(filepath.Join(directory, "items.bin"))
 		binDecoder := gob.NewDecoder(itemFile)
 		var items []ItemType
 		err = binDecoder.Decode(&items)
@@ -254,8 +254,8 @@ func Load[ActorType interface {
 		}
 	}
 
-	if fxtools.FileExists(path.Join(directory, "objects.bin")) {
-		objectFile := fxtools.MustOpen(path.Join(directory, "objects.bin"))
+	if fxtools.FileExists(filepath.Join(directory, "objects.bin")) {
+		objectFile := fxtools.MustOpen(filepath.Join(directory, "objects.bin"))
 		defer objectFile.Close()
 		binDecoder := gob.NewDecoder(objectFile)
 		var objects []ObjectType
@@ -268,8 +268,8 @@ func Load[ActorType interface {
 		}
 	}
 
-	if fxtools.FileExists(path.Join(directory, "actors.bin")) {
-		actorFile := fxtools.MustOpen(path.Join(directory, "actors.bin"))
+	if fxtools.FileExists(filepath.Join(directory, "actors.bin")) {
+		actorFile := fxtools.MustOpen(filepath.Join(directory, "actors.bin"))
 		defer actorFile.Close()
 		gobber = gob.NewDecoder(actorFile)
 		var actors []ActorType
@@ -282,8 +282,8 @@ func Load[ActorType interface {
 		}
 	}
 
-	if fxtools.FileExists(path.Join(directory, "downedActors.bin")) {
-		downedActorFile := fxtools.MustOpen(path.Join(directory, "downedActors.bin"))
+	if fxtools.FileExists(filepath.Join(directory, "downedActors.bin")) {
+		downedActorFile := fxtools.MustOpen(filepath.Join(directory, "downedActors.bin"))
 		defer downedActorFile.Close()
 		gobber = gob.NewDecoder(downedActorFile)
 		var downedActors []ActorType
@@ -296,8 +296,8 @@ func Load[ActorType interface {
 		}
 	}
 
-	if fxtools.FileExists(path.Join(directory, "bakedLights.bin")) {
-		lightFile := fxtools.MustOpen(path.Join(directory, "bakedLights.bin"))
+	if fxtools.FileExists(filepath.Join(directory, "bakedLights.bin")) {
+		lightFile := fxtools.MustOpen(filepath.Join(directory, "bakedLights.bin"))
 		defer lightFile.Close()
 		gobber = gob.NewDecoder(lightFile)
 		var lights map[geometry.Point]*LightSource

@@ -15,7 +15,7 @@ import (
 	"image/color"
 	"math/rand"
 	"os"
-	"path"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -93,9 +93,9 @@ type GameState struct {
 
 func NewGameState(config *foundation.Configuration) *GameState {
 	// stuff initialised here will stay the same between resets
-	loadD100Rules(path.Join(config.DataRootDir, "definitions"))
+	loadD100Rules(filepath.Join(config.DataRootDir, "definitions"))
 
-	paletteFile := path.Join(config.DataRootDir, "definitions", "palette.rec")
+	paletteFile := filepath.Join(config.DataRootDir, "definitions", "palette.rec")
 	palette := textiles.ReadPaletteFileOrDefault(fxtools.MustOpen(paletteFile))
 
 	g := &GameState{
@@ -109,7 +109,7 @@ func NewGameState(config *foundation.Configuration) *GameState {
 	}
 	g.userFunctions = g.loadUserFuncs(g.config.DataRootDir)
 	g.mapLoader = gridmap.NewRecMapLoader(
-		path.Join(g.config.DataRootDir, "maps"),
+		filepath.Join(g.config.DataRootDir, "maps"),
 		g.palette,
 		g.NewActor,
 		g.NewItem,
@@ -125,7 +125,7 @@ func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
 	itemTemplates := make(map[string]recfile.Record)
 	parts := []string{"weapons", "ammo", "armor", "food", "consumables", "miscItems"}
 	for _, part := range parts {
-		itemTemplateFile := path.Join(dataRootDir, "definitions", part+".rec")
+		itemTemplateFile := filepath.Join(dataRootDir, "definitions", part+".rec")
 		records, _ := recfile.ReadAndClose(fxtools.MustOpen(itemTemplateFile))
 		for _, record := range records {
 			itemTemplates[record.FindValueForKeyIgnoreCase("name")] = record
@@ -136,7 +136,7 @@ func loadItemTemplates(dataRootDir string) map[string]recfile.Record {
 
 func loadActorTemplates(dataRootDir string) map[string]recfile.Record {
 	actorTemplates := make(map[string]recfile.Record)
-	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dataRootDir, "definitions", "actors.rec")))
+	records, _ := recfile.ReadAndClose(fxtools.MustOpen(filepath.Join(dataRootDir, "definitions", "actors.rec")))
 	for _, record := range records {
 		actorTemplates[record.FindValueForKeyIgnoreCase("name")] = record
 	}
@@ -145,7 +145,7 @@ func loadActorTemplates(dataRootDir string) map[string]recfile.Record {
 
 func loadSpawnedTeamsTemplates(dataRootDir string) map[string]recfile.Record {
 	actorTemplates := make(map[string]recfile.Record)
-	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dataRootDir, "definitions", "spawned_teams.rec")))
+	records, _ := recfile.ReadAndClose(fxtools.MustOpen(filepath.Join(dataRootDir, "definitions", "spawned_teams.rec")))
 	for _, record := range records {
 		actorTemplates[record.FindValueForKeyIgnoreCase("name")] = record
 	}
@@ -255,7 +255,7 @@ func (g *GameState) OpenPerkSelection(done func()) {
 
 func (g *GameState) chooseQuipStyle() {
 	var quipChoices []foundation.MenuItem
-	quipPath := path.Join(g.config.DataRootDir, "quips")
+	quipPath := filepath.Join(g.config.DataRootDir, "quips")
 	entries, _ := os.ReadDir(quipPath)
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".txt") {
@@ -305,7 +305,7 @@ func (g *GameState) PlayerQuip() {
 	}
 
 	if len(g.quips) == 0 {
-		quipFile := path.Join(g.config.DataRootDir, "quips", g.quipFile)
+		quipFile := filepath.Join(g.config.DataRootDir, "quips", g.quipFile)
 		playerQuips := fxtools.ReadFileAsLines(quipFile)
 		g.quips = playerQuips
 	}
@@ -468,7 +468,7 @@ func (g *GameState) PlayerInteractInDirection(direction geometry.CompassDirectio
 }
 
 func (g *GameState) loadUserFuncs(dir string) map[string]*govaluate.EvaluableExpression {
-	records, _ := recfile.ReadAndClose(fxtools.MustOpen(path.Join(dir, "definitions", "userFuncs.rec")))
+	records, _ := recfile.ReadAndClose(fxtools.MustOpen(filepath.Join(dir, "definitions", "userFuncs.rec")))
 
 	queries := make(map[string]*govaluate.EvaluableExpression)
 	for _, queryRecord := range records {
@@ -555,7 +555,7 @@ func (g *GameState) init() {
 	}
 	g.mapContainsPlayer = true
 	g.timeTracker = make(TimeTracker)
-	g.iconsForItems, g.inventoryColors = loadIconsForItems(path.Join(g.config.DataRootDir, "definitions"), g.palette)
+	g.iconsForItems, g.inventoryColors = loadIconsForItems(filepath.Join(g.config.DataRootDir, "definitions"), g.palette)
 
 	g.activeMaps = make(map[string]GameMap)
 	g.chatterCache = make(map[*Actor]map[foundation.ChatterTopic][]EntriesWithCondition)
@@ -572,7 +572,7 @@ func (g *GameState) init() {
 
 	g.gameFlags = fxtools.NewStringFlags()
 
-	g.journal = NewJournal(fxtools.MustOpen(path.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.GetScriptFuncs())
+	g.journal = NewJournal(fxtools.MustOpen(filepath.Join(g.config.DataRootDir, "definitions", "journal.rec")), g.GetScriptFuncs())
 	g.hookupJournalAndFlags()
 
 	g.Scripts = NewScriptRunner()
@@ -580,7 +580,7 @@ func (g *GameState) init() {
 }
 
 func loadMapNames(rootDir string) []string {
-	mapDir := path.Join(rootDir, "maps")
+	mapDir := filepath.Join(rootDir, "maps")
 	files, _ := os.ReadDir(mapDir)
 	var mapNames []string
 	for _, file := range files {
@@ -612,7 +612,7 @@ func (g *GameState) initPlayerAndMap() {
 	g.FSMInit(g.Player)
 
 	var spawnMap, spawnLocation string
-	playerStartInfo := path.Join(g.config.DataRootDir, "definitions", "player_start.rec")
+	playerStartInfo := filepath.Join(g.config.DataRootDir, "definitions", "player_start.rec")
 	if fxtools.FileExists(playerStartInfo) {
 		records, _ := recfile.ReadAndClose(fxtools.MustOpen(playerStartInfo))
 		startRecord := records[0]
@@ -662,7 +662,7 @@ func (g *GameState) transitionToMapLocation(levelName string, location string) {
 
 	g.currentMap().UpdateDynamicLights()
 
-	g.ui.PlayMusic(path.Join(g.config.DataRootDir, "audio", "music", g.currentMap().GetMeta().MusicFile+".ogg"))
+	g.ui.PlayMusic(filepath.Join(g.config.DataRootDir, "audio", "music", g.currentMap().GetMeta().MusicFile+".ogg"))
 
 	// Spawn Player
 	playerSpawnPosition := loadedMap.GetNamedLocation(location)
@@ -1022,7 +1022,7 @@ func (g *GameState) GetRandomChatter(talker *Actor, chatterType foundation.Chatt
 	}
 	var chatterForActor map[foundation.ChatterTopic][]EntriesWithCondition
 	if _, hasCached := g.chatterCache[talker]; !hasCached {
-		chatterFilePath := path.Join(g.config.DataRootDir, "dialogues", talker.ChatterFile+".rec")
+		chatterFilePath := filepath.Join(g.config.DataRootDir, "dialogues", talker.ChatterFile+".rec")
 		if !fxtools.FileExists(chatterFilePath) {
 			return ""
 		}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/Knetic/govaluate"
 	"github.com/memmaker/go/fxtools"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -79,7 +79,7 @@ func NewScriptRunner() *ScriptRunner {
 }
 
 func (s *ScriptRunner) RunScriptByName(scriptDir string, scriptName string, condFuncs map[string]govaluate.ExpressionFunction) {
-	script := LoadScript(path.Join(scriptDir), scriptName, condFuncs)
+	script := LoadScript(filepath.Join(scriptDir), scriptName, condFuncs)
 	s.Run(script)
 }
 

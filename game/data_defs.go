@@ -1,11 +1,11 @@
 package game
 
 import (
-    "contractor/foundation"
+	"contractor/foundation"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/textiles"
 	"image/color"
-	"path"
+	"path/filepath"
 )
 
 func getExperienceTable() []int {
@@ -40,7 +40,7 @@ func loadIconsForItems(dataDirectory string, colors textiles.ColorPalette) (map[
 		return convertMap
 	}
 
-	itemCategoryFile := path.Join(dataDirectory, "iconsForItems.rec")
+	itemCategoryFile := filepath.Join(dataDirectory, "iconsForItems.rec")
 	itemCatRecords := fxtools.MustOpen(itemCategoryFile)
 	iconsForItems := textiles.ReadIconRecordsIntoMap(itemCatRecords)
 

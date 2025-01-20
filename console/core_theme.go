@@ -9,7 +9,7 @@ import (
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
 	"image/color"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -25,7 +25,7 @@ type Theme struct {
 }
 
 func NewUIThemeFromDataDir(dataDirectory string, palette textiles.ColorPalette, inventory map[foundation.ItemCategory]color.RGBA) Theme {
-	uiThemeFile := path.Join(dataDirectory, "themes", "ui.rec")
+	uiThemeFile := filepath.Join(dataDirectory, "themes", "ui.rec")
 	file := fxtools.MustOpen(uiThemeFile)
 	defer file.Close()
 	records, _ := recfile.ReadMulti(file)

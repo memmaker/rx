@@ -86,14 +86,14 @@ def main(dirname):
 			namePart = withoutExtension[0:6]
 			if namePart in nameMap:
 				realName = nameMap[namePart]
-				newDir = os.path.join(dirname, realName)
+				newDir = os.filepath.Join(dirname, realName)
 				ensureDirExists(newDir)
 				cueCode = withoutExtension[6:8]
 				if cueCode in codeMap:
 					cueName = codeMap[cueCode]
-					subDir = os.path.join(newDir, cueName)
+					subDir = os.filepath.Join(newDir, cueName)
 					ensureDirExists(subDir)
-					moveFileToDir(os.path.join(dirname, file), os.path.join(subDir, file))
+					moveFileToDir(os.filepath.Join(dirname, file), os.filepath.Join(subDir, file))
 				else:
 					print("Cue code not found", cueCode)
 if __name__ == "__main__":

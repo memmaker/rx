@@ -11,7 +11,7 @@ import (
 	"image/color"
 	"math"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -107,7 +107,7 @@ func chooseSubDirMenuItems(savegameBaseDirectory string, onSubDirConfirmed func(
 			menuItems = append(menuItems, foundation.MenuItem{
 				Name: subDir,
 				Action: func() {
-					onSubDirConfirmed(path.Join(savegameBaseDirectory, subDir))
+					onSubDirConfirmed(filepath.Join(savegameBaseDirectory, subDir))
 				},
 				CloseMenus: true,
 			})

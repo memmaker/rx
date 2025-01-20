@@ -3,7 +3,7 @@ package game
 import (
 	"contractor/foundation"
 	"github.com/memmaker/go/fxtools"
-	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -201,7 +201,7 @@ func (g *GameState) isAtScheduledLocation(actor *Actor, slot TimeSlot) bool {
 }
 
 func (g *GameState) loadSchedule(actor *Actor) {
-	schedulePath := path.Join(g.config.DataRootDir, "schedules", actor.GetInternalName()+".rec")
+	schedulePath := filepath.Join(g.config.DataRootDir, "schedules", actor.GetInternalName()+".rec")
 	if fxtools.FileExists(schedulePath) {
 		actor.Schedule = NewScheduleFromFile(schedulePath, func() time.Time {
 			return g.gameTime.Time

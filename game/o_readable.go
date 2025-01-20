@@ -6,7 +6,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -66,7 +66,7 @@ func (r *ReadableObject) InitWithGameState(g *GameState) {
 		g.ui.OpenTextWindow(g.FillTemplatedText(shown))
 	}
 	r.showTextFile = func(file string) {
-		shown := fxtools.ReadFile(path.Join(g.config.DataRootDir, "text", file+".txt"))
+		shown := fxtools.ReadFile(filepath.Join(g.config.DataRootDir, "text", file+".txt"))
 		g.ui.OpenTextWindow(g.FillTemplatedText(shown))
 	}
 }

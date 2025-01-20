@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/memmaker/go/cview"
 	"github.com/memmaker/go/fxtools"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -31,7 +31,7 @@ func (u *UI) showWinScreen(scoreInfo foundation.ScoreInfo, highScores []foundati
 	textView.SetTextAlign(cview.AlignCenter)
 	textView.SetTitleAlign(cview.AlignCenter)
 
-	winMessage := fxtools.ReadFileAsLines(path.Join(u.settings.DataRootDir, "win.txt"))
+	winMessage := fxtools.ReadFileAsLines(filepath.Join(u.settings.DataRootDir, "win.txt"))
 
 	gameOverMessage := []string{
 		"",

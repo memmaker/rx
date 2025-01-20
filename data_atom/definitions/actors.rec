@@ -20,7 +20,7 @@
 %type: Agility int
 %typedef: SkillBonus enum MeleeCombat(30) RangedCombat(30) Social(30) Intimidate(30) Stealth(30) Mechanics(30) BioChemistry(30) Technology(30)
 %list: SkillBonus
-%type: equipment line
+%ref: equipment Weapon
 %list: equipment
 
 Name: radscorpion

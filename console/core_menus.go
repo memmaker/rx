@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/memmaker/go/cview"
-	"path"
+	"path/filepath"
 )
 
 // Main Menu
@@ -89,7 +89,7 @@ func (u *UI) OpenSystemMenu() {
 			{
 				Name: "Save & Quit",
 				Action: func() {
-					u.game.SaveGame(path.Join(u.settings.SaveGameDir, "iron_man"))
+					u.game.SaveGame(filepath.Join(u.settings.SaveGameDir, "iron_man"))
 				},
 				CloseMenus: true,
 			},
@@ -146,7 +146,7 @@ func (u *UI) ChooseSaveDir(savegameBaseDirectory string, onSubDirConfirmed func(
 	})
 	if len(menuItems) == 0 {
 		u.AskForString("Enter new savegame name", "", func(entered string) {
-			onSubDirConfirmed(path.Join(savegameBaseDirectory, entered))
+			onSubDirConfirmed(filepath.Join(savegameBaseDirectory, entered))
 		})
 		return
 	}
@@ -154,7 +154,7 @@ func (u *UI) ChooseSaveDir(savegameBaseDirectory string, onSubDirConfirmed func(
 		Name: "<New Savegame..>",
 		Action: func() {
 			u.AskForString("Enter new savegame name", "", func(entered string) {
-				onSubDirConfirmed(path.Join(savegameBaseDirectory, entered))
+				onSubDirConfirmed(filepath.Join(savegameBaseDirectory, entered))
 			})
 		},
 		CloseMenus: true,

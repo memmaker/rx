@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
-	"path"
+	"path/filepath"
 )
 
 type WeaponChecker struct {
@@ -12,8 +12,8 @@ type WeaponChecker struct {
 }
 
 func (c WeaponChecker) PrintReport() {
-	ammoPath := path.Join(c.rootDir, "definitions", "ammo.rec")
-	weaponPath := path.Join(c.rootDir, "definitions", "weapons.rec")
+	ammoPath := filepath.Join(c.rootDir, "definitions", "ammo.rec")
+	weaponPath := filepath.Join(c.rootDir, "definitions", "weapons.rec")
 
 	ammoRecords, _ := recfile.ReadAndClose(fxtools.MustOpen(ammoPath))
 	weaponRecords, _ := recfile.ReadAndClose(fxtools.MustOpen(weaponPath))

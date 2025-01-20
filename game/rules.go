@@ -4,7 +4,7 @@ import (
 	"contractor/d100"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/recfile"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -24,7 +24,7 @@ func CanPerceive(observer *Actor, observed *Actor) bool {
 }
 
 func loadD100Rules(definitionDirectory string) {
-	rulesFile := path.Join(definitionDirectory, "rules.rec")
+	rulesFile := filepath.Join(definitionDirectory, "rules.rec")
 	rulesRecords, _ := recfile.ReadMultiAndClose(fxtools.MustOpen(rulesFile))
 
 	// Skill Definitions are mandatory

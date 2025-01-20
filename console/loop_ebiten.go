@@ -12,7 +12,7 @@ import (
 	"github.com/memmaker/go/fxtools"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
-	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -75,7 +75,7 @@ func (u EbitenUI) QuitGame(application *cview.Application) {
 }
 
 func mustLoadFontByName(fontName string) (fontFace font.Face, close func() error) {
-	filename := path.Join("data_atom", "glfonts", fontName+".ttf")
+	filename := filepath.Join("data_atom", "glfonts", fontName+".ttf")
 	file := fxtools.MustOpen(filename)
 	//defer file.Close()
 	tt, err := opentype.ParseReaderAt(file)

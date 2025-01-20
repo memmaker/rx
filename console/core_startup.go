@@ -10,7 +10,7 @@ import (
 	"github.com/memmaker/go/textiles"
 	"image/color"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 func NewTextUI(state *game.GameState, uiImpl UILifeCycler, settings *foundation.Configuration) *UI {
@@ -56,15 +56,15 @@ func (u *UI) loadAudioSfxInBackground() {
 		return
 	}
 	go func() {
-		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "weapons"), "")
-		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "ui"), "")
-		u.audioPlayer.LoadCuesFromDir(path.Join(u.settings.DataRootDir, "audio", "world"), "")
-		enemySfxDir := path.Join(u.settings.DataRootDir, "audio", "critters")
+		u.audioPlayer.LoadCuesFromDir(filepath.Join(u.settings.DataRootDir, "audio", "weapons"), "")
+		u.audioPlayer.LoadCuesFromDir(filepath.Join(u.settings.DataRootDir, "audio", "ui"), "")
+		u.audioPlayer.LoadCuesFromDir(filepath.Join(u.settings.DataRootDir, "audio", "world"), "")
+		enemySfxDir := filepath.Join(u.settings.DataRootDir, "audio", "critters")
 		entries, _ := os.ReadDir(enemySfxDir)
 		for _, entry := range entries {
 			if entry.IsDir() {
 				enemyName := entry.Name()
-				u.audioPlayer.LoadCuesFromDir(path.Join(enemySfxDir, enemyName), "critters")
+				u.audioPlayer.LoadCuesFromDir(filepath.Join(enemySfxDir, enemyName), "critters")
 			}
 		}
 		u.audioPlayer.SoundsLoaded()
@@ -79,7 +79,7 @@ func (u *UI) initUI(palette textiles.ColorPalette, invColors map[foundation.Item
 	}
 
 	u.setupCommandTable()
-	u.loadKeyMap(path.Join(u.settings.DataRootDir, "keymaps", u.settings.KeyMap+".txt"))
+	u.loadKeyMap(filepath.Join(u.settings.DataRootDir, "keymaps", u.settings.KeyMap+".txt"))
 
 	u.application.EnableMouse(true)
 

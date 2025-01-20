@@ -7,7 +7,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -22,7 +22,7 @@ func (g *GameState) Save(directory string) error {
 		recfile.Field{Name: "GameTime", Value: recfile.TimeStr(g.gameTime.Time)},
 		recfile.Field{Name: "ShowEverything", Value: recfile.BoolStr(g.showEverything)},
 	}
-	globalFile := fxtools.MustCreate(path.Join(directory, "global.rec"))
+	globalFile := fxtools.MustCreate(filepath.Join(directory, "global.rec"))
 	err := recfile.WriteMulti(globalFile, map[string][]recfile.Record{
 		"global": {globalRecord},
 		"flags":  g.gameFlags.ToRecord(),
@@ -37,7 +37,7 @@ func (g *GameState) Save(directory string) error {
 
 	// Journal
 	journalRecords := g.journal.ToRecords()
-	journalFile := fxtools.MustCreate(path.Join(directory, "journal.rec"))
+	journalFile := fxtools.MustCreate(filepath.Join(directory, "journal.rec"))
 	err = recfile.WriteMulti(journalFile, journalRecords)
 	if err != nil {
 		return err
@@ -48,9 +48,9 @@ func (g *GameState) Save(directory string) error {
 	}
 
 	// Loaded Map States
-	mapDirectory := path.Join(directory, "maps")
+	mapDirectory := filepath.Join(directory, "maps")
 	for mapName, gameMap := range g.activeMaps {
-		mapDirName := path.Join(mapDirectory, mapName)
+		mapDirName := filepath.Join(mapDirectory, mapName)
 		os.MkdirAll(mapDirName, os.ModePerm)
 		err = gameMap.Save(mapDirName)
 		if err != nil {
@@ -63,7 +63,7 @@ func (g *GameState) Save(directory string) error {
 
 func (g *GameState) Load(directory string) {
 	// Global game state
-	globalFile := fxtools.MustOpen(path.Join(directory, "global.rec"))
+	globalFile := fxtools.MustOpen(filepath.Join(directory, "global.rec"))
 	globalRecords, _ := recfile.ReadMulti(globalFile)
 	globalFile.Close()
 
@@ -93,13 +93,13 @@ func (g *GameState) Load(directory string) {
 	g.logBuffer = make([]foundation.HiLiteString, 0)
 
 	// Journal
-	journalFile := fxtools.MustOpen(path.Join(directory, "journal.rec"))
+	journalFile := fxtools.MustOpen(filepath.Join(directory, "journal.rec"))
 	journalRecords, _ := recfile.ReadMulti(journalFile)
 	journalFile.Close()
 	g.journal = NewJournalFromRecords(journalRecords, g.GetScriptFuncs())
 
 	// Loaded Map States
-	mapEntries, err := os.ReadDir(path.Join(directory, "maps"))
+	mapEntries, err := os.ReadDir(filepath.Join(directory, "maps"))
 	if err != nil {
 		panic(err)
 	}

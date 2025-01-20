@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/memmaker/go/fxtools"
 	"github.com/memmaker/go/geometry"
-	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -384,7 +384,7 @@ func (g *GameState) playerReadItem(item foundation.Readable) {
 	}
 	var lines string
 	if item.GetTextFile() != "" {
-		file := path.Join(g.config.DataRootDir, "text", item.GetTextFile()+".txt")
+		file := filepath.Join(g.config.DataRootDir, "text", item.GetTextFile()+".txt")
 		lines = fxtools.ReadFile(file)
 	} else {
 		lines = item.GetText()
