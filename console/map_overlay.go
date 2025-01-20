@@ -65,6 +65,7 @@ func (o *Overlay) PrintColored(x, y int, text string, fg, bg color.RGBA) {
 func (o *Overlay) Contains(x, y int) bool {
 	return x >= 0 && x < o.width && y >= 0 && y < o.height
 }
+
 func (o *Overlay) IsSet(x, y int) bool {
 	if !o.Contains(x, y) {
 		return false

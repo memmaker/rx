@@ -7,6 +7,7 @@ import (
 	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"github.com/memmaker/go/textiles"
+	"slices"
 	"strings"
 	"time"
 )
@@ -330,8 +331,6 @@ func (g *GameState) openContainer(container ItemContainer) {
 	containerItems := StackedFilteredAndSortedItems(container.GetItems(), func(item foundation.Item) bool { return true })
 	playerItems := StackedFilteredAndSortedItems(g.Player.GetInventory().GetItems(), func(item foundation.Item) bool { return true })
 
-	// PROBLEM: For "Take All", we are calling this function multiple times..
-	// Re-Opening the container multiple times, is not a good idea.
 	transferToPlayer := func(itemTaken foundation.Item, amount int) {
 		itemName := itemTaken.Name()
 
@@ -359,8 +358,10 @@ func (g *GameState) openContainer(container ItemContainer) {
 		g.openContainer(container)
 	}
 	takeAll := func() {
-		for _, item := range container.GetItems() {
-			stackTransfer(container, g.Player.GetInventory(), item, item.GetStackSize())
+		allItems := slices.Clone(container.GetItems())
+		for _, item := range allItems {
+			container.RemoveItem(item)
+			g.Player.GetInventory().AddItem(item)
 		}
 		g.openContainer(container)
 	}

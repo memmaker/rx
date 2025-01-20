@@ -1364,6 +1364,11 @@ func (g *GameState) updateFoVAndDijkstraMapForAllActors() {
 	}
 }
 
+func (g *GameState) TestForcedMonologue() {
+	grim := g.actorWithName("grim_beard")
+	g.ui.ForceListening(grim, []string{"Hi there", "Can you hear me?", "Are you fine?"}, nil)
+}
+
 func advantageForOne(one int, two int, advantage int) (int, int) {
 	if advantage == 0 {
 		return one, two

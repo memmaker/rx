@@ -1,6 +1,7 @@
 %rec: Weapon
 ## Generic Fields ##
 %key: Name
+%type: Description line
 %type: Name line
 %type: Long_Description multiline
 %type: Weight int

@@ -48,6 +48,7 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 	if event == nil || u.gameIsOver {
 		return nil, action
 	}
+
 	newX, newY := event.Position()
 	mousePos := geometry.Point{X: newX, Y: newY}
 	if newX != u.currentMouseX || newY != u.currentMouseY {
@@ -75,6 +76,9 @@ func (u *UI) handleMainMouse(event *tcell.EventMouse, action cview.MouseAction) 
 			}
 			return nil, -1
 		}
+	}
+	if u.onMoreKey != nil {
+		return nil, action
 	}
 	mapPos := u.ScreenToMap(geometry.Point{X: newX, Y: newY})
 	isModified := event.Modifiers() != 0

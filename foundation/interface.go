@@ -215,6 +215,7 @@ type GameUI interface {
 	ForceUIRedraw()
 
 	IndicateConversationStartByNPC(partner ChatterSource, done func())
+	ForceListening(partner ChatterSource, monologue []string, done func())
 
 	// Animations
 	AddAnimations(animations []Animation)

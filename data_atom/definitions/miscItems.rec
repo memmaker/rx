@@ -1,6 +1,7 @@
 %rec: Misc
 %key: Name
 %type: Name line
+%type: Description line
 %type: Long_Description multiline
 %type: Weight int
 %type: Cost int
@@ -157,6 +158,14 @@ Weight: 1
 Cost: 1
 pickupflag: KnowsAboutHomeCompanion
 
+Name: robot_repair_parts
+Description: robot repair parts
+Long_Description: Parts for robot repairs
+Weight: 10
+Cost: 50
+Category: Other
+Chance_to_break_on_throw: 10
+
 Description: The Hydraulic Press and You
 Name: skillbook_mechanics
 Category: Books
@@ -198,9 +207,10 @@ Use_Effect: show_time
 Charges: -1
 
 Name: water_ration
+Description: a ration of water
 Long_Description: Rationed water, prepackaged for easy distribution across the colony
 Weight: 1
 Cost: 10
 Category: Food
-Chance_to_break_on_throw: 50
+Chance_to_break_on_throw: 60
 

@@ -254,6 +254,11 @@ func (g *GameState) OpenWizardMenu() {
 			CloseMenus: true,
 		},
 		{
+			Name:       "Test Forced Monologue",
+			Action:     g.TestForcedMonologue,
+			CloseMenus: true,
+		},
+		{
 			Name: "Test Pathfinder",
 			Action: func() {
 				pf := NewPathfinder(g.ensureMapIsLoaded)

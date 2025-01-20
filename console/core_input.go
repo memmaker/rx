@@ -15,9 +15,12 @@ import (
 )
 
 func (u *UI) appInputCapture(event *tcell.EventKey) *tcell.EventKey {
-	if u.onAnyKey != nil {
-		u.onAnyKey()
-		u.onAnyKey = nil
+	if u.onMoreKey != nil {
+		if event.Key() == tcell.KeyRune && event.Rune() == ' ' {
+			call := u.onMoreKey
+			u.onMoreKey = nil
+			call()
+		}
 		return nil
 	}
 

@@ -13,7 +13,7 @@ BUGS
  - Jacob Thorne's map cannot be accessed (was deleted but is still referenced)
  - When Bob runs out of ammo he won't retaliate anymore
  - Dynamic door code not readable in one of two view modes
-
+ - "Take all" - Sometimes needs two invocations
 //TODO
  - Grim is dead, there is robot helping the player instead
    -> robot was faking a leg injury, is also a spy for P21

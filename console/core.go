@@ -70,7 +70,7 @@ type UI struct {
 	lastTarget   [2]geometry.Point
 	graphicsMode bool
 
-	onAnyKey func()
+	onMoreKey func()
 
 	hoveredActor foundation.ActorForUI
 }
@@ -78,10 +78,39 @@ type UI struct {
 func (u *UI) IndicateConversationStartByNPC(partner foundation.ChatterSource, done func()) {
 	labelText := fmt.Sprintf("<%s is addressing you>", partner.Name())
 	u.mapOverlay.TryAddOverlay(partner.Position(), labelText, u.GetMapWindowGridSize(), u.game.IsSomethingInterestingAtLoc)
-	u.Print(foundation.HiLite("%s is addressing you. %s", partner.Name(), cview.Escape("[MORE]")))
-
-	u.onAnyKey = func() {
+	moreMessage := foundation.HiLite("%s is addressing you. %s", partner.Name(), cview.Escape("[MORE]"))
+	u.PrintWithMore(moreMessage, func() {
 		u.mapOverlay.ClearAll()
+		if done != nil {
+			done()
+		}
+	})
+}
+
+func (u *UI) ForceListening(partner foundation.ChatterSource, monologue []string, done func()) {
+	if len(monologue) == 0 {
+		return
+	}
+	u.mapOverlay.ClearAll()
+
+	u.TryAddChatter(partner, monologue[0])
+
+	monologue = monologue[1:]
+
+	u.PrintWithMore(foundation.HiLite("%s is speaking. %s", partner.Name(), cview.Escape("[MORE]")), func() {
+		if len(monologue) > 0 {
+			u.ForceListening(partner, monologue, done)
+		} else {
+			if done != nil {
+				done()
+			}
+		}
+	})
+}
+
+func (u *UI) PrintWithMore(moreMessage foundation.HiLiteString, done func()) {
+	u.Print(moreMessage)
+	u.onMoreKey = func() {
 		if done != nil {
 			done()
 		}
