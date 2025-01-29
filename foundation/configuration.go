@@ -2,6 +2,7 @@ package foundation
 
 import (
 	"github.com/memmaker/go/fxtools"
+	"github.com/memmaker/go/geometry"
 	"github.com/memmaker/go/recfile"
 	"os"
 	"time"
@@ -36,6 +37,13 @@ type Configuration struct {
 	FallbackFontName      string
 	ForcedFallbackRunes   string
 	SimulateAllLoadedMaps bool
+	TileScale             float64
+	TileWidth             int
+	TileHeight            int
+	WhiteTileIndex        int32
+	TargetingTileIndex    int32
+	KeepPlayerCentered    bool
+	WindowSize            geometry.Point
 }
 
 func NewConfigurationFromFile(file string) *Configuration {
@@ -102,28 +110,41 @@ func NewConfigurationFromFile(file string) *Configuration {
 			configuration.ForcedFallbackRunes += string(rune(field.AsInt()))
 		case "SimulateAllLoadedMaps":
 			configuration.SimulateAllLoadedMaps = field.AsBool()
+		case "TileScale":
+			configuration.TileScale = field.AsFloat()
+		case "TileWidth":
+			configuration.TileWidth = field.AsInt()
+		case "TileHeight":
+			configuration.TileHeight = field.AsInt()
+		case "WhiteTileIndex":
+			configuration.WhiteTileIndex = field.AsInt32()
+		case "TargetingTileIndex":
+			configuration.TargetingTileIndex = field.AsInt32()
+		case "KeepPlayerCentered":
+			configuration.KeepPlayerCentered = field.AsBool()
+		case "WindowSize":
+			configuration.WindowSize = geometry.MustDecodePoint(field.Value)
 		}
 	}
 	return configuration
 }
 func NewDefaultConfiguration() *Configuration {
 	return &Configuration{
-		MapWidth:                80,
-		MapHeight:               23,
-		DiagonalMovementEnabled: true,
-		AnimationDelay:          55 * time.Millisecond,
-
+		AnimationDelay:              55 * time.Millisecond,
 		AnimationsEnabled:           true,
 		AnimateMovement:             false,
+		AnimateProjectiles:          true,
 		AnimateDamage:               true,
 		AnimateEffects:              true,
-		AnimateProjectiles:          true,
+		MapWidth:                    80,
+		MapHeight:                   23,
+		DiagonalMovementEnabled:     true,
 		AutoPickup:                  true,
+		PlayerName:                  "Rogue",
 		WallSlide:                   true,
 		DataRootDir:                 "data_atom",
 		SaveGameDir:                 "save",
 		DefaultToAdvancedTargeting:  true,
-		PlayerName:                  "Rogue",
 		PlayerChar:                  '@',
 		PlayerColor:                 "white",
 		KeyMap:                      "numpad",
@@ -134,6 +155,13 @@ func NewDefaultConfiguration() *Configuration {
 		MainFontName:                "Monofonto-Regular",
 		FallbackFontName:            "MesloLGS NF Regular",
 		SimulateAllLoadedMaps:       true,
+		TileScale:                   2,
+		TileWidth:                   8,
+		TileHeight:                  8,
+		WhiteTileIndex:              0,
+		TargetingTileIndex:          1,
+		KeepPlayerCentered:          true,
+		WindowSize:                  geometry.Point{X: 800, Y: 600},
 	}
 }
 
@@ -168,8 +196,19 @@ func (c *Configuration) WriteToFile(filename string) {
 		recfile.Field{Name: "FallbackFontName", Value: c.FallbackFontName},
 		recfile.Field{Name: "ForcedFallbackRunes", Value: c.ForcedFallbackRunes},
 		recfile.Field{Name: "SimulateAllLoadedMaps", Value: recfile.BoolStr(c.SimulateAllLoadedMaps)},
+		recfile.Field{Name: "TileScale", Value: recfile.FloatStr(c.TileScale)},
+		recfile.Field{Name: "TileWidth", Value: recfile.IntStr(c.TileWidth)},
+		recfile.Field{Name: "TileHeight", Value: recfile.IntStr(c.TileHeight)},
+		recfile.Field{Name: "WhiteTileIndex", Value: recfile.Int32Str(c.WhiteTileIndex)},
+		recfile.Field{Name: "TargetingTileIndex", Value: recfile.Int32Str(c.TargetingTileIndex)},
+		recfile.Field{Name: "KeepPlayerCentered", Value: recfile.BoolStr(c.KeepPlayerCentered)},
+		recfile.Field{Name: "WindowSize", Value: c.WindowSize.Encode()},
 	}
 	file, _ := os.Create(filename)
 	defer file.Close()
 	recfile.Write(file, []recfile.Record{record})
+}
+
+func (c *Configuration) TileSize() geometry.Point {
+	return geometry.Point{X: c.TileWidth, Y: c.TileHeight}
 }

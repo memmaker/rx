@@ -28,3 +28,8 @@ FallbackFontName: MesloLGS NF Regular
 ForcedFallbackRunes: ▁▂▃▄▅▆▇∞↨►☙─│┌┐└┘├┤┬┴┼╭╮╯╰
 ForcedFallbackCodepoint: 9664
 ForcedFallbackCodepoint: 9668
+TileScale: 2
+TileWidth: 8
+TileHeight: 8
+WhiteTileIndex: 0
+TargetingTileIndex: 1

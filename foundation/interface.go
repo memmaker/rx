@@ -251,6 +251,8 @@ type GameUI interface {
 	GetAnimWakeUp(position geometry.Point, done func()) Animation
 	GetAnimEvade(defender ActorForUI, done func()) Animation
 	GetAnimLaser(path []geometry.Point, lightColor fxtools.HDRColor, done func()) Animation
+	StartGameLoop()
+	StartWithIntro()
 }
 
 type Animation interface {

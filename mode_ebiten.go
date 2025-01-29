@@ -2,8 +2,8 @@
 
 package main
 
-import "contractor/console"
+import "contractor/ui_console"
 
 func init() {
-	graphicsModes["ebiten"] = console.NewEbitenUI()
+	textModeLifecycles["text_gl"] = ui_console.NewEbitenUI()
 }

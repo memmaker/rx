@@ -1,8 +1,11 @@
 //go:build ebiten
+
 package main
 
-import "contractor/console"
+import (
+	"contractor/ui_console"
+)
 
 func init() {
-    graphicsModes["terminal"] = console.NewTerminalUI()
+	textModeLifecycles["terminal"] = ui_console.NewTerminalUI()
 }
